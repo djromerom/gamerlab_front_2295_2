@@ -1,0 +1,2 @@
+# Why this folder
+The `components` folder contains all the React components used in the application. Each component is responsible for rendering a specific part of the UI and can be reused throughout the application. Usually here are what i call `generic` components that are used in multiple places. There might be some components that are specific to a particular feature or page. For those cases, they are inside the `pages` folder.
