@@ -10,55 +10,75 @@ import {
 } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { useAuthContext } from "../../../context/AuthContext";
+import { useState } from "react";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const { logIn, error } = useAuthContext();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    logIn(email, password);
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl text-center max-w-xs mx-auto">
+            ¡Hola, que bien que estés de vuelta!
+          </CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Introduzca su dirección de correo electronico para acceder a su
+            cuenta
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
+          <form onSubmit={handleLogIn}>
+            <div className="flex flex-col gap-6 flex justify-center">
+              <div className="grid gap-2 flex justify-center">
                 <Label htmlFor="email">Email</Label>
                 <Input
+                  className="w-80"
                   id="email"
                   type="email"
                   placeholder="m@example.com"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                  }}
                   required
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 flex justify-center">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
+                  <Label htmlFor="password">Constraseña</Label>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  className="w-80"
+                  id="password"
+                  type="password"
+                  placeholder="*****"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                  }}
+                  required
+                />
               </div>
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-              <Button variant="outline" className="w-full">
-                Login with Google
-              </Button>
+              <div className="flex flex-col items-center">
+                {error && <p className=" text-red-600">{error.message}</p>}
+                <Button type="submit" className="w-80">
+                  Ingresar
+                </Button>
+              </div>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
               <a href="#" className="underline underline-offset-4">
-                Sign up
+                Olvidé mi contraseña
               </a>
             </div>
           </form>

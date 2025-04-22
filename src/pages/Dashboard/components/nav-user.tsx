@@ -29,6 +29,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "../../../components/ui/sidebar";
+import { useAuthContext } from "../../../context/AuthContext";
 
 export function NavUser({
   user,
@@ -40,7 +41,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-
+  const { logOut } = useAuthContext();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -102,7 +103,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={logOut}>
               <LogOut />
               Log out
             </DropdownMenuItem>
