@@ -11,19 +11,21 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { useAuthContext } from "../../../context/AuthContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ButtonLoading } from "./ButtonLoading";
+import { ForgotPasswwordButton } from "./ForgotPasswword";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const { logIn, error } = useAuthContext();
+  const { logIn, error, isLoggingIn } = useAuthContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    logIn(email, password);
+    await logIn(email, password);
   };
 
   return (
@@ -71,15 +73,17 @@ export function LoginForm({
               </div>
               <div className="flex flex-col items-center">
                 {error && <p className=" text-red-600">{error.message}</p>}
-                <Button type="submit" className="w-80">
-                  Ingresar
-                </Button>
+                {isLoggingIn ? (
+                  <ButtonLoading className="w-80" />
+                ) : (
+                  <Button type="submit" className="w-80">
+                    Ingresar
+                  </Button>
+                )}
               </div>
             </div>
             <div className="mt-4 text-center text-sm">
-              <a href="#" className="underline underline-offset-4">
-                Olvidé mi contraseña
-              </a>
+              <ForgotPasswwordButton />
             </div>
           </form>
         </CardContent>
