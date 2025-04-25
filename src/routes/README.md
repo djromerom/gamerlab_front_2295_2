@@ -48,11 +48,39 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
 
    ```tsx
    import NuevoModulo from "../pages/NuevoModulo";
+   export const Routes = () => {
+   const { user, loading, isInRecoveryFlow } = useAuthContext();
 
-   const routes = [
-     // ...otras rutas
-     { path: "/nuevo", element: <NuevoModulo /> },
-   ];
+   if (loading) return <Loading />;
+ 
+   return (
+    <BrowserRouter>
+      <Switch>
+        {user && !isInRecoveryFlow ? ( {/*rutas para cuando estas logueado*/}
+          <>
+   {/*<Route path="/NuevoComponente" element ={<NuevoCompente /}/>*/}
+            <Route path="/criterios" element={<Criterios />} />
+            <Route path="/jurados" element={<Jurados />} />
+            <Route path="/profesores" element={<Profesores />} />
+            <Route path="/estadisticas" element={<Estadisticas />} />
+            <Route path="/nrcs" element={<NRCS />} />
+            <Route path="/materias" element={<Materias />} />
+            <Route path="/Dashboard" element={<Dashboard />} />
+            <Route path="/" element={<PaginaPrincipal />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </>
+        ) : (
+          <> {/*rutas para cuando no estas logueado*/}
+            <Route path="/" element={<PaginaPrincipal />} />
+            <Route path="/log-in" element={<LogIn />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </>
+        )}
+      </Switch>
+    </BrowserRouter>
+   );
+   };
    ```
 
 ### 📝 Editar una página existente
@@ -83,4 +111,4 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
 
 ---
 
-Cualquier duda, pregunta o propuesta de mejora, comunícate con el responsable del repositorio o deja un mensaje en el README. ¡Gracias por contribuir!
+Cualquier duda, pregunta o propuesta de mejora, no dudes en comentarme.
