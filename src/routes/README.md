@@ -49,10 +49,18 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
    ```tsx
    import NuevoModulo from "../pages/NuevoModulo";
 
-   const routes = [
-     // ...otras rutas
-     { path: "/nuevo", element: <NuevoModulo /> },
-   ];
+
+  return (
+    <BrowserRouter>
+      <Switch>
+        {user && !isInRecoveryFlow ? ( {/*en esta parte es cuando estas logueado*/}
+          <>
+          //añade la ruta de tu nueva pagina
+            <Route path="/criterios" element={<Criterios />} />
+            <Route path="/jurados" element={<Jurados />} />
+            <Route path="/profesores" element={<Profesores />} />
+            <Route path="/estadisticas" element={<Estadisticas />} />
+            <Route path="/nrcs" element={<NRCS />} />
    ```
 
 ### 📝 Editar una página existente
