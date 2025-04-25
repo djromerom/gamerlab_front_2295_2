@@ -15,6 +15,7 @@ import { Jurados } from "../pages/Jurados";
 import { Profesores } from "../pages/Profesores";
 import { Estadisticas } from "../pages/Estadisticas";
 import { Criterios } from "../pages/Criterios";
+import { PaginaPrincipal } from "../pages/PaginaPrincipal";
 
 export const Routes = () => {
   const { user, loading, isInRecoveryFlow } = useAuthContext();
@@ -32,14 +33,16 @@ export const Routes = () => {
             <Route path="/estadisticas" element={<Estadisticas />} />
             <Route path="/nrcs" element={<NRCS />} />
             <Route path="/materias" element={<Materias />} />
-            <Route path="/" element={<Dashboard />} />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/Dashboard" element={<Dashboard />} />
+            <Route path="/" element={<PaginaPrincipal />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
           </>
         ) : (
           <>
+            <Route path="/" element={<PaginaPrincipal />} />
             <Route path="/log-in" element={<LogIn />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="*" element={<Navigate to="/log-in" />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
       </Switch>

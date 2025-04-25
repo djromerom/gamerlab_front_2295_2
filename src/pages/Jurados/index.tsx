@@ -23,7 +23,7 @@ export const Jurados: React.FC = () => {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink to="/">Dashboard</BreadcrumbLink>
+                  <BreadcrumbLink to="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
