@@ -48,19 +48,38 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
 
    ```tsx
    import NuevoModulo from "../pages/NuevoModulo";
+   export const Routes = () => {
+   const { user, loading, isInRecoveryFlow } = useAuthContext();
 
-
-  return (
+   if (loading) return <Loading />;
+ 
+   return (
     <BrowserRouter>
       <Switch>
-        {user && !isInRecoveryFlow ? ( {/*en esta parte es cuando estas logueado*/}
+        {user && !isInRecoveryFlow ? ( {/*rutas para cuando estas logueado*/}
           <>
-          //añade la ruta de tu nueva pagina
             <Route path="/criterios" element={<Criterios />} />
             <Route path="/jurados" element={<Jurados />} />
             <Route path="/profesores" element={<Profesores />} />
             <Route path="/estadisticas" element={<Estadisticas />} />
             <Route path="/nrcs" element={<NRCS />} />
+            <Route path="/materias" element={<Materias />} />
+            <Route path="/Dashboard" element={<Dashboard />} />
+            <Route path="/" element={<PaginaPrincipal />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </>
+        ) : (
+          <> {/*rutas para cuando no estas logueado*/}
+            <Route path="/" element={<PaginaPrincipal />} />
+            <Route path="/log-in" element={<LogIn />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </>
+        )}
+      </Switch>
+    </BrowserRouter>
+   );
+   };
    ```
 
 ### 📝 Editar una página existente
