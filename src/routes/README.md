@@ -83,4 +83,4 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
 
 ---
 
-Cualquier duda, pregunta o propuesta de mejora, comunícate con el responsable del repositorio o deja un mensaje en el README. ¡Gracias por contribuir!
+Cualquier duda, pregunta o propuesta de mejora, no dudes en comentarme.
