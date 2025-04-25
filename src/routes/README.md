@@ -58,6 +58,7 @@ El proyecto sigue una arquitectura basada en **módulos y componentes**. Cada se
       <Switch>
         {user && !isInRecoveryFlow ? ( {/*rutas para cuando estas logueado*/}
           <>
+   {/*<Route path="/NuevoComponente" element ={<NuevoCompente /}/>*/}
             <Route path="/criterios" element={<Criterios />} />
             <Route path="/jurados" element={<Jurados />} />
             <Route path="/profesores" element={<Profesores />} />
