@@ -10,11 +10,11 @@ export const PaginaPrincipal: React.FC = () => {
       {user ? (
         <Link to="/dashboard">
           {" "}
-          <Button>hola</Button>{" "}
+          <Button>iniciar sesion</Button>{" "}
         </Link>
       ) : (
         <Link to="/log-in">
-          <Button>Chao</Button>
+          <Button>iniciar sesion</Button>
         </Link>
       )}
     </div>
