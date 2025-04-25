@@ -1,18 +1,26 @@
 import { createContext, useEffect, useContext, useState } from "react";
-import { AuthError, Session, User } from "@supabase/supabase-js";
+import { AuthError, PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "../../supabase/client";
 import React from "react";
+
+export interface User {
+  id: string;
+  nombre: string;
+  rol: "admin" | "jurado" | "representante";
+  correo: string;
+  confirmado: Boolean;
+  id_equipo: Number;
+}
 
 interface Context {
   user: User | null;
   loading: boolean;
-  error: AuthError | null | any;
+  error: AuthError | PostgrestError | null;
   logIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   isLoggingIn: boolean;
   isInRecoveryFlow: boolean;
-  rol: "admin" | "jurado" | "estudiante" | null;
 }
 
 interface Props {
@@ -22,14 +30,12 @@ interface Props {
 export const AuthContext = createContext<Context | undefined>(undefined);
 
 export const AuthContextProvider = ({ children }: Props) => {
-  const [rol, setRol] = useState<Context["rol"]>(null);
   const [user, setUser] = useState<Context["user"]>(null);
   const [loading, setLoading] = useState<Context["loading"]>(true);
   const [error, setError] = useState<Context["error"]>(null);
   const [isLoggingIn, setIsLoggingIn] = useState<Context["isLoggingIn"]>(false);
   const [isInRecoveryFlow, setIsInRecoveryFlow] =
     useState<Context["isInRecoveryFlow"]>(false);
-
   const logIn: Context["logIn"] = async (email, password) => {
     try {
       setIsLoggingIn(true);
@@ -38,20 +44,14 @@ export const AuthContextProvider = ({ children }: Props) => {
         password,
       });
       setError(error);
-      setUser(data.user);
       if (data.user) {
-        const { data: perfil, error: perfilError } = await supabase
+        let { data: user, error } = await supabase
           .from("usuarios")
-          .select("rol")
+          .select("*")
           .eq("id", data.user.id)
           .single();
-        if (perfilError) {
-          console.error("Error al obtener el rol:", perfilError.message);
-          setError(perfilError);
-          return;
-        }
-        setRol(perfil.rol);
-        console.log(rol);
+        setError(error);
+        setUser(user);
       }
     } catch (error: any) {
       console.error("An error occurred:", error);
@@ -75,9 +75,16 @@ export const AuthContextProvider = ({ children }: Props) => {
 
   const getCurrentUser = async () => {
     const {
-      data: { user },
+      data: { user: currentUser },
     } = await supabase.auth.getUser();
-    setUser(user);
+    if (currentUser) {
+      let { data: userInfo, error } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single();
+      setUser(userInfo);
+    }
     setLoading(false);
   };
 
@@ -102,7 +109,6 @@ export const AuthContextProvider = ({ children }: Props) => {
         isLoggingIn,
         resetPassword,
         isInRecoveryFlow,
-        rol,
       }}
     >
       {children}
