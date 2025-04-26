@@ -1,5 +1,5 @@
 import { Separator } from "@radix-ui/react-dropdown-menu";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Tabla } from "../../components/Table";
 import {
   Breadcrumb,
@@ -12,7 +12,38 @@ import {
 import { SidebarInset, SidebarTrigger } from "../../components/ui/sidebar";
 import { Layout } from "../../layout";
 
+import { supabase } from "../../../supabase/client";
+
+import { Data } from "../../components/Table";
+
 export const Materias: React.FC = () => {
+  const [data, setData] = useState<Data>({
+    titulo: "",
+    nombreColumnas: {},
+    filas: [],
+  });
+  const filas: Data["nombreColumnas"] = {};
+  const fetchMaterias = async () => {
+    let { data: Materias, error } = await supabase.from("Materias").select("*");
+    if (Materias) {
+      const titulo = "Materias";
+      const nombresColumnas = Object.keys(Materias[0]);
+      nombresColumnas.forEach((col: string) => {
+        filas[col] = col;
+      });
+      console.log(Materias);
+      setData({
+        titulo: "Materias",
+        nombreColumnas: filas,
+        filas: Materias,
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchMaterias();
+  }, []);
+
   return (
     <Layout>
       <SidebarInset id="sidebar-insert" className="relative">
@@ -33,24 +64,7 @@ export const Materias: React.FC = () => {
             </Breadcrumb>
           </div>
         </header>
-        <Tabla
-          data={{
-            titulo: "Materias",
-            nombreColumnas: {
-              materia: "Materia",
-              codigo: "Código",
-              curso: "Curso",
-            },
-            filas: [
-              { materia: "POO", codigo: "SIST1234", curso: "mañana" },
-              {
-                materia: "Estructura de Datos",
-                codigo: "SIST2345",
-                curso: "mañana",
-              },
-            ],
-          }}
-        />
+        <Tabla data={data} />
       </SidebarInset>
     </Layout>
   );

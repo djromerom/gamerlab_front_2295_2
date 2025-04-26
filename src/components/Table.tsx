@@ -47,8 +47,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "../../supabase/client";
 
-interface Data {
+export interface Data {
   titulo: string;
   nombreColumnas: Record<string, string>;
   filas: Record<string, any>[];
@@ -63,17 +64,13 @@ export const Tabla: React.FC<Props> = ({ data }) => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [allRows, setAllRows] = useState(data.filas);
   const [currentRows, setCurrentRows] = useState<Record<string, any>[]>([]);
-
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newRow, setNewRow] = useState<Record<string, any>>({});
-
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Record<string, any>>({});
   const [editingIndex, setEditingIndex] = useState<number>(-1);
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
-
   const totalPages = Math.ceil(allRows.length / rowsPerPage);
 
   useEffect(() => {
@@ -85,11 +82,20 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     }
   }, [currentPage, rowsPerPage, allRows, totalPages]);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setAllRows([newRow, ...allRows]);
     setNewRow({});
     setAddDialogOpen(false);
+    const { data: dataAdd, error } = await supabase
+      .from(data.titulo) // Nombre de la tabla en Supabase
+      .insert([newRow]); // Solo enviar los datos sin el campo id
+
+    if (error) {
+      console.error("Error al agregar fila:", error.message);
+    } else {
+      console.log("Fila agregada con éxito:", data);
+    }
   };
 
   const handleOpenEdit = (row: Record<string, any>, index: number) => {
@@ -98,12 +104,22 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const updated = [...allRows];
     updated[editingIndex] = editingRow;
     setAllRows(updated);
     setEditDialogOpen(false);
+    const { data: dataEdit, error } = await supabase
+      .from(data.titulo)
+      .update(editingRow) // Los datos que deseas actualizar
+      .eq("id", editingRow.id); // Aquí se asume que el id se devuelve automáticamente al insertar la fila
+
+    if (error) {
+      console.error("Error al editar fila:", error.message);
+    } else {
+      console.log("Fila editada con éxito:", data);
+    }
   };
 
   const handleOpenDelete = (index: number) => {
@@ -111,14 +127,32 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     const updated = [...allRows];
     updated.splice(deletingIndex, 1);
     setAllRows(updated);
     setDeleteDialogOpen(false);
     if (currentRows.length === 1 && currentPage > 1)
       setCurrentPage(currentPage - 1);
+
+    const { data: dataDelete, error } = await supabase
+      .from(data.titulo)
+      .delete()
+      .eq("id", allRows[deletingIndex].id); // Aquí usamos el id de la fila seleccionada
+
+    if (error) {
+      console.error("Error al eliminar fila:", error.message);
+    } else {
+      console.log("Fila eliminada con éxito:", data);
+    }
+
+    if (currentRows.length === 1 && currentPage > 1)
+      setCurrentPage(currentPage - 1);
   };
+
+  useEffect(() => {
+    setAllRows(data.filas);
+  }, [data.filas]);
 
   return (
     <div className="bg-background text-foreground min-h-screen p-4">
@@ -143,28 +177,31 @@ export const Tabla: React.FC<Props> = ({ data }) => {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                {Object.entries(data.nombreColumnas).map(([key, label]) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-4 items-center gap-4"
-                  >
-                    <Label htmlFor={key} className="text-right">
-                      {label}
-                    </Label>
-                    <Input
-                      id={key}
-                      value={newRow[key] || ""}
-                      onChange={(e: any) =>
-                        setNewRow((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                ))}
+                {Object.entries(data.nombreColumnas).map(
+                  ([key, label]) =>
+                    key !== "id" && (
+                      <div
+                        key={key}
+                        className="grid grid-cols-4 items-center gap-4"
+                      >
+                        <Label htmlFor={key} className="text-right">
+                          {label}
+                        </Label>
+                        <Input
+                          id={key}
+                          value={newRow[key] || ""}
+                          onChange={(e: any) =>
+                            setNewRow((prev) => ({
+                              ...prev,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          className="col-span-3"
+                          required
+                        />
+                      </div>
+                    )
+                )}
               </div>
               <DialogFooter>
                 <Button type="submit">Guardar</Button>
@@ -178,18 +215,20 @@ export const Tabla: React.FC<Props> = ({ data }) => {
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {Object.entries(data.nombreColumnas).map(([key, label]) => (
-                <TableHead key={key}>{label}</TableHead>
-              ))}
+              {Object.entries(data.nombreColumnas).map(
+                ([key, label]) =>
+                  key !== "id" && <TableHead key={key}>{label}</TableHead>
+              )}
               <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentRows.map((row, index) => (
               <TableRow key={index}>
-                {Object.keys(data.nombreColumnas).map((key) => (
-                  <TableCell key={key}>{row[key]}</TableCell>
-                ))}
+                {Object.keys(data.nombreColumnas).map(
+                  (key) =>
+                    key !== "id" && <TableCell key={key}>{row[key]}</TableCell>
+                )}
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -274,25 +313,31 @@ export const Tabla: React.FC<Props> = ({ data }) => {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {Object.entries(data.nombreColumnas).map(([key, label]) => (
-                <div key={key} className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor={`edit-${key}`} className="text-right">
-                    {label}
-                  </Label>
-                  <Input
-                    id={`edit-${key}`}
-                    value={editingRow[key] || ""}
-                    onChange={(e: any) =>
-                      setEditingRow((prev) => ({
-                        ...prev,
-                        [key]: e.target.value,
-                      }))
-                    }
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-              ))}
+              {Object.entries(data.nombreColumnas).map(
+                ([key, label]) =>
+                  key !== "id" && (
+                    <div
+                      key={key}
+                      className="grid grid-cols-4 items-center gap-4"
+                    >
+                      <Label htmlFor={`edit-${key}`} className="text-right">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`edit-${key}`}
+                        value={editingRow[key] || ""}
+                        onChange={(e: any) =>
+                          setEditingRow((prev) => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                  )
+              )}
             </div>
             <DialogFooter>
               <Button type="submit">Guardar cambios</Button>
