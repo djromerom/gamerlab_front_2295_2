@@ -90,35 +90,49 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     const { data: dataAdd, error } = await supabase
       .from(data.titulo) // Nombre de la tabla en Supabase
       .insert([newRow]); // Solo enviar los datos sin el campo id
-
     if (error) {
       console.error("Error al agregar fila:", error.message);
     } else {
+      setAllRows([newRow, ...allRows]);
+      setNewRow({});
+      setAddDialogOpen(false);
       console.log("Fila agregada con éxito:", data);
     }
   };
 
   const handleOpenEdit = (row: Record<string, any>, index: number) => {
+    console.log(row, "row");
     setEditingRow({ ...row });
     setEditingIndex((currentPage - 1) * rowsPerPage + index);
+    console.log(editingIndex), "index";
+    console.log(allRows[editingIndex], "object");
     setEditDialogOpen(true);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
+    const { id } = editingRow;
+    const newRow: Record<string, any> = {};
+    const newValues = (row: any) => {
+      Object.entries(row).forEach(([llave, valor]) => {
+        newRow[llave] = valor;
+      });
+      return newRow;
+    };
     e.preventDefault();
-    const updated = [...allRows];
-    updated[editingIndex] = editingRow;
-    setAllRows(updated);
-    setEditDialogOpen(false);
-    const { data: dataEdit, error } = await supabase
-      .from(data.titulo)
-      .update(editingRow) // Los datos que deseas actualizar
-      .eq("id", editingRow.id); // Aquí se asume que el id se devuelve automáticamente al insertar la fila
+    const { data, error } = await supabase
+      .from("Materias")
+      .update(newValues(editingRow))
+      .eq("id", id)
+      .select();
 
     if (error) {
       console.error("Error al editar fila:", error.message);
     } else {
       console.log("Fila editada con éxito:", data);
+      const updated = [...allRows];
+      updated[editingIndex] = editingRow;
+      setAllRows(updated);
+      setEditDialogOpen(false);
     }
   };
 
