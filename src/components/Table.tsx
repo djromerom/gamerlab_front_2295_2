@@ -119,8 +119,8 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       return newRow;
     };
     e.preventDefault();
-    const { data, error } = await supabase
-      .from("Materias")
+    const { data: dataEdit, error } = await supabase
+      .from(data.titulo)
       .update(newValues(editingRow))
       .eq("id", id)
       .select();
@@ -128,7 +128,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     if (error) {
       console.error("Error al editar fila:", error.message);
     } else {
-      console.log("Fila editada con éxito:", data);
+      console.log("Fila editada con éxito:", dataEdit);
       const updated = [...allRows];
       updated[editingIndex] = editingRow;
       setAllRows(updated);
