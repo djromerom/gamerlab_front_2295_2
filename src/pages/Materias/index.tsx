@@ -31,7 +31,6 @@ export const Materias: React.FC = () => {
       nombresColumnas.forEach((col: string) => {
         filas[col] = col;
       });
-      console.log(Materias);
       setData({
         titulo: "Materias",
         nombreColumnas: filas,
