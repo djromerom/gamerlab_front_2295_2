@@ -142,27 +142,30 @@ export const Tabla: React.FC<Props> = ({ data }) => {
   };
 
   const handleConfirmDelete = async () => {
-    const updated = [...allRows];
-    updated.splice(deletingIndex, 1);
-    setAllRows(updated);
+    const idToDelete = allRows[deletingIndex]?.id; // Guardamos el id antes de modificar allRows
+    if (!idToDelete) {
+    console.error("No se encontró el ID de la fila a eliminar.");
     setDeleteDialogOpen(false);
-    if (currentRows.length === 1 && currentPage > 1)
-      setCurrentPage(currentPage - 1);
-
-    const { data: dataDelete, error } = await supabase
-      .from(data.titulo)
+    return;
+    }
+    const { error } = await supabase
+      .from(data.titulo) // Nombre de tu tabla
       .delete()
-      .eq("id", allRows[deletingIndex].id); // Aquí usamos el id de la fila seleccionada
+      .eq("id", idToDelete);
 
     if (error) {
       console.error("Error al eliminar fila:", error.message);
     } else {
-      console.log("Fila eliminada con éxito:", data);
+      const updated = [...allRows];
+      updated.splice(deletingIndex, 1);
+      setAllRows(updated);
+      console.log("Fila eliminada con éxito");
+      if (currentRows.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
-
-    if (currentRows.length === 1 && currentPage > 1)
-      setCurrentPage(currentPage - 1);
-  };
+    setDeleteDialogOpen(false);
+};
 
   useEffect(() => {
     setAllRows(data.filas);
