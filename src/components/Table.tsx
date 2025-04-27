@@ -84,19 +84,18 @@ export const Tabla: React.FC<Props> = ({ data }) => {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAllRows([newRow, ...allRows]);
-    setNewRow({});
-    setAddDialogOpen(false);
     const { data: dataAdd, error } = await supabase
-      .from(data.titulo) // Nombre de la tabla en Supabase
-      .insert([newRow]); // Solo enviar los datos sin el campo id
+    .from(data.titulo)
+    .insert([newRow])
+    .select();         // MUY IMPORTANTE: para que Supabase regrese el nuevo registro
     if (error) {
       console.error("Error al agregar fila:", error.message);
-    } else {
-      setAllRows([newRow, ...allRows]);
+    } else if (dataAdd && dataAdd.length > 0) {
+      const newRowWithId = dataAdd[0];
+      setAllRows([newRowWithId, ...allRows]);
       setNewRow({});
       setAddDialogOpen(false);
-      console.log("Fila agregada con éxito:", data);
+      console.log("Fila agregada con éxito:", newRowWithId);
     }
   };
 
@@ -125,6 +124,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       .eq("id", id)
       .select();
     if (error) {
+      console.log(id)
       console.error("Error al editar fila:", error.message);
     } else {
       console.log("Fila editada con éxito:", dataEdit);
@@ -158,7 +158,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       const updated = [...allRows];
       updated.splice(deletingIndex, 1);
       setAllRows(updated);
-      console.log("Fila eliminada con éxito");
+      console.log("Fila eliminada con éxito",allRows[deletingIndex]);
       if (currentRows.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
