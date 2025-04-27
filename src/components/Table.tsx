@@ -124,7 +124,6 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       .update(newValues(editingRow))
       .eq("id", id)
       .select();
-
     if (error) {
       console.error("Error al editar fila:", error.message);
     } else {
@@ -144,9 +143,9 @@ export const Tabla: React.FC<Props> = ({ data }) => {
   const handleConfirmDelete = async () => {
     const idToDelete = allRows[deletingIndex]?.id; // Guardamos el id antes de modificar allRows
     if (!idToDelete) {
-    console.error("No se encontró el ID de la fila a eliminar.");
-    setDeleteDialogOpen(false);
-    return;
+      console.error("No se encontró el ID de la fila a eliminar.");
+      setDeleteDialogOpen(false);
+      return;
     }
     const { error } = await supabase
       .from(data.titulo) // Nombre de tu tabla
@@ -165,7 +164,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       }
     }
     setDeleteDialogOpen(false);
-};
+  };
 
   useEffect(() => {
     setAllRows(data.filas);
