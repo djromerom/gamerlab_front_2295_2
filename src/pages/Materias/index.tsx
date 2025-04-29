@@ -19,21 +19,18 @@ import { Data } from "../../components/Table";
 export const Materias: React.FC = () => {
   const [data, setData] = useState<Data>({
     titulo: "",
+    nombreTabla: "",
     nombreColumnas: {},
     filas: [],
   });
   const filas: Data["nombreColumnas"] = {};
   const fetchMaterias = async () => {
-    let { data: Materias, error } = await supabase.from("Materias").select("*");
+    let { data: Materias, error } = await supabase.from("materia").select("*");
     if (Materias) {
-      const titulo = "Materias";
-      const nombresColumnas = Object.keys(Materias[0]);
-      nombresColumnas.forEach((col: string) => {
-        filas[col] = col;
-      });
       setData({
         titulo: "Materias",
-        nombreColumnas: filas,
+        nombreTabla: "materia",
+        nombreColumnas: { nombre: "Nombre", codigo: "Código" },
         filas: Materias,
       });
     }

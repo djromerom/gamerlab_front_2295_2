@@ -10,7 +10,7 @@ import {
   BreadcrumbPage,
 } from "../../components/ui/breadcrumb";
 import { SidebarInset, SidebarTrigger } from "../../components/ui/sidebar";
-import { Tabla } from "../../components/Table";
+import { Tabla } from "@/components/Table";
 
 export const Estadisticas: React.FC = () => {
   return (
@@ -33,24 +33,7 @@ export const Estadisticas: React.FC = () => {
             </Breadcrumb>
           </div>
         </header>
-        <Tabla
-          data={{
-            titulo: "Estadisticas",
-            nombreColumnas: {
-              materia: "Materia",
-              codigo: "Código",
-              curso: "Curso",
-            },
-            filas: [
-              { materia: "POO", codigo: "SIST1234", curso: "mañana" },
-              {
-                materia: "Estructura de Datos",
-                codigo: "SIST2345",
-                curso: "mañana",
-              },
-            ],
-          }}
-        />
+        {/*DE ACA PARA ABAJO CAMBIA LO QUE TIENE ESTADISITCAS*/}
       </SidebarInset>
     </Layout>
   );

@@ -47,7 +47,7 @@ export const ResetPassword = () => {
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm" style={{ maxWidth: "500px" }}>
         <div className={cn("flex flex-col gap-6")}>
-          <Card>
+          <Card className="pt-5 pb-5">
             <CardHeader>
               <CardTitle className="text-2xl text-center max-w-xs mx-auto">
                 Recuperación de contraseña

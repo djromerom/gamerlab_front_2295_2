@@ -51,6 +51,7 @@ import { supabase } from "../../supabase/client";
 
 export interface Data {
   titulo: string;
+  nombreTabla: string;
   nombreColumnas: Record<string, string>;
   filas: Record<string, any>[];
 }
@@ -85,7 +86,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: dataAdd, error } = await supabase
-      .from(data.titulo)
+      .from(data.nombreTabla)
       .insert([newRow])
       .select(); // MUY IMPORTANTE: para que Supabase regrese el nuevo registro
     if (error) {
@@ -119,7 +120,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
     };
     e.preventDefault();
     const { data: dataEdit, error } = await supabase
-      .from(data.titulo)
+      .from(data.nombreTabla)
       .update(newValues(editingRow))
       .eq("id", id)
       .select();
@@ -148,7 +149,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       return;
     }
     const { error } = await supabase
-      .from(data.titulo) // Nombre de tu tabla
+      .from(data.nombreTabla) // Nombre de tu tabla
       .delete()
       .eq("id", idToDelete);
 

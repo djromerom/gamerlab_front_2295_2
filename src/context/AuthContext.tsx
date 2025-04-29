@@ -84,7 +84,7 @@ export const AuthContextProvider = ({ children }: Props) => {
       let { data: userInfo, error } = await supabase
         .from("usuarios")
         .select("*")
-        .eq("id", currentUser.id)
+        .eq("id_usuario", currentUser.id)
         .single();
       setUser(userInfo);
     }

@@ -76,7 +76,28 @@ const MENU: Record<User["id_rol"], MenuItem[]> = {
       ],
     },
   ],
-  2: [],
+  2: [
+    {
+      title: "Proyectos",
+      items: [
+        {
+          name: "Pendientes por calificar",
+          url: "/pendientes",
+          icon: LibraryBig,
+        },
+        {
+          name: "calificados",
+          url: "/calificados",
+          icon: Binary,
+        },
+        {
+          name: "Proyectos",
+          url: "/proyectos",
+          icon: Binary,
+        },
+      ],
+    },
+  ],
   3: [],
 };
 
@@ -84,7 +105,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthContext();
   console.log(user, "app sidebar");
   return (
-    user && (
+    user &&
+    user.id_rol && (
       <Sidebar collapsible="icon" {...props}>
         <SidebarHeader>
           <Logo />

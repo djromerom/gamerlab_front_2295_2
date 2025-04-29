@@ -27,15 +27,26 @@ export const Routes = () => {
       <Switch>
         {user && !isInRecoveryFlow ? (
           <>
-            <Route path="/criterios" element={<Criterios />} />
-            <Route path="/jurados" element={<Jurados />} />
-            <Route path="/profesores" element={<Profesores />} />
-            <Route path="/estadisticas" element={<Estadisticas />} />
-            <Route path="/nrcs" element={<NRCS />} />
-            <Route path="/materias" element={<Materias />} />
-            <Route path="/Dashboard" element={<Dashboard />} />
-            <Route path="/" element={<PaginaPrincipal />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            {user.id_rol === 1 && (
+              <>
+                <Route path="/criterios" element={<Criterios />} />
+                <Route path="/jurados" element={<Jurados />} />
+                <Route path="/profesores" element={<Profesores />} />
+                <Route path="/estadisticas" element={<Estadisticas />} />
+                <Route path="/nrcs" element={<NRCS />} />
+                <Route path="/materias" element={<Materias />} />
+                <Route path="/Dashboard" element={<Dashboard />} />
+                <Route path="/" element={<PaginaPrincipal />} />
+                <Route path="*" element={<Navigate to="/dashboard" />} />
+              </>
+            )}
+            {user.id_rol === 2 && (
+              <>
+                <Route path="/Dashboard" element={<Dashboard />} />
+                <Route path="/" element={<PaginaPrincipal />} />
+                <Route path="*" element={<Navigate to="/dashboard" />} />
+              </>
+            )}
           </>
         ) : (
           <>
