@@ -85,9 +85,9 @@ export const Tabla: React.FC<Props> = ({ data }) => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: dataAdd, error } = await supabase
-    .from(data.titulo)
-    .insert([newRow])
-    .select();         // MUY IMPORTANTE: para que Supabase regrese el nuevo registro
+      .from(data.titulo)
+      .insert([newRow])
+      .select(); // MUY IMPORTANTE: para que Supabase regrese el nuevo registro
     if (error) {
       console.error("Error al agregar fila:", error.message);
     } else if (dataAdd && dataAdd.length > 0) {
@@ -124,7 +124,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       .eq("id", id)
       .select();
     if (error) {
-      console.log(id)
+      console.log(id);
       console.error("Error al editar fila:", error.message);
     } else {
       console.log("Fila editada con éxito:", dataEdit);
@@ -158,7 +158,7 @@ export const Tabla: React.FC<Props> = ({ data }) => {
       const updated = [...allRows];
       updated.splice(deletingIndex, 1);
       setAllRows(updated);
-      console.log("Fila eliminada con éxito",allRows[deletingIndex]);
+      console.log("Fila eliminada con éxito", allRows[deletingIndex]);
       if (currentRows.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }

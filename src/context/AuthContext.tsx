@@ -4,12 +4,14 @@ import { supabase } from "../../supabase/client";
 import React from "react";
 
 export interface User {
-  id: string;
+  id_usuario: string;
+  id_rol: 1 | 2 | 3;
   nombre: string;
-  rol: "admin" | "jurado" | "representante";
   correo: string;
-  confirmado: Boolean;
-  id_equipo: Number;
+  estado_confirmacion: Boolean;
+  activo: boolean;
+  creado_en: Date;
+  actualizado_en: Date;
 }
 
 interface Context {
@@ -36,6 +38,7 @@ export const AuthContextProvider = ({ children }: Props) => {
   const [isLoggingIn, setIsLoggingIn] = useState<Context["isLoggingIn"]>(false);
   const [isInRecoveryFlow, setIsInRecoveryFlow] =
     useState<Context["isInRecoveryFlow"]>(false);
+
   const logIn: Context["logIn"] = async (email, password) => {
     try {
       setIsLoggingIn(true);
@@ -48,7 +51,7 @@ export const AuthContextProvider = ({ children }: Props) => {
         let { data: user, error } = await supabase
           .from("usuarios")
           .select("*")
-          .eq("id", data.user.id)
+          .eq("id_usuario", data.user.id)
           .single();
         setError(error);
         setUser(user);

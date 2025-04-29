@@ -23,8 +23,8 @@ import { useAuthContext, type User } from "../context/AuthContext";
 import Logo from "@/components/ui/logo";
 import ThemeToggleSwitch from "../components/ui/theme-toggle-switch";
 
-const MENU: Record<User["rol"], MenuItem[]> = {
-  admin: [
+const MENU: Record<User["id_rol"], MenuItem[]> = {
+  1: [
     {
       title: "Gestión de Materias y NRC",
       items: [
@@ -76,12 +76,13 @@ const MENU: Record<User["rol"], MenuItem[]> = {
       ],
     },
   ],
-  jurado: [],
-  representante: [],
+  2: [],
+  3: [],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthContext();
+  console.log(user, "app sidebar");
   return (
     user && (
       <Sidebar collapsible="icon" {...props}>
@@ -89,9 +90,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <Logo />
         </SidebarHeader>
         <SidebarContent>
-          <NavContent menu={MENU[user.rol]} />
+          <NavContent menu={MENU[user.id_rol]} />
         </SidebarContent>
-        <ThemeToggleSwitch/>
+        <ThemeToggleSwitch />
         <SidebarFooter>
           <NavUser user={user} />
         </SidebarFooter>

@@ -27,7 +27,8 @@ interface Props {
 }
 
 export const NavContent: React.FC<Props> = ({ menu }) => {
-  const location = useLocation(); // <= Aquí
+  const location = useLocation();
+  console.log(menu, "navcontent");
 
   return menu.map((menuItem, index) => (
     <SidebarGroup key={index}>
@@ -43,9 +44,11 @@ export const NavContent: React.FC<Props> = ({ menu }) => {
               <SidebarMenuButton
                 asChild
                 tooltip={item.name}
-                className={isActive
-                  ? "bg-[#6644FF] text-[#FAFAFA] dark:bg-[#B3C7FF] dark:text-[#110D20] hover:bg-[#5A3BE5] hover:text-[#FAFAFA] dark:hover:bg-[#A6BCFF] hover:dark:text-[[#110D20]]"
-                  : "hover:bg-muted hover:dark:bg-muted/10"} 
+                className={
+                  isActive
+                    ? "bg-[#6644FF] text-[#FAFAFA] dark:bg-[#B3C7FF] dark:text-[#110D20] hover:bg-[#5A3BE5] hover:text-[#FAFAFA] dark:hover:bg-[#A6BCFF] hover:dark:text-[[#110D20]]"
+                    : "hover:bg-muted hover:dark:bg-muted/10"
+                }
               >
                 <Link to={item.url}>
                   <item.icon />
@@ -61,4 +64,3 @@ export const NavContent: React.FC<Props> = ({ menu }) => {
     </SidebarGroup>
   ));
 };
-
