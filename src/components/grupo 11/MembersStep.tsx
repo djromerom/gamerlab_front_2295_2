@@ -1,0 +1,120 @@
+import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useMultiForm } from "@/contexts/MultiFormContext";
+import { useFieldArray, useFormContext } from "react-hook-form";
+import { CombinedFormValues } from "@/lib/schemas";
+
+export default function MembersStep() {
+  const { back, next } = useMultiForm();
+  const { control, trigger } = useFormContext<CombinedFormValues>();
+  const { fields, append, remove } = useFieldArray({ control, name: 'members' });
+
+  const handleNext = async () => {
+    const isValid = await trigger('members');
+    if (isValid) next();
+  };
+
+  return (
+    <>
+      <h2 className="text-xl font-medium">Integrantes</h2>
+
+      {fields.map((member, idx) => (
+        <div key={member.id} className="border-b border-gray-200 pb-4 mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <span>Integrante {idx + 1}</span>
+            {fields.length > 1 && (
+              <Button variant="ghost" size="icon" onClick={() => remove(idx)}>
+                <Trash2 />
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Nombre */}
+            <FormField
+              control={control}
+              name={`members.${idx}.nombre` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Nombre completo" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Correo */}
+            <FormField
+              control={control}
+              name={`members.${idx}.correo` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Correo</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" placeholder="ejemplo@correo.com" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Código Estudiantil */}
+            <FormField
+              control={control}
+              name={`members.${idx}.codigoEstudiantil` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Código estudiantil</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="12345678" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* NRC */}
+            <FormField
+              control={control}
+              name={`members.${idx}.nrc` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>NRC</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger style={{ width: '100%' }}>
+                        <SelectValue placeholder="Selecciona tu NRC" />
+                      </SelectTrigger>
+                      <SelectContent style={{ width: '100%' }}>
+                        <SelectItem value="1001">1001</SelectItem>
+                        <SelectItem value="1002">1002</SelectItem>
+                        <SelectItem value="1003">1003</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      ))}
+
+      {fields.length < 5 && (
+        <Button variant="outline" onClick={() => append({ nombre: '', correo: '', codigoEstudiantil: '', nrc: '' })}>
+          <Plus /> Agregar integrante
+        </Button>
+      )}
+
+      <div className="flex justify-between space-x-4 pt-6">
+        <Button variant="outline" onClick={back}>Atrás</Button>
+        <Button onClick={handleNext}>Siguiente</Button>
+      </div>
+    </>
+  );
+}
