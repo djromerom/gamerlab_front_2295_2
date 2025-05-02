@@ -13,6 +13,8 @@ import RankingPage from "@/pages/grupo 5/RankingPage";
 import InformationPage from "@/pages/grupo 5/InformationPage";
 import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
+import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+
 
 type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
 
@@ -63,6 +65,11 @@ const routes: RouteConfig[] = [
     path: "/inicio",
     element: <HomePage />,
     roles: ["Profesor", "Administrador", "Consultor", "Jurado"],
+  },
+  {
+    path: "/estadisticas",
+    element: <StatisticsPage />,
+    roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
 ];

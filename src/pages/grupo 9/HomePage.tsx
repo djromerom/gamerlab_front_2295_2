@@ -1,5 +1,5 @@
 import type React from "react";
-import LayoutAplication from "@/layout/LayoutAplication";
+import LayoutAplication from "@/layouts/LayoutAplication";
 
 const HomePage: React.FC = () => {
   return (
