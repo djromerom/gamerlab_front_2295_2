@@ -1,69 +1,120 @@
-import LayoutAplication from "@/layouts/LayoutAplication"; // Adjust path
-import { Tabla, Data } from "@/components/grupo 9/SubjectsTable"; // Adjust path
+// SubjetsPage.tsx
+"use client";
+
+import LayoutAplication from "@/layouts/LayoutAplication";
+import { Tabla, Data, RowData } from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
 
+// Define a more specific interface if possible, including 'active'
+interface SubjectRowData extends RowData {
+  id: number | string;
+  name: string;
+  code: string;
+  semester: number;
+  active: boolean; // Make sure 'active' is included and is a boolean
+}
+
 const SubjetsPage = () => {
-  const [data, setData] = useState<Data | null>(null); // Start as null
-  const [isLoading, setIsLoading] = useState(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+  const [data, setData] = useState<Data | null>(null);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const API_ENDPOINT = "http://localhost:3000/subjects";
-  const API_BASE_URL = "http://localhost:3000"; // Just the base
-  const TABLE_RESOURCE_NAME = "subjects"; // Resource name
+  const API_BASE_URL = "http://localhost:3000";
+  const TABLE_RESOURCE_NAME = "subjects";
 
   useEffect(() => {
     const fetchMateria = async () => {
-      setIsLoading(true);
+      setIsPageLoading(true);
       setError(null);
+      setData(null);
+
       try {
         const res = await fetch(API_ENDPOINT, {
           method: "GET",
           credentials: "include",
-          headers: { "Content-Type": "application/json" }, // Optional for GET
+          headers: { "Content-Type": "application/json" },
         });
 
         if (!res.ok) {
-          throw new Error(`Error ${res.status}: Failed to fetch subjects`);
+          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+          try {
+            const errorBody = await res.json();
+            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          } catch (e) {
+            /* ignore */
+          }
+          throw new Error(errorMsg);
         }
-        const dataRespond = await res.json();
+
+        // Expecting an array where each object has an 'active' boolean property
+        const dataRespond: SubjectRowData[] = await res.json(); // Use the more specific type
+
+        if (!Array.isArray(dataRespond)) {
+          throw new Error("La respuesta de la API no es un array válido.");
+        }
+
+        // --- FILTERING STEP ---
+        // Keep only the rows where the 'active' property is true
+        const activeRows = dataRespond.filter((row) => row.active === true);
+        // --- END FILTERING STEP ---
 
         setData({
-          titulo: "Materias",
-          nombreTabla: "subjects", // Keep this as 'subjects' to match API route
+          // Optional: Update title to reflect filtering
+          titulo: "Materias Activas",
+          nombreTabla: TABLE_RESOURCE_NAME,
           nombreColumnas: {
-            // Use keys that MATCH the properties in dataRespond objects
-            name: "Nombre", // Use 'name' as the key
-            code: "Código", // Use 'code' as the key
-            semester: "Semestre", // Use 'semester' as the key
-            // You could add 'active: "Activo"' if you want to display it
+            // Define columns to DISPLAY.
+            // 'active' is used for filtering above, but doesn't need to be shown here unless desired.
+            name: "Nombre",
+            code: "Código",
+            semester: "Semestre",
+            // active: "Estado", // <-- Uncomment this line if you WANT to display the 'Active' status column
           },
-          filas: dataRespond, // This data has 'id', 'name', 'code', 'semester'
-          primaryKey: "id", // SET primaryKey to 'id' to match the data
+          // Pass the FILTERED array to the table
+          filas: activeRows,
+          primaryKey: "id", // Ensure 'id' exists in your RowData
         });
       } catch (err: any) {
-        console.error(err);
-        setError(err.message || "An unknown error occurred.");
+        console.error("Error fetching subjects:", err);
+        setError(
+          err.message || "Ocurrió un error desconocido al cargar las materias."
+        );
+        setData(null);
       } finally {
-        setIsLoading(false);
+        setIsPageLoading(false);
       }
     };
 
-    fetchMateria(); // No need for .catch here as it's handled inside
-  }, []); // Empty dependency array ensures fetch runs once on mount
+    fetchMateria();
+  }, []); // Empty dependency array
 
-  const breadcrumbs = [{ label: "Materias", href: "/materias" }];
+  const breadcrumbs = [{ label: "Materias", href: "/materias" }]; // Maybe change label to "Materias Activas"
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {isLoading && <div>Loading subjects...</div>}
-      {error && <div className="text-red-500">Error: {error}</div>}
-      {/* Render Tabla only when data is loaded and there's no error */}
-      {!isLoading && !error && data && (
-        <Tabla data={data} apiBaseUrl={API_BASE_URL} />
+      {/* Error display */}
+      {error && !data && (
+        <div
+          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+          role="alert"
+        >
+          <span className="font-medium">Error:</span> {error}
+        </div>
       )}
-      {/* Optional: Handle case where data loaded but is empty */}
-      {!isLoading && !error && data && data.filas.length === 0 && (
-        <div>No subjects found.</div>
+
+      {/* Tabla component receives already filtered data */}
+      <Tabla
+        data={data}
+        apiBaseUrl={API_BASE_URL}
+        isDataLoading={isPageLoading}
+      />
+
+      {/* No results message (will show if activeRows is empty) */}
+      {!isPageLoading && !error && data && data.filas.length === 0 && (
+        <div className="p-4 text-center text-gray-500">
+          No se encontraron materias activas. {/* Optional: Update message */}
+        </div>
       )}
     </LayoutAplication>
   );
