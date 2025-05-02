@@ -1,5 +1,5 @@
 import LayoutAplication from "@/layouts/LayoutAplication"; // Adjust path
-import { Tabla, Data } from "@/components/grupo 9/Table"; // Adjust path
+import { Tabla, Data } from "@/components/grupo 9/SubjectsTable"; // Adjust path
 import { useState, useEffect } from "react";
 
 const SubjetsPage = () => {

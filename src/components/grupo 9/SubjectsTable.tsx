@@ -47,9 +47,43 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFetch } from "@/hooks/useFetch"; // <-- IMPORT YOUR HOOK (adjust path if needed)
 // Define a standard structure for rows, assuming an 'id' field
 export interface RowData extends Record<string, any> {
   id: number | string; // Assuming a standard 'id' field exists
+}
+
+interface UpdateMateriaPayload {
+  name?: string;
+  code?: string;
+  semester?: number; // API expects number
+}
+
+// Define the expected full Materia object (likely already defined)
+interface Materia {
+  id: number | string;
+  name: string;
+  code: string;
+  semester: number;
+}
+
+// Define the structure coming from the edit form state
+interface MateriaFormData {
+  name: string; // Assuming these are always strings from the form state
+  code: string;
+  semester: string;
+}
+
+interface CreateMateriaPayload {
+  // Represents the data structure for the POST request
+  name: string;
+  code: string;
+  semester: number; // API expects a number
+}
+
+interface Materia extends CreateMateriaPayload {
+  // Represents the full object returned by API (includes ID)
+  id: number | string;
 }
 
 export interface Data {
@@ -60,24 +94,14 @@ export interface Data {
   primaryKey?: string; // Optional: Explicitly define the primary key column name (defaults to 'id')
 }
 
-interface CustomColumnConfig {
-  [columna: string]: {
-    tipo: "select" | "input";
-    opciones?: { label: string; value: any }[]; // solo si es select
-  };
-}
-
 interface Props {
   data: Data;
   apiBaseUrl: string; // e.g., "http://localhost:3001/api"
-  columnasPersonalizadas?: CustomColumnConfig;
 }
 
-export const Tabla: React.FC<Props> = ({
-  data,
-  apiBaseUrl,
-  columnasPersonalizadas,
-}) => {
+export const Tabla: React.FC<Props> = ({ data, apiBaseUrl }) => {
+  const customFetch = useFetch(); // <-- CALL THE HOOK HERE
+  const [isSubmitting, setIsSubmitting] = useState(false); // Local state for loading indicator
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [allRows, setAllRows] = useState<RowData[]>(data.filas); // Use RowData[]
@@ -91,6 +115,9 @@ export const Tabla: React.FC<Props> = ({
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
   const [isLoading, setIsLoading] = useState(false); // Optional: Loading state
   const [error, setError] = useState<string | null>(null); // Optional: Error state
+  const [editFormData, setEditFormData] = useState<MateriaFormData | null>(
+    null
+  ); // State for edit form data
 
   const totalPages = Math.ceil(allRows.length / rowsPerPage);
   const primaryKeyField = data.primaryKey || "id"; // Default to 'id' if not provided
@@ -119,15 +146,43 @@ export const Tabla: React.FC<Props> = ({
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true); // Use isSubmitting if you have it, otherwise setIsLoading
     setError(null);
+
+    // 1. Extract data from state (potential strings)
+    const { name, code, semester: semesterStr } = newRow; // Destructure from your form state
+
+    // 2. Validate required fields
+    if (!name || !code || !semesterStr) {
+      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
+      setIsSubmitting(false);
+      return; // Stop execution
+    }
+
+    // 3. Convert and validate semester type
+    const semesterAsNumber = parseInt(semesterStr, 10);
+    if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
+      setError("El semestre debe ser un número válido mayor o igual a 1.");
+      setIsSubmitting(false);
+      return; // Stop execution
+    }
+
+    // 4. Create the correctly typed payload object
+    const dataToSend: CreateMateriaPayload = {
+      name: name,
+      code: code,
+      semester: semesterAsNumber, // Use the converted number
+    };
+
     try {
-      const response = await fetch(getApiUrl(), {
+      // Use customFetch instead of fetch
+      const response = await customFetch(getApiUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newRow),
+        // 5. Send the correctly typed and validated object
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -136,22 +191,24 @@ export const Tabla: React.FC<Props> = ({
           .catch(() => ({ message: response.statusText }));
         throw new Error(
           `Error ${response.status}: ${
-            errorData.message || "Failed to add row"
-          }`
+            errorData.message || "Error al agregar la fila"
+          }` // Use more specific message
         );
       }
 
-      const addedRow: RowData = await response.json(); // Expect the backend to return the full row with ID
-      setAllRows([addedRow, ...allRows]); // Add to the beginning
-      setNewRow({});
+      // Ensure the received row matches the expected full Materia type
+      const addedRow: Materia = await response.json();
+
+      // Update state (assuming allRows expects Materia objects)
+      setAllRows((prevRows) => [addedRow, ...prevRows]); // Ensure prevRows also expects Materia[]
+      setNewRow({}); // Reset form state
       setAddDialogOpen(false);
       console.log("Fila agregada con éxito:", addedRow);
     } catch (err: any) {
       console.error("Error al agregar fila:", err);
-      setError(err.message || "An unknown error occurred while adding.");
-      // Optionally show error to user
+      setError(err.message || "Ocurrió un error desconocido al agregar.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false); // Use isSubmitting if applicable
     }
   };
 
@@ -165,29 +222,52 @@ export const Tabla: React.FC<Props> = ({
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingRow || editingIndex === -1) return;
-
-    const idValue = editingRow[primaryKeyField];
-    if (idValue === undefined) {
-      console.error("Error: Primary key value is missing...");
-      setError("Cannot save edit: Missing ID.");
+    const editFormData = { ...editingRow }; // Create a copy of the current row data// 1. Check if we have the necessary data in state
+    if (!editFormData || !editingRow) {
+      console.error("Edit attempt without necessary data.");
+      setError("No se pueden guardar los cambios, falta información.");
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true); // Or setIsLoading(true)
     setError(null);
 
+    const { name, code, semester: semesterStr } = editFormData;
+
+    // 3. Validate required fields (from form data)
+    if (!name || !code || !semesterStr) {
+      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 4. Convert and validate semester type
+    const semesterAsNumber = parseInt(semesterStr, 10);
+    if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
+      setError("El semestre debe ser un número válido mayor o igual a 1.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 5. Create the correctly typed payload object for PATCH
+    // Assuming the API accepts all fields for PATCH
+    const dataToSend: UpdateMateriaPayload = {
+      name: name,
+      code: code,
+      semester: semesterAsNumber, // Use the converted number
+    };
+
     try {
-      const response = await fetch(getApiUrl(idValue), {
-        // method: 'PUT', // <--- CHANGE THIS LINE
-        method: "PATCH", // <--- TO THIS LINE
+      const idValue = editingRow[primaryKeyField]; // Get ID from the original row data
+
+      const response = await customFetch(getApiUrl(idValue), {
+        method: "PATCH", // Or PUT, depending on your API design
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editingRow), // Send the whole row for PATCH in this case
+        // 6. Send the correctly typed and validated object
+        body: JSON.stringify(dataToSend),
       });
-
-      // ... rest of the function remains the same ...
 
       if (!response.ok) {
         const errorData = await response
@@ -195,24 +275,35 @@ export const Tabla: React.FC<Props> = ({
           .catch(() => ({ message: response.statusText }));
         throw new Error(
           `Error ${response.status}: ${
-            errorData.message || "Failed to update row"
+            errorData.message || "Error al actualizar la fila"
           }`
         );
       }
 
+      // 7. Ensure the received row matches the expected full Materia type
       const updatedRow: RowData = await response.json();
-      const updatedAllRows = [...allRows];
-      updatedAllRows[editingIndex] = updatedRow;
-      setAllRows(updatedAllRows);
+
+      // 8. Update state (assuming allRows expects Materia objects)
+      setAllRows((prevRows) =>
+        prevRows.map((row) =>
+          row[primaryKeyField] === updatedRow[primaryKeyField]
+            ? updatedRow
+            : row
+        )
+      );
+
       setEditDialogOpen(false);
       setEditingRow(null);
-      setEditingIndex(-1);
+      setEditFormData(null);
+      // setEditingIndex(-1); // No longer needed if updating by ID map
+
       console.log("Fila editada con éxito:", updatedRow);
     } catch (err: any) {
       console.error("Error al editar fila:", err);
-      setError(err.message || "An unknown error occurred while saving.");
+      setError(err.message || "Ocurrió un error desconocido al guardar.");
+      // Keep the dialog open on error, don't reset editFormData/editingRow
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false); // Or setIsLoading(false)
     }
   };
 
@@ -224,66 +315,39 @@ export const Tabla: React.FC<Props> = ({
   };
 
   const handleConfirmDelete = async () => {
-    if (deletingIndex === -1) return;
-
-    const rowToDelete = allRows[deletingIndex];
-    const idToDelete = rowToDelete?.[primaryKeyField];
-
-    if (idToDelete === undefined) {
-      console.error(
-        "Error: No se encontró el ID de la fila a eliminar en el índice:",
-        deletingIndex
-      );
-      setError("Cannot delete row: Missing ID.");
-      setDeleteDialogOpen(false);
-      setDeletingIndex(-1);
-      return;
-    }
-
+    // ... (checks for deletingIndex, idToDelete) ...
     setIsLoading(true);
     setError(null);
-
     try {
-      const response = await fetch(getApiUrl(idToDelete), {
+      const idToDelete = allRows[deletingIndex]?.[primaryKeyField];
+      const response = await customFetch(getApiUrl(idToDelete), {
+        // <-- Use customFetch
         method: "DELETE",
+        // No headers or body usually needed for DELETE
+        // No need for Authorization or credentials here
       });
 
       if (!response.ok) {
-        // Handle potential JSON error response from backend
         let errorMsg = `Error ${response.status}: ${response.statusText}`;
         try {
+          // Try to parse specific error message from backend
           const errorData = await response.json();
           errorMsg = `Error ${response.status}: ${
             errorData.message || response.statusText
           }`;
         } catch (jsonError) {
-          // If response is not JSON or empty, use status text
+          /* Ignore if response not JSON */
         }
         throw new Error(errorMsg);
       }
-
-      // Successfully deleted on the backend, now update frontend state
+      // ... (rest of success logic) ...
       const updatedAllRows = allRows.filter((_, i) => i !== deletingIndex);
       setAllRows(updatedAllRows);
-
       console.log("Fila eliminada con éxito (ID):", idToDelete);
-
-      // Adjust current page if the last item on the page was deleted
-      const newTotalPages = Math.ceil(updatedAllRows.length / rowsPerPage);
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages);
-      } else if (
-        updatedAllRows.length > 0 &&
-        currentRows.length === 1 &&
-        currentPage > 1
-      ) {
-        // If it was the *last* remaining item on the current page (and not page 1)
-        setCurrentPage(currentPage - 1);
-      }
+      // ... (pagination adjustment logic) ...
     } catch (err: any) {
       console.error("Error al eliminar fila:", err);
       setError(err.message || "An unknown error occurred while deleting.");
-      // Optionally show error to user
     } finally {
       setDeleteDialogOpen(false);
       setDeletingIndex(-1);

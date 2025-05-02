@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext.tsx';
+import { useAuth } from "@/contexts/AuthContext.tsx";
 
 export function useFetch() {
   const { accessToken, refreshAccessToken, logout } = useAuth();
@@ -10,10 +10,10 @@ export function useFetch() {
     // 1. Primera petición con accessToken en header
     let res = await fetch(input, {
       ...init,
-      credentials: 'include',
+      credentials: "include",
       headers: {
         ...init.headers,
-        Authorization: accessToken ? `Bearer ${accessToken}` : '',
+        Authorization: accessToken ? `Bearer ${accessToken}` : "",
       },
     });
 
@@ -23,7 +23,7 @@ export function useFetch() {
         const newToken = await refreshAccessToken();
         res = await fetch(input, {
           ...init,
-          credentials: 'include',
+          credentials: "include",
           headers: {
             ...init.headers,
             Authorization: `Bearer ${newToken}`,
@@ -31,7 +31,7 @@ export function useFetch() {
         });
       } catch {
         logout();
-        throw new Error('No autorizado');
+        throw new Error("No autorizado");
       }
     }
 

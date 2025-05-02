@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async ({ email, password }: LoginCredentials) => {
+    setLoading(true);
     const res = await fetch("http://localhost:3000/auth/login", {
       method: "POST",
       credentials: "include",
@@ -50,6 +51,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
 
     await fetchProfile();
+    setLoading(false);
   };
 
   const refreshAccessToken = async () => {
@@ -81,7 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const value: any = useMemo(
     () => ({
-      accessToken: null, // No accesible por HttpOnly
+      accessToken: null,
       user,
       userRole,
       loading,

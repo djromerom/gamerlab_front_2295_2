@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading"; // Assuming this component exists and works
 import {
   Card,
   CardContent,
@@ -9,14 +10,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext"; // hook actualizado
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const { login } = useAuth();
+  // Local state specifically for THIS button's loading indicator
+  const [isSubmitting, setIsSubmitting] = useState(false); // Renamed for clarity
+
+  const { login } = useAuth(); // Get the login function from context
+  // const { login, loading: authLoading } = useAuth(); // Alternative: use context loading state if it reflects login action
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,17 +30,28 @@ export default function LoginPage({
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true); // <-- Start loading indicator
     setError(null);
     try {
       await login({ email, password });
+      // Navigate only on success
       navigate("/inicio", { replace: true });
+      // No need to set loading false here if navigating away
+      // If you weren't navigating, you'd let finally handle it.
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Error desconocido");
+        setError("Error desconocido: Intenta de nuevo."); // Provide a user-friendly generic message
       }
+      // Let finally handle setting loading state back
+    } finally {
+      // This runs whether try succeeded or failed.
+      // If navigation happens on success, this might run just as the component unmounts,
+      // but it ensures loading is false if an error occurred.
+      setIsSubmitting(false); // <-- Stop loading indicator
     }
+    // Removed the redundant setLoading(false) from here
   };
 
   return (
@@ -51,6 +68,7 @@ export default function LoginPage({
         <CardContent>
           <form onSubmit={handleLogIn}>
             <div className="flex flex-col gap-6 items-center w-80">
+              {/* Input fields... */}
               <div className="flex flex-col w-full items-start gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -60,6 +78,7 @@ export default function LoginPage({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isSubmitting} // Optional: disable inputs while loading
                 />
               </div>
               <div className="flex flex-col w-full items-start gap-2">
@@ -71,12 +90,28 @@ export default function LoginPage({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isSubmitting} // Optional: disable inputs while loading
                 />
               </div>
-              {error && <p className="text-red-600">{error}</p>}
-              <Button type="submit" className="w-full">
-                Ingresar
-              </Button>
+
+              {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+
+              {/* Use the local isSubmitting state for the button */}
+              <div className="w-full mt-4">
+                {" "}
+                {/* Added container for consistent spacing */}
+                {isSubmitting ? (
+                  <ButtonLoading className="w-full" /> // Use w-full like the original button
+                ) : (
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    Ingresar
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         </CardContent>
