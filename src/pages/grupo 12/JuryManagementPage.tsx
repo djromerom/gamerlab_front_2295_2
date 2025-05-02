@@ -1,10 +1,10 @@
 import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { Tabla , Data} from "./TableJuryManagement";
+import { JuryManagementTable} from "./tabla";
 import { useEffect, useState } from "react";
 
 const JuryManagementPage: React.FC = () => {
-  const breadcrumbs = [{ label: "Materias", href: "/materias" }];
+  const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   const [data, setData] = useState<Data>({
     titulo: "",
@@ -13,6 +13,7 @@ const JuryManagementPage: React.FC = () => {
     filas: [],
   });
 
+  // mock data waiting for backend
   const response = {
     data: [
       { name: "Ana", correo: "ana@example.com", id_estado_confirmacion: "Confirmado" },
@@ -21,8 +22,6 @@ const JuryManagementPage: React.FC = () => {
     error: null,
   };
 
-
-  const filas: Data["nombreColumnas"] = {};
     console.log("data", data);  
     const fetchJurados = async () => {
       let { data: Jurados, error } = response
@@ -36,15 +35,13 @@ const JuryManagementPage: React.FC = () => {
       }
     };
     
-  
     useEffect(() => {
       fetchJurados();
     }, []);
     
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <h1>Jurados</h1>
-      {/* <Tabla data={data}/> */}
+      <JuryManagementTable data={data}/>
     </LayoutAplication>
   );
 };
