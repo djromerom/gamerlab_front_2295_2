@@ -90,19 +90,43 @@ export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonaliza
       }, [currentPage, rowsPerPage, allRows, totalPages]);
     
     // Handler functions that don't do anything real, just to make the UI work
-    const handleAdd = (e: React.FormEvent) => {
-        e.preventDefault();
-        setAddDialogOpen(false);
-        // No real functionality here
-        console.log("Add button clicked with data:", newRow);
-    };
+    const handleAdd = async (e: React.FormEvent) => {
+      e.preventDefault();
+      console.log("newRow", newRow)
+      try {
+        const response = await fetch("http://localhost:3000/jurados", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json", // Especificamos que enviamos datos en formato JSON
+          },
+          body: JSON.stringify(newRow), // Convertimos el objeto de datos en un JSON
+        });
+        
+        // if (!response.ok) {
+        //   throw new Error(`Error HTTP: ${response.status}`);
+        // }
+        // else {
+        // casi lista
+          const newRowWithId = newRow;
+          setAllRows([newRowWithId, ...allRows]);
+          setNewRow({});
+          setAddDialogOpen(false);
+          console.log("Fila agregada con éxito:", newRowWithId);
+        // }
+        const result = await response.json();
+        console.log("Datos enviados correctamente:", result);
+      } 
+      catch (error) {
+        console.error("Error al enviar los datos:", error);
+      }
+    }; 
 
     const handleOpenEdit = (row: Record<string, any>, index: number) => {
-        setEditingRow({...row});
-        setEditingIndex(index);
-        setEditDialogOpen(true);
-        // No real functionality here
-        console.log("Edit button clicked for row:", index);
+      setEditingRow({ ...row });
+      setEditingIndex((currentPage - 1) * rowsPerPage + index);
+      setEditDialogOpen(true);
+       // No real functionality here
+      console.log("Edit button clicked for row:", index);
     };
 
     const handleSaveEdit = (e: React.FormEvent) => {
@@ -152,7 +176,9 @@ export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonaliza
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
-                    {Object.entries(data.nombreColumnas).map(
+                    {Object.entries(data.nombreColumnas)
+                    .filter(([key]) => key === "name" || key === "email")
+                    .map(
                       ([key, label]) =>
                         key !== "id" && (
                           <div
@@ -288,7 +314,9 @@ export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonaliza
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  {Object.entries(data.nombreColumnas).map(
+                  {Object.entries(data.nombreColumnas)
+                  .filter(([key]) => key === "name" || key === "email")
+                  .map(
                     ([key, label]) =>
                       key !== "id" && (
                         <div

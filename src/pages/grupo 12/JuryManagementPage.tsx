@@ -2,43 +2,71 @@ import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { JuryManagementTable} from "./tabla";
 import { useEffect, useState } from "react";
+import { url } from "inspector";
+
+
+// interface Jurado {
+//   id: string;
+//   name: string;
+//   email: string;
+//   confirmationStatus: string;
+//   lastConnection: Date;
+//   reviewedGames: number;
+// };
+
 
 const JuryManagementPage: React.FC = () => {
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   const [data, setData] = useState<Data>({
-    titulo: "",
-    nombreTabla: "",
-    nombreColumnas: {},
-    filas: [],
+  titulo: "",
+  nombreTabla: "",
+  nombreColumnas: {},
+  filas: [],
   });
 
-  // mock data waiting for backend
-  const response = {
-    data: [
-      { name: "Ana", correo: "ana@example.com", id_estado_confirmacion: "Confirmado" },
-      { name: "Luis", correo: "luis@example.com", id_estado_confirmacion: "Pendiente" },
-    ],
-    error: null,
-  };
-
-    console.log("data", data);  
-    const fetchJurados = async () => {
-      let { data: Jurados, error } = response
-      if (Jurados) {
-        setData({
-          titulo: "Jurados",
-          nombreTabla: "usuarios",
-          nombreColumnas: { name: "Nombre", correo: "Correo", id_estado_confirmacion: "Estado" },
-          filas: Jurados,
-        });
+  const response = [
+      {
+        id: "1",
+        name: "Juan Pérez",
+        email: "juan.perez@example.com",
+        confirmationStatus: "confirmed",
+        lastConnection: new Date("2025-04-30T10:30:00Z").toLocaleString(),
+        reviewedGames: 12,
       }
-    };
-    
-    useEffect(() => {
-      fetchJurados();
-    }, []);
-    
+    ];
+
+  const fetchJurados = async () => {
+    try {
+      // const response = await fetch("http://localhost:3000/jurados");
+      // if (!response.ok){
+      //   throw new Error(`Error HTTP: ${response.status}`);
+      // }
+      // const jurados: Jurado[] = await response.json();
+      setData({
+        titulo: "Jurados",
+        nombreTabla: "usuarios",
+        nombreColumnas: {
+          id: "ID",
+          name: "Nombre",
+          email: "Correo",
+          confirmationStatus: "Estado",
+          lastConnection: "Ultima conexión",
+          reviewedGames: "Juegos revisados",
+        },
+        filas: response,
+      });
+    }
+    catch (error) {
+      console.error("Error al cargar jurados:", error);
+    }  
+  };
+  console.log("data", data);
+ 
+  useEffect(() => {
+    fetchJurados();
+  }, []);
+  
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       <JuryManagementTable data={data}/>
