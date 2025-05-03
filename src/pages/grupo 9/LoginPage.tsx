@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading"; // Assuming this component exists and works
 import {
   Card,
@@ -55,67 +56,82 @@ export default function LoginPage({
   };
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <Card className="py-5 w-fit flex flex-col m-auto items-center justify-center gap-6">
-        <CardHeader className="w-80 p-0">
-          <CardTitle className="text-2xl">
-            ¡Hola, qué bien que estés de vuelta!
-          </CardTitle>
-          <CardDescription>
-            Introduce tu correo electrónico para acceder a tu cuenta
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogIn}>
-            <div className="flex flex-col gap-6 items-center w-80">
-              {/* Input fields... */}
-              <div className="flex flex-col w-full items-start gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isSubmitting} // Optional: disable inputs while loading
-                />
-              </div>
-              <div className="flex flex-col w-full items-start gap-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="*****"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isSubmitting} // Optional: disable inputs while loading
-                />
-              </div>
+    <div className="relative min-h-svh">
+      {/* Fondo con z-0 */}
+      <div
+        className="absolute inset-0 z-0 bg-center bg-no-repeat animate-float"
+        style={{
+          backgroundImage: "url('/background.webp')",
+          backgroundSize: "100%",
+        }}
+      ></div>
 
-              {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-
-              {/* Use the local isSubmitting state for the button */}
-              <div className="w-full mt-4">
-                {" "}
-                {/* Added container for consistent spacing */}
-                {isSubmitting ? (
-                  <ButtonLoading className="w-full" /> // Use w-full like the original button
-                ) : (
-                  <Button
-                    type="submit"
-                    className="w-full"
+      {/* Fondo 2 - Esquina inferior derecha */}
+      <div className="relative z-10 flex min-h-svh w-full items-center justify-center p-7 md:p-10">
+        <Card className="py-5 w-fit flex flex-col m-auto items-center justify-center gap-6 bg-black/60 border border-[#B3C7FF]/30">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/Arkad.svg" // Path to your logo
+                alt="Logo"
+                className="h-auto w-auto"
+              />
+            </Link>
+          </div>
+          <CardHeader className="w-60 p-0 text-center">
+            <CardTitle className="text-2xl">
+              ¡Hola, qué bien que estés de vuelta!
+            </CardTitle>
+            <CardDescription>
+              Introduce tu correo electrónico para acceder a tu cuenta
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogIn}>
+              <div className="flex flex-col gap-6 items-center w-80">
+                <div className="flex flex-col w-full items-start gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                     disabled={isSubmitting}
-                  >
-                    Ingresar
-                  </Button>
-                )}
+                  />
+                </div>
+                <div className="flex flex-col w-full items-start gap-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="*****"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+                {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+                <div className="w-full mt-4">
+                  {isSubmitting ? (
+                    <ButtonLoading className="w-full" />
+                  ) : (
+                    <Button
+                      type="submit"
+                      className="w-full bg-[#B3C7FF]"
+                      disabled={isSubmitting}
+                    >
+                      Ingresar
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
