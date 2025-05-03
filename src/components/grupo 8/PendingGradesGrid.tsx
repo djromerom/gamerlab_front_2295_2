@@ -110,17 +110,17 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
 
 
   return (
-    <div className="flex flex-col w-full bg-white text-black dark:bg-[#010104] dark:text-white">
+    <div className="flex flex-col w-full bg-white text-black dark:bg-[#0a0a0a] dark:text-white">
       {/* Barra de búsqueda y filtros - reducido el espacio vertical */}
-      <div className="flex items-center justify-end mb-4 ">
+      <div className="flex items-center justify-end mb-4 px-5 ">
         <div className="flex gap-3">
           <div className="relative">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ">
               <SearchIcon />
             </div>
             <Input
               placeholder="Busca un equipo"
-              className="w-80 bg-[#1a1a2e] text-white pl-10 h-9 rounded-lg border border-[#4d5474]"
+              className="w-80 bg-[#1a1a2e] text-black pl-10 h-9 rounded-lg border border-[#4d5474]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -165,7 +165,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
       </div>
 
       {/* Grid de juegos - aumentado el espaciado entre tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5">
         {filteredGames.map((game, index) => (
           <div key={`${game.id}-${index}`} className="bg-gray-100 dark:bg-[#1a1a2e] rounded-2xl p-5 flex flex-col">
             {/* Contenido principal de la tarjeta */}

@@ -144,7 +144,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="col-span-12 md:col-span-8">
-            <Card>
+            <Card className="h-full py-5">
               <CardHeader>
                 <CardTitle>Criterios de Evaluación</CardTitle>
                 <CardDescription>Califique cada aspecto del proyecto</CardDescription>
