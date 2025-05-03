@@ -11,7 +11,7 @@ interface SubjectRowData extends RowData {
   name: string;
   code: string;
   semester: number;
-  active: boolean; // Make sure 'active' is included and is a boolean
+  isActive: boolean; // Make sure 'active' is included and is a boolean
 }
 
 const SubjetsPage = () => {
@@ -56,7 +56,7 @@ const SubjetsPage = () => {
 
         // --- FILTERING STEP ---
         // Keep only the rows where the 'active' property is true
-        const activeRows = dataRespond.filter((row) => row.active === true);
+        const activeRows = dataRespond.filter((row) => row.isActive === true);
         // --- END FILTERING STEP ---
 
         setData({

@@ -17,11 +17,9 @@ export default function LoginPage({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  // Local state specifically for THIS button's loading indicator
-  const [isSubmitting, setIsSubmitting] = useState(false); // Renamed for clarity
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login } = useAuth(); // Get the login function from context
-  // const { login, loading: authLoading } = useAuth(); // Alternative: use context loading state if it reflects login action
+  const { login } = useAuth();
 
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
