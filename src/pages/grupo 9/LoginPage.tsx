@@ -63,10 +63,9 @@ export default function LoginPage({
           backgroundSize: "100%",
         }}
       ></div>
-
       {/* Fondo 2 - Esquina inferior derecha */}
       <div className="relative z-10 flex min-h-svh w-full items-center justify-center p-7 md:p-10">
-        <Card className="py-5 w-fit flex flex-col m-auto items-center justify-center gap-6 bg-black/60 border border-[#B3C7FF]/30">
+        <Card className="p-20 py-5 w-fit flex flex-col m-auto items-center justify-center gap-6 bg-black/50 border border-[#B3C7FF]/50">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img
@@ -76,19 +75,19 @@ export default function LoginPage({
               />
             </Link>
           </div>
-          <CardHeader className="w-60 p-0 text-center">
-            <CardTitle className="text-2xl">
+          <CardHeader className="w-80 p-0 text-center">
+            <CardTitle className="text-[30px]">
               ¡Hola, qué bien que estés de vuelta!
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-[15px]">
               Introduce tu correo electrónico para acceder a tu cuenta
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogIn}>
-              <div className="flex flex-col gap-6 items-center w-80">
-                <div className="flex flex-col w-full items-start gap-2">
-                  <Label htmlFor="email">Email</Label>
+              <div className="flex flex-col gap-6 items-center w-80 ">
+                <div className="flex flex-col w-full items-start gap-2 ">
+                  <Label htmlFor="email" >Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -118,7 +117,7 @@ export default function LoginPage({
                   ) : (
                     <Button
                       type="submit"
-                      className="w-full bg-[#B3C7FF]"
+                      className="w-full bg-[#B3C7FF] text-[20px] hover:bg-[#8a70ff]"
                       disabled={isSubmitting}
                     >
                       Ingresar
