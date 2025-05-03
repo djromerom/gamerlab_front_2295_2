@@ -53,20 +53,13 @@ export interface Data {
   nombreColumnas: Record<string, string>;
   filas: Record<string, any>[];
 }
-
-interface CustomColumnConfig {
-    [columna: string]: {
-      tipo: "select" | "input";
-      opciones?: { label: string; value: any }[]; // solo si es select
-    };
-  }
   
 interface Props {
-    data: Data;
-    columnasPersonalizadas?: CustomColumnConfig;
+  data: Data;
+  onDataChanged: () => void;
 }
 
-export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonalizadas }) => {
+export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [allRows, setAllRows] = useState(data.filas);
@@ -89,33 +82,36 @@ export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonaliza
         }
       }, [currentPage, rowsPerPage, allRows, totalPages]);
     
-    // Handler functions that don't do anything real, just to make the UI work
     const handleAdd = async (e: React.FormEvent) => {
       e.preventDefault();
       console.log("newRow", newRow)
       try {
-        const response = await fetch("http://localhost:3000/jurados", {
+        const response = await fetch("http://localhost:3000/juror", {
           method: "POST",
           headers: {
             "Content-Type": "application/json", // Especificamos que enviamos datos en formato JSON
           },
           body: JSON.stringify(newRow), // Convertimos el objeto de datos en un JSON
+          credentials: "include",
         });
         
-        // if (!response.ok) {
-        //   throw new Error(`Error HTTP: ${response.status}`);
-        // }
-        // else {
-        // casi lista
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+        else {
+          newRow["confirmationStatusId"] = "Pendiente";
+          newRow["updatedAt"] = "Sin conexiones"
+          newRow["_count"] = 0;
           const newRowWithId = newRow;
           setAllRows([newRowWithId, ...allRows]);
           setNewRow({});
           setAddDialogOpen(false);
           console.log("Fila agregada con éxito:", newRowWithId);
-        // }
+        }
         const result = await response.json();
         console.log("Datos enviados correctamente:", result);
-      } 
+        onDataChanged();
+      }
       catch (error) {
         console.error("Error al enviar los datos:", error);
       }
@@ -125,28 +121,85 @@ export const JuryManagementTable: React.FC<Props> = ({ data, columnasPersonaliza
       setEditingRow({ ...row });
       setEditingIndex((currentPage - 1) * rowsPerPage + index);
       setEditDialogOpen(true);
-       // No real functionality here
-      console.log("Edit button clicked for row:", index);
     };
 
-    const handleSaveEdit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setEditDialogOpen(false);
-        // No real functionality here
-        console.log("Save edit button clicked with data:", editingRow);
+    const handleSaveEdit = async (e: React.FormEvent) => {
+      const primaryKey = Object.keys(allRows[0])[0];
+      console.log("Object: ", allRows)
+      const idValue = editingRow[primaryKey];
+      const newRow: Record<string, any> = {};
+      e.preventDefault();
+      console.log("idValue", idValue)
+      console.log("editingRow", editingRow)
+      console.log("primaryKey", primaryKey)
+
+      try {
+        const response = await fetch(`http://localhost:3000/juror/${idValue}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editingRow),
+          credentials: "include",
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error al hacer PATCH:", errorText);
+        }
+        else {
+          console.log("Fila editada con éxito:", editingRow);
+          const updated = [...allRows];
+          updated[editingIndex] = editingRow;
+          setAllRows(updated);
+          setEditDialogOpen(false);
+          onDataChanged();
+        }
+      } catch (error) {
+        console.error("Error en la solicitud PATCH:", error);
+      }
     };
 
     const handleOpenDelete = (index: number) => {
-        setDeletingIndex(index);
-        setDeleteDialogOpen(true);
-        // No real functionality here
-        console.log("Delete button clicked for row:", index);
+      setDeletingIndex((currentPage - 1) * rowsPerPage + index);
+      setDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
+      const rowToDelete = allRows[deletingIndex];
+      const primaryKey = Object.keys(rowToDelete)[0];
+      const idToDelete = rowToDelete[primaryKey];
+      if (!idToDelete) {
+        console.error("No se encontró el ID de la fila a eliminar.");
         setDeleteDialogOpen(false);
-        // No real functionality here
-        console.log("Confirm delete button clicked for row:", deletingIndex);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3000/juror/${idToDelete}/delete`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Error al hacer PATCH:", errorText);
+        }
+        else {
+          const updated = [...allRows];
+          updated.splice(deletingIndex, 1); // o actualiza visualmente el estado si no quieres ocultarlo
+          setAllRows(updated);
+          console.log("Fila actualizada (PATCH) con éxito");
+      
+          if (currentRows.length === 1 && currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+      }
+      onDataChanged();
+      } catch (error) {
+        console.error("Error en la solicitud PATCH:", error);
+      }
     };
 
     useEffect(() => {
