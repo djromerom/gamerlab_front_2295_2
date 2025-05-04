@@ -3,16 +3,18 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Form } from "@/components/ui/form";
-import { MultiFormProvider } from "@/contexts/MultiFormContext"; 
-import StepRenderer from "./StepRenderer"; 
-import { CombinedFormValues, CombinedSchema } from "@/lib/schemas"; 
+import { MultiFormProvider } from "@/contexts/MultiFormContext";
+import StepRenderer from "./StepRenderer";
+import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
 import supabase from "@/supabase/client";
+import { useFetch } from "@/hooks/useFetch";
 
-const BUCKET_NAME = "imagenes"; 
+const BUCKET_NAME = "imagenes";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
+  const customFetch = useFetch();
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
@@ -31,7 +33,7 @@ export default function MultiStepWizard() {
     const uploadToastId =
       data.files && data.files.length > 0
         ? toast.loading("Subiendo archivos...")
-        : undefined; 
+        : undefined;
 
     const uploadedFileUrls: string[] = [];
 
@@ -114,23 +116,34 @@ export default function MultiStepWizard() {
           logoURL: uploadedFileUrls[0] || "", // solo 1 archivo
         },
       };
-      
 
-      // --- CAMBIO PRINCIPAL: CONSOLE.LOG EN LUGAR DE FETCH ---
-      console.log("--- PAYLOAD FINAL (simulando envío al backend) ---");
-      console.log(JSON.stringify(payload, null, 2)); // Muestra el payload formateado
-      // --- FIN DEL CAMBIO ---
+      try {
+        const res = await customFetch("http://localhost:3000/teams", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      // Mensaje de éxito simulado
-      toast.success("¡Formulario procesado (localmente)!", {
-        description:
-          "Los datos y archivos han sido preparados. Revisa la consola.",
-        icon: "💻",
-        duration: 5000,
-      });
+        // --- CAMBIO PRINCIPAL: CONSOLE.LOG EN LUGAR DE FETCH ---
+        console.log("--- PAYLOAD FINAL (simulando envío al backend) ---");
+        console.log(JSON.stringify(payload, null, 2), res, payload); // Muestra el payload formateado
+        // --- FIN DEL CAMBIO ---
 
-      // Opcional: Resetear el formulario
-      // methods.reset();
+        // Mensaje de éxito simulado
+        toast.success("¡Formulario procesado (localmente)!", {
+          description:
+            "Los datos y archivos han sido preparados. Revisa la consola.",
+          icon: "💻",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.error("Error al enviar el payload:", error);
+        toast.error("Error al enviar el payload", {
+          description: "Ocurrió un error inesperado.",
+          duration: 5000,
+        });
+      }
     } catch (error: any) {
       console.error("Error en el proceso onSubmit:", error);
       if (uploadToastId) {
