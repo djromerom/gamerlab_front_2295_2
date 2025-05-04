@@ -19,15 +19,16 @@ import {
   FileUploadItemDelete,
   FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { CloudUpload} from "lucide-react";
+import { CloudUpload } from "lucide-react";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFormContext } from "react-hook-form";
 import { CombinedFormValues } from "@/lib/schemas";
 
-
 export default function GameStep() {
   const { back } = useMultiForm();
-  const { control, setValue } = useFormContext<CombinedFormValues>();
+  const { control, setValue, watch } = useFormContext<CombinedFormValues>();
+
+  const currentFiles = watch("files");
 
   return (
     <>
@@ -38,7 +39,10 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Nombre del videojuego</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Escribe el nombre del videojuego" />
+              <Input
+                {...field}
+                placeholder="Escribe el nombre del videojuego"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -52,7 +56,12 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Descripción</FormLabel>
             <FormControl>
-              <textarea placeholder="Escribe la descripción del videojuego" {...field} rows={4} className="w-full rounded border px-3 py-2" />
+              <textarea
+                placeholder="Escribe la descripción del videojuego"
+                {...field}
+                rows={4}
+                className="w-full rounded border px-3 py-2"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -75,29 +84,39 @@ export default function GameStep() {
                 maxSize={5 * 1024 * 1024}
               >
                 <FileUploadDropzone className="flex-row border-dashed">
-                  <CloudUpload /> Arrastra o{' '}
+                  <CloudUpload /> Arrastra o{" "}
                   <FileUploadTrigger asChild>
-                    <Button variant="link" style={{padding: 0}} size="sm">Selecciona un archivo</Button>
+                    <Button variant="link" style={{ padding: 0 }} size="sm">
+                      Selecciona un archivo
+                    </Button>
                   </FileUploadTrigger>
                 </FileUploadDropzone>
+
                 <FileUploadList>
-                  {field.value.map((file, i) => (
+                  {(field.value ?? []).map((file, i) => (
                     <FileUploadItem key={i} value={file}>
                       <FileUploadItemPreview />
                       <FileUploadItemMetadata />
                       <FileUploadItemDelete asChild>
-                        <Button variant="ghost" size="icon">✕</Button>
+                        <Button variant="ghost" size="icon">
+                          ✕
+                        </Button>
                       </FileUploadItemDelete>
                     </FileUploadItem>
                   ))}
                 </FileUploadList>
+
+                {(!currentFiles || currentFiles.length === 0) && (
+                  <p className="pt-2 text-xs text-muted-foreground">
+                    No hay archivos seleccionados.
+                  </p>
+                )}
               </FileUpload>
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
       <FormField
         control={control}
         name="recaptcha"
@@ -105,15 +124,21 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Verificación de seguridad</FormLabel>
             <FormControl>
-              <ReCAPTCHA sitekey="Your-client-site-key" onChange={(val: string) => setValue('recaptcha', val || ' ' )} />
+              <ReCAPTCHA
+                sitekey="Your-client-site-key"
+                onChange={(val: string) => setValue("recaptcha", val || " ")}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
       <div className="flex justify-between space-x-4 pt-4">
-        <Button variant="outline" onClick={back}>Atrás</Button>
+        <Button type="button" variant="outline" onClick={back}>
+          {" "}
+          Atrás
+        </Button>
+
         <Button type="submit">Enviar</Button>
       </div>
     </>

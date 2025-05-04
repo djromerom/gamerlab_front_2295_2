@@ -94,7 +94,7 @@ export interface Subject {
 export interface RowData {
   id: number; // Clave primaria
   code: string;
-  professorId: String;
+  professorId: string;
   subjectId: number;
   professor: Professor; // Objeto anidado
   subject: Subject; // Objeto anidado
@@ -106,15 +106,15 @@ export interface RowData {
 
 // Payload para Crear NRC
 interface CreateNrcPayload {
-  code: string;
-  professorId: number;
+  code: number;
+  professorId: string;
   subjectId: number;
 }
 
 // Payload para Actualizar NRC
 interface UpdateNrcPayload {
   code?: string;
-  professorId?: number;
+  professorId?: string;
   subjectId?: number;
 }
 
@@ -266,27 +266,23 @@ export const NrcsTable: React.FC<Props> = ({
     }
 
     // Validación
-    const { code, subjectId, professorId } = newRow;
-    if (!code || !subjectId || !professorId) {
+    const {
+      code,
+      subjectId: newSubjectId,
+      professorId: newProfessorId,
+    } = newRow;
+
+    const codeValue = Number(code); // Asegúrate de que sea un número
+    if (!codeValue || !newSubjectId || !newProfessorId) {
       setError("Código, Materia y Profesor son requeridos.");
       setInternalIsLoading(false);
       return;
     }
 
-    // Asegurar que los IDs son números
-    const subjectIdNum = Number(subjectId);
-    const professorIdNum = Number(professorId);
-
-    if (isNaN(subjectIdNum) || isNaN(professorIdNum)) {
-      setError("ID de Materia o Profesor inválido.");
-      setInternalIsLoading(false);
-      return;
-    }
-
     const dataToSend: CreateNrcPayload = {
-      code,
-      subjectId: subjectIdNum,
-      professorId: professorIdNum,
+      code: codeValue,
+      subjectId: newSubjectId,
+      professorId: newProfessorId,
     };
 
     try {
@@ -352,16 +348,18 @@ export const NrcsTable: React.FC<Props> = ({
     }
 
     // Validación (similar a handleAdd)
-    const { code, subjectId, professorId } = editFormData;
-    if (!code || !subjectId || !professorId) {
+    const {
+      code,
+      subjectId: editSubjectId,
+      professorId: editProfessorId,
+    } = editFormData;
+    if (!code || !editSubjectId || !editProfessorId) {
       setError("Código, Materia y Profesor son requeridos.");
       setInternalIsLoading(false);
       return;
     }
-    const subjectIdNum = Number(subjectId);
-    const professorIdNum = Number(professorId);
 
-    if (isNaN(subjectIdNum) || isNaN(professorIdNum)) {
+    if (isNaN(editSubjectId) || !editProfessorId) {
       setError("ID de Materia o Profesor inválido.");
       setInternalIsLoading(false);
       return;
@@ -370,8 +368,8 @@ export const NrcsTable: React.FC<Props> = ({
     // Crear payload solo con los campos necesarios para PATCH
     const dataToSend: UpdateNrcPayload = {
       code: code, // Siempre enviar código? o solo si cambia? Depende de API
-      subjectId: subjectIdNum,
-      professorId: professorIdNum,
+      subjectId: editSubjectId,
+      professorId: editProfessorId,
     };
 
     try {
@@ -539,7 +537,10 @@ export const NrcsTable: React.FC<Props> = ({
                       id="add-code"
                       value={newRow.code || ""}
                       onChange={(e) =>
-                        setNewRow((prev) => ({ ...prev, code: e.target.value }))
+                        setNewRow((prev) => ({
+                          ...prev,
+                          code: Number(e.target.value),
+                        }))
                       }
                       className="col-span-3"
                       required
@@ -561,7 +562,7 @@ export const NrcsTable: React.FC<Props> = ({
                       }
                       disabled={internalIsLoading || subjectsList.length === 0}
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="col-span-3 w-full">
                         <SelectValue placeholder="Seleccione una materia" />
                       </SelectTrigger>
                       <SelectContent>
@@ -586,14 +587,14 @@ export const NrcsTable: React.FC<Props> = ({
                       onValueChange={(value) =>
                         setNewRow((prev) => ({
                           ...prev,
-                          professorId: Number(value),
+                          professorId: value,
                         }))
                       }
                       disabled={
                         internalIsLoading || professorsList.length === 0
                       }
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="col-span-3 w-full">
                         <SelectValue placeholder="Seleccione un profesor" />
                       </SelectTrigger>
                       <SelectContent>
@@ -832,7 +833,7 @@ export const NrcsTable: React.FC<Props> = ({
                     }
                     disabled={internalIsLoading || subjectsList.length === 0}
                   >
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger className="col-span-3 w-full">
                       <SelectValue placeholder="Seleccione una materia" />
                     </SelectTrigger>
                     <SelectContent>
@@ -857,12 +858,12 @@ export const NrcsTable: React.FC<Props> = ({
                     onValueChange={(value) =>
                       setEditFormData((prev) => ({
                         ...prev,
-                        professorId: Number(value),
+                        professorId: value,
                       }))
                     }
                     disabled={internalIsLoading || professorsList.length === 0}
                   >
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger className="col-span-3 w-full">
                       <SelectValue placeholder="Seleccione un profesor" />
                     </SelectTrigger>
                     <SelectContent>

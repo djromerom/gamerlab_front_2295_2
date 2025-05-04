@@ -16,6 +16,7 @@ import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
+import { VerificationPage } from "@/pages/grupo 9/VerificationPage";
 
 type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
 
@@ -75,6 +76,10 @@ const routes: RouteConfig[] = [
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  {
+    path: "/verificar-cuenta/:id",
+    element: <VerificationPage />,
+  },
 ];
 
 const RoutesConfiguration: React.FC = () => {

@@ -12,7 +12,7 @@ const NrcsPage = () => {
 
   const API_ENDPOINT = "http://localhost:3000/nrcs";
   const API_BASE_URL = "http://localhost:3000";
-  const TABLE_RESOURCE_NAME = "NRC";
+  const TABLE_RESOURCE_NAME = "nrcs";
 
   useEffect(() => {
     console.log("inicio de la carga de NRC's");
@@ -26,7 +26,6 @@ const NrcsPage = () => {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-        console.log(res);
 
         if (!res.ok) {
           let errorMsg = `Error ${res.status}: Failed to fetch subjects`;

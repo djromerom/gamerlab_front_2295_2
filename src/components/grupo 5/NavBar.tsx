@@ -1,14 +1,16 @@
-"use client"
+"use client";
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import PurpleButton from "./PurpleButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { log } from "console";
 
 export default function navBar(): React.ReactElement {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-
+  const { user } = useAuth();
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">
       <div className="container mx-auto px-8">
@@ -26,23 +28,37 @@ export default function navBar(): React.ReactElement {
 
           {/* Desktop Navigation */}
           <nav className="hidden space-x-8 md:flex">
-            <Link to="/equipos" className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/equipos"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Equipos
             </Link>
-            <Link to="/ranking" className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/ranking"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Ranking
             </Link>
-            <Link to="/informacion" className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/informacion"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Información
             </Link>
           </nav>
 
           {/* CTA Button + Mobile Menu Toggle */}
           <div className="flex items-center">
-            <Link to="/login">
-              <PurpleButton className="cursor-pointer">Inicia sesión</PurpleButton>
+            <Link to={user ? "/inicio" : "/login"}>
+              <PurpleButton className="cursor-pointer">
+                {user ? "Inicio" : "Iniciar Sesión"}
+              </PurpleButton>
             </Link>
-            <button className="ml-4 text-white md:hidden cursor-pointer" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <button
+              className="ml-4 text-white md:hidden cursor-pointer"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -55,13 +71,25 @@ export default function navBar(): React.ReactElement {
           }`}
         >
           <nav className="flex flex-col space-y-4 pb-4 pt-6">
-            <Link to="/features" onClick={() => setIsMenuOpen(false)} className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/features"
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Equipos
             </Link>
-            <Link to="/ranking" onClick={() => setIsMenuOpen(false)} className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/ranking"
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Ranking
             </Link>
-            <Link to="/información" onClick={() => setIsMenuOpen(false)} className="text-sm text-gray-300 hover:text-white transition-colors">
+            <Link
+              to="/información"
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
               Información
             </Link>
           </nav>
