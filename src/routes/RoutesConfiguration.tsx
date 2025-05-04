@@ -13,6 +13,7 @@ import RankingPage from "@/pages/grupo 5/RankingPage";
 import InformationPage from "@/pages/grupo 5/InformationPage";
 import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
+import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 
@@ -73,6 +74,7 @@ const routes: RouteConfig[] = [
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
+  { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
 ];
 
 const RoutesConfiguration: React.FC = () => {
