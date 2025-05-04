@@ -14,7 +14,7 @@ import InformationPage from "@/pages/grupo 5/InformationPage";
 import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
-
+import NrcsPage from "@/pages/grupo 9/NrcsPage";
 
 type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
 
@@ -72,6 +72,7 @@ const routes: RouteConfig[] = [
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
+  { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
 ];
 
 const RoutesConfiguration: React.FC = () => {

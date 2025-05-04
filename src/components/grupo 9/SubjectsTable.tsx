@@ -10,8 +10,7 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-// ... (otros imports sin cambios)
-import { useFetch } from "@/hooks/useFetch"; // <-- IMPORT YOUR HOOK
+import { useFetch } from "@/hooks/useFetch";
 import {
   Table,
   TableBody,
@@ -67,19 +66,6 @@ interface UpdateMateriaPayload {
   semester?: number;
 }
 
-interface Materia {
-  id: number | string;
-  name: string;
-  code: string;
-  semester: number;
-}
-
-interface MateriaFormData {
-  name: string;
-  code: string;
-  semester: string;
-}
-
 interface CreateMateriaPayload {
   name: string;
   code: string;
@@ -94,14 +80,13 @@ export interface Data {
   primaryKey?: string;
 }
 
-// --- Modificar la interfaz Props ---
 interface Props {
-  data: Data | null; // <-- AHORA PUEDE SER NULL INICIALMENTE
+  data: Data | null;
   apiBaseUrl: string;
-  isDataLoading?: boolean; // <-- NUEVA PROP OPCIONAL para la carga inicial
+  isDataLoading?: boolean;
 }
 
-export const Tabla: React.FC<Props> = ({
+export const SubjectsTable: React.FC<Props> = ({
   data,
   apiBaseUrl,
   isDataLoading = false,

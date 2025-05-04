@@ -2,7 +2,11 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { Tabla, Data, RowData } from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
+import {
+  SubjectsTable,
+  Data,
+  RowData,
+} from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
 
 // Define a more specific interface if possible, including 'active'
@@ -61,7 +65,7 @@ const SubjetsPage = () => {
 
         setData({
           // Optional: Update title to reflect filtering
-          titulo: "Materias Activas",
+          titulo: "Materias",
           nombreTabla: TABLE_RESOURCE_NAME,
           nombreColumnas: {
             // Define columns to DISPLAY.
@@ -104,7 +108,7 @@ const SubjetsPage = () => {
       )}
 
       {/* Tabla component receives already filtered data */}
-      <Tabla
+      <SubjectsTable
         data={data}
         apiBaseUrl={API_BASE_URL}
         isDataLoading={isPageLoading}
