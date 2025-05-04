@@ -126,7 +126,7 @@ export default function GameStep() {
             <FormControl>
               <ReCAPTCHA
                 sitekey="Your-client-site-key"
-                onChange={(val: string) => setValue("recaptcha", val || " ")}
+                onChange={(val: unknown) => setValue("recaptcha", val + "") }
               />
             </FormControl>
             <FormMessage />
@@ -135,7 +135,6 @@ export default function GameStep() {
       />
       <div className="flex justify-between space-x-4 pt-4">
         <Button type="button" variant="outline" onClick={back}>
-          {" "}
           Atrás
         </Button>
 

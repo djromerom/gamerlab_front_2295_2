@@ -3,25 +3,22 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Form } from "@/components/ui/form";
-import { MultiFormProvider } from "@/contexts/MultiFormContext"; // Ajusta la ruta
-import StepRenderer from "./StepRenderer"; // Ajusta la ruta
-import { CombinedFormValues, CombinedSchema } from "@/lib/schemas"; // Ajusta la ruta
-import { createClient } from "@supabase/supabase-js"; // Importa si es necesario
+import { MultiFormProvider } from "@/contexts/MultiFormContext"; 
+import StepRenderer from "./StepRenderer"; 
+import { CombinedFormValues, CombinedSchema } from "@/lib/schemas"; 
 import { useState } from "react";
-import { Button } from "@/components/ui/button"; // Importa si se usa fuera de StepRenderer
-import supabase from "@/supabase/client"; // Asegúrate de que la ruta es correcta y exporta el cliente
+import supabase from "@/supabase/client";
 
-const BUCKET_NAME = "imagenes"; // Asegúrate que este bucket exista y tenga permisos
+const BUCKET_NAME = "imagenes"; 
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
-
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
       // Tus valores por defecto, ejemplo:
       teamName: "",
-      members: [{ nombre: "", correo: "", codigoEstudiantil: "", nrc: "" }],
+      members: [{ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] }],
       gameName: "",
       description: "",
       files: undefined, // Inicializa como undefined
@@ -34,17 +31,15 @@ export default function MultiStepWizard() {
     const uploadToastId =
       data.files && data.files.length > 0
         ? toast.loading("Subiendo archivos...")
-        : undefined; // Solo muestra toast si hay archivos
+        : undefined; 
 
     const uploadedFileUrls: string[] = [];
 
     try {
-      // 1. Subir archivos a Supabase Storage (si existen)
       if (data.files && data.files.length > 0) {
         console.log(`Subiendo ${data.files.length} archivos...`);
 
         const uploadPromises = Array.from(data.files).map(async (file) => {
-          // Considera añadir un prefijo único por usuario/equipo si es posible
           const filePath = `uploads/${Date.now()}-${file.name.replace(
             /\s+/g,
             "_"
@@ -105,11 +100,21 @@ export default function MultiStepWizard() {
       }
 
       // 3. Preparar los datos (payload)
-      const { files, ...formDataToSend } = data;
       const payload = {
-        ...formDataToSend,
-        fileUrls: uploadedFileUrls,
+        teamName: data.teamName,
+        members: data.members.map((m) => ({
+          memberName: m.nombre,
+          memberEmail: m.correo,
+          studentCode: m.codigoEstudiantil,
+          nrc: Array.isArray(m.nrc) ? m.nrc : [m.nrc], // asegúrate que es array
+        })),
+        videogame: {
+          vgName: data.gameName,
+          description: data.description,
+          logoURL: uploadedFileUrls[0] || "", // solo 1 archivo
+        },
       };
+      
 
       // --- CAMBIO PRINCIPAL: CONSOLE.LOG EN LUGAR DE FETCH ---
       console.log("--- PAYLOAD FINAL (simulando envío al backend) ---");
