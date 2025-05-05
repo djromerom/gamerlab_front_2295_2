@@ -1,9 +1,9 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
 import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw, Download } from "lucide-react"
-import { useParams, useNavigate } from "react-router-dom";
-
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -33,7 +33,8 @@ interface EvaluationCriteria {
 export default function RatePage({ params }: { params: { id: string } }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [game, setGame] = useState<Game | null>(null)
+  const location = useLocation(); // Obtén el estado de navegación
+  const game = location.state?.game; // Extrae los datos del juego del estado
   const [loading, setLoading] = useState(true)
   const [comments, setComments] = useState("")
 
@@ -46,36 +47,30 @@ export default function RatePage({ params }: { params: { id: string } }) {
     { id: "presentacion_grupo", name: "Presentación personal grupo", score: 0, maxScore: 5 },
   ])
 
-  // Obtener datos del juego
   useEffect(() => {
-    // Simulación de fetch
-    setTimeout(() => {
-      setGame({
-        id: params.id,
-        equipo: "Thunders",
-        materia: "Estructura de Datos 1",
-        nrc: "2287",
-        participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-        descripcion: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      })
-      setLoading(false)
-    }, 500)
-  }, [params.id])
+    if (game) {
+      // Si los datos del juego están disponibles, desactiva el estado de carga
+      setLoading(false);
+    } else {
+      // Si no hay datos del juego, redirige a la página de pendientes
+      navigate("/pendientes-calificar");
+    }
+  }, [game, navigate]);
 
   const handleScoreChange = (criteriaId: string, score: number) => {
-    setCriteria(criteria.map((c) => (c.id === criteriaId ? { ...c, score } : c)))
-  }
+    setCriteria(criteria.map((c) => (c.id === criteriaId ? { ...c, score } : c)));
+  };
+
 
   const handleSubmit = () => {
     const evaluationData = {
-      gameId: params.id,
+      gameId: game.id,
       criteria,
       comments,
-    }
-    console.log("Enviando evaluación:", evaluationData)
+    };
+    console.log("Enviando evaluación:", evaluationData);
     navigate("/pendientes-calificar");
-
-  }
+  };
 
   if (loading) {
     return (
@@ -84,21 +79,21 @@ export default function RatePage({ params }: { params: { id: string } }) {
           <p>Cargando información del juego...</p>
         </div>
       </LayoutAplication>
-    )
+    );
   }
 
   const breadcrumbs = [
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Pendientes", href: "/pendientes-calificar" },
+    { label: "Pendientes por calificar", href: "/pendientes-calificar" },
     { label: game?.id || "Juego", href: `/juego/${params.id}` },
-  ]
+  ];
+
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="container mx-auto py-6 p-10">
+     <div className="container mx-auto py-6 p-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Evaluación de Videojuego</h1>
+            <h1 className="text-3xl font-bold tracking-tight py-2">Evaluación de Videojuego</h1>
             <p className="text-muted-foreground">Complete los criterios de evaluación para {game?.equipo}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -120,23 +115,23 @@ export default function RatePage({ params }: { params: { id: string } }) {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Equipo</p>
-                    <p>{game?.equipo}</p>
+                    <p>{game.id}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Materia</p>
-                    <p>{game?.materia}</p>
+                    <p>{game.materia}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">NRC</p>
-                    <p>{game?.nrc}</p>
+                    <p>{game.nrc}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Participantes</p>
-                    <p>{game?.participantes.join(", ")}</p>
+                    <p>{game.participantes.join(", ")}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Descripción</p>
-                    <p className="text-sm">{game?.descripcion}</p>
+                    <p className="text-sm">{game.descripcion}</p>
                   </div>
                 </div>
               </CardContent>
@@ -203,5 +198,5 @@ export default function RatePage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </LayoutAplication>
-  )
+  );
 }

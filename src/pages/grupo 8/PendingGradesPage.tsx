@@ -3,6 +3,7 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 
+
 // Tipo para los datos del videojuego
 interface VideogameDetails {
   videogameId: number;
@@ -45,7 +46,9 @@ const PendingGradesPage: React.FC = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {loading ? (
-        <p>Cargando...</p>
+        <div className="flex justify-center items-center h-screen text-white">
+        <p>Cargando juegos pendientes...</p>
+        </div>
       ) : (
         <PendingGamesGrid
           games={videogames.map((videogame) => ({

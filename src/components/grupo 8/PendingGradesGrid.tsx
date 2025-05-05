@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Button } from "@/components/grupo 8/boton"
 import { Input } from "@/components/grupo 8/input"
 import { Link } from 'react-router-dom';
+import { useNavigate } from "react-router-dom"; // Importa useNavigate
 
 
 
@@ -89,6 +90,13 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const navigate = useNavigate(); // Inicializa useNavigate
+  
+  const handleCalificarClick = (game: Game) => {
+    // Excluye la imagen al enviar los datos
+    const { imagen, ...gameWithoutImage } = game;
+    navigate(`/pendientes-calificar/${game.id}`, { state: { game: gameWithoutImage } }); // Pasa los datos del juego sin la imagen
+  };
 
   // Filtrar juegos basados en la búsqueda
   const filteredGames = games.filter(
@@ -171,21 +179,15 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
             {/* Contenido principal de la tarjeta */}
             <div className="flex justify-between mb-4">
               {/* Información del juego */}
-              <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-semibold">{game.id}</h3>
-                <p className="text-sm">
-                  <span className="text-gray-400">Equipo:</span> {game.equipo}
-                </p>
-                <p className="text-sm">
-                  <span className="text-gray-400">Materia:</span> {game.materia}
-                </p>
-                <p className="text-sm">
-                  <span className="text-gray-400">Nrc:</span> {game.nrc}
-                </p>
-                <p className="text-sm">
-                  <span className="text-gray-400">Participantes:</span> {game.participantes.join(", ")}
-                </p>
-              </div>
+              <div className="flex justify-between mb-4">
+               <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-semibold">{game.id}</h3>
+                <p className="text-sm"><span className="text-gray-400">Equipo:</span> {game.equipo}</p>
+                <p className="text-sm"><span className="text-gray-400">Materia:</span> {game.materia}</p>
+                <p className="text-sm"><span className="text-gray-400">Nrc:</span> {game.nrc}</p>
+                <p className="text-sm"><span className="text-gray-400">Participantes:</span> {game.participantes.join(", ")}</p>
+                </div>
+            </div>
 
               {/* Imagen del juego - círculo más grande y más a la izquierda */}
               <div className="w-28 h-28 bg-gray-300 rounded-full flex-shrink-0 mr-6 mt-4">
@@ -212,16 +214,15 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
               </button>
 
               {/* Botón de calificar (derecha) - centrado con el círculo */}
-              <div className="flex justify-center pr-7">
-
-                <Button 
-                  size="sm"
-                  className="px-7 py-2 text-lg bg-[#b3c7ff] hover:bg-[#a0b8ff] border-none text-[#110d20] font-bold shadow-md rounded-md">
-                    
-                    <Link to={`/pendientes-calificar/${game.id}`}>Calificar</Link>
-                </Button>
-
-              </div>
+              <div className="flex justify-end mt-auto pt-2">
+              <Button
+              size="sm"
+              className="px-7 py-2 text-lg bg-[#b3c7ff] hover:bg-[#a0b8ff] border-none text-[#110d20] font-bold shadow-md rounded-md"
+              onClick={() => handleCalificarClick(game)} // Llama a la función con los datos del juego
+               >
+              Calificar
+              </Button>
+             </div>
             </div>
           </div>
         ))}
