@@ -3,7 +3,6 @@
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { NrcsTable, Data, RowData } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
-import { set } from "react-hook-form";
 
 const NrcsPage = () => {
   const [data, setData] = useState<Data | null>(null);
