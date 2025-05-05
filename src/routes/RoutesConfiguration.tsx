@@ -17,6 +17,7 @@ import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
+import ProfessorsPage from "@/pages/grupo 9/professorsPage";
 
 type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
 
@@ -31,7 +32,7 @@ const routes: RouteConfig[] = [
   {
     path: "/profesor",
     element: <ProfessorPage />,
-    roles: ["Profesor", "Administrador"],
+    roles: ["Administrador", "Profesor"],
   },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
@@ -76,6 +77,11 @@ const routes: RouteConfig[] = [
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  {
+    path: "/profesores",
+    element: <ProfessorsPage />,
+    roles: ["Administrador"],
+  },
   {
     path: "/verificar-cuenta",
     element: <VerifyEmailPage />,
