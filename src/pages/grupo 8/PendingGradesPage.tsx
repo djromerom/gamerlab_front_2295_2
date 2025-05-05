@@ -3,97 +3,63 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 
-// Tipo para los datos de los juegos
-interface Game {
-    id: string
-    equipo: string
-    materia: string
-    nrc: string
-    participantes: string[]
-    imagen?: string
-  }
-  
-  // Datos de ejemplo para mostrar mientras se conecta con la API
-  const mockGames: Game[] = [
-    {
-      id: "JUEGO1000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 1",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-    },
-    {
-      id: "JUEGO1000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 1",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-    },
-    {
-      id: "JUEGO2000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 2",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-    },
-    {
-      id: "JUEGO3000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 1",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-    },
-    {
-      id: "JUEGO1000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 1",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V", "Juliana M"],
-    },
-    {
-      id: "JUEGO1000",
-      equipo: "Thunders",
-      materia: "Estructura de Datos 1",
-      nrc: "2287",
-      participantes: ["Juan A", "Fernando R", "Alejandro V"],
-    },
-  ]
-  
+// Tipo para los datos del videojuego
+interface VideogameDetails {
+  videogameId: number;
+  videogameName: string;
+  logoUrl: string;
+  teamName: string;
+  members: { fullName: string }[];
+  nrc: string | null;
+  subject: string | null;
+}
 
 const PendingGradesPage: React.FC = () => {
   const breadcrumbs = [{ label: "Pendientes por calificar", href: "/pendientes-calificar" }];
-  const [games, setGames] = useState<Game[]>([])
-  const [loading, setLoading] = useState(true)
+  const [videogames, setVideogames] = useState<VideogameDetails[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Aquí puedes hacer la llamada a tu API para obtener los juegos pendientes
-    // Por ahora usamos los datos de ejemplo
-    const fetchGames = async () => {
-      try {
-        // Simulamos una llamada a API
-        // const response = await fetch('tu-api/games/pending');
-        // const data = await response.json();
-        // setGames(data);
+    const fetchVideogames = async () => {
+        try {
+          const response = await fetch(`http://localhost:3000/pending-games`, {
+            method: 'GET',
+            credentials: 'include', // Incluye cookies si es necesario
+          });
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log(data); // Verifica los datos recibidos
+          setVideogames(data);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error al cargar los detalles de los videojuegos:", error);
+          setLoading(false);
+        }
+      };
 
-        // Usando datos de ejemplo por ahora
-        setTimeout(() => {
-          setGames(mockGames)
-          setLoading(false)
-        }, 500) // Simulamos un pequeño retraso de carga
-      } catch (error) {
-        console.error("Error al cargar los juegos:", error)
-        setLoading(false)
-      }
-    }
+    fetchVideogames();
+  }, []);
 
-    fetchGames()
-  }, [])
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-     <PendingGamesGrid games={games} />    
+      {loading ? (
+        <p>Cargando...</p>
+      ) : (
+        <PendingGamesGrid
+          games={videogames.map((videogame) => ({
+            id: videogame.videogameName,
+            equipo: videogame.teamName,
+            materia: videogame.subject || "Sin materia",
+            nrc: videogame.nrc || "Sin NRC",
+            participantes: videogame.members.map((member) => member.fullName),
+            imagen: videogame.logoUrl,
+          }))}
+        />
+      )}
     </LayoutAplication>
   );
 };
-
 
 export default PendingGradesPage;

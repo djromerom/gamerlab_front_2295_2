@@ -89,7 +89,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Pendientes", href: "/pendientes" },
+    { label: "Pendientes", href: "/pendientes-calificar" },
     { label: game?.id || "Juego", href: `/juego/${params.id}` },
   ]
 
