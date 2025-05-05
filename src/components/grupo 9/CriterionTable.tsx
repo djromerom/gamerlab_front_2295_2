@@ -360,7 +360,7 @@ export const CriterionTable: React.FC<Props> = ({
               {columns.map(({ key, label }) => (
                 <TableHead key={key}>{label}</TableHead>
               ))}
-              <TableHead className="w-[50px]">Acciones</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

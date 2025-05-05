@@ -269,41 +269,47 @@ export function VerifyEmailPage() {
     switch (status) {
       case "loading":
         return (
-          <Alert>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <AlertTitle>Verificando...</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
+          <div className="py-3">
+            <Alert>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertTitle>Verificando...</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          </div>
         );
       case "error":
         return (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-            <div className="mt-4">
-              <Button
-                onClick={() => navigate("/login")}
-                variant="outline"
-                size="sm"
-              >
-                Ir a Iniciar Sesión
-              </Button>
-            </div>
-          </Alert>
+          <div className="py-3">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+              <div className="mt-4">
+                <Button
+                  onClick={() => navigate("/login")}
+                  variant="outline"
+                  size="sm"
+                >
+                  Ir a Iniciar Sesión
+                </Button>
+              </div>
+            </Alert>
+          </div>
         );
       case "success":
         return (
-          <Alert className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400">
-            <CheckCircle className="h-4 w-4" />
-            <AlertTitle>¡Éxito!</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
+          <div className="py-3">
+            <Alert className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400">
+              <CheckCircle className="h-4 w-4" />
+              <AlertTitle>¡Éxito!</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          </div>
         );
       case "awaiting_password":
       case "submitting":
         return (
-          <form onSubmit={handleSetPasswordSubmit} className="space-y-4">
+          <form onSubmit={handleSetPasswordSubmit} className="space-y-4 pb-3">
             <Alert
               variant="default"
               className="bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700"
@@ -318,7 +324,12 @@ export function VerifyEmailPage() {
             </Alert>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Crea tu Contraseña</Label>
+              <Label
+                htmlFor="password"
+                className="text-gray-800 dark:text-gray-200"
+              >
+                Crea tu Contraseña
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -340,7 +351,12 @@ export function VerifyEmailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+              <Label
+                htmlFor="confirmPassword"
+                className="text-gray-800 dark:text-gray-200"
+              >
+                Confirmar contraseña
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -361,7 +377,7 @@ export function VerifyEmailPage() {
               )}
             </div>
 
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-600 dark:text-gray-300">
               <p>La contraseña debe contener:</p>
               <ul className="list-disc pl-5 mt-1 space-y-1">
                 <li>Al menos 8 caracteres</li>
@@ -373,7 +389,7 @@ export function VerifyEmailPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff]"
               disabled={status === "submitting"}
             >
               {status === "submitting" ? (
@@ -405,21 +421,42 @@ export function VerifyEmailPage() {
       : "Confirmando tu cuenta...";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-gray-900">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">{cardTitle}</CardTitle>
-          <CardDescription>{cardDescription}</CardDescription>
+    <div className="relative min-h-svh flex items-center justify-center">
+      {/* Fondo con opacidad reducida */}
+      <div
+        className="absolute inset-0 z-0 bg-center bg-no-repeat animate-float"
+        style={{
+          backgroundImage: "url('/background.webp')",
+          backgroundSize: "100%",
+        }}
+      ></div>
+
+      {/* Contenido principal */}
+      <Card className="w-full max-w-md relative z-10 bg-white/90 dark:bg-black/50 backdrop-blur-sm mt-12">
+        <CardHeader className="space-y-3 pt-8 text-center">
+          <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+            {cardTitle}
+          </CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-300">
+            {cardDescription}
+          </CardDescription>
         </CardHeader>
-        <CardContent>{renderContent()}</CardContent>
+        <CardContent className="text-gray-800 dark:text-gray-200 px-8">
+          {renderContent()}
+        </CardContent>
         {(status === "awaiting_password" || status === "error") && (
-          <CardFooter className="flex justify-center pt-4 border-t dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              ¿Ya tienes una cuenta o tienes problemas?{" "}
-              <a href="/login" className="text-blue-600 hover:underline">
-                Iniciar sesión
-              </a>
-            </p>
+          <CardFooter className="w-full flex flex-col items-center justify-center pt-4 border-t dark:border-gray-700 px-6 pb-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                ¿Ya tienes una cuenta o tienes problemas?{" "}
+                <a
+                  href="/login"
+                  className="text-blue-600 hover:underline dark:text-blue-400 font-medium"
+                >
+                  Iniciar sesión
+                </a>
+              </p>
+            </div>
           </CardFooter>
         )}
       </Card>

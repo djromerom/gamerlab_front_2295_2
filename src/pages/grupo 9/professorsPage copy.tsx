@@ -1,7 +1,7 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Ajusta la ruta según tu estructura
+import { ProfessorsTable } from "@/components/grupo 9/professorsTable copy"; // Ajusta la ruta según tu estructura
 import { useState, useEffect } from "react";
 
 interface ProfessorRowData {
