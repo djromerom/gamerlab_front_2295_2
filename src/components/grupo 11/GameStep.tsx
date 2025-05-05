@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import {
   FormControl,
@@ -27,8 +28,18 @@ import { CombinedFormValues } from "@/lib/schemas";
 export default function GameStep() {
   const { back } = useMultiForm();
   const { control, setValue, watch } = useFormContext<CombinedFormValues>();
-
+  const [fileError, setFileError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const currentFiles = watch("files");
+
+  const validateImageIsSquare = async (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => resolve(img.width === img.height);
+      img.onerror = () => resolve(false);
+    });
+  };
 
   return (
     <>
@@ -68,17 +79,33 @@ export default function GameStep() {
         )}
       />
 
-      <FormField
+<FormField
         control={control}
         name="files"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Carga el logo</FormLabel>
-            <FormDescription>Solo una imagen de hasta 5 MB.</FormDescription>
+            <FormDescription>Solo una imagen cuadrada de hasta 5 MB.</FormDescription>
             <FormControl>
               <FileUpload
                 value={field.value}
-                onValueChange={field.onChange}
+                onValueChange={async (files) => {
+                  setFileError(false);
+                  if (!files?.length) return field.onChange([]);
+
+                  const file = files[0];
+                  const isSquare = await validateImageIsSquare(file);
+
+                  if (!isSquare) {
+                    setFileError(true);
+                    field.onChange([]); // Limpiar estado del form
+                    const inputEl = document.querySelector('input[type="file"]') as HTMLInputElement;
+                    if (inputEl) inputEl.value = "";
+                    return;
+                  }
+
+                  field.onChange([file]);
+                }}
                 accept="image/*"
                 maxFiles={1}
                 maxSize={5 * 1024 * 1024}
@@ -106,6 +133,12 @@ export default function GameStep() {
                   ))}
                 </FileUploadList>
 
+                {fileError && (
+                  <p className="text-red-500 text-sm mt-1">
+                    La imagen debe ser cuadrada (1:1)
+                  </p>
+                )}
+
                 {(!currentFiles || currentFiles.length === 0) && (
                   <p className="pt-2 text-xs text-muted-foreground">
                     No hay archivos seleccionados.
@@ -117,6 +150,8 @@ export default function GameStep() {
           </FormItem>
         )}
       />
+
+      
       <FormField
         control={control}
         name="recaptcha"

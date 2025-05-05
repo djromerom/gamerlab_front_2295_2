@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
+import { useFetch } from "@/hooks/useFetch";
 
-export type TeamStatus = "pending" | "complete" | "rejected";
+export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 export interface Team {
   id: number;
   gameName: string;
@@ -19,80 +20,32 @@ export interface Team {
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const customFetch = useFetch();
 
   // Carga inicial de datos
   useEffect(() => {
     async function fetchTeams() {
-      const data: Team[] = [
-        {
-          id: 1,
-          gameName: "JUEGO1000",
-          teamName: "Thunders",
-          status: "pending",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 2,
-          gameName: "JUEGO1001",
-          teamName: "Dragons",
-          status: "complete",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 3,
-          gameName: "JUEGO1002",
-          teamName: "Wolves",
-          status: "rejected",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 4,
-          gameName: "JUEGO1003",
-          teamName: "Falcons",
-          status: "pending",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 5,
-          gameName: "JUEGO1004",
-          teamName: "Sharks",
-          status: "pending",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 6,
-          gameName: "JUEGO1005",
-          teamName: "Knights",
-          status: "pending",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 7,
-          gameName: "JUEGO1006",
-          teamName: "Raptors",
-          status: "pending",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 8,
-          gameName: "JUEGO1007",
-          teamName: "Titans",
-          status: "complete",
-          image: "https://placehold.co/80",
-        },
-        {
-          id: 9,
-          gameName: "JUEGO1008",
-          teamName: "Giants",
-          status: "rejected",
-          image: "https://placehold.co/80",
-        },
-      ];
-      await new Promise((res) => setTimeout(res, 300));
+      const res = await customFetch("http://localhost:3000/videogames", {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+  
+      const rawData = await res.json();
+      console.log(rawData);
+      const data: Team[] = rawData.map((team: any) => ({
+        id: team.id,
+        gameName: team.name,
+        teamName: team.teamName,
+        status: team.status.toLowerCase() as TeamStatus,
+        image: team.logoUrl,
+      }));
       setTeams(data);
+      console.log(data);
     }
     fetchTeams();
   }, []);
+  
 
   // Filtrar por ID o nombre (case-insensitive)
   const filteredTeams = teams.filter(
@@ -162,7 +115,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           className="w-64 md:w-96 pl-10"
         />
       </div>
-      <Button  variant="outline" onClick={() => onFilter(filterText)}>Filtrar</Button>
+      <Button variant="outline" onClick={() => onFilter(filterText)}>Filtrar</Button>
     </div>
   );
 }
@@ -174,11 +127,11 @@ interface TeamCardProps {
 function TeamCard({ team }: TeamCardProps) {
   const getStatusInfo = (status: TeamStatus) => {
     switch (status) {
-      case "pending":
+      case "pendiente":
         return { text: "Pendiente de confirmación", color: "text-purple-400" };
-      case "complete":
+      case "confirmado":
         return { text: "Inscripción completa", color: "text-blue-400" };
-      case "rejected":
+      case "expirado":
         return { text: "Rechazada", color: "text-red-400" };
     }
   };
@@ -188,8 +141,8 @@ function TeamCard({ team }: TeamCardProps) {
     <Card>
       <CardContent className="flex space-x-5 py-5 px-7">
         <Avatar className="w-20 h-20">
-          <AvatarImage src="https://github.com/verel.png" />
-          <AvatarFallback>VC</AvatarFallback>
+          <AvatarImage src={team.image} alt={team.teamName} />
+          <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="space-y-1">
           <h4 className="text-xl font-medium">{team.gameName}</h4>
