@@ -17,7 +17,7 @@ import  LayoutAplication  from "@/layouts/LayoutAplication"
 const videojuegos = [
     {
         id: 1,
-        nombre: "Space Adventure",
+        nombre: "Space Adventure2",
         materia: "Programación Avanzada",
         nrc: "12345",
         criterios: {
