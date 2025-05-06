@@ -9,12 +9,14 @@ import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
 import supabase from "@/supabase/client";
 import { useFetch } from "@/hooks/useFetch";
+import { useNavigate } from "react-router-dom";
 
 const BUCKET_NAME = "imagenes";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const customFetch = useFetch();
+  const navigate = useNavigate();
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
@@ -125,18 +127,18 @@ export default function MultiStepWizard() {
           body: JSON.stringify(payload),
         });
 
-        // --- CAMBIO PRINCIPAL: CONSOLE.LOG EN LUGAR DE FETCH ---
-        console.log("--- PAYLOAD FINAL (simulando envío al backend) ---");
-        console.log(JSON.stringify(payload, null, 2), res, payload); // Muestra el payload formateado
-        // --- FIN DEL CAMBIO ---
+        console.log("Respuesta del servidor:", res.status);
+        // Regresar a la página de inscripción al torneo si el registro fue exitoso
+        if (res.status === 201) {
+          navigate("/registro-equipo");
+          console.log("Registro exitoso, redirigiendo...");
+        } else {
+          const errorBody = await res.json();
+          throw new Error(
+            `Error ${res.status}: ${errorBody.message || "Error desconocido"}`
+          );
+        }
 
-        // Mensaje de éxito simulado
-        toast.success("¡Formulario procesado (localmente)!", {
-          description:
-            "Los datos y archivos han sido preparados. Revisa la consola.",
-          icon: "💻",
-          duration: 5000,
-        });
       } catch (error) {
         console.error("Error al enviar el payload:", error);
         toast.error("Error al enviar el payload", {

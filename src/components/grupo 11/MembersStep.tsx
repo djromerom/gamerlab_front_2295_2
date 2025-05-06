@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { CombinedFormValues } from "@/lib/schemas";
+import { useEffect, useState } from "react";
+import { INSPECT_MAX_BYTES } from "buffer";
 
 export default function MembersStep() {
   const { back, next } = useMultiForm();
@@ -30,6 +32,57 @@ export default function MembersStep() {
     const isValid = await trigger("members");
     if (isValid) next();
   };
+
+
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null); // Cambia el tipo según tu necesidad
+  const API_ENDPOINT = `http://localhost:3000/nrcs`;
+  
+  const [nrcActivos, setnrcActivos] = useState<Number[]>([]);
+  
+  useEffect(() => {
+      const fetchNrcs = async () => {
+      setIsPageLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+          try {
+            const errorBody = await res.json();
+            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          } catch (e) {}
+          throw new Error(errorMsg);
+        }
+        const dataRespond = await res.json();
+
+        if (!Array.isArray(dataRespond)) {
+          throw new Error("La respuesta de la API no es un array válido.");
+        }
+
+        const nrcActivo: Number[] = [];
+        dataRespond.forEach((item) => {
+          nrcActivo.push(item.code)
+        });
+        setnrcActivos(nrcActivo);
+      } catch (err: any) {
+        console.error("Error fetching subjects:", err);
+        setError(
+          err.message || "Ocurrió un error desconocido al cargar las materias."
+        );
+        setData(null);
+      } finally {
+        setIsPageLoading(false);
+      }
+    };
+    fetchNrcs();
+  }, []);
 
   return (
     <>
@@ -102,9 +155,10 @@ export default function MembersStep() {
               name={`members.${idx}.nrc` as const}
               render={({ field }) => {
                 const selectedNRCs: string[] = field.value || [];
-                const allNRCs = ["1428", "1429", "1430"];
+                const allNRCs = nrcActivos;
+                
                 const availableNRCs = allNRCs.filter(
-                  (val) => !selectedNRCs.includes(val)
+                  (val) => !selectedNRCs.includes(String(val))
                 );
 
                 return (
@@ -124,8 +178,8 @@ export default function MembersStep() {
                           </SelectTrigger>
                           <SelectContent style={{ width: '100%' }}>
                             {availableNRCs.map((val) => (
-                              <SelectItem key={val} value={val}>
-                                {val}
+                              <SelectItem key={String(val)} value={String(val)}>
+                                {String(val)}
                               </SelectItem>
                             ))}
                           </SelectContent>
