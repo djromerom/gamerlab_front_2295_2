@@ -19,7 +19,12 @@ import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import ProfessorsPage from "@/pages/grupo 9/professorsPage copy";
 
-type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
+type Role =
+  | "Profesor"
+  | "Administrador"
+  | "Jurado"
+  | "Consultor"
+  | "Estudiante";
 
 interface RouteConfig {
   path: string;

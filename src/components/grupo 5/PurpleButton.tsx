@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 
 interface PurpleButtonProps {
   children: ReactNode;
@@ -6,10 +6,10 @@ interface PurpleButtonProps {
   className?: string;
 }
 
-export default function purpleButton({ 
-  children, 
-  onClick, 
-  className = "" 
+export default function purpleButton({
+  children,
+  onClick,
+  className = "",
 }: PurpleButtonProps): React.ReactElement {
   return (
     <button

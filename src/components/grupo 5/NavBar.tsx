@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import PurpleButton from "./PurpleButton";
-import { useAuth } from "@/contexts/AuthContext";
-import { log } from "console";
 
 export default function navBar(): React.ReactElement {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const { user } = useAuth();
+  const navigate = useNavigate(); // If you want to use it manually (not mandatory here, but I'll leave it in case you want to use navigate())
+
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">
       <div className="container mx-auto px-8">
@@ -50,9 +48,9 @@ export default function navBar(): React.ReactElement {
 
           {/* CTA Button + Mobile Menu Toggle */}
           <div className="flex items-center">
-            <Link to={user ? "/inicio" : "/login"}>
+            <Link to="/login">
               <PurpleButton className="cursor-pointer">
-                {user ? "Inicio" : "Iniciar Sesión"}
+                Inicia sesión
               </PurpleButton>
             </Link>
             <button
@@ -86,7 +84,7 @@ export default function navBar(): React.ReactElement {
               Ranking
             </Link>
             <Link
-              to="/información"
+              to="/informacion"
               onClick={() => setIsMenuOpen(false)}
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
