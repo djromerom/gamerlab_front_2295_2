@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export interface Data {
   titulo: string;
@@ -72,6 +73,7 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingIndex, setDeletingIndex] = useState<number>(-1);
     const totalPages = Math.ceil(allRows.length / rowsPerPage);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const start = (currentPage - 1) * rowsPerPage;
@@ -124,6 +126,7 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
     };
 
     const handleSaveEdit = async (e: React.FormEvent) => {
+      setIsLoading(true);
       const primaryKey = Object.keys(allRows[0])[0];
       console.log("Object: ", allRows)
       const idValue = editingRow[primaryKey];
@@ -151,12 +154,15 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
           const updated = [...allRows];
           updated[editingIndex] = editingRow;
           setAllRows(updated);
-          setEditDialogOpen(false);
+          console.log("cerrando modal");
+          
           onDataChanged();
         }
       } catch (error) {
         console.error("Error en la solicitud PATCH:", error);
       }
+      setIsLoading(false);
+      setEditDialogOpen(false);
     };
 
     const handleOpenDelete = (index: number) => {
@@ -173,7 +179,8 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
         setDeleteDialogOpen(false);
         return;
       }
-
+      setDeleteDialogOpen(true);
+      setIsLoading(true);
       try {
         const response = await fetch(`http://localhost:3000/juror/${idToDelete}/delete`, {
           method: "PATCH",
@@ -200,6 +207,8 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
       } catch (error) {
         console.error("Error en la solicitud PATCH:", error);
       }
+      setIsLoading(false);
+      setDeleteDialogOpen(false);
     };
 
     useEffect(() => {
@@ -221,46 +230,53 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
                 </Button>
               </DialogTrigger>
               <DialogContent>
-                <form onSubmit={handleAdd}>
-                  <DialogHeader>
-                    <DialogTitle>Agregar</DialogTitle>
-                    <DialogDescription>
-                      Ingrese los datos de la nueva fila.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    {Object.entries(data.nombreColumnas)
-                    .filter(([key]) => key === "name" || key === "email")
-                    .map(
-                      ([key, label]) =>
-                        key !== "id" && (
-                          <div
-                            key={key}
-                            className="grid grid-cols-4 items-center gap-4"
-                          >
-                            <Label htmlFor={key} className="text-right">
-                              {label}
-                            </Label>
-                            <Input
-                              id={key}
-                              value={newRow[key] || ""}
-                              onChange={(e: any) =>
-                                setNewRow((prev) => ({
-                                  ...prev,
-                                  [key]: e.target.value,
-                                }))
-                              }
-                              className="col-span-3"
-                              required
-                            />
-                          </div>
-                        )
-                    )}
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">Guardando...</span>
                   </div>
-                  <DialogFooter>
-                    <Button type="submit">Guardar</Button>
-                  </DialogFooter>
-                </form>
+                ) : (
+                  <form onSubmit={handleAdd}>
+                    <DialogHeader>
+                      <DialogTitle>Agregar</DialogTitle>
+                      <DialogDescription>
+                        Ingrese los datos de la nueva fila.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      {Object.entries(data.nombreColumnas)
+                      .filter(([key]) => key === "name" || key === "email")
+                      .map(
+                        ([key, label]) =>
+                          key !== "id" && (
+                            <div
+                              key={key}
+                              className="grid grid-cols-4 items-center gap-4"
+                            >
+                              <Label htmlFor={key} className="text-right">
+                                {label}
+                              </Label>
+                              <Input
+                                id={key}
+                                value={newRow[key] || ""}
+                                onChange={(e: any) =>
+                                  setNewRow((prev) => ({
+                                    ...prev,
+                                    [key]: e.target.value,
+                                  }))
+                                }
+                                className="col-span-3"
+                                required
+                              />
+                            </div>
+                          )
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit">Guardar</Button>
+                    </DialogFooter>
+                  </form>
+                )}  
               </DialogContent>
             </Dialog>
           </div>
@@ -359,46 +375,53 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
     
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
             <DialogContent>
-              <form onSubmit={handleSaveEdit}>
-                <DialogHeader>
-                  <DialogTitle>Editar fila</DialogTitle>
-                  <DialogDescription>
-                    Modifique los campos según sea necesario.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  {Object.entries(data.nombreColumnas)
-                  .filter(([key]) => key === "name" || key === "email")
-                  .map(
-                    ([key, label]) =>
-                      key !== "id" && (
-                        <div
-                          key={key}
-                          className="grid grid-cols-4 items-center gap-4"
-                        >
-                          <Label htmlFor={`edit-${key}`} className="text-right">
-                            {label}
-                          </Label>
-                          <Input
-                            id={`edit-${key}`}
-                            value={editingRow[key] || ""}
-                            onChange={(e: any) =>
-                              setEditingRow((prev) => ({
-                                ...prev,
-                                [key]: e.target.value,
-                              }))
-                            }
-                            className="col-span-3"
-                            required
-                          />
-                        </div>
-                      )
-                  )}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Guardando...</span>
                 </div>
-                <DialogFooter>
-                  <Button type="submit">Guardar cambios</Button>
-                </DialogFooter>
-              </form>
+              ) : (
+                <form onSubmit={handleSaveEdit}>
+                  <DialogHeader>
+                    <DialogTitle>Editar fila</DialogTitle>
+                    <DialogDescription>
+                      Modifique los campos según sea necesario.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    {Object.entries(data.nombreColumnas)
+                    .filter(([key]) => key === "name" || key === "email")
+                    .map(
+                      ([key, label]) =>
+                        key !== "id" && (
+                          <div
+                            key={key}
+                            className="grid grid-cols-4 items-center gap-4"
+                          >
+                            <Label htmlFor={`edit-${key}`} className="text-right">
+                              {label}
+                            </Label>
+                            <Input
+                              id={`edit-${key}`}
+                              value={editingRow[key] || ""}
+                              onChange={(e: any) =>
+                                setEditingRow((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              className="col-span-3"
+                              required
+                            />
+                          </div>
+                        )
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Guardar cambios</Button>
+                  </DialogFooter>
+                </form>
+                )}
             </DialogContent>
           </Dialog>
     
@@ -416,7 +439,14 @@ export const JuryManagementTable: React.FC<Props> = ({ data, onDataChanged }) =>
                   onClick={handleConfirmDelete}
                   className="bg-red-500 hover:bg-red-600"
                 >
-                  Eliminar
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Eliminando...
+                    </>
+                  ) : (
+                    "Eliminar"
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

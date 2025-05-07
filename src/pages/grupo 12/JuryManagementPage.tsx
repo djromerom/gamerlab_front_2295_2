@@ -2,9 +2,13 @@ import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { JuryManagementTable} from "./tabla";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+
 
 const JuryManagementPage: React.FC = () => {
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const [data, setData] = useState<Data>({
   titulo: "",
@@ -12,7 +16,6 @@ const JuryManagementPage: React.FC = () => {
   nombreColumnas: {},
   filas: [],
   });
-
 
   // {
   //   "id": "fbafb63a-cad4-49e3-8792-e266cbdc0426",
@@ -25,8 +28,8 @@ const JuryManagementPage: React.FC = () => {
   //   }
 
   const fetchJurados = async () => {
+    setIsLoading(true)
     try {
-      // console.log(token);
       const response = await fetch("http://localhost:3000/juror", {credentials: "include",});  
       if (!response.ok){
         throw new Error(`Error HTTP: ${response.status}`);
@@ -68,9 +71,10 @@ const JuryManagementPage: React.FC = () => {
     }
     catch (error) {
       console.error("Error al cargar jurados:", error);
-    }  
+    }
+    setIsLoading(false)
   };
-  console.log("data", data);
+  // console.log("data", data);
  
   useEffect(() => {
     fetchJurados();
@@ -80,7 +84,14 @@ const JuryManagementPage: React.FC = () => {
   
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <JuryManagementTable data={data} onDataChanged={fetchJurados}/>
+      {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">Cargando...</span>
+                  </div>
+                ) : (
+                  <JuryManagementTable data={data} onDataChanged={fetchJurados}/>
+                )}
     </LayoutAplication>
   );
 };
