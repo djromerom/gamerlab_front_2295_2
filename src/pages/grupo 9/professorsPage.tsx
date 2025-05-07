@@ -45,18 +45,9 @@ const ProfessorsPage = () => {
           throw new Error(errorMsg);
         }
 
-        const dataRespond: ProfessorRowData[] = await res.json();
+        const dataRespond = await res.json();
 
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
-
-        // Filtramos solo los profesores activos
-        const activeProfessors = dataRespond.filter(
-          (professor) => professor.isActive === true
-        );
-
-        setProfessors(activeProfessors);
+        setProfessors(dataRespond.data);
       } catch (err: any) {
         console.error("Error fetching professors:", err);
         setError(
