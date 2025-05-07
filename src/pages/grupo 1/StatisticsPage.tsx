@@ -117,6 +117,7 @@ const videojuegos = [
   },
 ]
 
+
 const materias = ["Todas", "Programación Avanzada", "Diseño de Videojuegos", "Gráficos por Computadora"]
 const nrcs = ["Todos", "12345", "23456", "34567"]
 const jurados = ["Todos", "Juan Pérez", "María López", "Carlos Rodríguez", "Ana Martínez", "Pedro Sánchez"]
