@@ -18,6 +18,8 @@ import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import ProfessorsPage from "@/pages/grupo 9/professorsPage copy";
+import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 
 type Role =
   | "Profesor"
@@ -90,6 +92,16 @@ const routes: RouteConfig[] = [
   {
     path: "/verificar-cuenta",
     element: <VerifyEmailPage />,
+  },
+  {
+    path: "/home-estudiante",
+    element: <HomeStudentPage />,
+    roles: ["Estudiante", "Administrador"],
+  },
+  {
+    path: "/home-profesor",
+    element: <HomeTeacherPage />,
+    roles: ["Profesor", "Administrador"],
   },
 ];
 
