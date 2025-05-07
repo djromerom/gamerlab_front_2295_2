@@ -33,16 +33,15 @@ export default function MembersStep() {
     if (isValid) next();
   };
 
-
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null); // Cambia el tipo según tu necesidad
   const API_ENDPOINT = `http://localhost:3000/nrcs`;
-  
+
   const [nrcActivos, setnrcActivos] = useState<Number[]>([]);
-  
+
   useEffect(() => {
-      const fetchNrcs = async () => {
+    const fetchNrcs = async () => {
       setIsPageLoading(true);
       setError(null);
       try {
@@ -61,16 +60,8 @@ export default function MembersStep() {
           throw new Error(errorMsg);
         }
         const dataRespond = await res.json();
-
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
-
-        const nrcActivo: Number[] = [];
-        dataRespond.forEach((item) => {
-          nrcActivo.push(item.code)
-        });
-        setnrcActivos(nrcActivo);
+        console.log(dataRespond.data);
+        setnrcActivos(dataRespond.data);
       } catch (err: any) {
         console.error("Error fetching subjects:", err);
         setError(
@@ -156,7 +147,7 @@ export default function MembersStep() {
               render={({ field }) => {
                 const selectedNRCs: string[] = field.value || [];
                 const allNRCs = nrcActivos;
-                
+
                 const availableNRCs = allNRCs.filter(
                   (val) => !selectedNRCs.includes(String(val))
                 );
@@ -171,15 +162,18 @@ export default function MembersStep() {
                             val && field.onChange([...selectedNRCs, val])
                           }
                         >
-                          <SelectTrigger style={{ width: '100%' }}>
+                          <SelectTrigger style={{ width: "100%" }}>
                             <span className="text-muted-foreground">
                               Selecciona uno o más NRCs
                             </span>
                           </SelectTrigger>
-                          <SelectContent style={{ width: '100%' }}>
+                          <SelectContent style={{ width: "100%" }}>
                             {availableNRCs.map((val) => (
-                              <SelectItem key={String(val)} value={String(val)}>
-                                {String(val)}
+                              <SelectItem
+                                key={String(val.code)}
+                                value={String(val.code)}
+                              >
+                                {String(val.code)}
                               </SelectItem>
                             ))}
                           </SelectContent>
