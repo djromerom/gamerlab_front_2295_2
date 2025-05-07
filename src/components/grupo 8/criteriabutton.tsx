@@ -1,19 +1,24 @@
-import { Menu } from "lucide-react"; // Usa lucide-react para el ícono
-import React from "react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Menu } from "lucide-react";
 
-interface criteriabuttonProps {
-  onClick?: () => void;
+interface CriteriabuttonProps {
+  description: string;
 }
 
-const criteriabutton: React.FC<criteriabuttonProps> = ({ onClick }) => {
+export default function Criteriabutton({ description }: CriteriabuttonProps) {
   return (
-    <button
-      onClick={onClick}
-      className="rounded-lg border border-[#B2B5FF] bg-transparent p-1 hover:bg-[#e5e7eb] dark:hover:bg-[#1C1930] transition-colors"
-    >
-      <Menu className="text-[#B2B5FF] w-5 h-5" />
-    </button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button className="rounded-lg border border-[#B2B5FF] bg-transparent h-7 w-7 hover:bg-[#e5e7eb] dark:hover:bg-[#1C1930] transition-colors">
+          <Menu  className="text-[#a0a3a9] dark:text-white "/>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 text-sm text-muted-foreground">
+        {description}
+      </PopoverContent>
+    </Popover>
   );
-};
+}
 
-export default criteriabutton;
+

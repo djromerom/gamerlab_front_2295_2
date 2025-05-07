@@ -2,7 +2,6 @@
 "use client"
 
 import Criteriabutton from "@/components/grupo 8/criteriabutton"; // Importa el componente criteriabutton
-
 import { useEffect, useState } from "react"
 import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw, Download } from "lucide-react"
 import { useLocation, useParams, useNavigate } from "react-router-dom";
@@ -90,6 +89,24 @@ export default function RatePage({ params }: { params: { id: string } }) {
         { label: game?.id || "Juego", href: `/juego/${params.id}` },
     ];
 
+    const getDescription = (id: string): string => {
+        switch (id) {
+          case "interfaz":
+            return "Diseño, colores, usabilidad";
+          case "interaccion":
+            return "Controles, guía al usuario, intuitividad";
+          case "resultados":
+            return "Reacciones, recompensas, retroalimentación visual";
+          case "presentacion":
+            return "Claridad, coherencia, comunicación del objetivo";
+          case "funcionamiento":
+            return "Que no tenga errores y cumpla su propósito";
+          case "presentacion_grupo":
+            return "Lenguaje corporal, presencia, orden y seguridad al exponer";
+          default:
+            return "Sin descripción";
+        }
+      };
 
     return (
         <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -157,7 +174,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
 
 
                     <div className="col-span-12 md:col-span-8">
-                        <Card className="h-full py-5">
+                        <Card className="h-full py-6">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold">Criterios de Evaluación</CardTitle>
                                 <CardDescription >Califique cada aspecto del proyecto</CardDescription>
@@ -173,10 +190,10 @@ export default function RatePage({ params }: { params: { id: string } }) {
                                     <TableBody>
                                         {criteria.map((criterion) => (
                                             <TableRow key={criterion.id}>
-                                                <TableCell colSpan={2} className="font-medium text-base">
+                                                <TableCell colSpan={2} className="font-medium text-base px-0">
                                                     {criterion.name}
                                                     <div className="mt-2 flex items-center gap-4">
-                                                        <p className="text-sm font-medium text-muted-foreground">Puntuación:</p>
+                                                        <p className="text-xs font-medium text-muted-foreground">Puntuación:</p>
                                                         <input
                                                             type="range"
                                                             min="0"
@@ -186,15 +203,14 @@ export default function RatePage({ params }: { params: { id: string } }) {
                                                             onChange={(e) =>
                                                                 handleScoreChange(criterion.id, parseFloat(e.target.value))
                                                             }
-                                                            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                                                            className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
                                                             style={{
                                                                 background: `linear-gradient(to right, #b3c7ff ${((criterion.score / 5) * 100)}%, #e5e7eb ${((criterion.score / 5) * 100)}%)`,
                                                                 accentColor: "#b3c7ff dark:", // Cambia el color del círculo del slider
                                                             }}
                                                         />
-                                                        <span className="text-sm font-medium">{criterion.score.toFixed(1)}</span>
-                                                        <Criteriabutton onClick={() => console.log(`Criterio: ${criterion.name}`)} />
-
+                                                        <span className="text-sm font-medium px-0">{criterion.score.toFixed(1)}</span>
+                                                        <Criteriabutton description={getDescription(criterion.id)} />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
