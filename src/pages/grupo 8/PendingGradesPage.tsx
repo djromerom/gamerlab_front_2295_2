@@ -13,6 +13,7 @@ interface VideogameDetails {
   members: { fullName: string }[];
   nrc: string | null;
   subject: string | null;
+  descripcion: string | null;
 }
 
 const PendingGradesPage: React.FC = () => {
@@ -58,6 +59,7 @@ const PendingGradesPage: React.FC = () => {
             nrc: videogame.nrc || "Sin NRC",
             participantes: videogame.members.map((member) => member.fullName),
             imagen: videogame.logoUrl,
+            descripcion: videogame.descripcion || "Sin descripción", // Incluye la descripción            
           }))}
         />
       )}

@@ -45,7 +45,7 @@ interface DropdownMenuContentProps {
 
 export const DropdownMenuContent: React.FC<DropdownMenuContentProps> = ({ className = "", children }) => {
   const baseStyles =
-    "dropdown-content absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#1a1a2e] text-white z-10 hidden"
+    "dropdown-content absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white text-white z-10 hidden"
 
   return <div className={`${baseStyles} ${className}`}>{children}</div>
 }
