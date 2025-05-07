@@ -30,7 +30,7 @@ export default function TeamsPage() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
-  
+
       const rawData = await res.json();
       console.log(rawData);
       const data: Team[] = rawData.map((team: any) => ({
@@ -45,7 +45,6 @@ export default function TeamsPage() {
     }
     fetchTeams();
   }, []);
-  
 
   // Filtrar por ID o nombre (case-insensitive)
   const filteredTeams = teams.filter(
@@ -81,14 +80,11 @@ export default function TeamsPage() {
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
 
         <div className="relative">
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTeams.map((team) => (
               <TeamCard key={team.id} team={team} />
             ))}
           </div>
-
-
         </div>
       </div>
     </main>
@@ -115,7 +111,9 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           className="w-64 md:w-96 pl-10"
         />
       </div>
-      <Button variant="outline" onClick={() => onFilter(filterText)}>Filtrar</Button>
+      <Button variant="outline" onClick={() => onFilter(filterText)}>
+        Filtrar
+      </Button>
     </div>
   );
 }

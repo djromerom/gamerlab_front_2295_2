@@ -17,7 +17,7 @@ import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import ProfessorsPage from "@/pages/grupo 9/professorsPage copy";
+import ProfessorsPage from "@/pages/grupo 9/ProfessorsPage";
 
 type Role =
   | "Profesor"
