@@ -130,7 +130,7 @@ export default function MultiStepWizard() {
         console.log("Respuesta del servidor:", res.status);
         // Regresar a la página de inscripción al torneo si el registro fue exitoso
         if (res.status === 201) {
-          navigate("/registro-equipo");
+          navigate("/equipos");
           console.log("Registro exitoso, redirigiendo...");
         } else {
           const errorBody = await res.json();
@@ -138,7 +138,6 @@ export default function MultiStepWizard() {
             `Error ${res.status}: ${errorBody.message || "Error desconocido"}`
           );
         }
-
       } catch (error) {
         console.error("Error al enviar el payload:", error);
         toast.error("Error al enviar el payload", {
