@@ -52,16 +52,7 @@ const SubjetsPage = () => {
         }
 
         // Expecting an array where each object has an 'active' boolean property
-        const dataRespond: SubjectRowData[] = await res.json(); // Use the more specific type
-
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
-
-        // --- FILTERING STEP ---
-        // Keep only the rows where the 'active' property is true
-        const activeRows = dataRespond.filter((row) => row.isActive === true);
-        // --- END FILTERING STEP ---
+        const dataRespond = await res.json(); // Use the more specific type
 
         setData({
           // Optional: Update title to reflect filtering
@@ -76,7 +67,7 @@ const SubjetsPage = () => {
             // active: "Estado", // <-- Uncomment this line if you WANT to display the 'Active' status column
           },
           // Pass the FILTERED array to the table
-          filas: activeRows,
+          filas: dataRespond.data,
           primaryKey: "id", // Ensure 'id' exists in your RowData
         });
       } catch (err: any) {

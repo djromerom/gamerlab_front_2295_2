@@ -46,18 +46,9 @@ const CriteriaPage = () => {
           throw new Error(errorMsg);
         }
 
-        const dataRespond: CriterionRowData[] = await res.json();
+        const dataRespond = await res.json();
 
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
-
-        // Filtramos solo los criterios activos
-        const activeCriteria = dataRespond.filter(
-          (criterion) => criterion.isActive === true
-        );
-
-        setCriteria(activeCriteria);
+        setCriteria(dataRespond.data);
       } catch (err: any) {
         console.error("Error fetching criteria:", err);
         setError(

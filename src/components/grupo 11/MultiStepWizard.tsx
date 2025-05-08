@@ -1,3 +1,5 @@
+// MultiStepWizard.tsx
+"use client";
 import * as React from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,12 +22,11 @@ export default function MultiStepWizard() {
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
-      // Tus valores por defecto, ejemplo:
       teamName: "",
       members: [{ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] }],
       gameName: "",
       description: "",
-      files: undefined, // Inicializa como undefined
+      files: undefined,
       recaptcha: "",
     },
   });
@@ -41,15 +42,11 @@ export default function MultiStepWizard() {
 
     try {
       if (data.files && data.files.length > 0) {
-        console.log(`Subiendo ${data.files.length} archivos...`);
-
         const uploadPromises = Array.from(data.files).map(async (file) => {
           const filePath = `uploads/${Date.now()}-${file.name.replace(
             /\s+/g,
             "_"
           )}`;
-
-          console.log(`Subiendo archivo: ${file.name} a la ruta: ${filePath}`);
 
           const { data: uploadData, error: uploadError } =
             await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
@@ -57,28 +54,13 @@ export default function MultiStepWizard() {
               upsert: false,
             });
 
-          if (uploadError) {
-            console.error(`Error subiendo ${file.name}:`, uploadError);
-            throw new Error(
-              `Error al subir el archivo ${file.name}: ${uploadError.message}`
-            );
-          }
+          if (uploadError) throw new Error(`Error al subir ${file.name}`);
 
-          // 2. Obtener la URL pública del archivo subido
           const { data: urlData } = supabase.storage
             .from(BUCKET_NAME)
             .getPublicUrl(filePath);
 
-          if (!urlData?.publicUrl) {
-            console.warn(
-              `No se pudo obtener la URL pública para: ${filePath}. Asegúrate que el bucket '${BUCKET_NAME}' sea público o que existan políticas RLS adecuadas.`
-            );
-            return null; // No añade la URL si no se pudo obtener
-          }
-
-          console.log(
-            `Archivo subido: ${file.name}, URL: ${urlData.publicUrl}`
-          );
+          if (!urlData?.publicUrl) return null;
           return urlData.publicUrl;
         });
 
@@ -87,76 +69,49 @@ export default function MultiStepWizard() {
           ...results.filter((url): url is string => url !== null)
         );
 
-        // Mensaje de éxito para la subida (si hubo archivos)
         if (uploadToastId) {
-          if (uploadedFileUrls.length === data.files.length) {
-            toast.success("Archivos subidos con éxito.", { id: uploadToastId });
-          } else {
-            toast.warning(
-              "Algunos archivos no pudieron ser procesados completamente.",
-              { id: uploadToastId }
-            );
-          }
+          toast.success("Archivos subidos con éxito", { id: uploadToastId });
         }
-      } else {
-        console.log("No hay archivos para subir.");
-        // No necesitamos toast de carga si no hay archivos
       }
 
-      // 3. Preparar los datos (payload)
       const payload = {
         teamName: data.teamName,
         members: data.members.map((m) => ({
           memberName: m.nombre,
           memberEmail: m.correo,
           studentCode: m.codigoEstudiantil,
-          nrc: Array.isArray(m.nrc) ? m.nrc : [m.nrc], // asegúrate que es array
+          nrc: Array.isArray(m.nrc) ? m.nrc : [m.nrc],
         })),
         videogame: {
           vgName: data.gameName,
           description: data.description,
-          logoURL: uploadedFileUrls[0] || "", // solo 1 archivo
+          logoURL: uploadedFileUrls[0] || "",
         },
       };
 
-      try {
-        const res = await customFetch("http://localhost:3000/teams", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      const res = await customFetch("http://localhost:3000/teams", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        console.log("Respuesta del servidor:", res.status);
-        // Regresar a la página de inscripción al torneo si el registro fue exitoso
-        if (res.status === 201) {
-          navigate("/registro-equipo");
-          console.log("Registro exitoso, redirigiendo...");
-        } else {
-          const errorBody = await res.json();
-          throw new Error(
-            `Error ${res.status}: ${errorBody.message || "Error desconocido"}`
-          );
-        }
-
-      } catch (error) {
-        console.error("Error al enviar el payload:", error);
-        toast.error("Error al enviar el payload", {
-          description: "Ocurrió un error inesperado.",
-          duration: 5000,
-        });
+      if (res.status === 201) {
+        navigate("/equipos");
+        return; // <- NO llamamos setIsLoading(false) aquí para mantener el loading hasta redirección
+      } else {
+        const errorBody = await res.json();
+        throw new Error(
+          `Error ${res.status}: ${errorBody.message || "Error desconocido"}`
+        );
       }
     } catch (error: any) {
-      console.error("Error en el proceso onSubmit:", error);
-      if (uploadToastId) {
-        toast.dismiss(uploadToastId); // Cierra el toast de carga si falló
-      }
-      toast.error("Error al procesar el formulario", {
-        description: error.message || "Ocurrió un error inesperado.",
+      if (uploadToastId) toast.dismiss(uploadToastId);
+      toast.error("Error en el registro", {
+        description: error.message || "Error inesperado",
         duration: 5000,
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // solo desactiva loading si hay error
     }
   }
 
@@ -164,20 +119,19 @@ export default function MultiStepWizard() {
     <MultiFormProvider>
       <FormProvider {...methods}>
         <Form {...methods}>
-          <form
-            onSubmit={methods.handleSubmit(onSubmit)}
-            className="space-y-6"
-            noValidate
-          >
-            <StepRenderer />
-            {/* Ejemplo de botón de submit fuera del StepRenderer
-               (ajústalo si tu botón está dentro de un paso específico) */}
-            {/* <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={isLoading}>
-                 {isLoading ? 'Procesando...' : 'Enviar Formulario'}
-                </Button>
-            </div> */}
-          </form>
+          {isLoading ? (
+            <div className="text-center py-20 text-xl text-white animate-pulse">
+              Procesando registro...
+            </div>
+          ) : (
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              className="space-y-6"
+              noValidate
+            >
+              <StepRenderer />
+            </form>
+          )}
         </Form>
       </FormProvider>
     </MultiFormProvider>
