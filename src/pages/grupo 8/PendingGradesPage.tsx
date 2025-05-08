@@ -47,7 +47,7 @@ const PendingGradesPage: React.FC = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {loading ? (
-        <div className="flex justify-center items-center h-screen text-white">
+        <div className="flex justify-center items-center h-screen text-black dark:text-white ">
         <p>Cargando juegos pendientes...</p>
         </div>
       ) : (

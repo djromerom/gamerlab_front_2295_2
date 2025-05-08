@@ -6,7 +6,7 @@ import { Button } from "@/components/grupo 8/boton"
 import { Input } from "@/components/grupo 8/input"
 import { useNavigate } from "react-router-dom"; // Importa useNavigate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/grupo 8/dropdown-menu";
-
+import GameModal from "@/components/grupo 8/GameModal";
 
 
 
@@ -98,10 +98,12 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [sortedGames, setSortedGames] = useState<Game[]>(games); // Estado para los juegos ordenados
     const navigate = useNavigate(); // Inicializa useNavigate
+    const [selectedGame, setSelectedGame] = useState(null); // Estado para el juego seleccionado
+    const [modalOpen, setModalOpen] = useState(false);
 
     const handleCalificarClick = (game: Game) => {
-        
-        navigate(`/pendientes-calificar/${game.id}`, { state: { game} });
+
+        navigate(`/pendientes-calificar/${game.id}`, { state: { game } });
     };
 
     // Función para ordenar los juegos
@@ -129,11 +131,11 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
         setIsDropdownOpen(!isDropdownOpen)
     }
 
-    // Función temporal para el botón de información
-    const handleInfoClick = (gameId: string) => {
-        console.log(`Mostrar información para ${gameId}`)
-        // Aquí irá la funcionalidad que se implementará más adelante
-    }
+    const handleOpenModal = (game: any) => {
+        setSelectedGame(game);
+        setModalOpen(true);
+    };
+
 
 
     return (
@@ -225,7 +227,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
                         <div className="flex justify-between mt-auto pt-2">
                             {/* Botón de información (izquierda) - cambiado a icono "i" */}
                             <button
-                                onClick={() => handleInfoClick(game.id)}
+                                onClick={() => handleOpenModal(game)}
                                 className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors"
                                 aria-label="Información"
                             >
@@ -253,6 +255,14 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
                     No hay juegos pendientes por calificar
                 </div>
             )}
+            {modalOpen && selectedGame && (
+                <GameModal
+                    open={modalOpen}
+                    onClose={() => setModalOpen(false)}
+                    game={selectedGame}
+                />
+            )}
+
         </div>
     )
 }
