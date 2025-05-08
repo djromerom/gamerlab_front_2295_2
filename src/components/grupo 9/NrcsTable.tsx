@@ -179,8 +179,8 @@ export const NrcsTable: React.FC<Props> = ({
       try {
         // Asume que tienes endpoints para obtener listas activas
         const [subjectsRes, professorsRes] = await Promise.all([
-          customFetch(`${apiBaseUrl}/subjects`), // O como obtengas solo activos
-          customFetch(`${apiBaseUrl}/professors`), // O como obtengas solo activos
+          customFetch(`${apiBaseUrl}/subjects/select-options`), // O como obtengas solo activos
+          customFetch(`${apiBaseUrl}/professors/select-options`), // O como obtengas solo activos
         ]);
 
         if (!subjectsRes.ok || !professorsRes.ok) {
@@ -190,8 +190,8 @@ export const NrcsTable: React.FC<Props> = ({
         const subjectsData: Subject[] = await subjectsRes.json();
         const professorsData: Professor[] = await professorsRes.json();
 
-        setSubjectsList(subjectsData.data || []);
-        setProfessorsList(professorsData.data || []);
+        setSubjectsList(subjectsData || []);
+        setProfessorsList(professorsData || []);
       } catch (err: any) {
         console.error("Error fetching select data:", err);
         setError("Error al cargar datos para formularios."); // Mostrar error general
