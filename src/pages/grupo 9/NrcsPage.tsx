@@ -34,11 +34,7 @@ const NrcsPage = () => {
           } catch (e) {}
           throw new Error(errorMsg);
         }
-        const dataRespond: RowData[] = await res.json();
-
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
+        const dataRespond = await res.json();
 
         setData({
           title: "NRC'S",
@@ -48,7 +44,7 @@ const NrcsPage = () => {
             "subject.name": "Nombre de la Materia",
             "professor.name": "profesor",
           },
-          rows: dataRespond,
+          rows: dataRespond.data,
         });
       } catch (err: any) {
         console.error("Error fetching subjects:", err);

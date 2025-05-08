@@ -15,9 +15,14 @@ import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
+import RatePage from "@/pages/grupo 8/RatePage";
+import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import ProfessorsPage from "@/pages/grupo 9/professorsPage copy";
+import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 
 type Role =
   | "Profesor"
@@ -72,7 +77,7 @@ const routes: RouteConfig[] = [
   {
     path: "/inicio",
     element: <HomePage />,
-    roles: ["Profesor", "Administrador", "Consultor", "Jurado"],
+    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado"],
   },
   {
     path: "/estadisticas",
@@ -80,6 +85,22 @@ const routes: RouteConfig[] = [
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
+  {
+    path: "/pendientes-calificar",
+    element: <PendingGradesPage />,
+    roles: ["Jurado"],
+  },
+  {
+    path: "/pendientes-calificar/:id",
+    element: <RatePage params={{ id: "" }} />,
+    roles: ["Jurado"],
+  },
+  {
+    path: "/mi-equipo",
+    element: <RatedPage params={{ id: "" }} />,
+    roles: ["Consultor"],
+  },
+
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -90,6 +111,16 @@ const routes: RouteConfig[] = [
   {
     path: "/verificar-cuenta",
     element: <VerifyEmailPage />,
+  },
+  {
+    path: "/home-estudiante",
+    element: <HomeStudentPage />,
+    roles: ["Estudiante", "Administrador"],
+  },
+  {
+    path: "/home-profesor",
+    element: <HomeTeacherPage />,
+    roles: ["Profesor", "Administrador"],
   },
 ];
 
