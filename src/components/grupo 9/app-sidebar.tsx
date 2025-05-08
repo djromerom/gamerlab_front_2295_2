@@ -39,13 +39,12 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/criterios",
           icon: BookCheck,
         },
-        { name: "Profesores", url: "/profesores", icon: FileUser },
       ],
     },
     {
       title: "Personal",
       items: [
-        { name: "Profesor", url: "/profesor", icon: FileUser },
+        { name: "Profesor", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Gavel },
       ],
     },
@@ -76,7 +75,7 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
       ],
-    }
+    },
   ],
 };
 
