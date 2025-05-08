@@ -30,15 +30,10 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [{ name: "Estadísticas", url: "/estadisticas", icon: ChartLine }],
     },
     {
-      title: "Gestión de Materias y NRC",
+      title: "Gestión General",
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
-      ],
-    },
-    {
-      title: "Criterios de Calificación",
-      items: [
         {
           name: "Criterios de Calificación",
           url: "/criterios",
@@ -60,7 +55,7 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         {
           name: "Pendientes por calificar",
-          url: "/pendientes",
+          url: "/pendientes-calificar",
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
@@ -69,7 +64,19 @@ const MENU: Record<Role, MenuItem[]> = {
     },
   ],
   Profesor: [],
-  Consultor: [],
+  Estudiante: [],
+  Consultor: [
+    {
+      title: "Información",
+      items: [
+        {
+          name: "Mi equipo",
+          url: "/mi-equipo",
+          icon: LibraryBig,
+        },
+      ],
+    },
+  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

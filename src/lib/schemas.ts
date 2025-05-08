@@ -8,7 +8,7 @@ export const CombinedSchema = z.object({
         nombre: z.string().min(1, 'Requerido'),
         correo: z.string().email('Email inválido'),
         codigoEstudiantil: z.string().min(1, 'Requerido'),
-        nrc: z.string().min(1, 'Requerido'),
+        nrc: z.array(z.string().min(1, 'Requerido')).min(1, 'Selecciona al menos un NRC'),
       })
     )
     .min(1, 'Al menos un integrante')

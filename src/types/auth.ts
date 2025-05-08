@@ -1,4 +1,9 @@
-export type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
+export type Role =
+  | "Profesor"
+  | "Administrador"
+  | "Jurado"
+  | "Estudiante"
+  | "Consultor";
 
 export interface LoginCredentials {
   email: string;

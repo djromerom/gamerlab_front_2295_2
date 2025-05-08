@@ -1,40 +1,59 @@
-import { useAuth } from '@/contexts/AuthContext.tsx';
+// hooks/useFetch.ts (CORREGIDO)
+
+import { useAuth } from "@/contexts/AuthContext.tsx";
+import { useCallback } from "react";
 
 export function useFetch() {
   const { accessToken, refreshAccessToken, logout } = useAuth();
 
-  return async function (
-    input: RequestInfo,
-    init: RequestInit = {}
-  ): Promise<Response> {
-    // 1. Primera petición con accessToken en header
-    let res = await fetch(input, {
-      ...init,
-      credentials: 'include',
-      headers: {
-        ...init.headers,
-        Authorization: accessToken ? `Bearer ${accessToken}` : '',
-      },
-    });
+  const fetchWrapper = useCallback(
+    async (input: RequestInfo, init: RequestInit = {}): Promise<Response> => {
+      const currentAccessToken = accessToken;
 
-    // 2. Si expira (401), intento refrescar y reintento
-    if (res.status === 401) {
-      try {
-        const newToken = await refreshAccessToken();
-        res = await fetch(input, {
-          ...init,
-          credentials: 'include',
-          headers: {
-            ...init.headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        });
-      } catch {
-        logout();
-        throw new Error('No autorizado');
+      let response = await fetch(input, {
+        ...init,
+        credentials: "include",
+        headers: {
+          ...init.headers,
+
+          ...(currentAccessToken
+            ? { Authorization: `Bearer ${currentAccessToken}` }
+            : {}),
+        },
+      });
+
+      if (response.status === 401) {
+        try {
+          const newAccessToken = await refreshAccessToken();
+
+          if (!newAccessToken) {
+            console.error("refreshAccessToken did not return a new token.");
+            logout();
+            throw new Error("Failed to obtain new token after refresh.");
+          }
+
+          response = await fetch(input, {
+            ...init,
+            credentials: "include",
+            headers: {
+              ...init.headers,
+              Authorization: `Bearer ${newAccessToken}`,
+            },
+          });
+        } catch (refreshError: any) {
+          console.error("useFetch failed to refresh token:", refreshError);
+          logout();
+
+          throw new Error(
+            `Session refresh failed: ${refreshError.message || "Unauthorized"}`
+          );
+        }
       }
-    }
 
-    return res;
-  };
+      return response;
+    },
+    [accessToken, refreshAccessToken, logout]
+  );
+
+  return fetchWrapper;
 }

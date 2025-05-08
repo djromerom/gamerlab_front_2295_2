@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface CountdownTimerProps {
   targetDate: string | number | Date;
@@ -11,7 +11,9 @@ interface TimeLeft {
   seconds: number;
 }
 
-export default function CountdownTimer({ targetDate }: CountdownTimerProps): React.ReactElement {
+export default function CountdownTimer({
+  targetDate,
+}: CountdownTimerProps): React.ReactElement {
   const calculateTimeLeft = (): TimeLeft => {
     const difference = +new Date(targetDate) - +new Date();
     const totalSeconds = Math.floor(difference / 1000);
@@ -36,7 +38,7 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps): Rea
 
   const { days, hours, minutes, seconds } = timeLeft;
 
-  const pad = (n: number): string => String(n).padStart(2, '0');
+  const pad = (n: number): string => String(n).padStart(2, "0");
 
   return (
     <div className="text-center mb-8 sm:mt-8">
