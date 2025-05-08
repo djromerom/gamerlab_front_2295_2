@@ -44,7 +44,7 @@ const MENU: Record<Role, MenuItem[]> = {
     {
       title: "Personal",
       items: [
-        { name: "Profesor", url: "/profesores", icon: FileUser },
+        { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Gavel },
       ],
     },
