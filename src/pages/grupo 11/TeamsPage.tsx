@@ -34,7 +34,7 @@ export default function TeamsPage() {
       });
 
       const rawData = await res.json();
-      const data: Team[] = rawData.map((team: any) => ({
+      const data: Team[] = rawData.map((team) => ({
         id: team.id,
         gameName: team.name,
         teamName: team.teamName,
