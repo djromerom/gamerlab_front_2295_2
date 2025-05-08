@@ -20,7 +20,7 @@ import RatePage from "@/pages/grupo 8/RatePage";
 import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import ProfessorsPage from "@/pages/grupo 9/ProfessorsPage";
+import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 

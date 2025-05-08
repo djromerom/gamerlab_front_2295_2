@@ -13,7 +13,7 @@ interface ProfessorRowData {
   updatedAt: Date;
 }
 
-const ProfessorsPage = () => {
+export const ProfessorsPage: React.FC = () => {
   const [professors, setProfessors] = useState<ProfessorRowData[] | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,5 +93,3 @@ const ProfessorsPage = () => {
     </LayoutAplication>
   );
 };
-
-export default ProfessorsPage;
