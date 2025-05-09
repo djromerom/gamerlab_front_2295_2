@@ -5,8 +5,8 @@ import Scoreboard from "@/components/grupo 5/Scoreboard";
 const HomeStudentPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
-      <Review />
       <Scoreboard />
+      <Review />
     </div>
   );
 };
