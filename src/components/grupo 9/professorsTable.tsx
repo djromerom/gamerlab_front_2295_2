@@ -53,15 +53,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-interface Professor {
-  id: string; // UUID
-  name: string;
-  email: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { ProfessorRowData } from "@/pages/grupo 9/professorsPage";
 
 interface ProfessorFormData {
   name: string;
@@ -69,7 +61,7 @@ interface ProfessorFormData {
 }
 
 interface Props {
-  professors: Professor[] | null;
+  professors: ProfessorRowData[] | null;
   apiBaseUrl: string;
   isDataLoading?: boolean;
 }
@@ -82,19 +74,18 @@ export const ProfessorsTable: React.FC<Props> = ({
   const customFetch = useFetch();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [allProfessors, setAllProfessors] = useState<Professor[]>(
+  const [allProfessors, setAllProfessors] = useState<ProfessorRowData[]>(
     professors || []
   );
-  const [currentRows, setCurrentRows] = useState<Professor[]>([]);
+  const [currentRows, setCurrentRows] = useState<ProfessorRowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newProfessor, setNewProfessor] = useState<ProfessorFormData>({
     name: "",
     email: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingProfessor, setEditingProfessor] = useState<Professor | null>(
-    null
-  );
+  const [editingProfessor, setEditingProfessor] =
+    useState<ProfessorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
@@ -106,6 +97,20 @@ export const ProfessorsTable: React.FC<Props> = ({
   const columns = [
     { key: "name", label: "Nombre" },
     { key: "email", label: "Email" },
+    {
+      key: "confirmationStatusId",
+      label: "Estado de Confirmación",
+      render: (value: number) => {
+        switch (value) {
+          case 1:
+            return "CONFIRMADO";
+          case 2:
+            return "PENDIENTE";
+          case 3:
+            return "EXPIRADO";
+        }
+      },
+    },
   ];
 
   // Efecto para actualizar los datos cuando cambia la prop professors
@@ -161,7 +166,7 @@ export const ProfessorsTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al crear el profesor");
       }
 
-      const createdProfessor: Professor = await response.json();
+      const createdProfessor: ProfessorRowData = await response.json();
       setAllProfessors((prev) => [createdProfessor, ...prev]);
       setNewProfessor({ name: "", email: "" });
       setAddDialogOpen(false);
@@ -203,7 +208,7 @@ export const ProfessorsTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al actualizar el profesor");
       }
 
-      const updatedProfessor: Professor = await response.json();
+      const updatedProfessor: ProfessorRowData = await response.json();
       setAllProfessors((prev) =>
         prev.map((p) => (p.id === updatedProfessor.id ? updatedProfessor : p))
       );
@@ -291,29 +296,33 @@ export const ProfessorsTable: React.FC<Props> = ({
                 </div>
               )}
               <div className="grid gap-4 py-4 px-6">
-                {columns.map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-4 items-center gap-4"
-                  >
-                    <Label htmlFor={`add-${key}`} className="text-right">
-                      {label}
-                    </Label>
-                    <Input
-                      id={`add-${key}`}
-                      value={newProfessor[key as keyof ProfessorFormData] || ""}
-                      onChange={(e) =>
-                        setNewProfessor((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                      className="col-span-3"
-                      required
-                      type={key === "email" ? "email" : "text"}
-                    />
-                  </div>
-                ))}
+                {columns
+                  .filter((c) => c.key !== "confirmationStatusId")
+                  .map(({ key, label }) => (
+                    <div
+                      key={key}
+                      className="grid grid-cols-4 items-center gap-4"
+                    >
+                      <Label htmlFor={`add-${key}`} className="text-right">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`add-${key}`}
+                        value={
+                          newProfessor[key as keyof ProfessorFormData] || ""
+                        }
+                        onChange={(e) =>
+                          setNewProfessor((prev) => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                        type={key === "email" ? "email" : "text"}
+                      />
+                    </div>
+                  ))}
               </div>
               <DialogFooter>
                 <Button
@@ -375,8 +384,17 @@ export const ProfessorsTable: React.FC<Props> = ({
                 .filter((professor) => professor.isActive)
                 .map((professor) => (
                   <TableRow key={professor.id}>
-                    <TableCell>{professor.name}</TableCell>
-                    <TableCell>{professor.email}</TableCell>
+                    {columns.map(({ key, render }) => (
+                      <TableCell key={key}>
+                        {render
+                          ? render(
+                              professor[key as keyof ProfessorRowData] as number
+                            )
+                          : professor[
+                              key as keyof ProfessorRowData
+                            ]?.toString()}
+                      </TableCell>
+                    ))}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -491,31 +509,34 @@ export const ProfessorsTable: React.FC<Props> = ({
                 </div>
               )}
               <div className="grid gap-4 py-4 px-6">
-                {columns.map(({ key, label }) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-4 items-center gap-4"
-                  >
-                    <Label htmlFor={`edit-${key}`} className="text-right">
-                      {label}
-                    </Label>
-                    <Input
-                      id={`edit-${key}`}
-                      value={
-                        editingProfessor[key as keyof Professor]?.toString() ||
-                        ""
-                      }
-                      onChange={(e) =>
-                        setEditingProfessor((prev) =>
-                          prev ? { ...prev, [key]: e.target.value } : null
-                        )
-                      }
-                      className="col-span-3"
-                      required
-                      type={key === "email" ? "email" : "text"}
-                    />
-                  </div>
-                ))}
+                {columns
+                  .filter((c) => c.key === "name")
+                  .map(({ key, label }) => (
+                    <div
+                      key={key}
+                      className="grid grid-cols-4 items-center gap-4"
+                    >
+                      <Label htmlFor={`edit-${key}`} className="text-right">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`edit-${key}`}
+                        value={
+                          editingProfessor[
+                            key as keyof ProfessorRowData
+                          ]?.toString() || ""
+                        }
+                        onChange={(e) =>
+                          setEditingProfessor((prev) =>
+                            prev ? { ...prev, [key]: e.target.value } : null
+                          )
+                        }
+                        className="col-span-3"
+                        required
+                        type={key === "email" ? "email" : "text"}
+                      />
+                    </div>
+                  ))}
               </div>
               <DialogFooter>
                 <Button
