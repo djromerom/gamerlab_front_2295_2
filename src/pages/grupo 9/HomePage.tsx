@@ -7,23 +7,21 @@ import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
 const HomePage: React.FC = () => {
-  const { user } = useAuth(); // Default to "Estudiante" if no role is found
+  const { user } = useAuth();
   return (
     <LayoutAplication breadcrumbs={[]}>
       {user?.role?.name === "Estudiante" && <HomeStudentPage />}
       {user?.role?.name === "Profesor" && <HomeTeacherPage />}
       {user?.role?.name !== "Estudiante" && user?.role?.name !== "Profesor" && (
-        <section className="w-full md:py-24 lg:py-24 xl:py-24">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center">
+        <section className="w-full flex items-center justify-center md:py-24 lg:py-24 xl:py-24">
+          <div className="w-full max-w-4xl px-4 md:px-6 mx-auto text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
               <div className="flex items-center justify-center">
-                {/* Light mode logo */}
                 <img
                   src={darkLogo}
                   alt="Logo Light"
                   className="w-64 h-64 dark:hidden"
                 />
-                {/* Dark mode logo */}
                 <img
                   src={lightLogo}
                   alt="Logo Dark"
