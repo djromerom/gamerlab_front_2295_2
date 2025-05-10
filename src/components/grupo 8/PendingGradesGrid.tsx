@@ -78,21 +78,24 @@ const ChevronDownIcon = () => (
 
 // Tipo para los datos de los juegos
 interface Game {
-    id: string
+    id: number
+    nombre: string
     equipo: string
     materia: string
     nrc: string
     participantes: string[]
     imagen?: string
     descripcion: string; // Nuevo campo
+    isEvaluated: boolean; // Nuevo campo
 }
 
 interface PendingGamesGridProps {
     games: Game[]
 }
 
-export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
+export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: string }> = ({
     games = [], // Valor por defecto para evitar errores si no se pasan datos
+    jurorId,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -103,7 +106,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
 
     const handleCalificarClick = (game: Game) => {
 
-        navigate(`/pendientes-calificar/${game.id}`, { state: { game } });
+        navigate(`/pendientes-calificar/${game.id}`, { state: { game, jurorId } });
     };
 
     // Función para ordenar los juegos
@@ -122,7 +125,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
     // Filtrar juegos basados en la búsqueda
     const filteredGames = sortedGames.filter(
         (game) =>
-            game.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            game.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
             game.equipo.toLowerCase().includes(searchQuery.toLowerCase()),
     )
 
@@ -196,13 +199,13 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
             {/* Grid de juegos - aumentado el espaciado entre tarjetas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5">
                 {filteredGames.map((game, index) => (
-                    <div key={`${game.id}-${index}`} className="bg-gray-100 dark:bg-[#1a1a2e] rounded-2xl p-5 flex flex-col">
+                    <div key={`${game.nombre}-${index}`} className="bg-gray-100 dark:bg-[#1a1a2e] rounded-2xl p-5 flex flex-col">
                         {/* Contenido principal de la tarjeta */}
                         <div className="flex justify-between mb-4">
                             {/* Información del juego */}
                             <div className="flex justify-between mb-4">
                                 <div className="flex flex-col gap-1">
-                                    <h3 className="text-lg font-semibold">{game.id}</h3>
+                                    <h3 className="text-lg font-semibold">{game.nombre}</h3>
                                     <p className="text-sm"><span className="text-gray-400">Equipo:</span> {game.equipo}</p>
                                     <p className="text-sm"><span className="text-gray-400">Materia:</span> {game.materia}</p>
                                     <p className="text-sm"><span className="text-gray-400">Nrc:</span> {game.nrc}</p>
@@ -211,12 +214,12 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
                             </div>
 
                             {/* Imagen del juego - círculo más grande y más a la izquierda */}
-                            <div className="w-28 h-28 bg-gray-300 rounded-full flex-shrink-0 mr-6 mt-4">
+                            <div className="w-30 h-30 bg-gray-300 rounded-full flex-shrink-0 mr-6 mt-4">
 
                                 {game.imagen ? (
                                     <img
                                         src={game.imagen || "/placeholder.svg"}
-                                        alt={`${game.id} thumbnail`}
+                                        alt={`${game.nombre} thumbnail`}
                                         className="w-full h-full object-cover rounded-full"
                                     />
                                 ) : null}
@@ -225,7 +228,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
 
                         {/* Barra inferior con botones */}
                         <div className="flex justify-between mt-auto pt-2">
-                            {/* Botón de información (izquierda) - cambiado a icono "i" */}
+                            {/* Botón de información (izquierda) */}
                             <button
                                 onClick={() => handleOpenModal(game)}
                                 className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors"
@@ -235,13 +238,18 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps> = ({
                             </button>
 
                             {/* Botón de calificar (derecha) - centrado con el círculo */}
-                            <div className="flex justify-end mt-auto pt-2 px-7">
+                            <div className="flex justify-end mt-auto pt-2 px-8">
                                 <Button
                                     size="sm"
-                                    className="px-7 py-2 text-lg bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white border-none font-bold shadow-md rounded-md "
-                                    onClick={() => handleCalificarClick(game)} // Llama a la función con los datos del juego
+                                    className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${
+                                        game.isEvaluated
+                                            ? "bg-gray-700 hover:bg-gray-700 text-white cursor-not-allowed"
+                                            : "bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white"
+                                    }`}
+                                    onClick={() => !game.isEvaluated && handleCalificarClick(game)} // Solo permite clic si no está evaluado
+                                    disabled={game.isEvaluated} // Deshabilita el botón si está evaluado
                                 >
-                                    Calificar
+                                    {game.isEvaluated ? "Calificado" : "Calificar"}
                                 </Button>
                             </div>
                         </div>

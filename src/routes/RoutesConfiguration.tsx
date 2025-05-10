@@ -16,6 +16,7 @@ import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
 import RatedPage from "@/pages/grupo 11/RatedPage";
 
 
@@ -77,6 +78,8 @@ const routes: RouteConfig[] = [
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/pendientes-calificar", element: <PendingGradesPage />, roles: ["Jurado"] },
   { path: "/pendientes-calificar/:id", element: <RatePage params={{ id: "" }} />, roles: ["Jurado"] },
+  { path: "/calificados", element: <GradedPage/>, roles: ["Jurado"] },
+
   { path: "/mi-equipo", element: <RatedPage params={{ id: "" }} />, roles: ["Consultor"] },
 
 
