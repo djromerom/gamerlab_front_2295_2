@@ -1,4 +1,3 @@
-// TablaGenerica.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -55,21 +54,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// --- Interfaces (RowData, Payloads, Materia, Data) sin cambios ---
 export interface RowData extends Record<string, any> {
   id: number | string;
-}
-
-interface UpdateMateriaPayload {
-  name?: string;
-  code?: string;
-  semester?: number;
-}
-
-interface CreateMateriaPayload {
-  name: string;
-  code: string;
-  semester: number;
 }
 
 export interface Data {
@@ -86,12 +72,12 @@ interface Props {
   isDataLoading?: boolean;
 }
 
-export const SubjectsTable: React.FC<Props> = ({
+export const JuryManagementTable: React.FC<Props> = ({
   data,
   apiBaseUrl,
   isDataLoading = false,
 }) => {
-    console.log("data", data);
+    // console.log("data", data);
   // <-- Recibe isDataLoading
   const customFetch = useFetch();
   const [currentPage, setCurrentPage] = useState(1);
@@ -276,8 +262,8 @@ export const SubjectsTable: React.FC<Props> = ({
         throw new Error("Error al actualizar la fila.");
       }
 
-      const updatedRowFromApi: RowData = await response.json();
-      console.log("response", updatedRowFromApi);
+      const updatedRowFromApi: RowData = await response.json()
+      // console.log("response", updatedRowFromApi);
       
       switch (updatedRowFromApi.confirmationStatusId) {
           case 1:
@@ -323,7 +309,7 @@ export const SubjectsTable: React.FC<Props> = ({
     }
 
     const idToDelete = allRows[deletingIndex]?.[primaryKeyField];
-    console.log(idToDelete);
+    // console.log(idToDelete);
     const apiUrl = getApiUrl(idToDelete);
 
     if (!apiUrl || idToDelete === undefined) {
@@ -338,7 +324,7 @@ export const SubjectsTable: React.FC<Props> = ({
 
     let deleteSuccess = false; // Flag para saber si cerrar el diálogo
     try {
-      console.log("apiUrl:", apiUrl);
+      // console.log("apiUrl:", apiUrl);
       const response = await customFetch(`${apiUrl}/delete`, { method: "PATCH" });
       if (!response.ok) {
         /* ... manejo de error ... */ throw new Error("...");
@@ -349,7 +335,7 @@ export const SubjectsTable: React.FC<Props> = ({
         (prevRows || []).filter((_, i) => i !== deletingIndex)
       ); // Maneja prevRows null
       deleteSuccess = true; // Marcar éxito
-      console.log("Fila eliminada (ID):", idToDelete);
+      // console.log("Fila eliminada (ID):", idToDelete);
       // Ajustar paginación si es necesario (sin cambios)
       const newTotalRows = (allRows?.length || 1) - 1; // Calcula antes de actualizar estado
       const newTotalPages = Math.ceil(newTotalRows / rowsPerPage);

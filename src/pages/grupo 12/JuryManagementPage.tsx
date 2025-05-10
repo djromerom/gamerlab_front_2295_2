@@ -1,24 +1,14 @@
-// SubjetsPage.tsx
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
 import {
-  SubjectsTable,
+  JuryManagementTable,
   Data,
-  RowData,
 } from "./tabla2"; // Adjust path if needed
 import { useState, useEffect } from "react";
 
-// Define a more specific interface if possible, including 'active'
-interface SubjectRowData extends RowData {
-  id: number | string;
-  name: string;
-  code: string;
-  semester: number;
-  isActive: boolean; // Make sure 'active' is included and is a boolean
-}
 
-const SubjetsPage = () => {
+const JuryManagementPage = () => {
   const [data, setData] = useState<Data | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +18,7 @@ const SubjetsPage = () => {
   const TABLE_RESOURCE_NAME = "juror";
 
   useEffect(() => {
-      const fetchMateria = async () => {
+      const fetchJurados = async () => {
         setIsPageLoading(true);
         setError(null);
         setData(null);
@@ -42,7 +32,7 @@ const SubjetsPage = () => {
           });
 
           if (!res.ok) {
-            let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+            let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
             try {
               const errorBody = await res.json();
               errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
@@ -93,9 +83,9 @@ const SubjetsPage = () => {
             primaryKey: "id", // Ensure 'id' exists in your RowData
           });
         } catch (err: any) {
-          console.error("Error fetching subjects:", err);
+          console.error("Error fetching jurors:", err);
           setError(
-            err.message || "Ocurrió un error desconocido al cargar las materias."
+            err.message || "An unknown error occurred while loading the jurors."
           );
           setData(null);
         } finally {
@@ -104,10 +94,10 @@ const SubjetsPage = () => {
       };
 
 
-    fetchMateria();
+    fetchJurados();
   }, []); // Empty dependency array
 
-  const breadcrumbs = [{ label: "Materias", href: "/materias" }]; // Maybe change label to "Materias Activas"
+  const breadcrumbs = [{ label: "Jurados", href: "/jurados" }]; 
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -122,7 +112,7 @@ const SubjetsPage = () => {
       )}
 
       {/* Tabla component receives already filtered data */}
-      <SubjectsTable
+      <JuryManagementTable
         data={data}
         apiBaseUrl={API_BASE_URL}
         isDataLoading={isPageLoading}
@@ -131,11 +121,11 @@ const SubjetsPage = () => {
       {/* No results message (will show if activeRows is empty) */}
       {!isPageLoading && !error && data && data.filas.length === 0 && (
         <div className="p-4 text-center text-gray-500">
-          No se encontraron materias activas. {/* Optional: Update message */}
+          No se encontraron jurados. {/* Optional: Update message */}
         </div>
       )}
     </LayoutAplication>
   );
 };
 
-export default SubjetsPage;
+export default JuryManagementPage;
