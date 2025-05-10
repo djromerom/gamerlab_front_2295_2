@@ -75,7 +75,7 @@ const JuryManagementPage = () => {
               name: "Nombre",
               email: "Correo",
               confirmationStatusId: "Estado",
-              updatedAt: "Ultima conexión",
+              updatedAt: "Última actualización",
               _count: "Juegos revisados",
             },
             // Pass the FILTERED array to the table
