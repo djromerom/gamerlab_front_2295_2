@@ -1,8 +1,6 @@
 import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { useAuth } from "@/contexts/AuthContext";
-import HomeStudentPage from "../grupo 5/HomeStudentPage";
-import HomeTeacherPage from "../grupo 5/HomeTeacherPage";
 import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
@@ -10,9 +8,6 @@ const HomePage: React.FC = () => {
   const { user } = useAuth(); // Default to "Estudiante" if no role is found
   return (
     <LayoutAplication breadcrumbs={[]}>
-      {user?.role?.name === "Estudiante" && <HomeStudentPage />}
-      {user?.role?.name === "Profesor" && <HomeTeacherPage />}
-      {user?.role?.name !== "Estudiante" && user?.role?.name !== "Profesor" && (
         <section className="w-full md:py-24 lg:py-24 xl:py-24">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center">
@@ -39,7 +34,6 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         </section>
-      )}
     </LayoutAplication>
   );
 };
