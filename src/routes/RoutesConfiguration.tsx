@@ -115,12 +115,12 @@ const routes: RouteConfig[] = [
   {
     path: "/home-estudiante",
     element: <HomeStudentPage />,
-    roles: ["Estudiante", "Administrador"],
+    roles: ["Estudiante", "Profesor"],
   },
   {
     path: "/home-profesor",
     element: <HomeTeacherPage />,
-    roles: ["Profesor", "Administrador"],
+    roles: ["Profesor"],
   },
 ];
 

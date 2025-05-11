@@ -17,40 +17,45 @@ import {
 // NRC y estudiantes asociados
 const studentsByNRC: Record<string, { id: string, name: string, grade: number }[]> = {
   "12345": [
-    { id: "001", name: "Juan Pérez", grade: 85 },
-    { id: "002", name: "María García", grade: 92 },
+    { id: "001", name: "Juan Pérez", grade: 4.5 },
+    { id: "002", name: "María García", grade: 4.2 },
   ],
   "67890": [
-    { id: "003", name: "Carlos Rodríguez", grade: 78 },
-    { id: "004", name: "Ana Martínez", grade: 95 },
+    { id: "001", name: "Carlos Rodríguez", grade: 3.4 },
+    { id: "002", name: "Ana Martínez", grade: 4.5 },
   ],
   "54321": [
-    { id: "005", name: "Luis Sánchez", grade: 88 },
-    { id: "006", name: "Sofia Fernández", grade: 76 },
-    { id: "007", name: "Diego López", grade: 91 },
-    { id: "008", name: "Valentina Torres", grade: 83 },
+    { id: "001", name: "Luis Sánchez", grade: 4.2 },
+    { id: "002", name: "Sofia Fernández", grade: 4.6 },
+    { id: "003", name: "Diego López", grade: 4.1 },
+    { id: "004", name: "Valentina Torres", grade: 3.5 },
   ]
 }
 
 const nrcOptions = Object.keys(studentsByNRC)
+interface Props {
+  initialNRC?: string;
+}
 
-export default function StudentGradeTable() {
-  const [selectedNRC, setSelectedNRC] = useState(nrcOptions[0])
+export default function StudentGradeTable({ initialNRC }: Props) {
+  const defaultNRC = nrcOptions.includes(initialNRC || "") ? initialNRC! : nrcOptions[0];
+  const [selectedNRC, setSelectedNRC] = useState(defaultNRC);
   const navigate = useNavigate()
   const isMobile = useMediaQuery("(max-width: 640px)")
 
   const students = studentsByNRC[selectedNRC]
 
-  const viewStudentDetails = (studentId: string) => {
-    navigate(`/home-estudiante`)
-  }
+const viewStudentDetails = (studentId: string) => {
+  navigate(`/home-estudiante?nrc=${selectedNRC}`);
+};
 
-  const getGradeStatus = (grade: number) => {
-    if (grade >= 90) return "text-green-600 font-medium"
-    if (grade >= 80) return "text-blue-600 font-medium"
-    if (grade >= 70) return "text-yellow-600 font-medium"
-    return "text-red-600 font-medium"
-  }
+
+const getGradeStatus = (grade: number) => {
+  if (grade >= 4.5) return "text-green-600 font-medium"
+  if (grade >= 4.0) return "text-blue-600 font-medium"
+  if (grade >= 3.0) return "text-yellow-600 font-medium"
+  return "text-red-600 font-medium"
+}
 
   const NRCSelector = (
     <div className="mb-4 w-full sm:w-64">
