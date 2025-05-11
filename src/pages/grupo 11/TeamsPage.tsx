@@ -59,7 +59,7 @@ export default function TeamsPage() {
 
   return (
     <main
-      className="min-h-screen py-23 px-4 md:px-8"
+      className="min-h-screen py-23 px-4 md:px-8 bg-black dark"
       style={{
         backgroundImage: "url('/background.webp')",
         backgroundSize: "150%",

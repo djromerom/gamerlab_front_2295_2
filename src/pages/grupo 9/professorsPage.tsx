@@ -1,13 +1,14 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { ProfessorsTable } from "@/components/grupo 9/professorsTable copy"; // Ajusta la ruta según tu estructura
+import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Ajusta la ruta según tu estructura
 import { useState, useEffect } from "react";
 
-interface ProfessorRowData {
+export interface ProfessorRowData {
   id: string;
   name: string;
   email: string;
+  confirmationStatusId: Number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -77,7 +78,6 @@ export const ProfessorsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabla de profesores */}
       <ProfessorsTable
         professors={professors}
         apiBaseUrl={API_BASE_URL}
