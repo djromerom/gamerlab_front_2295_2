@@ -1,9 +1,10 @@
-"use client"
-
-import { useEffect, useState, useRef } from "react"
+"use client";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
 import {
   Calendar,
   Trophy,
+  Palette,
   Users,
   MapPin,
   Clock,
@@ -16,9 +17,8 @@ import {
   Shield,
   Monitor,
   User,
-} from "lucide-react"
-import NavBar from "@/components/grupo 5/NavBar"
-import { Link } from "react-router"
+} from "lucide-react";
+import NavBar from "@/components/grupo 5/NavBar";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -241,83 +241,101 @@ const glowStyles = `
   .game-card:hover {
     background-color: rgba(26, 20, 48, 0.7);
   }
-`
+`;
 
+export default function CompetitionInfo() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
+  const [isTestimonialChanging, setIsTestimonialChanging] = useState(false);
+  const [isTitleChanging, setIsTitleChanging] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [testimonialType, setTestimonialType] = useState<
+    "participants" | "attendees"
+  >("participants");
 
-export default function InformationPage() {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0)
-  const [isTestimonialChanging, setIsTestimonialChanging] = useState(false)
-  const [isTitleChanging, setIsTitleChanging] = useState(false)
-  const carouselRef = useRef<HTMLDivElement>(null)
-  const [testimonialType, setTestimonialType] = useState<"participants" | "attendees">("participants")
-
-  const totalSlides = 30 // Total number of slides in the carousel
+  const totalSlides = 30; // Total number of slides in the carousel
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
-  }
+    setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
+  };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
-  }
-/*
+    setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
+  };
+
   const goToSlide = (index: number) => {
-    setCurrentSlide(index)
-  }*/
+    setCurrentSlide(index);
+  };
 
   const nextTestimonialSlide = () => {
-    const testimonialCount = testimonialType === "participants" ? testimonials.length : attendeeTestimonials.length
-    setCurrentTestimonialSlide((prev) => (prev === testimonialCount - 1 ? 0 : prev + 1))
-  }
+    const testimonialCount =
+      testimonialType === "participants"
+        ? testimonials.length
+        : attendeeTestimonials.length;
+    setCurrentTestimonialSlide((prev) =>
+      prev === testimonialCount - 1 ? 0 : prev + 1
+    );
+  };
 
   const prevTestimonialSlide = () => {
-    const testimonialCount = testimonialType === "participants" ? testimonials.length : attendeeTestimonials.length
-    setCurrentTestimonialSlide((prev) => (prev === 0 ? testimonialCount - 1 : prev - 1))
-  }
+    const testimonialCount =
+      testimonialType === "participants"
+        ? testimonials.length
+        : attendeeTestimonials.length;
+    setCurrentTestimonialSlide((prev) =>
+      prev === 0 ? testimonialCount - 1 : prev - 1
+    );
+  };
 
   const goToTestimonialSlide = (index: number) => {
-    setCurrentTestimonialSlide(index)
-  }
+    setCurrentTestimonialSlide(index);
+  };
+
+  const imagePaths = Array.from(
+    { length: 29 },
+    (_, i) => `/assets/carousel/${i + 2}.JPG`
+  );
 
   // Update carousel position when currentSlide changes
   useEffect(() => {
     if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${currentSlide * 100}%)`
+      carouselRef.current.style.transform = `translateX(-${
+        currentSlide * 100
+      }%)`;
     }
-  }, [currentSlide])
+  }, [currentSlide]);
 
   // Auto-advance carousel every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      nextSlide()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+      nextSlide();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Reset testimonial slide when testimonial type changes
   useEffect(() => {
-    setCurrentTestimonialSlide(0)
-  }, [testimonialType])
+    setCurrentTestimonialSlide(0);
+  }, [testimonialType]);
 
   // Auto-advance testimonial carousel every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      nextTestimonialSlide()
-    }, 8000)
-    return () => clearInterval(interval)
-  }, [testimonialType])
+      nextTestimonialSlide();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [testimonialType]);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
-    const styleElement = document.createElement("style")
-    styleElement.innerHTML = glowStyles
-    document.head.appendChild(styleElement)
+    const styleElement = document.createElement("style");
+    styleElement.innerHTML = glowStyles;
+    document.head.appendChild(styleElement);
 
     return () => {
-      document.head.removeChild(styleElement)
-    }
-  }, [])
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   // Testimonios de participantes
   const testimonials = [
@@ -349,7 +367,7 @@ export default function InformationPage() {
       quote:
         "Participar en la feria gamer fue para mí un verdadero reto. Pensar en haber hecho un programa completamente funcional con los conocimientos aprendidos en clase me hizo darme cuenta de las grandes capacidades que uno puede llegar a tener y el excelente trabajo de los profesores al enseñarnos las bases necesarias para afrontar esos grandes retos. Me gustó mucho tener un equipo de trabajo del cuál podía apoyarme y entenderme bastante bien, lo que facilitó las fechas de entrega y la presentación de un excelente trabajo. Y por último, me motivó a hacer trabajos similares para adquirir experiencias y probar mis conocimientos.",
     },
-  ]
+  ];
 
   const attendeeTestimonials = [
     {
@@ -366,759 +384,535 @@ export default function InformationPage() {
       quote:
         "Desde mi experiencia como monitora y jurado en la feria gamer, considero que este espacio, si bien aún presenta muchas oportunidades para mejorar y crecer, también representa una gran oportunidad para mostrar a las demás carreras los proyectos desarrollados por los alumnos. Además, permite que tanto participantes como visitantes observen, reflexionen y aprecien de primera mano cómo se evidencian los avances en resultados a medida que se progresa de semestre.",
     },
-    {
-      id: 3,
-      name: "Daniel Torres",
-      role: "Asistente",
-      quote:
-        "Las charlas con desarrolladores fueron inspiradoras. La energía del evento fue increíble, definitivamente volveré este año.",
-    },
-    {
-      id: 4,
-      name: "Valentina Ruiz",
-      role: "Asistente",
-      quote:
-        "El ambiente fue muy acogedor incluso para quienes no somos gamers hardcore. Disfruté mucho de las exhibiciones y la zona retro.",
-    },
-  ]
+  ];
 
   return (
     <>
-    <NavBar />
-    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-      
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-        style={{ backgroundImage: "url('/background.webp')" }}
-      >
-        <div className="absolute inset-0"></div>
-      </div>
-      <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
-        <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
-          <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> - Información General
-        </h1>
+      <NavBar />
+      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
+          style={{ backgroundImage: "url('/background.webp')" }}
+        >
+          <div className="absolute inset-0"></div>
+        </div>
+        <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
+          <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
+            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
+            Información General
+          </h1>
 
-        {/* Hero Section */}
-        <div className="w-full max-w-4xl mb-12">
-          <div className="relative gradient-border gradient-border-purple p-0">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                ¡Bienvenidos a la Feria Gamer Uninorte 2025!
-              </h2>
-              <p className="text-gray-300 mb-6">
-                El evento más esperado del año para los amantes de los videojuegos y la tecnología. Una experiencia
-                inmersiva donde podrás disfrutar de torneos, exhibiciones, charlas y mucho más en un ambiente único
-                diseñado para la comunidad gamer.
+          {/* Hero Section */}
+          <div className="w-full max-w-4xl mb-12">
+            <div className="relative gradient-border gradient-border-purple p-0">
+              <div className="gradient-border-inner"></div>
+              <div className="relative z-10 p-6 md:p-8">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
+                  ¡Bienvenidos a la Feria Gamer Uninorte 2025!
+                </h2>
+                <p className="text-gray-300 mb-6">
+                  Este es un evento académico y experiencial donde los
+                  estudiantes del programa de Ingeniería de Sistemas de la
+                  Universidad del Norte, desde primer hasta cuarto semestre,
+                  presentan al público general los videojuegos que han
+                  desarrollado en el marco de sus asignaturas. Esta feria no
+                  solo celebra la creatividad y el talento técnico de los
+                  universitarios, sino que también invita a estudiantes de
+                  colegio a participar, interactuar y conocer de cerca el
+                  proceso de creación de videojuegos, fomentando así el interés
+                  por la tecnología, la programación y el diseño interactivo.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                    <Calendar className="w-5 h-5 text-[#AC7CFF]" />
+                    <span>04 Junio, 2025</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                    <MapPin className="w-5 h-5 text-[#AC7CFF]" />
+                    <span>Campus Uninorte</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                    <Users className="w-5 h-5 text-[#AC7CFF]" />
+                    <span>+400 Participantes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Information Cards */}
+          <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1 - Tematica */}
+            <div className="info-card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-[#110D20]">
+                  <Palette className="w-6 h-6 text-[#AC7CFF]" />
+                </div>
+                <h3 className="text-xl font-bold">Temática</h3>
+              </div>
+              <p className="text-gray-300 mb-4">
+                Este año, la feria gamer se enfoca en el poder de los
+                videojuegos para crear conciencia ambiental. Bajo el lema “Juega
+                Verde, Piensa Verde”, los videojuegos estarán inspirados en el
+                cuidado del planeta, la sostenibilidad y el impacto positivo de
+                la tecnología.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                  <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                  <span>15-17 Abril, 2025</span>
+            </div>
+
+            {/* Card 2 - Horarios */}
+            <div className="info-card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-[#110D20]">
+                  <Clock className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
-                <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                  <MapPin className="w-5 h-5 text-[#AC7CFF]" />
-                  <span>Campus Uninorte</span>
+                <h3 className="text-xl font-bold">Horarios</h3>
+              </div>
+              <div className="space-y-3 text-gray-300">
+                <div>
+                  <h4 className="font-semibold text-white">
+                    Jornada AM - 04 de Junio
+                  </h4>
+                  <p>8:00 - 12:00: Exhibiciones y stands</p>
                 </div>
-                <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                  <Users className="w-5 h-5 text-[#AC7CFF]" />
-                  <span>+500 Participantes</span>
+                <div>
+                  <h4 className="font-semibold text-white">
+                    Jornada PM - 04 de Junio
+                  </h4>
+                  <p>2:00 - 4:00: Exhibiciones y stands</p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Information Cards */}
-        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card 1 - Torneos */}
-          <div className="info-card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-full bg-[#110D20]">
-                <Trophy className="w-6 h-6 text-[#AC7CFF]" />
-              </div>
-              <h3 className="text-xl font-bold">Torneos</h3>
-            </div>
-            <p className="text-gray-300 mb-4">
-              Compite en torneos de League of Legends, Valorant, FIFA 25 y más. Premios en efectivo y productos gaming
-              para los ganadores.
-            </p>
-            <ul className="space-y-2 text-gray-300">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>League of Legends - 5vs5</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Valorant - Equipos</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>FIFA 25 - 1vs1</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Super Smash Bros - Bracket</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Card 2 - Horarios */}
-          <div className="info-card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-full bg-[#110D20]">
-                <Clock className="w-6 h-6 text-[#AC7CFF]" />
-              </div>
-              <h3 className="text-xl font-bold">Horarios</h3>
-            </div>
-            <div className="space-y-3 text-gray-300">
-              <div>
-                <h4 className="font-semibold text-white">Día 1 - 15 de Abril</h4>
-                <p>10:00 - 18:00: Exhibiciones y stands</p>
-                <p>12:00 - 17:00: Clasificatorias torneos</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white">Día 2 - 16 de Abril</h4>
-                <p>10:00 - 18:00: Exhibiciones y stands</p>
-                <p>11:00 - 16:00: Semifinales torneos</p>
-                <p>16:30 - 18:00: Charla "Futuro del Gaming"</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white">Día 3 - 17 de Abril</h4>
-                <p>10:00 - 17:00: Exhibiciones y stands</p>
-                <p>13:00 - 16:00: Finales de torneos</p>
-                <p>16:30 - 17:30: Ceremonia de premiación</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 - Actividades */}
-          <div className="info-card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-full bg-[#110D20]">
-                <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
-              </div>
-              <h3 className="text-xl font-bold">Actividades</h3>
-            </div>
-            <p className="text-gray-300 mb-4">Disfruta de múltiples actividades durante los tres días del evento:</p>
-            <ul className="space-y-2 text-gray-300">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Zona de realidad virtual</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Exhibición de cosplay</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Meet & Greet con streamers</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Zona retro gaming</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                <span>Talleres de desarrollo de videojuegos</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Previous Edition Section - REDESIGNED */}
-        <div className="w-full max-w-4xl mt-16">
-          <div className="flex items-center gap-3 mb-6 justify-center">
-            <History className="w-6 h-6 text-[#AC7CFF]" />
-            <h2 className="text-2xl font-bold text-center">Edición Anterior - 2024</h2>
-          </div>
-
-          {/* Main info about previous edition */}
-          <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <img
-                    src={"/assets/carousel/1.JPG"}
-                    alt="Feria Gamer 2024"
-                    className="rounded-lg shadow-lg object-cover w-full"
-                  />
+            {/* Card 3 - Actividades */}
+            <div className="info-card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-[#110D20]">
+                  <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
-                <div className="md:w-1/2">
-                  <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">Educación a través del Gaming</h3>
-                  <p className="text-gray-300 mb-4">
-                    Innovación y aprendizaje se fusionaron en la II Feria Gamer del programa de Ingeniería de Sistemas y
-                    Computación, evento donde los videojuegos se transformaron en herramientas para educar sobre los
-                    peligros del mundo digital.
-                  </p>
-                  <p className="text-gray-300 mb-4">
-                    Estudiantes de primero a tercer semestre presentaron el jueves, 28 de noviembre de 2024, sus
-                    proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el
-                    grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en
-                    programación.
-                  </p>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full inline-flex">
-                    <Calendar className="w-4 h-4 text-[#AC7CFF]" />
-                    <span className="text-sm">28 de noviembre, 2024</span>
+                <h3 className="text-xl font-bold">Actividades</h3>
+              </div>
+              <p className="text-gray-300 mb-4">
+                Disfruta de múltiples actividades durante los tres días del
+                evento:
+              </p>
+              <ul className="space-y-2 text-gray-300">
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
+                  <span>Zona de realidad virtual</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
+                  <span>Zona retro gaming</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
+                  <span>Talleres de desarrollo de videojuegos</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Previous Edition Section - REDESIGNED */}
+          <div className="w-full max-w-4xl mt-16">
+            <div className="flex items-center gap-3 mb-6 justify-center">
+              <History className="w-6 h-6 text-[#AC7CFF]" />
+              <h2 className="text-2xl font-bold text-center">
+                Edición Anterior - 2024
+              </h2>
+            </div>
+
+            {/* Main info about previous edition */}
+            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+              <div className="gradient-border-inner"></div>
+              <div className="relative z-10 p-6 md:p-8">
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="md:w-1/2">
+                    <img
+                      src={"/assets/carousel/MainPhoto.JPG"}
+                      alt="Feria Gamer 2024"
+                      className="rounded-lg shadow-lg object-cover w-full"
+                    />
+                  </div>
+                  <div className="md:w-1/2">
+                    <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
+                      Educación a través del Gaming
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                      Innovación y aprendizaje se fusionaron en la II Feria
+                      Gamer del programa de Ingeniería de Sistemas y
+                      Computación, evento donde los videojuegos se transformaron
+                      en herramientas para educar sobre los peligros del mundo
+                      digital.
+                    </p>
+                    <p className="text-gray-300 mb-4">
+                      Estudiantes de primero a tercer semestre presentaron el
+                      jueves, 28 de noviembre de 2024, sus proyectos finales,
+                      una serie de videojuegos diseñados para generar conciencia
+                      sobre riesgos como el grooming, phishing y ciberacoso,
+                      mientras demostraban su creatividad y dominio técnico en
+                      programación.
+                    </p>
+                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full inline-flex">
+                      <Calendar className="w-4 h-4 text-[#AC7CFF]" />
+                      <span className="text-sm">28 de noviembre, 2024</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Features of previous edition */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Users className="w-6 h-6 text-[#AC7CFF]" />
+            {/* Features of previous edition */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <Users className="w-6 h-6 text-[#AC7CFF]" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">Participación</h3>
+                <p className="text-gray-300">
+                  Más de 400 estudiantes del programa de Ingeniería de sistemas
+                  y computación participaron del evento.
+                </p>
               </div>
-              <h3 className="text-lg font-bold mb-2">Participación</h3>
-              <p className="text-gray-300">Más de 400 participantes de toda la región asistieron al evento.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Trophy className="w-6 h-6 text-[#AC7CFF]" />
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <Trophy className="w-6 h-6 text-[#AC7CFF]" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">Premios</h3>
+                <p className="text-gray-300">
+                  Máxima calificación posible a los videojuegos más destacados.
+                </p>
               </div>
-              <h3 className="text-lg font-bold mb-2">Premios</h3>
-              <p className="text-gray-300">Se entregaron premios por valor de $10,000 en los diferentes torneos.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Monitor className="w-6 h-6 text-[#AC7CFF]" />
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <Monitor className="w-6 h-6 text-[#AC7CFF]" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">Exhibición</h3>
+                <p className="text-gray-300">
+                  +30 stands con muestras de videouegos a jurados y asistentes.
+                </p>
               </div>
-              <h3 className="text-lg font-bold mb-2">Exhibición</h3>
-              <p className="text-gray-300">20 stands de empresas tecnológicas y gaming presentaron sus productos.</p>
             </div>
-          </div>
 
-          {/* Educational focus */}
-          <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8">
-              <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">Enfoque Educativo</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#110D20] p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                    <h4 className="font-semibold">Anti-Grooming</h4>
+            {/* Educational focus */}
+            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+              <div className="gradient-border-inner"></div>
+              <div className="relative z-10 p-6 md:p-8">
+                <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
+                  Enfoque Educativo
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-[#110D20] p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
+                      <h4 className="font-semibold">Anti-Grooming</h4>
+                    </div>
+                    <p className="text-gray-300 text-sm">
+                      Videojuegos que enseñan a identificar y prevenir el acoso
+                      en línea por parte de adultos hacia menores.
+                    </p>
                   </div>
-                  <p className="text-gray-300 text-sm">
-                    Videojuegos que enseñan a identificar y prevenir el acoso en línea por parte de adultos hacia
-                    menores.
-                  </p>
-                </div>
-                <div className="bg-[#110D20] p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                    <h4 className="font-semibold">Anti-Phishing</h4>
+                  <div className="bg-[#110D20] p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
+                      <h4 className="font-semibold">Anti-Phishing</h4>
+                    </div>
+                    <p className="text-gray-300 text-sm">
+                      Experiencias interactivas para reconocer intentos de
+                      suplantación de identidad y estafas en línea.
+                    </p>
                   </div>
-                  <p className="text-gray-300 text-sm">
-                    Experiencias interactivas para reconocer intentos de suplantación de identidad y estafas en línea.
-                  </p>
-                </div>
-                <div className="bg-[#110D20] p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                    <h4 className="font-semibold">Anti-Ciberacoso</h4>
-                  </div>
-                  <p className="text-gray-300 text-sm">
-                    Juegos que concientizan sobre el impacto del acoso en línea y cómo combatirlo efectivamente.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Featured Games */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">Juegos Destacados</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">Dulces y Burbujas</h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">Leyendas de Papel, Páginas de Aventura</h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">Carrot Mania</h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">Musical Bubble Coffe</h4>
+                  <div className="bg-[#110D20] p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
+                      <h4 className="font-semibold">Anti-Ciberacoso</h4>
+                    </div>
+                    <p className="text-gray-300 text-sm">
+                      Juegos que concientizan sobre el impacto del acoso en
+                      línea y cómo combatirlo efectivamente.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Photo Carousel */}
-          <div className="carousel h-[300px] md:h-[400px] mb-8">
-            <div className="carousel-inner h-full" ref={carouselRef}>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/2.JPG"}
-                  alt="Exhibición de Cosplay"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Concurso de Cosplay</h3>
+            {/* Featured Games */}
+            <div className="mb-8">
+              <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
+                Juegos Destacados
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="game-card">
+                  <div className="flex items-center gap-3">
+                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                    <div>
+                      <h4 className="font-semibold">Dulces y Burbujas</h4>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/3.JPG"}
-                  alt="Zona de Realidad Virtual"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Zona de experiencias de Realidad Virtual</h3>
+                <div className="game-card">
+                  <div className="flex items-center gap-3">
+                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                    <div>
+                      <h4 className="font-semibold">
+                        Leyendas de Papel, Páginas de Aventura
+                      </h4>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/4.JPG"}
-                  alt="Charlas y Conferencias"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Charlas con desarrolladores de videojuegos</h3>
+                <div className="game-card">
+                  <div className="flex items-center gap-3">
+                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                    <div>
+                      <h4 className="font-semibold">Carrot Mania</h4>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/5.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/6.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/7.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/8.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/9.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/10.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/11.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/12.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/13.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/14.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/15.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/16.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/17.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/18.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/19.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/20.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/21.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/22.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/23.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/24.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/25.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/26.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/27.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/28.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/29.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
-                </div>
-              </div>
-              <div className="carousel-item h-full">
-                <img
-                  src={"/assets/carousel/30.JPG"}
-                  alt="Stands y Exhibiciones"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <h3 className="text-white font-bold">Stands de empresas y exhibiciones</h3>
+                <div className="game-card">
+                  <div className="flex items-center gap-3">
+                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                    <div>
+                      <h4 className="font-semibold">Musical Bubble Coffe</h4>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="carousel-control carousel-control-prev" onClick={prevSlide}>
-              <ChevronLeft className="w-6 h-6 text-white" />
-            </div>
-            <div className="carousel-control carousel-control-next" onClick={nextSlide}>
-              <ChevronRight className="w-6 h-6 text-white" />
-            </div>
+            {/* Photo Carousel */}
+            <div className="carousel h-[300px] md:h-[400px] mb-8">
+              <div className="carousel-inner h-full" ref={carouselRef}>
+                {imagePaths.map((src, index) => (
+                  <div key={index} className="carousel-item h-full relative">
+                    <img
+                      src={src}
+                      alt={`Imagen ${index + 2}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {index === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <h3 className="text-white font-bold">
+                          Feria Gamer 2024
+                        </h3>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
 
-          </div>
-        </div>
-
-        {/* Testimonials Section - Carousel */}
-        <div className="w-full max-w-4xl mt-16">
-          <div className="flex items-center gap-3 mb-6 justify-center">
-            <Quote className="w-6 h-6 text-[#AC7CFF]" />
-            <h2 className={`text-2xl font-bold text-center ${isTitleChanging ? "title-fade-out" : "title-fade-in"}`}>
-              Lo Que Dicen Nuestros {testimonialType === "participants" ? "Participantes" : "Asistentes"}
-            </h2>
-          </div>
-
-          <div className="flex justify-center mb-8">
-            <div className="bg-[#110D20] p-1 rounded-full flex">
-              <button
-                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants" ? "bg-[#AC7CFF] text-[#060312]" : "text-gray-300"}`}
-                onClick={() => {
-                  if (testimonialType !== "participants") {
-                    setIsTestimonialChanging(true)
-                    setIsTitleChanging(true)
-                    setTimeout(() => {
-                      setTestimonialType("participants")
-                      setTimeout(() => {
-                        setIsTestimonialChanging(false)
-                      }, 50)
-                      setTimeout(() => {
-                        setIsTitleChanging(false)
-                      }, 100)
-                    }, 500)
-                  }
-                }}
-              >
-                Participantes
-              </button>
-              <button
-                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees" ? "bg-[#AC7CFF] text-[#060312]" : "text-gray-300"}`}
-                onClick={() => {
-                  if (testimonialType !== "attendees") {
-                    setIsTestimonialChanging(true)
-                    setIsTitleChanging(true)
-                    setTimeout(() => {
-                      setTestimonialType("attendees")
-                      setTimeout(() => {
-                        setIsTestimonialChanging(false)
-                      }, 50)
-                      setTimeout(() => {
-                        setIsTitleChanging(false)
-                      }, 100)
-                    }, 500)
-                  }
-                }}
-              >
-                Asistentes
-              </button>
-            </div>
-          </div>
-
-          {/* Testimonial Carousel */}
-          <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8">
               <div
-                className={`carousel h-auto ${isTestimonialChanging ? "testimonial-fade-out" : "testimonial-fade-in"}`}
+                className="carousel-control carousel-control-prev"
+                onClick={prevSlide}
               >
-                <div
-                  className="carousel-inner h-full"
-                  style={{ transform: `translateX(-${currentTestimonialSlide * 100}%)` }}
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </div>
+              <div
+                className="carousel-control carousel-control-next"
+                onClick={nextSlide}
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonials Section - Carousel */}
+          <div className="w-full max-w-4xl mt-16">
+            <div className="flex items-center gap-3 mb-6 justify-center">
+              <Quote className="w-6 h-6 text-[#AC7CFF]" />
+              <h2
+                className={`text-2xl font-bold text-center ${
+                  isTitleChanging ? "title-fade-out" : "title-fade-in"
+                }`}
+              >
+                Lo Que Dicen Nuestros{" "}
+                {testimonialType === "participants"
+                  ? "Participantes"
+                  : "Asistentes"}
+              </h2>
+            </div>
+
+            <div className="flex justify-center mb-8">
+              <div className="bg-[#110D20] p-1 rounded-full flex">
+                <button
+                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${
+                    testimonialType === "participants"
+                      ? "bg-[#AC7CFF] text-[#060312]"
+                      : "text-gray-300"
+                  }`}
+                  onClick={() => {
+                    if (testimonialType !== "participants") {
+                      setIsTestimonialChanging(true);
+                      setIsTitleChanging(true);
+                      setTimeout(() => {
+                        setTestimonialType("participants");
+                        setTimeout(() => {
+                          setIsTestimonialChanging(false);
+                        }, 50);
+                        setTimeout(() => {
+                          setIsTitleChanging(false);
+                        }, 100);
+                      }, 500);
+                    }
+                  }}
                 >
-                  {(testimonialType === "participants" ? testimonials : attendeeTestimonials).map((testimonial) => (
-                    <div key={testimonial.id} className="carousel-item h-full">
-                      <div className="testimonial-card border-none bg-transparent">
-                        <div className="flex flex-col h-full">
-                          <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
-                            "{testimonial.quote}"
-                          </p>
-                          <div className="flex items-center justify-center gap-4 mt-auto">
-                            <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
-                              <User className="w-6 h-6 text-[#AC7CFF]" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold">{testimonial.name}</h4>
-                              <p className="text-sm text-[#AC7CFF]">{testimonial.role}</p>
+                  Participantes
+                </button>
+                <button
+                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${
+                    testimonialType === "attendees"
+                      ? "bg-[#AC7CFF] text-[#060312]"
+                      : "text-gray-300"
+                  }`}
+                  onClick={() => {
+                    if (testimonialType !== "attendees") {
+                      setIsTestimonialChanging(true);
+                      setIsTitleChanging(true);
+                      setTimeout(() => {
+                        setTestimonialType("attendees");
+                        setTimeout(() => {
+                          setIsTestimonialChanging(false);
+                        }, 50);
+                        setTimeout(() => {
+                          setIsTitleChanging(false);
+                        }, 100);
+                      }, 500);
+                    }
+                  }}
+                >
+                  Asistentes
+                </button>
+              </div>
+            </div>
+
+            {/* Testimonial Carousel */}
+            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+              <div className="gradient-border-inner"></div>
+              <div className="relative z-10 p-6 md:p-8">
+                <div
+                  className={`carousel h-auto ${
+                    isTestimonialChanging
+                      ? "testimonial-fade-out"
+                      : "testimonial-fade-in"
+                  }`}
+                >
+                  <div
+                    className="carousel-inner h-full"
+                    style={{
+                      transform: `translateX(-${
+                        currentTestimonialSlide * 100
+                      }%)`,
+                    }}
+                  >
+                    {(testimonialType === "participants"
+                      ? testimonials
+                      : attendeeTestimonials
+                    ).map((testimonial) => (
+                      <div
+                        key={testimonial.id}
+                        className="carousel-item h-full"
+                      >
+                        <div className="testimonial-card border-none bg-transparent">
+                          <div className="flex flex-col h-full">
+                            <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
+                              "{testimonial.quote}"
+                            </p>
+                            <div className="flex items-center justify-center gap-4 mt-auto">
+                              <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
+                                <User className="w-6 h-6 text-[#AC7CFF]" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold">
+                                  {testimonial.name}
+                                </h4>
+                                <p className="text-sm text-[#AC7CFF]">
+                                  {testimonial.role}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                <div className="carousel-control carousel-control-prev" onClick={prevTestimonialSlide}>
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </div>
-                <div className="carousel-control carousel-control-next" onClick={nextTestimonialSlide}>
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </div>
+                  <div
+                    className="carousel-control carousel-control-prev"
+                    onClick={prevTestimonialSlide}
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </div>
+                  <div
+                    className="carousel-control carousel-control-next"
+                    onClick={nextTestimonialSlide}
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </div>
 
-                <div className="carousel-indicators">
-                  {(testimonialType === "participants" ? testimonials : attendeeTestimonials).map((_, index) => (
-                    <div
-                      key={index}
-                      className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""}`}
-                      onClick={() => goToTestimonialSlide(index)}
-                    ></div>
-                  ))}
+                  <div className="carousel-indicators">
+                    {(testimonialType === "participants"
+                      ? testimonials
+                      : attendeeTestimonials
+                    ).map((_, index) => (
+                      <div
+                        key={index}
+                        className={`carousel-indicator ${
+                          currentTestimonialSlide === index ? "active" : ""
+                        }`}
+                        onClick={() => goToTestimonialSlide(index)}
+                      ></div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Registration Section */}
-        <div className="w-full max-w-4xl mt-16">
-          <div className="relative gradient-border gradient-border-purple p-0">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 text-[#AC7CFF]">¿Quieres participar?</h2>
-                <p className="text-gray-300 max-w-md">
-                  Regístrate ahora para asegurar tu lugar en los torneos y actividades. Plazas limitadas para
-                  competiciones.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to='/registro-equipo' className="px-6 py-3 bg-[#AC7CFF] hover:bg-[#ba93fe] text-[#060312] font-medium rounded-lg transition-colors cursor-pointer">
-                  Registrarse
-                </Link>
-                <Link to='/' className="px-6 py-3 border border-[#AC7CFF] text-[#AC7CFF] hover:bg-[#110D20] font-medium rounded-lg transition-colors cursor-pointer">
-                  Más información
-                </Link>
+          {/* Registration Section */}
+          <div className="w-full max-w-4xl mt-16">
+            <div className="relative gradient-border gradient-border-purple p-0">
+              <div className="gradient-border-inner"></div>
+              <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 text-[#AC7CFF]">
+                    ¿Quieres participar?
+                  </h2>
+                  <p className="text-gray-300 max-w-md">
+                    Regístrate ahora para asegurar el lugar de tu equipo en la
+                    feria.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link to="/registro-equipo">
+                    <button className="px-6 py-3 bg-[#AC7CFF] hover:bg-[#ba93fe] text-[#060312] font-medium rounded-lg transition-colors cursor-pointer">
+                      Registrarse
+                    </button>
+                  </Link>
+                  <Link to="/informacion">
+                    <button className="px-6 py-3 border border-[#AC7CFF] text-[#AC7CFF] hover:bg-[#110D20] font-medium rounded-lg transition-colors cursor-pointer">
+                      Más información
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="w-full max-w-4xl mt-12 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Info className="w-5 h-5 text-[#AC7CFF]" />
-            <p className="text-gray-300">
-              Para más información contacta a: <span className="text-[#AC7CFF]">feriagamer@uninorte.edu.co</span>
+          {/* Footer */}
+          <div className="w-full max-w-4xl mt-12 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Info className="w-5 h-5 text-[#AC7CFF]" />
+              <p className="text-gray-300">
+                Para más información contacta a:{" "}
+                <span className="text-[#AC7CFF]">
+                  feriagamer@uninorte.edu.co
+                </span>
+              </p>
+            </div>
+            <p className="text-gray-400 text-sm">
+              © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
             </p>
           </div>
-          <p className="text-gray-400 text-sm">© 2025 Feria Gamer Uninorte. Todos los derechos reservados.</p>
         </div>
       </div>
-    </div>
     </>
-  )
+  );
 }
-

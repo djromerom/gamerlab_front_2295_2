@@ -30,15 +30,10 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [{ name: "Estadísticas", url: "/estadisticas", icon: ChartLine }],
     },
     {
-      title: "Gestión de Materias y NRC",
+      title: "Gestión General",
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
-      ],
-    },
-    {
-      title: "Criterios de Calificación",
-      items: [
         {
           name: "Criterios de Calificación",
           url: "/criterios",
@@ -68,7 +63,15 @@ const MENU: Record<Role, MenuItem[]> = {
       ],
     },
   ],
-  Profesor: [],
+  Profesor: [
+    {
+      title: "Proyectos",
+      items: [
+        { name: "Calificacion", url: "/home-profesor", icon: Binary },
+      ],
+    },
+  ],
+  Estudiante: [],
   Consultor: [
     {
       title: "Información",
@@ -79,7 +82,7 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
       ],
-    }
+    },
   ],
 };
 

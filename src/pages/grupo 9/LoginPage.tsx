@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading"; // Assuming this component exists and works
+import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading";
 import {
   Card,
   CardContent,
@@ -19,9 +19,7 @@ export default function LoginPage({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const { login } = useAuth();
-
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,65 +27,55 @@ export default function LoginPage({
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true); // <-- Start loading indicator
+    setIsSubmitting(true);
     setError(null);
     try {
       await login({ email, password });
-      // Navigate only on success
       navigate("/inicio", { replace: true });
-      // No need to set loading false here if navigating away
-      // If you weren't navigating, you'd let finally handle it.
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Error desconocido: Intenta de nuevo."); // Provide a user-friendly generic message
+        setError("Error desconocido: Intenta de nuevo.");
       }
-      // Let finally handle setting loading state back
     } finally {
-      // This runs whether try succeeded or failed.
-      // If navigation happens on success, this might run just as the component unmounts,
-      // but it ensures loading is false if an error occurred.
-      setIsSubmitting(false); // <-- Stop loading indicator
+      setIsSubmitting(false);
     }
-    // Removed the redundant setLoading(false) from here
   };
 
   return (
-    <div className="relative min-h-svh">
-      {/* Fondo con z-0 */}
+    <div className="relative min-h-screen dark">
       <div
-        className="absolute inset-0 z-0 bg-center bg-no-repeat animate-float"
+        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float bg-black"
         style={{
           backgroundImage: "url('/background.webp')",
-          backgroundSize: "100%",
         }}
       ></div>
-      {/* Fondo 2 - Esquina inferior derecha */}
-      <div className="relative z-10 flex min-h-svh w-full items-center justify-center p-7 md:p-10">
-        <Card className="p-20 py-5 w-fit flex flex-col m-auto items-center justify-center gap-6 bg-black/50 border border-[#B3C7FF]/50">
-          <div className="flex items-center">
+      <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
+        <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
+          <div className="flex items-center w-full justify-center">
             <Link to="/" className="flex items-center">
               <img
-                src="/Arkad.svg" // Path to your logo
+                src="/Arkad.svg"
                 alt="Logo"
-                className="h-auto w-auto"
+                className="h-12 sm:h-16 w-auto"
               />
             </Link>
           </div>
-          <CardHeader className="w-80 p-0 text-center">
-            <CardTitle className="text-[30px]">
+          <CardHeader className="w-full p-0 text-center">
+            <CardTitle className="text-2xl sm:text-3xl md:text-[30px] leading-tight">
               ¡Hola, qué bien que estés de vuelta!
             </CardTitle>
-            <CardDescription className="text-[15px]">
+            <CardDescription className="text-sm sm:text-[15px] mt-2">
               Introduce tu correo electrónico para acceder a tu cuenta
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="w-full p-0">
             <form onSubmit={handleLogIn}>
-              <div className="flex flex-col gap-6 items-center w-80 ">
-                <div className="flex flex-col w-full items-start gap-2 ">
-                  <Label htmlFor="email" >Email</Label>
+              <div className="flex flex-col gap-4 sm:gap-6 items-center w-full">
+                <div className="flex flex-col w-full items-start gap-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -96,6 +84,7 @@ export default function LoginPage({
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isSubmitting}
+                    className="w-full"
                   />
                 </div>
                 <div className="flex flex-col w-full items-start gap-2">
@@ -108,16 +97,17 @@ export default function LoginPage({
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isSubmitting}
+                    className="w-full"
                   />
                 </div>
-                {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-                <div className="w-full mt-4">
+                {error && <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">{error}</p>}
+                <div className="w-full mt-2 sm:mt-4">
                   {isSubmitting ? (
                     <ButtonLoading className="w-full" />
                   ) : (
                     <Button
                       type="submit"
-                      className="w-full bg-[#B3C7FF] text-[20px] hover:bg-[#8a70ff]"
+                      className="w-full bg-[#B3C7FF] text-base sm:text-[20px] hover:bg-[#8a70ff]"
                       disabled={isSubmitting}
                     >
                       Ingresar
