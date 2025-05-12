@@ -203,7 +203,7 @@ export const JuryManagementTable: React.FC<Props> = ({
           addedRow.confirmationStatusId = "Expirado";
       }
 
-      addedRow.updatedAt = new Date(addedRow.updatedAt).toLocaleString("es-ES", {
+      addedRow.lastSignInAt = new Date(addedRow.lastSignInAt).toLocaleString("es-ES", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -276,7 +276,7 @@ export const JuryManagementTable: React.FC<Props> = ({
             updatedRowFromApi.confirmationStatusId = "Expirado";
         }
 
-        updatedRowFromApi.updatedAt = new Date(updatedRowFromApi.updatedAt).toLocaleString("es-ES", {
+        updatedRowFromApi.lastSignInAt = new Date(updatedRowFromApi.lastSignInAt).toLocaleString("es-ES", {
           year: "numeric",
           month: "2-digit",
           day: "2-digit",
