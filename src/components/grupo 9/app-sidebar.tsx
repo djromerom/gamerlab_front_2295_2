@@ -59,16 +59,13 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
-        { name: "Proyectos", url: "/proyectos", icon: Binary },
       ],
     },
   ],
   Profesor: [
     {
       title: "Proyectos",
-      items: [
-        { name: "Calificacion", url: "/home-profesor", icon: Binary },
-      ],
+      items: [{ name: "Calificacion", url: "/home-profesor", icon: Binary }],
     },
   ],
   Estudiante: [],
