@@ -1,177 +1,297 @@
 // File: src/components/grupo 1/GraphicsDisplay.tsx
+"use client"
 
-// Zona que muestra los graficos de los videojuegos
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TabsContent } from "@/components/ui/tabs";
-// Importamos los componentes de Recharts (biblioteca externa)
-import { BarChart, CartesianGrid, Cell, Pie, PieChart, Radar, RadarChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Bar, XAxis, YAxis } from "recharts";
-// Importamos los componentes de chart que acabamos de crear
+import { useState, useRef } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { TabsContent } from "@/components/ui/tabs"
+import {
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    Radar,
+    RadarChart,
+    PolarAngleAxis,
+    PolarGrid,
+    PolarRadiusAxis,
+    Bar,
+    XAxis,
+    YAxis,
+} from "recharts"
 import { ChartContainer, ChartTooltip, ChartLegend } from "@/components/ui/chart"
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useState } from "react";
-
-// Preparar datos para el gráfico de torta
-import { videojuegos, datosPorMateria } from "@/fetchs/grupo 1/DataFromFetchs";
+import { Progress } from "@/components/ui/progress"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react" // Importamos iconos para navegación
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 
 const GraphicDisplay = () => {
-    //const [filtroMateria, setFiltroMateria] = useState("Todas")
-    //const [filtroNRC, setFiltroNRC] = useState("Todos")
-    //const [filtroJurado, setFiltroJurado] = useState("Todos")
-    const [videojuegoSeleccionado, setVideojuegoSeleccionado] = useState(videojuegos[0])
+    const { videojuegoSeleccionado, listaVideojuegos, datosGraficoTortaMaterias, isLoading, error, fetchGlobalData } =
+        useGlobalState()
 
-    // Ordenar videojuegos por promedio para el ranking
-    const videojuegosRanking = [...videojuegos].sort((a, b) => b.promedio - a.promedio)
+    // Referencia para el contenedor del carrusel
+    const carouselRef = useRef<HTMLDivElement>(null)
+
+    // Estado para controlar la navegación
+    const [currentSlide, setCurrentSlide] = useState(0)
+
+    // Número total de slides (gráficos principales)
+    const totalSlides = 3
+
+    // Función para navegar entre slides
+    const navigateSlide = (direction: "prev" | "next") => {
+        if (carouselRef.current) {
+            const newSlide =
+                direction === "next" ? Math.min(currentSlide + 1, totalSlides - 1) : Math.max(currentSlide - 1, 0)
+
+            setCurrentSlide(newSlide)
+
+            // Scroll suave al slide correspondiente
+            const slideWidth = carouselRef.current.clientWidth
+            carouselRef.current.scrollTo({
+                left: newSlide * slideWidth,
+                behavior: "smooth",
+            })
+        }
+    }
+
+    // 1. Manejar estado de carga
+    if (isLoading) {
+        return (
+            <TabsContent value="graficos" className="flex items-center justify-center h-96">
+                <p>Cargando gráficos...</p>
+            </TabsContent>
+        )
+    }
+
+    // 2. Manejar estado de error
+    if (error) {
+        return (
+            <TabsContent value="graficos" className="flex flex-col items-center justify-center h-96">
+                <p className="text-red-500">Error al cargar los datos: {error.message}</p>
+                <Button onClick={fetchGlobalData} className="mt-4">
+                    Reintentar
+                </Button>
+            </TabsContent>
+        )
+    }
+
+    // 3. Manejar caso donde no hay videojuego seleccionado o no hay datos
+    if (!videojuegoSeleccionado || listaVideojuegos.length === 0) {
+        return (
+            <TabsContent value="graficos">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>No hay datos de videojuegos disponibles</CardTitle>
+                        <CardDescription>
+                            {listaVideojuegos.length === 0
+                                ? "No se encontraron videojuegos."
+                                : "Por favor, selecciona un videojuego para ver sus gráficos."}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {listaVideojuegos.length === 0 && <p>Intenta recargar la página o contacta al administrador.</p>}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        )
+    }
+
+    // Si llegamos aquí, videojuegoSeleccionado existe y no estamos cargando ni en error.
+    const videojuegosRanking = [...listaVideojuegos].sort((a, b) => b.promedio - a.promedio)
     const top3 = videojuegosRanking.slice(0, 3)
 
-    // Preparar datos para los gráficos
     const datosCriterios = Object.entries(videojuegoSeleccionado.criterios).map(([key, value]) => ({
         criterio: key.charAt(0).toUpperCase() + key.slice(1),
         valor: value,
     }))
-    
+
     return (
         <TabsContent value="graficos">
-            <div className="grid grid-cols-1 gap-6 mb-6">
-                {/* Gráfico de Barras - Promedios por Criterio */}
-                <Card>
-                    <CardHeader className="pt-4">
-                        <CardTitle>Gráfico de Barras - Promedios por Criterio</CardTitle>
-                        <CardDescription>{videojuegoSeleccionado.nombre}</CardDescription> {/* Use destructured variable */}
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80">
-                            <ChartContainer
-                                config={{
-                                    jugabilidad: {
-                                        label: "Jugabilidad",
-                                        color: "hsl(12, 76%, 61%)",
-                                    },
-                                    diseño: {
-                                        label: "Diseño",
-                                        color: "hsl(173, 58%, 39%)",
-                                    },
-                                    innovación: {
-                                        label: "Innovación",
-                                        color: "hsl(197, 37%, 24%)",
-                                    },
-                                    técnica: {
-                                        label: "Técnica",
-                                        color: "hsl(43, 74%, 66%)",
-                                    },
-                                    presentación: {
-                                        label: "Presentación",
-                                        color: "hsl(27, 87%, 67%)",
-                                    },
-                                }}
-                                className="min-h-[300px]"
-                            >
-                                <BarChart
-                                    width={500}
-                                    height={300}
-                                    data={datosCriterios}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="criterio" />
-                                    <YAxis domain={[0, 5]} />
-                                    <ChartTooltip />
-                                    <Bar dataKey="valor" fill="hsl(12, 76%, 61%)" radius={4} />
-                                </BarChart>
-                            </ChartContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* Carrusel de gráficos principales */}
+            <div className="relative mb-8">
+                {/* Controles de navegación */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full bg-background/80 backdrop-blur-sm"
+                        onClick={() => navigateSlide("prev")}
+                        disabled={currentSlide === 0}
+                    >
+                        <ChevronLeft className="h-6 w-6" />
+                        <span className="sr-only">Anterior</span>
+                    </Button>
+                </div>
 
-                {/* Gráfico de Radar - Comparación de Criterios */}
-                <Card>
-                    <CardHeader className="pt-4">
-                        <CardTitle>Gráfico de Radar - Comparación de Criterios</CardTitle>
-                        <CardDescription>{videojuegoSeleccionado.nombre}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80">
-                            <ChartContainer
-                                config={{
-                                    valor: {
-                                        label: "Puntuación",
-                                        color: "hsl(12, 76%, 61%)",
-                                    },
-                                }}
-                                className="aspect-square min-h-[300px]"
-                            >
-                                <RadarChart width={500} height={300} data={datosCriterios}>
-                                    <PolarGrid />
-                                    <PolarAngleAxis dataKey="criterio" />
-                                    <PolarRadiusAxis angle={30} domain={[0, 5]} />
-                                    <Radar
-                                        name="Puntuación"
-                                        dataKey="valor"
-                                        stroke="hsl(12, 76%, 61%)"
-                                        fill="hsl(12, 76%, 61%)"
-                                        fillOpacity={0.6}
-                                    />
-                                    <ChartTooltip />
-                                    <ChartLegend />
-                                </RadarChart>
-                            </ChartContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full bg-background/80 backdrop-blur-sm"
+                        onClick={() => navigateSlide("next")}
+                        disabled={currentSlide === totalSlides - 1}
+                    >
+                        <ChevronRight className="h-6 w-6" />
+                        <span className="sr-only">Siguiente</span>
+                    </Button>
+                </div>
 
-                {/* Gráfico de Torta - Distribución por Materia */}
-                <Card>
-                    <CardHeader className="pt-4">
-                        <CardTitle>Gráfico de Torta - Distribución por Materia</CardTitle>
-                        <CardDescription>Promedios por NRC</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80">
-                            <ChartContainer
-                                config={{
-                                    programacion: {
-                                        label: "Programación Avanzada",
-                                        color: "hsl(215, 100%, 50%)",
-                                    },
-                                    diseno: {
-                                        label: "Diseño de Videojuegos",
-                                        color: "hsl(145, 100%, 50%)",
-                                    },
-                                    graficos: {
-                                        label: "Gráficos por Computadora",
-                                        color: "hsl(280, 100%, 50%)",
-                                    },
-                                }}
-                                className="min-h-[300px]"
-                            >
-                                <PieChart width={500} height={300}>
-                                    <Pie
-                                        data={datosPorMateria}
-                                        cx={250}
-                                        cy={150}
-                                        labelLine={true}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                        nameKey="name"
-                                        label={({ name, percent }: { name: string; percent: number }) =>
-                                            `${name}: ${(percent * 100).toFixed(0)}%`
-                                        }
+                {/* Contenedor del carrusel */}
+                <div
+                    ref={carouselRef}
+                    className="flex overflow-x-hidden snap-x snap-mandatory"
+                    style={{ scrollbarWidth: "none" }}
+                >
+                    {/* Slide 1: Gráfico de Barras */}
+                    <div className="min-w-full snap-center">
+                        <Card>
+                            <CardHeader className="pt-4">
+                                <CardTitle>Gráfico de Barras - Promedios por Criterio</CardTitle>
+                                <CardDescription>{videojuegoSeleccionado.nombre}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-80">
+                                    <ChartContainer
+                                        config={{
+                                            jugabilidad: {
+                                                label: "Jugabilidad",
+                                                color: "hsl(12, 76%, 61%)",
+                                            },
+                                            diseño: {
+                                                label: "Diseño",
+                                                color: "hsl(173, 58%, 39%)",
+                                            },
+                                            innovación: {
+                                                label: "Innovación",
+                                                color: "hsl(197, 37%, 24%)",
+                                            },
+                                            técnica: {
+                                                label: "Técnica",
+                                                color: "hsl(43, 74%, 66%)",
+                                            },
+                                            presentación: {
+                                                label: "Presentación",
+                                                color: "hsl(27, 87%, 67%)",
+                                            },
+                                        }}
+                                        className="min-h-[300px]"
                                     >
-                                        {datosPorMateria.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <ChartTooltip />
-                                    <ChartLegend />
-                                </PieChart>
-                            </ChartContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                                        <BarChart
+                                            width={500}
+                                            height={300}
+                                            data={datosCriterios}
+                                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="criterio" />
+                                            <YAxis domain={[0, 5]} />
+                                            <ChartTooltip />
+                                            <Bar dataKey="valor" fill="hsl(12, 76%, 61%)" radius={4} />
+                                        </BarChart>
+                                    </ChartContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Slide 2: Gráfico de Radar */}
+                    <div className="min-w-full snap-center">
+                        <Card>
+                            <CardHeader className="pt-4">
+                                <CardTitle>Gráfico de Radar - Comparación de Criterios</CardTitle>
+                                <CardDescription>{videojuegoSeleccionado.nombre}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-80">
+                                    <ChartContainer
+                                        config={{
+                                            valor: {
+                                                label: "Puntuación",
+                                                color: "hsl(12, 76%, 61%)",
+                                            },
+                                        }}
+                                        className="aspect-square min-h-[300px]"
+                                    >
+                                        <RadarChart width={500} height={300} data={datosCriterios}>
+                                            <PolarGrid />
+                                            <PolarAngleAxis dataKey="criterio" />
+                                            <PolarRadiusAxis angle={30} domain={[0, 5]} />
+                                            <Radar
+                                                name="Puntuación"
+                                                dataKey="valor"
+                                                stroke="hsl(12, 76%, 61%)"
+                                                fill="hsl(12, 76%, 61%)"
+                                                fillOpacity={0.6}
+                                            />
+                                            <ChartTooltip />
+                                            <ChartLegend />
+                                        </RadarChart>
+                                    </ChartContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Slide 3: Gráfico de Torta */}
+                    <div className="min-w-full snap-center">
+                        <Card>
+                            <CardHeader className="pt-4">
+                                <CardTitle>Gráfico de Torta - Distribución por NRC/Materia</CardTitle>
+                                <CardDescription>Promedios generales</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-80">
+                                    <ChartContainer config={{/* ... */ }} className="min-h-[300px]">
+                                        <PieChart>
+                                            <Pie
+                                                data={datosGraficoTortaMaterias} // <--- USA ESTE
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={true}
+                                                outerRadius="80%"
+                                                fill="#8884d8"
+                                                dataKey="value"
+                                                nameKey="name"
+                                                label={({ name, percent }: { name: string; percent: number }) =>
+                                                    `${name}: ${(percent * 100).toFixed(0)}%`
+                                                }
+                                            >
+                                                {datosGraficoTortaMaterias.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color || "#8884d8"} />
+                                                ))}
+                                            </Pie>
+                                            <ChartTooltip />
+                                            <ChartLegend />
+                                        </PieChart>
+                                    </ChartContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Indicadores de posición */}
+                <div className="flex justify-center gap-2 mt-4">
+                    {Array.from({ length: totalSlides }).map((_, index) => (
+                        <button
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition-colors ${currentSlide === index ? "bg-primary" : "bg-muted"}`}
+                            onClick={() => {
+                                setCurrentSlide(index)
+                                carouselRef.current?.scrollTo({
+                                    left: index * carouselRef.current.clientWidth,
+                                    behavior: "smooth",
+                                })
+                            }}
+                            aria-label={`Ir al gráfico ${index + 1}`}
+                        />
+                    ))}
+                </div>
             </div>
 
+            {/* Resto de tarjetas informativas en grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Criterios por Videojuego - Visualización alternativa */}
                 <Card>
@@ -244,7 +364,7 @@ const GraphicDisplay = () => {
                 <Card>
                     <CardHeader className="pt-4">
                         <CardTitle>Top 3 Videojuegos</CardTitle>
-                        <CardDescription>Mejores calificaciones</CardDescription>
+                        <CardDescription>Mejores calificaciones generales</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6 pb-4">
@@ -279,11 +399,7 @@ const GraphicDisplay = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
-                            {[
-                                { name: "Programación Avanzada", value: 4.53, color: "bg-blue-500" },
-                                { name: "Diseño de Videojuegos", value: 4.18, color: "bg-green-500" },
-                                { name: "Gráficos por Computadora", value: 4.12, color: "bg-purple-500" },
-                            ].map((item) => (
+                            {datosGraficoTortaMaterias.map((item) => (
                                 <div key={item.name} className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center">
@@ -292,7 +408,7 @@ const GraphicDisplay = () => {
                                         </div>
                                         <span className="text-sm font-medium">{item.value.toFixed(2)}</span>
                                     </div>
-                                    <Progress value={(item.value / 5) * 100} className={`h-2`} />
+                                    <Progress value={(item.value / 5) * 100} className="h-2" />
                                 </div>
                             ))}
                         </div>
@@ -300,7 +416,7 @@ const GraphicDisplay = () => {
                 </Card>
             </div>
         </TabsContent>
-    );
+    )
 }
 
-export default GraphicDisplay;
+export default GraphicDisplay
