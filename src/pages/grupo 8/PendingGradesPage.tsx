@@ -17,11 +17,12 @@ interface VideogameDetails {
 }
 
 const PendingGradesPage: React.FC = () => {
-  const breadcrumbs = [{ label: "Pendientes por calificar", href: "/pendientes-calificar" }];
+  const breadcrumbs = [
+    { label: "Pendientes por calificar", href: "/pendientes-calificar" },
+  ];
   const [videogames, setVideogames] = useState<VideogameDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [jurorId, setJurorId] = useState<string | null>(null); // Nuevo estado
-
 
   useEffect(() => {
     const fetchVideogames = async () => {
@@ -35,11 +36,14 @@ const PendingGradesPage: React.FC = () => {
         }
         const data = await response.json();
         // Ahora data tiene { jurorId, videogames }
-      setJurorId(data.jurorId);
-      setVideogames(data.videogames);
-      setLoading(false);
+        setJurorId(data.jurorId);
+        setVideogames(data.data);
+        setLoading(false);
       } catch (error) {
-        console.error("Error al cargar los detalles de los videojuegos:", error);
+        console.error(
+          "Error al cargar los detalles de los videojuegos:",
+          error
+        );
         setLoading(false);
       }
     };
@@ -68,7 +72,6 @@ const PendingGradesPage: React.FC = () => {
             imagen: videogame.logoUrl,
             descripcion: videogame.descripcion || "Sin descripción", // Incluye la descripción
             isEvaluated: videogame.isEvaluated, // Pasa el valor de isEvaluated
-
           }))}
           jurorId={jurorId ?? undefined} // Convierte null a undefined
         />
