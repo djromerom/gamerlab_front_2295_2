@@ -15,6 +15,7 @@ import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
 import RatedPage from "@/pages/grupo 11/RatedPage";
@@ -82,6 +83,11 @@ const routes: RouteConfig[] = [
   {
     path: "/estadisticas",
     element: <StatisticsPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/jurados",
+    element: <JuryManagementPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
