@@ -204,6 +204,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     // Datos de videojuegos
     videojuegoSeleccionado, setVideojuegoSeleccionado,
     listaVideojuegos,
+    listaVideojuegosFiltrados, // <-- SUGERENCIA: Añadir esto
 
     // Opciones para los filtros
     opcionesFiltroMateria,
@@ -218,7 +219,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   }), [
     // Dependencias: todos los estados que se incluyen en contextValue
     filtroMateria, filtroNRC,
-    videojuegoSeleccionado, listaVideojuegos,
+    videojuegoSeleccionado, listaVideojuegos, listaVideojuegosFiltrados,
     opcionesFiltroMateria, opcionesFiltroNRC,
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,

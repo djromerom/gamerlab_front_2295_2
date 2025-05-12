@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
 import { TabsContent } from '@/components/ui/tabs'; // Asumiendo que lo usas dentro de Tabs
 
 // Nombres de los criterios como se espera que vengan del backend en VideojuegoData.criterios
@@ -62,36 +62,54 @@ const TablaResultados = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaVideojuegosFiltrados.map((videojuego) => (
-                  <TableRow key={videojuego.id}>
-                    <TableCell className="font-medium">{videojuego.nombre}</TableCell>
-                    <TableCell>{videojuego.materia || '-'}</TableCell>
-                    <TableCell>{videojuego.nrc || '-'}</TableCell>
-                    {NOMBRES_CRITERIOS_TABLA.map(c => (
-                      <TableCell key={c.key}>
-                        {(videojuego.criterios[c.key] !== undefined ? videojuego.criterios[c.key].toFixed(1) : 'N/A')}
+                {listaVideojuegosFiltrados.map((videojuego: VideojuegoData) => {
+                  // Comprobación adicional: asegurarse de que 'criterios' es un objeto
+                  // y no null o undefined antes de intentar acceder a sus propiedades.
+                  const criteriosDelVideojuego = videojuego.criterios && typeof videojuego.criterios === 'object'
+                    ? videojuego.criterios
+                    : {}; // Si no es un objeto válido, tratarlo como un objeto vacío
+
+                  return (
+                    <TableRow key={videojuego.id}>
+                      <TableCell className="font-medium">{videojuego.nombre || 'Sin Nombre'}</TableCell>
+                      <TableCell>{videojuego.materia || '-'}</TableCell>
+                      <TableCell>{videojuego.nrc || '-'}</TableCell>
+                      {NOMBRES_CRITERIOS_TABLA.map(criterioConfig => (
+                        <TableCell key={criterioConfig.key}>
+                          {/*
+                            Ahora usamos criteriosDelVideojuego, que está garantizado
+                            (o tratado como) un objeto.
+                            La lógica original de !== undefined sigue siendo válida y buena.
+                          */}
+                          {criteriosDelVideojuego[criterioConfig.key] !== undefined
+                            ? criteriosDelVideojuego[criterioConfig.key].toFixed(1)
+                            : 'N/A'}
+                        </TableCell>
+                      ))}
+                      <TableCell className="font-bold">
+                        {/* Asegurarse que promedio es un número antes de llamar a toFixed */}
+                        {typeof videojuego.promedio === 'number' ? videojuego.promedio.toFixed(2) : 'N/A'}
                       </TableCell>
-                    ))}
-                    <TableCell className="font-bold">{videojuego.promedio.toFixed(2)}</TableCell>
-                    <TableCell>
-                      {typeof videojuego.evaluacionesCompletadas === 'number' &&
-                      typeof videojuego.totalJuradosAsignados === 'number' &&
-                      videojuego.totalJuradosAsignados > 0 ? (
-                        <Badge
-                          variant={
-                            videojuego.evaluacionesCompletadas >= videojuego.totalJuradosAsignados
-                              ? "success"
-                              : "warning"
-                          }
-                        >
-                          {videojuego.evaluacionesCompletadas}/{videojuego.totalJuradosAsignados}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">N/A</Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell>
+                        {typeof videojuego.evaluacionesCompletadas === 'number' &&
+                        typeof videojuego.totalJuradosAsignados === 'number' &&
+                        videojuego.totalJuradosAsignados > 0 ? (
+                          <Badge
+                            variant={
+                              videojuego.evaluacionesCompletadas >= videojuego.totalJuradosAsignados
+                                ? "success"
+                                : "warning"
+                            }
+                          >
+                            {videojuego.evaluacionesCompletadas}/{videojuego.totalJuradosAsignados}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">N/A</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
