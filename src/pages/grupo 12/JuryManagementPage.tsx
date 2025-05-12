@@ -1,12 +1,8 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import {
-  JuryManagementTable,
-  Data,
-} from "./tabla2"; // Adjust path if needed
+import { JuryManagementTable, Data } from "./tabla2"; // Adjust path if needed
 import { useState, useEffect } from "react";
-
 
 const JuryManagementPage = () => {
   const [data, setData] = useState<Data | null>(null);
@@ -18,86 +14,91 @@ const JuryManagementPage = () => {
   const TABLE_RESOURCE_NAME = "juror";
 
   useEffect(() => {
-      const fetchJurados = async () => {
-        setIsPageLoading(true);
-        setError(null);
-        setData(null);
+    const fetchJurados = async () => {
+      setIsPageLoading(true);
+      setError(null);
+      setData(null);
 
-        try {
-          const includeInactive = false; 
-          const res = await fetch(`${API_ENDPOINT}?includeInactive=${includeInactive}&limit=50&page=1`, {
+      try {
+        const includeInactive = false;
+        const res = await fetch(
+          `${API_ENDPOINT}?includeInactive=${includeInactive}&limit=50&page=1`,
+          {
             method: "GET",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-          });
+          }
+        );
 
-          if (!res.ok) {
-            let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
-            try {
-              const errorBody = await res.json();
-              errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-            } catch (e) {
-              /* ignore */
-            }
-            throw new Error(errorMsg);
+        if (!res.ok) {
+          let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
+          try {
+            const errorBody = await res.json();
+            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          } catch (e) {
+            /* ignore */
+          }
+          throw new Error(errorMsg);
+        }
+
+        // Expecting an array where each object has an 'active' boolean property
+        const dataRespond = await res.json(); // Use the more specific type
+        for (const jurado of dataRespond.data) {
+          jurado._count = jurado._count.evaluationsSubmitted;
+
+          switch (jurado.confirmationStatusId) {
+            case 1:
+              jurado.confirmationStatusId = "Aceptado";
+              break;
+            case 2:
+              jurado.confirmationStatusId = "Pendiente";
+              break;
+            default:
+              jurado.confirmationStatusId = "Expirado";
           }
 
-          // Expecting an array where each object has an 'active' boolean property
-          const dataRespond = await res.json(); // Use the more specific type
-          for (const jurado of dataRespond.data) {
-            jurado._count = jurado._count.evaluationsSubmitted;
-
-            switch (jurado.confirmationStatusId) {
-              case 1:
-                jurado.confirmationStatusId = "Aceptado";
-                break;
-              case 2:
-                jurado.confirmationStatusId = "Pendiente";
-                break;
-              default:
-                jurado.confirmationStatusId = "Expirado";
-            }
-
-            jurado.updatedAt = new Date(jurado.updatedAt).toLocaleString("es-ES", {
+          jurado.lastSignInAt = new Date(jurado.lastSignInAt).toLocaleString(
+            "es-ES",
+            {
               year: "numeric",
               month: "2-digit",
               day: "2-digit",
               hour: "2-digit",
               minute: "2-digit",
-            });
-          }
-          setData({
-            // Optional: Update title to reflect filtering
-            titulo: "Jurados",
-            nombreTabla: TABLE_RESOURCE_NAME,
-            nombreColumnas: {
-              id: "ID",
-              name: "Nombre",
-              email: "Correo",
-              confirmationStatusId: "Estado",
-              updatedAt: "Última actualización",
-              _count: "Juegos revisados",
-            },
-            // Pass the FILTERED array to the table
-            filas: dataRespond.data,
-            primaryKey: "id", // Ensure 'id' exists in your RowData
-          });
-        } catch (err: any) {
-          console.error("Error fetching jurors:", err);
-          setError(
-            err.message || "An unknown error occurred while loading the jurors."
+            }
           );
-          setData(null);
-        } finally {
-          setIsPageLoading(false);
         }
-      };
-
+        setData({
+          // Optional: Update title to reflect filtering
+          titulo: "Jurados",
+          nombreTabla: TABLE_RESOURCE_NAME,
+          nombreColumnas: {
+            id: "ID",
+            name: "Nombre",
+            email: "Correo",
+            confirmationStatusId: "Estado",
+            lastSignInAt: "Última actualización",
+            _count: "Juegos revisados",
+          },
+          // Pass the FILTERED array to the table
+          filas: dataRespond.data,
+          primaryKey: "id", // Ensure 'id' exists in your RowData
+        });
+      } catch (err: any) {
+        console.error("Error fetching jurors:", err);
+        setError(
+          err.message || "An unknown error occurred while loading the jurors."
+        );
+        setData(null);
+      } finally {
+        setIsPageLoading(false);
+      }
+    };
 
     fetchJurados();
   }, []); // Empty dependency array
 
-  const breadcrumbs = [{ label: "Jurados", href: "/jurados" }]; 
+  const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
