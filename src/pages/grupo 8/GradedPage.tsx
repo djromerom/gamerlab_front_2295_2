@@ -15,16 +15,27 @@ interface VideogameDetails {
   descripcion: string | null;
   isEvaluated: boolean; // Nuevo campo
 }
+interface Metadata {
+    totalItems: number;
+    itemsOnCurrentPage: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  }
 
 const GradedPage: React.FC = () => {
   const breadcrumbs = [{ label: "Juegos calificados", href: "/calificados" }];
   const [videogames, setVideogames] = useState<VideogameDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [metadata, setMetadata] = useState<Metadata | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
 
   useEffect(() => {
     const fetchVideogames = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/pending-games`, {
+        const response = await fetch(`http://localhost:3000/graded-games`, {
           method: "GET",
           credentials: "include", // Incluye cookies si es necesario
         });
@@ -34,6 +45,8 @@ const GradedPage: React.FC = () => {
         const data = await response.json();
         console.log(data); // Verifica los datos recibidos
         setVideogames(data.data);
+        setMetadata(data.metadata);
+
         setLoading(false);
       } catch (error) {
         console.error(
@@ -71,6 +84,28 @@ const GradedPage: React.FC = () => {
           }))}
         />
       )}
+      {/* Controles de paginación */}
+      {metadata && (
+            <div className="flex justify-center items-center gap-4 mt-6 py-6">
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={metadata.currentPage === 1}
+              >
+                Anterior
+              </button>
+              <span>
+                Página {metadata.currentPage} de {metadata.totalPages}
+              </span>
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700"
+                onClick={() => setPage((p) => Math.min(metadata.totalPages, p + 1))}
+                disabled={metadata.currentPage === metadata.totalPages}
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
     </LayoutAplication>
   );
 };

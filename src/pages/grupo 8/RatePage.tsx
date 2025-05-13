@@ -3,13 +3,14 @@
 
 import Criteriabutton from "@/components/grupo 8/criteriabutton"; // Importa el componente criteriabutton
 import { useEffect, useState } from "react"
-import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw, Download } from "lucide-react"
+import { FileIcon as FilePdf, RefreshCw } from "lucide-react"
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/grupo 8/textarea"
 import LayoutAplication from "@/layouts/LayoutAplication"
+import { Loader } from "lucide-react"; // Asegúrate de tener este import
 
 
 // Tipos
@@ -41,6 +42,8 @@ export default function RatePage({ params }: { params: { id: string } }) {
     const jurorId = location.state?.jurorId; // <-- Aquí tienes el jurorId
     const [loading, setLoading] = useState(true)
     const [comments, setComments] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
 
     const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
         { id: "interfaz", name: "Interfaz de usuario", score: 1, maxScore: 5 },
@@ -69,6 +72,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
 
 
     const handleSubmit = async () => {
+        setIsSubmitting(true);
         // 1. Calcular promedio
         const promedio_puntaje =
             criteria.reduce((acc, curr) => acc + curr.score, 0) / criteria.length;
@@ -127,10 +131,11 @@ export default function RatePage({ params }: { params: { id: string } }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ details }),
             });
-            alert("Evaluación enviada correctamente");
             navigate("/pendientes-calificar");
         } catch (err) {
             alert("Error guardando los detalles de la evaluación");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -265,7 +270,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
                                                             }
                                                             className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
                                                             style={{
-                                                                background: `linear-gradient(to right, #b3c7ff ${((criterion.score -1) / 4) * 100}%, #e5e7eb ${((criterion.score - 1)/ 4) * 100}%)`,
+                                                                background: `linear-gradient(to right, #b3c7ff ${((criterion.score - 1) / 4) * 100}%, #e5e7eb ${((criterion.score - 1) / 4) * 100}%)`,
                                                                 accentColor: "#b3c7ff dark:", // Cambia el color del círculo del slider
                                                             }}
                                                         />
@@ -290,10 +295,17 @@ export default function RatePage({ params }: { params: { id: string } }) {
 
                                 <div className="flex justify-end mt-6">
                                     <Button
-                                        className="bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white font-bold"
+                                        className="bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white font-bold min-w-[170px] flex justify-center items-center"
                                         onClick={handleSubmit}
+                                        disabled={isSubmitting}
                                     >
-                                        Enviar Evaluación
+                                        {isSubmitting ? (
+                                            <span className="flex justify-center items-center w-full">
+                                                <Loader className="animate-spin w-5 h-5" />
+                                            </span>
+                                        ) : (
+                                            "Enviar Evaluación"
+                                        )}
                                     </Button>
                                 </div>
                             </CardContent>
