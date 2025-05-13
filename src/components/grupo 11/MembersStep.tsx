@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { CombinedFormValues } from "@/lib/schemas";
+import { CombinedFormValues } from "@/lib/schemas"; // Ensure this import is correct
 import { useEffect, useState } from "react";
 
 export default function MembersStep() {
@@ -32,12 +32,12 @@ export default function MembersStep() {
     if (isValid) next();
   };
 
-  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null); // Cambia el tipo según tu necesidad
-  const API_ENDPOINT = `http://localhost:3000/nrcs`;
+  const API_ENDPOINT = `http://localhost:3000/nrcs/select-options`;
 
-  const [nrcActivos, setnrcActivos] = useState<Number[]>([]);
+  // Store NRC codes as an array of strings
+  const [nrcActivos, setNrcActivos] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchNrcs = async () => {
@@ -55,24 +55,48 @@ export default function MembersStep() {
           try {
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {}
+          } catch (e) {
+            /* Ignore parsing error of error body */
+          }
           throw new Error(errorMsg);
         }
-        const dataRespond = await res.json();
-        console.log(dataRespond.data);
-        setnrcActivos(dataRespond.data);
+        const dataRespond = await res.json(); // This is now directly the array
+
+        // --- MODIFICATION START ---
+        if (Array.isArray(dataRespond)) {
+          // Check if dataRespond itself is an array
+          // Assuming each item in dataRespond is an object with a 'code' property.
+          // Extract the 'code', convert to string, ensure it's not null/undefined, and make unique.
+          const codes = dataRespond // Use dataRespond directly
+            .map((item) =>
+              item && item.code !== undefined && item.code !== null
+                ? String(item.code)
+                : null
+            )
+            .filter((code): code is string => code !== null) // Type guard to ensure only strings proceed, and filter out nulls
+            .filter((code, index, self) => self.indexOf(code) === index); // Keep only unique codes
+          setNrcActivos(codes);
+        } else {
+          // This warning will now trigger if dataRespond is not an array
+          console.warn(
+            "API response for NRCs was not an array as expected:",
+            dataRespond
+          );
+          setNrcActivos([]);
+        }
+        // --- MODIFICATION END ---
       } catch (err: any) {
         console.error("Error fetching subjects:", err);
         setError(
           err.message || "Ocurrió un error desconocido al cargar las materias."
         );
-        setData(null);
+        setNrcActivos([]);
       } finally {
         setIsPageLoading(false);
       }
     };
     fetchNrcs();
-  }, []);
+  }, [API_ENDPOINT]);
 
   return (
     <>
@@ -99,20 +123,6 @@ export default function MembersStep() {
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Nombre completo" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={control}
-              name={`members.${idx}.apellido` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Apellido</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Apellido completo" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,12 +168,23 @@ export default function MembersStep() {
               control={control}
               name={`members.${idx}.nrc` as const}
               render={({ field }) => {
-                const selectedNRCs: string[] = field.value || [];
-                const allNRCs = nrcActivos;
+                const selectedNRCs: string[] = field.value || []; // These are strings
 
-                const availableNRCs = allNRCs.filter(
-                  (val) => !selectedNRCs.includes(String(val))
+                // nrcActivos is now correctly an array of unique NRC code strings
+                const allNrcCodesFromState: string[] = nrcActivos;
+
+                const availableNRCsToSelect = allNrcCodesFromState.filter(
+                  (code) => !selectedNRCs.includes(code)
                 );
+
+                let triggerText = "Selecciona uno o más NRCs";
+                if (isPageLoading) {
+                  triggerText = "Cargando NRCs...";
+                } else if (error) {
+                  triggerText = "Error al cargar NRCs";
+                } else if (allNrcCodesFromState.length === 0) {
+                  triggerText = "No hay NRCs disponibles";
+                }
 
                 return (
                   <FormItem>
@@ -171,28 +192,49 @@ export default function MembersStep() {
                     <FormControl>
                       <div className="space-y-2">
                         <Select
-                          onValueChange={(val) =>
-                            val && field.onChange([...selectedNRCs, val])
+                          onValueChange={(selectedCode) =>
+                            selectedCode &&
+                            field.onChange([...selectedNRCs, selectedCode])
+                          }
+                          disabled={
+                            isPageLoading ||
+                            !!error ||
+                            (allNrcCodesFromState.length === 0 &&
+                              !isPageLoading)
                           }
                         >
                           <SelectTrigger style={{ width: "100%" }}>
                             <span className="text-muted-foreground">
-                              Selecciona uno o más NRCs
+                              {triggerText}
                             </span>
                           </SelectTrigger>
                           <SelectContent style={{ width: "100%" }}>
-                            {availableNRCs.map((val) => (
-                              <SelectItem
-                                key={String(val.code)}
-                                value={String(val.code)}
-                              >
-                                {String(val.code)}
-                              </SelectItem>
-                            ))}
+                            {!isPageLoading &&
+                            !error &&
+                            allNrcCodesFromState.length > 0 ? (
+                              availableNRCsToSelect.map(
+                                (
+                                  code // 'code' is now a unique string like "1001", "1002"
+                                ) => (
+                                  <SelectItem
+                                    key={code} // Use the unique string code as the key
+                                    value={code} // Use the unique string code as the value
+                                  >
+                                    {code}{" "}
+                                    {/* Display the code. Modify if you want to display name from an object */}
+                                  </SelectItem>
+                                )
+                              )
+                            ) : !isPageLoading &&
+                              !error &&
+                              allNrcCodesFromState.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                No hay NRCs disponibles.
+                              </div>
+                            ) : null}
                           </SelectContent>
                         </Select>
 
-                        {/* Badges (solo si hay seleccionados) */}
                         {selectedNRCs.length > 0 && (
                           <div className="flex flex-wrap gap-2 pt-2">
                             {selectedNRCs.map((val) => (
@@ -220,6 +262,11 @@ export default function MembersStep() {
                         )}
                       </div>
                     </FormControl>
+                    {error && !isPageLoading && (
+                      <p className="text-sm font-medium text-destructive">
+                        {error}
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 );
@@ -233,7 +280,13 @@ export default function MembersStep() {
         <Button
           variant="outline"
           onClick={() =>
-            append({ nombre: "", apellido: "", correo: "", codigoEstudiantil: "", nrc: [] })
+            append({
+              nombre: "",
+              apellido: "",
+              correo: "",
+              codigoEstudiantil: "",
+              nrc: [],
+            })
           }
         >
           <Plus /> Agregar integrante
