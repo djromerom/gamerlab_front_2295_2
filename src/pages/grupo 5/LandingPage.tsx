@@ -5,7 +5,7 @@ import CountdownTimer from "@/components/grupo 5/CountdownTimer";
 import NavBar from "@/components/grupo 5/NavBar";
 
 function Landing(): React.ReactElement {
-  const targetDate = new Date("2025-05-07T08:00:00");
+  const targetDate = new Date("2025-06-05T14:00:00");
   const navigate = useNavigate();
 
   return (
