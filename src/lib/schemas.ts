@@ -1,11 +1,15 @@
 import { z } from "zod";
 
 export const CombinedSchema = z.object({
+  //Validar que el nombre del equipo sea único
+
+  
   teamName: z.string().min(1, 'Requerido'),
   members: z
     .array(
       z.object({
-        nombre: z.string().min(1, 'Requerido'),
+        nombres: z.string().min(1, 'Requerido'),
+        apellidos: z.string().min(1, 'Requerido'),
         correo: z.string().email('Email inválido'),
         codigoEstudiantil: z.string().min(1, 'Requerido'),
         nrc: z.array(z.string().min(1, 'Requerido')).min(1, 'Selecciona al menos un NRC'),

@@ -91,15 +91,30 @@ export default function MembersStep() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nombre */}
+            {/* Nombres */}
             <FormField
               control={control}
-              name={`members.${idx}.nombre` as const}
+              name={`members.${idx}.nombres` as const}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>Nombres</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nombre completo" />
+                    <Input {...field} placeholder="Nombre(s)" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Apellidos */}
+            <FormField
+              control={control}
+              name={`members.${idx}.apellidos` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Apellidos</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Apellido(s)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -220,7 +235,7 @@ export default function MembersStep() {
         <Button
           variant="outline"
           onClick={() =>
-            append({ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] })
+            append({ nombres: "", apellidos: "", correo: "", codigoEstudiantil: "", nrc: [] })
           }
         >
           <Plus /> Agregar integrante

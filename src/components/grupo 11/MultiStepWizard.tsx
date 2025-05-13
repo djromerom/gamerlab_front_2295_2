@@ -23,7 +23,7 @@ export default function MultiStepWizard() {
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
       teamName: "",
-      members: [{ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] }],
+      members: [{ nombres: "", apellidos: "", correo: "", codigoEstudiantil: "", nrc: [] }],
       gameName: "",
       description: "",
       files: undefined,
@@ -77,7 +77,8 @@ export default function MultiStepWizard() {
       const payload = {
         teamName: data.teamName,
         members: data.members.map((m) => ({
-          memberName: m.nombre,
+          memberFirstName: m.nombres,
+          memberLastName: m.apellidos,
           memberEmail: m.correo,
           studentCode: m.codigoEstudiantil,
           nrc: Array.isArray(m.nrc) ? m.nrc : [m.nrc],
