@@ -179,8 +179,8 @@ export const NrcsTable: React.FC<Props> = ({
       try {
         // Asume que tienes endpoints para obtener listas activas
         const [subjectsRes, professorsRes] = await Promise.all([
-          customFetch(`${apiBaseUrl}/subjects?isActive=true`), // O como obtengas solo activos
-          customFetch(`${apiBaseUrl}/professors?isActive=true`), // O como obtengas solo activos
+          customFetch(`${apiBaseUrl}/subjects/select-options`), // O como obtengas solo activos
+          customFetch(`${apiBaseUrl}/professors/select-options`), // O como obtengas solo activos
         ]);
 
         if (!subjectsRes.ok || !professorsRes.ok) {

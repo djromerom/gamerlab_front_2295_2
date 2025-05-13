@@ -1,4 +1,5 @@
 // ViewTeams.tsx
+"use client";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,20 +21,20 @@ export interface Team {
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
   const customFetch = useFetch();
 
-  // Carga inicial de datos
   useEffect(() => {
     async function fetchTeams() {
+      setLoading(true);
       const res = await customFetch("http://localhost:3000/videogames", {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
-  
+
       const rawData = await res.json();
-      console.log(rawData);
-      const data: Team[] = rawData.map((team: any) => ({
+      const data: Team[] = rawData.map((team) => ({
         id: team.id,
         gameName: team.name,
         teamName: team.teamName,
@@ -41,13 +42,11 @@ export default function TeamsPage() {
         image: team.logoUrl,
       }));
       setTeams(data);
-      console.log(data);
+      setLoading(false);
     }
     fetchTeams();
   }, []);
-  
 
-  // Filtrar por ID o nombre (case-insensitive)
   const filteredTeams = teams.filter(
     (team) =>
       team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -60,7 +59,7 @@ export default function TeamsPage() {
 
   return (
     <main
-      className="min-h-screen py-23 px-4 md:px-8"
+      className="min-h-screen py-23 px-4 md:px-8 bg-black dark"
       style={{
         backgroundImage: "url('/background.webp')",
         backgroundSize: "150%",
@@ -70,10 +69,7 @@ export default function TeamsPage() {
       <NavBar />
       <div className="max-w-7xl mx-auto">
         <h1
-          className="
-            text-4xl md:text-5xl font-bold text-center mb-16
-            text-[#AC7CFF]
-          "
+          className="text-4xl md:text-5xl font-bold text-center mb-16 text-[#AC7CFF]"
         >
           ¡Echa un vistazo a los equipos participantes!
         </h1>
@@ -81,14 +77,17 @@ export default function TeamsPage() {
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
 
         <div className="relative">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTeams.map((team) => (
-              <TeamCard key={team.id} team={team} />
-            ))}
-          </div>
-
-
+          {loading ? (
+            <div className="text-center py-20 text-xl text-white animate-pulse">
+              Cargando equipos...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTeams.map((team) => (
+                <TeamCard key={team.id} team={team} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </main>
@@ -115,7 +114,9 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           className="w-64 md:w-96 pl-10"
         />
       </div>
-      <Button variant="outline" onClick={() => onFilter(filterText)}>Filtrar</Button>
+      <Button variant="outline" onClick={() => onFilter(filterText)}>
+        Filtrar
+      </Button>
     </div>
   );
 }
@@ -147,7 +148,7 @@ function TeamCard({ team }: TeamCardProps) {
         <div className="space-y-1">
           <h4 className="text-xl font-medium">{team.gameName}</h4>
           <p>Equipo: {team.teamName}</p>
-          <p className={`  ${color} font-semibold`}>{text}</p>
+          <p className={`${color} font-semibold`}>{text}</p>
         </div>
       </CardContent>
     </Card>

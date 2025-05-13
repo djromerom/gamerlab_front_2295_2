@@ -4,16 +4,17 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Ajusta la ruta según tu estructura
 import { useState, useEffect } from "react";
 
-interface ProfessorRowData {
+export interface ProfessorRowData {
   id: string;
   name: string;
   email: string;
+  confirmationStatusId: Number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const ProfessorsPage = () => {
+export const ProfessorsPage: React.FC = () => {
   const [professors, setProfessors] = useState<ProfessorRowData[] | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,18 +46,9 @@ const ProfessorsPage = () => {
           throw new Error(errorMsg);
         }
 
-        const dataRespond: ProfessorRowData[] = await res.json();
+        const dataRespond = await res.json();
 
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
-        }
-
-        // Filtramos solo los profesores activos
-        const activeProfessors = dataRespond.filter(
-          (professor) => professor.isActive === true
-        );
-
-        setProfessors(activeProfessors);
+        setProfessors(dataRespond.data);
       } catch (err: any) {
         console.error("Error fetching professors:", err);
         setError(
@@ -86,7 +78,6 @@ const ProfessorsPage = () => {
         </div>
       )}
 
-      {/* Tabla de profesores */}
       <ProfessorsTable
         professors={professors}
         apiBaseUrl={API_BASE_URL}
@@ -102,5 +93,3 @@ const ProfessorsPage = () => {
     </LayoutAplication>
   );
 };
-
-export default ProfessorsPage;

@@ -16,9 +16,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { CombinedFormValues } from "@/lib/schemas";
+import { CombinedFormValues } from "@/lib/schemas"; // Ensure this import is correct
 import { useEffect, useState } from "react";
-import { INSPECT_MAX_BYTES } from "buffer";
+
+// Define an interface for your NRC option objects
+interface NrcOption {
+  code: number | string; // Assuming code can be number or string
+  name?: string; // Optional: if your API returns a name to display
+  // Add any other relevant properties from your API response
+  [key: string]: any; // Allows for other properties not explicitly typed
+}
 
 export default function MembersStep() {
   const { back, next } = useMultiForm();
@@ -33,16 +40,14 @@ export default function MembersStep() {
     if (isValid) next();
   };
 
-
-  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true); // Initialize to true
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null); // Cambia el tipo según tu necesidad
-  const API_ENDPOINT = `http://localhost:3000/nrcs`;
-  
-  const [nrcActivos, setnrcActivos] = useState<Number[]>([]);
-  
+  const API_ENDPOINT = `http://localhost:3000/nrcs/select-options`;
+
+  const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]); // Typed state
+
   useEffect(() => {
-      const fetchNrcs = async () => {
+    const fetchNrcs = async () => {
       setIsPageLoading(true);
       setError(null);
       try {
@@ -57,32 +62,56 @@ export default function MembersStep() {
           try {
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {}
+          } catch (e) {
+            /* Silently ignore error parsing error body */
+          }
           throw new Error(errorMsg);
         }
-        const dataRespond = await res.json();
+        const apiResponseObject = await res.json(); // This is the array-like object
+        // console.log("Raw API Response Object:", apiResponseObject);
 
-        if (!Array.isArray(dataRespond)) {
-          throw new Error("La respuesta de la API no es un array válido.");
+        // --- MODIFICATION START ---
+        let nrcOptionsArray: NrcOption[] = []; // Initialize as an empty array
+
+        // Check if the response is an object and has a 'length' property,
+        // indicating it's likely our array-like object.
+        if (
+          typeof apiResponseObject === "object" &&
+          apiResponseObject !== null &&
+          apiResponseObject.hasOwnProperty("length")
+        ) {
+          // Convert the array-like object to a true array
+          const trueArray = Object.values(apiResponseObject);
+
+          // Now filter and map this trueArray
+          // Ensure that each item has a 'code' property before setting
+          nrcOptionsArray = trueArray.filter(
+            (item: any): item is NrcOption =>
+              item && item.code !== undefined && item.code !== null
+          );
+          // Optional: If your API also returns 'name' and you want to ensure it's present
+          // nrcOptionsArray = nrcOptionsArray.filter(item => item.name !== undefined);
+        } else {
+          // This case might occur if the API changes or returns something unexpected
+          console.warn(
+            "API response for NRCs was not the expected array-like object:",
+            apiResponseObject
+          );
         }
-
-        const nrcActivo: Number[] = [];
-        dataRespond.forEach((item) => {
-          nrcActivo.push(item.code)
-        });
-        setnrcActivos(nrcActivo);
+        setNrcActivos(nrcOptionsArray);
+        // --- MODIFICATION END ---
       } catch (err: any) {
         console.error("Error fetching subjects:", err);
         setError(
           err.message || "Ocurrió un error desconocido al cargar las materias."
         );
-        setData(null);
+        setNrcActivos([]); // Ensure it's an empty array on error
       } finally {
         setIsPageLoading(false);
       }
     };
     fetchNrcs();
-  }, []);
+  }, [API_ENDPOINT]);
 
   return (
     <>
@@ -115,6 +144,21 @@ export default function MembersStep() {
               )}
             />
 
+            {/* Apellido */}
+            <FormField
+              control={control}
+              name={`members.${idx}.apellido` as const}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Apellido</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Apellido completo" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Correo */}
             <FormField
               control={control}
@@ -126,7 +170,7 @@ export default function MembersStep() {
                     <Input
                       {...field}
                       type="email"
-                      placeholder="ejemplo@correo.com"
+                      placeholder="correo@uninorte.edu.co"
                     />
                   </FormControl>
                   <FormMessage />
@@ -154,12 +198,24 @@ export default function MembersStep() {
               control={control}
               name={`members.${idx}.nrc` as const}
               render={({ field }) => {
-                const selectedNRCs: string[] = field.value || [];
-                const allNRCs = nrcActivos;
-                
-                const availableNRCs = allNRCs.filter(
-                  (val) => !selectedNRCs.includes(String(val))
-                );
+                const selectedNRCs: string[] = field.value || []; // These are strings of codes
+                const allNrcOptionsFromState: NrcOption[] = nrcActivos; // Now an array of NrcOption
+
+                // Filter options that are not already selected
+                const availableNrcOptionsToSelect =
+                  allNrcOptionsFromState.filter(
+                    (nrcOption) =>
+                      !selectedNRCs.includes(String(nrcOption.code))
+                  );
+
+                let triggerText = "Selecciona uno o más NRCs";
+                if (isPageLoading) {
+                  triggerText = "Cargando NRCs...";
+                } else if (error) {
+                  triggerText = "Error al cargar NRCs";
+                } else if (allNrcOptionsFromState.length === 0) {
+                  triggerText = "No hay NRCs disponibles";
+                }
 
                 return (
                   <FormItem>
@@ -167,32 +223,58 @@ export default function MembersStep() {
                     <FormControl>
                       <div className="space-y-2">
                         <Select
-                          onValueChange={(val) =>
-                            val && field.onChange([...selectedNRCs, val])
+                          onValueChange={(
+                            selectedCodeValue // This value will be String(nrcOption.code)
+                          ) =>
+                            selectedCodeValue &&
+                            field.onChange([...selectedNRCs, selectedCodeValue])
+                          }
+                          disabled={
+                            isPageLoading ||
+                            !!error ||
+                            (allNrcOptionsFromState.length === 0 &&
+                              !isPageLoading)
                           }
                         >
-                          <SelectTrigger style={{ width: '100%' }}>
+                          <SelectTrigger style={{ width: "100%" }}>
                             <span className="text-muted-foreground">
-                              Selecciona uno o más NRCs
+                              {triggerText}
                             </span>
                           </SelectTrigger>
-                          <SelectContent style={{ width: '100%' }}>
-                            {availableNRCs.map((val) => (
-                              <SelectItem key={String(val)} value={String(val)}>
-                                {String(val)}
-                              </SelectItem>
-                            ))}
+                          <SelectContent style={{ width: "100%" }}>
+                            {!isPageLoading &&
+                            !error &&
+                            allNrcOptionsFromState.length > 0 ? (
+                              availableNrcOptionsToSelect.map((nrcOption) => (
+                                <SelectItem
+                                  key={String(nrcOption.code)} // Use unique code as key
+                                  value={String(nrcOption.code)} // Use code as value
+                                >
+                                  {/* Display nrcOption.name if available, otherwise code */}
+                                  {nrcOption.name
+                                    ? `${nrcOption.code} - ${nrcOption.name}`
+                                    : String(nrcOption.code)}
+                                </SelectItem>
+                              ))
+                            ) : !isPageLoading &&
+                              !error &&
+                              allNrcOptionsFromState.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                No hay NRCs disponibles.
+                              </div>
+                            ) : null}
                           </SelectContent>
                         </Select>
 
-                        {/* Badges (solo si hay seleccionados) */}
                         {selectedNRCs.length > 0 && (
                           <div className="flex flex-wrap gap-2 pt-2">
                             {selectedNRCs.map((val) => (
                               <div
-                                key={val}
+                                key={val} // val is already a string code
                                 className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 cursor-pointer transition"
                               >
+                                {/* If you stored NrcOption objects in field.value, you'd display val.name here */}
+                                {/* For now, assuming val is just the string code */}
                                 <span>{val}</span>
                                 <Button
                                   type="button"
@@ -213,6 +295,11 @@ export default function MembersStep() {
                         )}
                       </div>
                     </FormControl>
+                    {error && !isPageLoading && (
+                      <p className="text-sm font-medium text-destructive">
+                        {error}
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 );
@@ -226,7 +313,13 @@ export default function MembersStep() {
         <Button
           variant="outline"
           onClick={() =>
-            append({ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] })
+            append({
+              nombre: "",
+              apellido: "", // Added apellido
+              correo: "",
+              codigoEstudiantil: "",
+              nrc: [],
+            })
           }
         >
           <Plus /> Agregar integrante

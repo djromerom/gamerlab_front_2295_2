@@ -15,11 +15,23 @@ import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
+import RatePage from "@/pages/grupo 8/RatePage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
+import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import ProfessorsPage from "@/pages/grupo 9/professorsPage copy";
+import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 
-type Role = "Profesor" | "Administrador" | "Jurado" | "Consultor";
+type Role =
+  | "Profesor"
+  | "Administrador"
+  | "Jurado"
+  | "Consultor"
+  | "Estudiante";
 
 interface RouteConfig {
   path: string;
@@ -67,14 +79,37 @@ const routes: RouteConfig[] = [
   {
     path: "/inicio",
     element: <HomePage />,
-    roles: ["Profesor", "Administrador", "Consultor", "Jurado"],
+    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado"],
   },
   {
     path: "/estadisticas",
     element: <StatisticsPage />,
     roles: ["Administrador"],
   },
+  {
+    path: "/jurados",
+    element: <JuryManagementPage />,
+    roles: ["Administrador"],
+  },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
+  {
+    path: "/pendientes-calificar",
+    element: <PendingGradesPage />,
+    roles: ["Jurado"],
+  },
+  {
+    path: "/pendientes-calificar/:id",
+    element: <RatePage params={{ id: "" }} />,
+    roles: ["Jurado"],
+  },
+  { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
+
+  {
+    path: "/mi-equipo",
+    element: <RatedPage params={{ id: "" }} />,
+    roles: ["Consultor"],
+  },
+
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -85,6 +120,16 @@ const routes: RouteConfig[] = [
   {
     path: "/verificar-cuenta",
     element: <VerifyEmailPage />,
+  },
+  {
+    path: "/home-estudiante",
+    element: <HomeStudentPage />,
+    roles: ["Estudiante", "Profesor"],
+  },
+  {
+    path: "/home-profesor",
+    element: <HomeTeacherPage />,
+    roles: ["Profesor"],
   },
 ];
 

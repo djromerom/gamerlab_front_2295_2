@@ -34,14 +34,17 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
-        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck},
-        { name: "Profesores", url: "/profesores", icon: FileUser }
+        {
+          name: "Criterios de Calificación",
+          url: "/criterios",
+          icon: BookCheck,
+        },
       ],
     },
     {
       title: "Personal",
       items: [
-        { name: "Profesor", url: "/profesor", icon: FileUser },
+        { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Gavel },
       ],
     },
@@ -52,16 +55,32 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         {
           name: "Pendientes por calificar",
-          url: "/pendientes",
+          url: "/pendientes-calificar",
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
-        { name: "Proyectos", url: "/proyectos", icon: Binary },
       ],
     },
   ],
-  Profesor: [],
-  Consultor: [],
+  Profesor: [
+    {
+      title: "Proyectos",
+      items: [{ name: "Calificacion", url: "/home-profesor", icon: Binary }],
+    },
+  ],
+  Estudiante: [],
+  Consultor: [
+    {
+      title: "Información",
+      items: [
+        {
+          name: "Mi equipo",
+          url: "/mi-equipo",
+          icon: LibraryBig,
+        },
+      ],
+    },
+  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

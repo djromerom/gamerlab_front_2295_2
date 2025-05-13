@@ -1,15 +1,16 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import '@/index.css';
-import CountdownTimer from '@/components/grupo 5/CountdownTimer';
-import NavBar from '@/components/grupo 5/NavBar';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "@/index.css";
+import CountdownTimer from "@/components/grupo 5/CountdownTimer";
+import NavBar from "@/components/grupo 5/NavBar";
 
 function Landing(): React.ReactElement {
+  const targetDate = new Date("2025-06-05T14:00:00");
+  const navigate = useNavigate();
 
-  const targetDate = new Date('2025-05-07T08:00:00');
   return (
     <>
-    <NavBar />
+      <NavBar />
       <div className="relative h-dvh bg-[#0d0f14] overflow-hidden">
         <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
@@ -19,7 +20,7 @@ function Landing(): React.ReactElement {
         </div>
 
         <div className="relative z-10 text-white text-center px-4 flex flex-col justify-center items-center min-h-screen">
-        <CountdownTimer targetDate={targetDate} />
+          <CountdownTimer targetDate={targetDate} />
           <h1 className="font-inter text-4xl sm:text-7xl font-bold">
             Una muestra de videojuegos sin precedentes en Uninorte
           </h1>
@@ -27,20 +28,21 @@ function Landing(): React.ReactElement {
             Feria Gamer Uninorte
           </h2>
           <p className="text-lg md:text-xl mt-6 max-w-3xl">
-            Bienvenidos a la experiencia definitiva donde la creatividad y la tecnología se encuentran. Únete a nosotros
-            para explorar los videojuegos más innovadores creados por talentosos desarrolladores.
+            Bienvenidos a la experiencia definitiva donde la creatividad y la
+            tecnología se encuentran. Únete a nosotros para explorar los
+            videojuegos más innovadores creados por talentosos desarrolladores.
           </p>
           <div className="mt-8">
-            <Link to="registro-equipo"
+            <button
+              onClick={() => navigate("/registro-equipo")}
               className="bg-white text-[#060312] py-3 px-5 rounded-lg font-medium hover:bg-gray-200 transition cursor-pointer"
             >
               Registra tu equipo aquí
-            </Link>
+            </button>
           </div>
         </div>
       </div>
     </>
   );
 }
-
 export default Landing;
