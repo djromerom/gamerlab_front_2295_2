@@ -87,7 +87,7 @@ export default function MultiStepWizard() {
         const err = await res.json();
         throw new Error(`Error ${res.status}: ${err.message || "desconocido"}`);
       }
-    } catch (e: any) {
+    } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
       toast.error("Error en el registro", {
         description: e.message || "Error inesperado",
