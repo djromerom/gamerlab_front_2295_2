@@ -342,7 +342,7 @@ const GraphicDisplay = () => {
                         <CardTitle>Detalle de Criterios</CardTitle>
                         <CardDescription>{videojuegoSeleccionado.nombre}</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pb-6">
                         {criteriosSeleccionado ? (
                             <div className="space-y-4">
                                 {Object.entries(criteriosSeleccionado)

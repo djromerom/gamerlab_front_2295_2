@@ -131,7 +131,7 @@ const TablaRanking = () => {
                         : "warning";
                       badgeText = `${completadas}/${asignados}`;
                     } else if (asignados === 0) {
-                      badgeText = "0/0";
+                      badgeText = `${completadas}/0`;
                       badgeVariant = "outline";
                     }
                     // Si asignados < 0 (improbable), se usa el default N/A

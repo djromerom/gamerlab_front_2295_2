@@ -65,6 +65,7 @@ const TablaResultados = () => {
                 {listaVideojuegosFiltrados.map((videojuego: VideojuegoData) => {
                   // Comprobación adicional: asegurarse de que 'criterios' es un objeto
                   // y no null o undefined antes de intentar acceder a sus propiedades.
+                  console.log("Videojuegos:", videojuego.criterios); // Para depuración
                   const criteriosDelVideojuego = videojuego.criterios && typeof videojuego.criterios === 'object'
                     ? videojuego.criterios
                     : {}; // Si no es un objeto válido, tratarlo como un objeto vacío

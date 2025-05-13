@@ -188,13 +188,17 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   const listaVideojuegosFiltrados = useMemo(() => {
     return listaVideojuegos.filter(vj => {
       const pasaMateria = filtroMateria === "Todas" ||
-        (vj.materia && opcionesFiltroMateria.find(m => m.id.toString() === filtroMateria)?.name === vj.materia); // Si filtroMateria es nombre
+        (vj.materia && opcionesFiltroMateria.find(m => m.name === filtroMateria)?.name === vj.materia); // Si filtroMateria es nombre
 
+        //console.log("Filtro de materia:", filtroMateria, "Pasa materia:", pasaMateria, "string pendejo:", opcionesFiltroMateria.find(m => m.id.toString()), "vj.materia:", vj.materia, 
+      //"String god", opcionesFiltroMateria.find(m => m.name));
       const pasaNRC = filtroNRC === "Todos" || (vj.nrc && vj.nrc.toString() === filtroNRC);
 
       return pasaMateria && pasaNRC;
     });
   }, [listaVideojuegos, filtroMateria, filtroNRC, opcionesFiltroMateria]);
+
+  console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
 
   const contextValue = useMemo(() => ({
     // Filtros seleccionados
