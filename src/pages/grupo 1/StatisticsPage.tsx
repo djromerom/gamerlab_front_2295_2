@@ -1,4 +1,4 @@
-// StatisticsPage.tsx (ACTUALIZADO ASUMIENDO PROVIDER ANCESTRO)
+// StatisticsPage.tsx 
 "use client"
 
 import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw } from "lucide-react"

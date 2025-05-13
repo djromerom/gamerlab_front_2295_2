@@ -42,7 +42,7 @@ export interface VideojuegoData {
 // Para las opciones en el filtro de "Materia"
 export interface MateriaData {
   id: number;    // Coincide con Subject.id
-  nombre: string; // Coincide con Subject.name
+  name: string; // Coincide con Subject.name
   // codigo?: string; // Coincide con Subject.code, si lo necesitas
 }
 
@@ -188,7 +188,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   const listaVideojuegosFiltrados = useMemo(() => {
     return listaVideojuegos.filter(vj => {
       const pasaMateria = filtroMateria === "Todas" ||
-        (vj.materia && opcionesFiltroMateria.find(m => m.id.toString() === filtroMateria)?.nombre === vj.materia); // Si filtroMateria es nombre
+        (vj.materia && opcionesFiltroMateria.find(m => m.id.toString() === filtroMateria)?.name === vj.materia); // Si filtroMateria es nombre
 
       const pasaNRC = filtroNRC === "Todos" || (vj.nrc && vj.nrc.toString() === filtroNRC);
 

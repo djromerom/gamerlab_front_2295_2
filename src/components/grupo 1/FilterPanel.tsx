@@ -36,18 +36,18 @@ const FiltrosPanel = () => {
   };
 
   // Puedes mostrar un estado de carga o deshabilitar los selects si isLoading es true
-  if (isLoading && (opcionesFiltroMateria.length === 0 && opcionesFiltroNRC.length === 0 && listaVideojuegos.length === 0) ) {
-      return (
-        <div className="col-span-12 md:col-span-3">
-            <Card className="h-full pt-2">
-                <CardHeader className="pt-2"><CardTitle>Filtros</CardTitle></CardHeader>
-                <CardContent><p>Cargando opciones de filtros...</p></CardContent>
-            </Card>
-        </div>
-      );
+  if (isLoading && (opcionesFiltroMateria.length === 0 && opcionesFiltroNRC.length === 0 && listaVideojuegos.length === 0)) {
+    return (
+      <div className="col-span-12 md:col-span-3">
+        <Card className="h-full pt-2">
+          <CardHeader className="pt-2"><CardTitle>Filtros</CardTitle></CardHeader>
+          <CardContent><p>Cargando opciones de filtros...</p></CardContent>
+        </Card>
+      </div>
+    );
   }
 
-
+  //console.log(opcionesFiltroMateria); // Para depurar y ver qué datos tienes
   return (
     <div className="col-span-12 md:col-span-3"> {/* Mantén las clases de grid si este componente se coloca directamente en un grid */}
       <Card className="h-full pt-2">
@@ -73,8 +73,8 @@ const FiltrosPanel = () => {
                 {opcionesFiltroMateria.map((materia) => (
                   // Asumimos que el valor que guardas en filtroMateria es el ID (o un identificador único)
                   // Si es el nombre, entonces value={materia.nombre}
-                  <SelectItem key={materia.id} value={materia.id.toString()}>
-                    {materia.nombre}
+                  <SelectItem key={materia.id} value={materia.name}>
+                    {materia.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -104,7 +104,7 @@ const FiltrosPanel = () => {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Selector de Videojuego (este no es un filtro para la lista, sino para seleccionar cuál ver en detalle) */}
           <div className="space-y-2">
             <label htmlFor="select-videojuego" className="text-sm font-medium">Videojuego</label>
@@ -120,7 +120,7 @@ const FiltrosPanel = () => {
               </SelectTrigger>
               <SelectContent>
                 {listaVideojuegos.length === 0 && !isLoading && (
-                    <SelectItem value="" disabled>No hay videojuegos disponibles</SelectItem>
+                  <SelectItem value="" disabled>No hay videojuegos disponibles</SelectItem>
                 )}
                 {listaVideojuegos.map((videojuego: VideojuegoData) => (
                   <SelectItem key={videojuego.id} value={videojuego.id.toString()}>
