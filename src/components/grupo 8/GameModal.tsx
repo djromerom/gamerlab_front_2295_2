@@ -38,7 +38,7 @@ const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-white dark:bg-[#1a1a2e] text-black dark:text-white max-w-md w-full rounded-xl p-6">
+      <DialogContent className="bg-white dark:bg-[#1a1a2e] text-foreground max-w-md w-full rounded-xl p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold mb-4">
             {game.nombre}
@@ -49,7 +49,7 @@ const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             aria-label="Cerrar"
           >
-            
+
           </button>
         </DialogHeader>
 
@@ -91,8 +91,8 @@ const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
           <Button
             size="sm"
             className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${game.isEvaluated
-                ? "bg-gray-700 hover:bg-gray-700 text-white cursor-not-allowed"
-                : "bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white"
+              ? "bg-gray-700 hover:bg-gray-700 text-foreground cursor-not-allowed"
+              : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)]"
               }`}
             onClick={() => !game.isEvaluated && handleCalificarClick()} // Solo permite clic si no está evaluado
             disabled={game.isEvaluated} // Deshabilita el botón si está evaluado

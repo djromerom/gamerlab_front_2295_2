@@ -142,7 +142,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
 
 
     return (
-        <div className="flex flex-col w-full bg-white text-black dark:bg-[#0a0a0a] dark:text-white">
+        <div className="flex flex-col w-full bg-background text-foreground">
             {/* Barra de búsqueda y filtros - reducido el espacio vertical */}
             <div className="flex items-center justify-end mb-4 px-5 ">
                 <div className="flex gap-3">
@@ -161,7 +161,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
                     <div className="relative">
                         <Button
                             variant="outline"
-                            className="bg-[#1a1a2e] border border-[#4d5474] text-black h-9 flex items-center justify-center gap-1 px-4 dark:text-white dark:hover:bg-[#1a1a2e]"
+                            className="bg-[#1a1a2e] border border-[#4d5474] text-foreground h-9 flex items-center justify-center gap-1 px-4 dark:hover:bg-[#1a1a2e]"
                             onClick={toggleDropdown}
                         >
                             <ChevronDownIcon />
@@ -169,22 +169,22 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
                         </Button>
 
                         {isDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#d1d5dc] text-white z-10 dark:bg-[#171717]">
+                            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#d1d5dc] text-foreground z-10 dark:bg-[#171717]">
                                 <div className="py-1">
                                     <div
-                                        className="block px-4 py-2 text-sm text-black hover:bg-[#f3f4f6] cursor-pointer dark:text-white dark:hover:bg-[#2a2a40]"
+                                        className="block px-4 py-2 text-sm text-foreground hover:bg-[#f3f4f6] cursor-pointer dark:hover:bg-[#2a2a40]"
                                         onClick={() => handleSort("equipo")}
                                     >
                                         Por equipo
                                     </div>
                                     <div
-                                        className="block px-4 py-2 text-sm text-black hover:bg-[#f3f4f6] cursor-pointer dark:text-white dark:hover:bg-[#2a2a40]"
+                                        className="block px-4 py-2 text-sm text-foreground hover:bg-[#f3f4f6] cursor-pointer dark:hover:bg-[#2a2a40]"
                                         onClick={() => handleSort("materia")}
                                     >
                                         Por materia
                                     </div>
                                     <div
-                                        className="block px-4 py-2 text-sm text-black hover:bg-[#f3f4f6] cursor-pointer dark:text-white dark:hover:bg-[#2a2a40]"
+                                        className="block px-4 py-2 text-sm text-foreground hover:bg-[#f3f4f6] cursor-pointer dark:hover:bg-[#2a2a40]"
                                         onClick={() => handleSort("nrc")}
                                     >
                                         Por NRC
@@ -206,10 +206,10 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
                             <div className="flex justify-between mb-4">
                                 <div className="flex flex-col gap-1">
                                     <h3 className="text-lg font-semibold">{game.nombre}</h3>
-                                    <p className="text-sm"><span className="text-gray-400">Equipo:</span> {game.equipo}</p>
-                                    <p className="text-sm"><span className="text-gray-400">Materia:</span> {game.materia}</p>
-                                    <p className="text-sm"><span className="text-gray-400">Nrc:</span> {game.nrc}</p>
-                                    <p className="text-sm"><span className="text-gray-400">Participantes:</span> {game.participantes.join(", ")}</p>
+                                    <p className="text-sm"><span className="text-muted-foreground">Equipo:</span> {game.equipo}</p>
+                                    <p className="text-sm"><span className="text-muted-foreground">Materia:</span> {game.materia}</p>
+                                    <p className="text-sm"><span className="text-muted-foreground">Nrc:</span> {game.nrc}</p>
+                                    <p className="text-sm"><span className="text-muted-foreground">Participantes:</span> {game.participantes.join(", ")}</p>
                                 </div>
                             </div>
 
@@ -243,8 +243,8 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
                                     size="sm"
                                     className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${
                                         game.isEvaluated
-                                            ? "bg-gray-700 hover:bg-gray-700 text-white cursor-not-allowed"
-                                            : "bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white"
+                                            ? "bg-gray-700 hover:bg-gray-700 text-foreground cursor-not-allowed"
+                                            : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)]"
                                     }`}
                                     onClick={() => !game.isEvaluated && handleCalificarClick(game)} // Solo permite clic si no está evaluado
                                     disabled={game.isEvaluated} // Deshabilita el botón si está evaluado
