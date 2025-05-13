@@ -1,6 +1,5 @@
 // MultiStepWizard.tsx
 "use client";
-import * as React from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -23,7 +22,9 @@ export default function MultiStepWizard() {
     resolver: zodResolver(CombinedSchema),
     defaultValues: {
       teamName: "",
-      members: [{ nombre: "", correo: "", codigoEstudiantil: "", nrc: [] }],
+      members: [
+        { nombre: "", apellido: "", correo: "", codigoEstudiantil: "", nrc: [] },
+      ],
       gameName: "",
       description: "",
       files: undefined,
@@ -38,49 +39,34 @@ export default function MultiStepWizard() {
         ? toast.loading("Subiendo archivos...")
         : undefined;
 
-    const uploadedFileUrls: string[] = [];
-
     try {
+      const uploadedFileUrls: string[] = [];
       if (data.files && data.files.length > 0) {
-        const uploadPromises = Array.from(data.files).map(async (file) => {
-          const filePath = `uploads/${Date.now()}-${file.name.replace(
-            /\s+/g,
-            "_"
-          )}`;
-
-          const { data: uploadData, error: uploadError } =
-            await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: false,
-            });
-
+        const uploads = Array.from(data.files).map(async (file) => {
+          const path = `uploads/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(path, file, { cacheControl: "3600", upsert: false });
           if (uploadError) throw new Error(`Error al subir ${file.name}`);
-
           const { data: urlData } = supabase.storage
             .from(BUCKET_NAME)
-            .getPublicUrl(filePath);
-
-          if (!urlData?.publicUrl) return null;
-          return urlData.publicUrl;
+            .getPublicUrl(path);
+          return urlData?.publicUrl ?? null;
         });
-
-        const results = await Promise.all(uploadPromises);
-        uploadedFileUrls.push(
-          ...results.filter((url): url is string => url !== null)
-        );
-
-        if (uploadToastId) {
-          toast.success("Archivos subidos con éxito", { id: uploadToastId });
-        }
+        (await Promise.all(uploads))
+          .filter((u): u is string => !!u)
+          .forEach((u) => uploadedFileUrls.push(u));
+        if (uploadToastId) toast.success("Archivos subidos", { id: uploadToastId });
       }
 
       const payload = {
         teamName: data.teamName,
         members: data.members.map((m) => ({
-          memberName: m.nombre,
+          memberFirstName: m.nombre,
+          memberLastName: m.apellido,
           memberEmail: m.correo,
           studentCode: m.codigoEstudiantil,
-          nrc: Array.isArray(m.nrc) ? m.nrc : [m.nrc],
+          nrc: m.nrc,
         })),
         videogame: {
           vgName: data.gameName,
@@ -95,23 +81,19 @@ export default function MultiStepWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (res.status === 201) {
         navigate("/equipos");
-        return; // <- NO llamamos setIsLoading(false) aquí para mantener el loading hasta redirección
       } else {
-        const errorBody = await res.json();
-        throw new Error(
-          `Error ${res.status}: ${errorBody.message || "Error desconocido"}`
-        );
+        const err = await res.json();
+        throw new Error(`Error ${res.status}: ${err.message || "desconocido"}`);
       }
-    } catch (error: any) {
+    } catch (e: any) {
       if (uploadToastId) toast.dismiss(uploadToastId);
       toast.error("Error en el registro", {
-        description: error.message || "Error inesperado",
+        description: e.message || "Error inesperado",
         duration: 5000,
       });
-      setIsLoading(false); // solo desactiva loading si hay error
+      setIsLoading(false);
     }
   }
 
@@ -124,11 +106,7 @@ export default function MultiStepWizard() {
               Procesando registro...
             </div>
           ) : (
-            <form
-              onSubmit={methods.handleSubmit(onSubmit)}
-              className="space-y-6"
-              noValidate
-            >
+            <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6" noValidate>
               <StepRenderer />
             </form>
           )}

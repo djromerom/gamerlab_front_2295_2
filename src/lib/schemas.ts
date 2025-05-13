@@ -6,7 +6,8 @@ export const CombinedSchema = z.object({
     .array(
       z.object({
         nombre: z.string().min(1, 'Requerido'),
-        correo: z.string().email('Email inválido'),
+        apellido: z.string().min(1, 'Requerido'),
+        correo: z.string().email('Email inválido').endsWith("@uninorte.edu.co", "Debe ser un correo uninorte"),
         codigoEstudiantil: z.string().min(1, 'Requerido'),
         nrc: z.array(z.string().min(1, 'Requerido')).min(1, 'Selecciona al menos un NRC'),
       })
