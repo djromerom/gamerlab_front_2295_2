@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 export const CombinedSchema = z.object({
+  //Validar que el nombre del equipo sea único
+
+  
   teamName: z.string().min(1, 'Requerido'),
   members: z
     .array(
