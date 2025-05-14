@@ -1,10 +1,21 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { CriterionTable } from "@/components/grupo 9/CriterionTable"; // Ajusta la ruta según tu estructura
-import { useState, useEffect } from "react";
+import { CriterionTable } from "@/components/grupo 9/CriterionTable";
+import { useState, useEffect, useCallback } from "react";
 
-interface CriterionRowData {
+export interface PaginatedResult<T> {
+  data: T[];
+  metadata: {
+    totalItems: number;
+    itemsOnCurrentPage: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  };
+}
+
+export interface CriterionRowData {
   id: number;
   name: string;
   description?: string;
@@ -19,56 +30,86 @@ const CriteriaPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 10
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+
   const API_ENDPOINT = "http://localhost:3000/criteria";
   const API_BASE_URL = "http://localhost:3000";
 
-  useEffect(() => {
-    const fetchCriteria = async () => {
-      setIsPageLoading(true);
-      setError(null);
-      setCriteria(null);
+  const fetchCriteriaData = useCallback(async (page: number, limit: number) => {
+    setIsPageLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch(API_ENDPOINT, {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
+    try {
+      // Fetching only active criteria by default, adjust if needed
+      const res = await fetch(`${API_ENDPOINT}?page=${page}&limit=${limit}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
 
-        if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch criteria`;
-          try {
-            const errorBody = await res.json();
-            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {
-            /* ignore */
-          }
-          throw new Error(errorMsg);
-        }
-
-        const dataRespond = await res.json();
-
-        setCriteria(dataRespond.data);
-      } catch (err: any) {
-        console.error("Error fetching criteria:", err);
-        setError(
-          err.message || "Ocurrió un error desconocido al cargar los criterios."
-        );
-        setCriteria(null);
-      } finally {
-        setIsPageLoading(false);
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to fetch criteria`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) { /* ignore */ }
+        throw new Error(errorMsg);
       }
-    };
 
-    fetchCriteria();
-  }, []);
+      const dataRespond: PaginatedResult<CriterionRowData> = await res.json();
+
+      setCriteria(dataRespond.data);
+      setTotalPages(dataRespond.metadata.totalPages);
+      setTotalItems(dataRespond.metadata.totalItems);
+
+      if (page > dataRespond.metadata.totalPages && dataRespond.metadata.totalPages > 0) {
+        setCurrentPage(dataRespond.metadata.totalPages);
+      } else if (dataRespond.data.length === 0 && page > 1 && dataRespond.metadata.totalItems > 0) {
+        setCurrentPage(page - 1);
+      } else if (dataRespond.metadata.totalItems === 0) {
+        setCurrentPage(1);
+      }
+
+    } catch (err: any) {
+      console.error("Error fetching criteria:", err);
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar los criterios."
+      );
+      setCriteria(null);
+      setTotalPages(0);
+      setTotalItems(0);
+    } finally {
+      setIsPageLoading(false);
+    }
+  }, [API_ENDPOINT]);
+
+  useEffect(() => {
+    fetchCriteriaData(currentPage, rowsPerPage);
+  }, [currentPage, rowsPerPage, fetchCriteriaData]);
+
+  const handleDataMutation = useCallback(() => {
+    fetchCriteriaData(currentPage, rowsPerPage);
+  }, [currentPage, rowsPerPage, fetchCriteriaData]);
+
+  const handleCriterionUpdate = (updatedCriterion: CriterionRowData) => {
+    setCriteria(prevCriteria =>
+      prevCriteria ? prevCriteria.map(c => (c.id === updatedCriterion.id ? updatedCriterion : c)) : null
+    );
+  };
+
+  const handleSetRowsPerPage = (newRows: number) => {
+    setRowsPerPage(newRows);
+    setCurrentPage(1);
+  };
 
   const breadcrumbs = [{ label: "Criterios", href: "/criteria" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {/* Error display */}
-      {error && !criteria && (
+      {error && !isPageLoading && (!criteria || criteria.length === 0) && (
         <div
           className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
           role="alert"
@@ -77,17 +118,23 @@ const CriteriaPage = () => {
         </div>
       )}
 
-      {/* Tabla de criterios */}
       <CriterionTable
-        criteria={criteria}
+        criteria={criteria} // Pass the paginated data
         apiBaseUrl={API_BASE_URL}
         isDataLoading={isPageLoading}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        rowsPerPage={rowsPerPage}
+        setRowsPerPage={handleSetRowsPerPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onDataChange={handleDataMutation}
+        onCriterionUpdate={handleCriterionUpdate}
       />
 
-      {/* No results message */}
-      {!isPageLoading && !error && criteria && criteria.length === 0 && (
+      {!isPageLoading && !error && criteria && criteria.length === 0 && totalItems === 0 && (
         <div className="p-4 text-center text-gray-500">
-          No se encontraron criterios activos.
+          No se encontraron criterios.
         </div>
       )}
     </LayoutAplication>
