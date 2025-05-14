@@ -1,4 +1,4 @@
-// TablaGenerica.tsx
+// TablaGenerica.tsx (imported as SubjectsTable)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -55,7 +55,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// --- Interfaces (RowData, Payloads, Materia, Data) sin cambios ---
+// This RowData is specific to this table's needs, primarily for the 'id'
 export interface RowData extends Record<string, any> {
   id: number | string;
 }
@@ -72,60 +72,64 @@ interface CreateMateriaPayload {
   semester: number;
 }
 
+// This is the structure of the 'data' prop passed to THIS table component
 export interface Data {
   titulo: string;
   nombreTabla: string;
   nombreColumnas: Record<string, string>;
-  filas: RowData[];
+  filas: RowData[]; // These are the rows for the current page
   primaryKey?: string;
 }
 
 interface Props {
   data: Data | null;
   apiBaseUrl: string;
-  isDataLoading?: boolean;
+  isDataLoading?: boolean; // From parent, for initial load or page change
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  rowsPerPage: number;
+  setRowsPerPage: (size: number) => void;
+  totalPages: number;
+  totalItems: number;
+  onDataChange: () => void; // Callback to parent to refetch data (for C/D)
+  onRowUpdate: (updatedRow: RowData) => void; // Callback to parent for optimistic update (for U)
 }
 
 export const SubjectsTable: React.FC<Props> = ({
   data,
   apiBaseUrl,
   isDataLoading = false,
+  currentPage,
+  setCurrentPage,
+  rowsPerPage,
+  setRowsPerPage,
+  totalPages,
+  totalItems,
+  onDataChange,
+  onRowUpdate,
 }) => {
-  // <-- Recibe isDataLoading
   const customFetch = useFetch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  // Inicializa allRows con data?.filas o un array vacío si data es null
-  const [allRows, setAllRows] = useState<RowData[]>(data?.filas || []);
-  const [currentRows, setCurrentRows] = useState<RowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newRow, setNewRow] = useState<Record<string, any>>({});
+  const [newRow, setNewRow] = useState<Record<string, any>>({}); // For add form
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState<RowData | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [editingRow, setEditingRow] = useState<RowData | null>(null); // For pre-filling edit form
+  const [editFormData, setEditFormData] = useState<Partial<UpdateMateriaPayload>>({}); // For edit form changes
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingIndex, setDeletingIndex] = useState<number>(-1);
-  const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
+  const [deletingRowId, setDeletingRowId] = useState<number | string | null>(null);
+  const [internalIsLoading, setInternalIsLoading] = useState(false); // For C/U/D operations within this component
   const [error, setError] = useState<string | null>(null);
 
-  // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
-  const showLoader = isDataLoading || internalIsLoading;
+  const showLoader = isDataLoading || internalIsLoading; // Combined loader state
 
-  // Usa data?.primaryKey o 'id' como fallback de forma segura
   const primaryKeyField = data?.primaryKey || "id";
-
-  // Obtén las columnas de forma segura, devuelve array vacío si data es null
   const columnEntries = data ? Object.entries(data.nombreColumnas) : [];
   const displayColumnKeys = columnEntries
-    .filter(([key]) => key !== primaryKeyField)
+    .filter(([key]) => key !== primaryKeyField) // Exclude primary key from display columns
     .map(([key]) => key);
   const columnNames = data?.nombreColumnas || {};
 
-  const totalPages = Math.ceil(allRows.length / rowsPerPage);
-
   const getApiUrl = (id?: number | string) => {
-    // Asegúrate que data y data.nombreTabla existen antes de usarlos
-    if (!data?.nombreTabla) return ""; // O maneja el error como prefieras
+    if (!data?.nombreTabla) return "";
     let url = `${apiBaseUrl}/${data.nombreTabla}`;
     if (id !== undefined) {
       url += `/${id}`;
@@ -133,55 +137,20 @@ export const SubjectsTable: React.FC<Props> = ({
     return url;
   };
 
-  // Effect para actualizar allRows cuando la prop `data` cambie (después de la carga inicial)
-  useEffect(() => {
-    // Solo actualiza si data existe y data.filas es diferente de allRows (evita bucles)
-    // Comprobación simple por referencia o longitud puede ser suficiente aquí
-    if (data?.filas && data.filas !== allRows) {
-      setAllRows(data.filas);
-      // Resetea la página a 1 si los datos cambian completamente (opcional)
-      // setCurrentPage(1);
-    }
-    // Si data se vuelve null (quizás por un error en el padre), limpia las filas
-    if (data === null && allRows.length > 0) {
-      setAllRows([]);
-    }
-  }, [data]); // Depende de la prop data
+  // No local 'allRows' or 'currentRows' state needed as 'data.filas' comes paginated from parent.
+  // No useEffect for client-side pagination needed.
 
-  // Effect para paginación (sin cambios, ya depende de allRows)
-  useEffect(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    // Asegura que allRows exista antes de rebanar
-    setCurrentRows(allRows ? allRows.slice(start, end) : []);
-
-    // Ajusta la página actual si es necesario (sin cambios)
-    const currentTotalPages = Math.ceil((allRows?.length || 0) / rowsPerPage);
-    if (currentPage > currentTotalPages && currentTotalPages > 0) {
-      setCurrentPage(currentTotalPages);
-    } else if (currentPage < 1 && currentTotalPages > 0) {
-      setCurrentPage(1);
-    } else if (allRows?.length === 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, rowsPerPage, allRows]); // Depende de allRows
-
-  // --- Funciones handleAdd, handleOpenEdit, handleSaveEdit, handleOpenDelete, handleConfirmDelete ---
-  // Asegúrate de usar setInternalIsLoading(true/false) en lugar de setIsLoading
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInternalIsLoading(true); // Usa el estado interno
+    setInternalIsLoading(true);
     setError(null);
-    // ... resto de la lógica de validación y fetch ...
-    // Asegúrate de que getApiUrl() no se llame si data es null
     const apiUrl = getApiUrl();
-    if (!apiUrl) {
+    if (!apiUrl || !data?.nombreTabla) {
       setError("Configuración de tabla inválida.");
       setInternalIsLoading(false);
       return;
     }
 
-    // ... validación de newRow ...
     const { name, code, semester: semesterStr } = newRow;
     if (!name || !code || !semesterStr) {
       setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
@@ -202,31 +171,41 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       const response = await customFetch(apiUrl, {
-        /*...*/ body: JSON.stringify(dataToSend),
+        body: JSON.stringify(dataToSend),
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
+        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
+        throw new Error(errorData.message || "Error al agregar la materia.");
       }
-      const addedRow: RowData = await response.json();
-      setAllRows((prevRows) => [addedRow, ...(prevRows || [])]); // Maneja prevRows null
+      // await response.json(); // Consume if needed, but we refetch
       setNewRow({});
       setAddDialogOpen(false);
+      onDataChange(); // Notify parent to refetch data
     } catch (err: any) {
       setError(err.message || "Error al agregar.");
       console.error("Error en handleAdd:", err);
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      setInternalIsLoading(false);
     }
+  };
+
+  const handleOpenEdit = (row: RowData) => {
+    setEditingRow(row); // Store the original row for its ID
+    setEditFormData({ // Set form data for editing
+      name: row.name,
+      code: row.code,
+      semester: row.semester,
+    });
+    setEditDialogOpen(true);
+    setError(null);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingRow) {
-      /*...*/ return;
-    }
-    setInternalIsLoading(true); // Usa el estado interno
+    if (!editingRow || !editFormData) return;
+    setInternalIsLoading(true);
     setError(null);
 
     const idValue = editingRow[primaryKeyField];
@@ -237,15 +216,8 @@ export const SubjectsTable: React.FC<Props> = ({
       return;
     }
 
-    // ... validación de editingRow ...
-    const { name, code, semester: semesterStr } = editingRow;
-    if (
-      !name ||
-      !code ||
-      semesterStr === undefined ||
-      semesterStr === null ||
-      semesterStr === ""
-    ) {
+    const { name, code, semester: semesterStr } = editFormData;
+    if (!name || !code || semesterStr === undefined || semesterStr === null || String(semesterStr).trim() === "") {
       setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       setInternalIsLoading(false);
       return;
@@ -264,136 +236,92 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       const response = await customFetch(apiUrl, {
-        /*...*/ body: JSON.stringify(dataToSend),
+        body: JSON.stringify(dataToSend),
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
+        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
+        throw new Error(errorData.message || "Error al guardar los cambios.");
       }
       const updatedRowFromApi: RowData = await response.json();
-      setAllRows((prevRows) =>
-        (prevRows || []).map(
-          (
-            row // Maneja prevRows null
-          ) => (row[primaryKeyField] === idValue ? updatedRowFromApi : row)
-        )
-      );
+      onRowUpdate(updatedRowFromApi); // Notify parent for optimistic update
       setEditDialogOpen(false);
       setEditingRow(null);
+      setEditFormData({});
     } catch (err: any) {
       setError(err.message || "Error al guardar cambios.");
       console.error("Error en handleSaveEdit:", err);
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      setInternalIsLoading(false);
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (deletingIndex < 0 || !allRows || deletingIndex >= allRows.length) {
-      /*...*/
-      setError("Índice inválido para eliminar.");
-      setDeleteDialogOpen(false); // Cierra si el índice es malo
-      return;
-    }
-
-    const idToDelete = allRows[deletingIndex]?.[primaryKeyField];
-    console.log(idToDelete);
-    const apiUrl = getApiUrl(idToDelete);
-
-    if (!apiUrl || idToDelete === undefined) {
-      setError("No se puede eliminar la fila (falta ID o configuración).");
-      setDeleteDialogOpen(false); // Cierra si falta info
-      setDeletingIndex(-1);
-      return;
-    }
-
-    setInternalIsLoading(true); // Usa el estado interno
-    setError(null);
-
-    let deleteSuccess = false; // Flag para saber si cerrar el diálogo
-    try {
-      const response = await customFetch(apiUrl, { method: "DELETE" });
-      if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
-      }
-
-      // Éxito
-      setAllRows((prevRows) =>
-        (prevRows || []).filter((_, i) => i !== deletingIndex)
-      ); // Maneja prevRows null
-      deleteSuccess = true; // Marcar éxito
-      console.log("Fila eliminada (ID):", idToDelete);
-      // Ajustar paginación si es necesario (sin cambios)
-      const newTotalRows = (allRows?.length || 1) - 1; // Calcula antes de actualizar estado
-      const newTotalPages = Math.ceil(newTotalRows / rowsPerPage);
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages);
-      } else if (newTotalRows === 0) {
-        setCurrentPage(1);
-      }
-    } catch (err: any) {
-      setError(err.message || "Error al eliminar.");
-      console.error("Error en handleConfirmDelete:", err);
-      // No cierres el diálogo aquí si hay error, muestra el mensaje
-    } finally {
-      setInternalIsLoading(false); // Usa el estado interno
-      if (deleteSuccess) {
-        setDeleteDialogOpen(false); // Cierra SÓLO si fue exitoso
-        setDeletingIndex(-1);
-      }
-      // Si hubo error, el diálogo permanece abierto mostrando el error
-      // El botón Cancelar se encargará de cerrarlo y limpiar el error/índice
-    }
-  };
-
-  // --- Resto de funciones handleOpenEdit, handleOpenDelete (sin cambios lógicos importantes, pero asegúrate que usan `allRows` de forma segura) ---
-  const handleOpenEdit = (row: RowData, index: number) => {
-    setEditingRow({ ...row });
-    const actualIndex = (currentPage - 1) * rowsPerPage + index;
-    setEditingIndex(actualIndex);
-    setEditDialogOpen(true);
-    setError(null);
-  };
-
-  const handleOpenDelete = (index: number) => {
-    const actualIndex = (currentPage - 1) * rowsPerPage + index;
-    setDeletingIndex(actualIndex);
+  const handleOpenDelete = (row: RowData) => {
+    setDeletingRowId(row[primaryKeyField]);
     setDeleteDialogOpen(true);
     setError(null);
   };
 
-  return (
-    // Añade un contenedor div si data es null para mantener la estructura
-    <div
-      className={`bg-background text-foreground min-h-screen p-4 ${
-        showLoader ? "opacity-75" : ""
-      }`}
-    >
-      {/* Encabezado (Título y Botón Agregar) */}
-      <div className="flex justify-between items-center mb-6 px-4">
-        {/* Muestra título de forma segura */}
-        <h1 className="text-xl font-medium">
-          {data?.titulo || "Cargando Título..."}
-        </h1>
+  const handleConfirmDelete = async () => {
+    if (deletingRowId === null) return;
+    setInternalIsLoading(true);
+    setError(null);
 
-        {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+    const apiUrl = getApiUrl(deletingRowId);
+    if (!apiUrl) {
+      setError("Configuración inválida para eliminar.");
+      setInternalIsLoading(false);
+      setDeleteDialogOpen(false);
+      return;
+    }
+    let deleteSuccess = false;
+    try {
+      const response = await customFetch(apiUrl, { method: "DELETE" });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
+        throw new Error(errorData.message || "Error al eliminar la materia.");
+      }
+      deleteSuccess = true;
+      onDataChange(); // Notify parent to refetch data
+    } catch (err: any) {
+      setError(err.message || "Error al eliminar.");
+      console.error("Error en handleConfirmDelete:", err);
+    } finally {
+      setInternalIsLoading(false);
+      if (deleteSuccess) {
+        setDeleteDialogOpen(false);
+        setDeletingRowId(null);
+      }
+    }
+  };
+
+  const displayRows = data?.filas || [];
+
+
+  return (
+    <div
+      className={`bg-background text-foreground min-h-screen p-4 ${showLoader && !internalIsLoading ? "opacity-75" : "" // Opacity for parent loading
+        }`}
+    >
+      <div className="flex justify-between items-center mb-6 px-4">
+        <h1 className="text-xl font-medium">
+          {data?.titulo || (isDataLoading ? "Cargando Título..." : "Tabla")}
+        </h1>
+        <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) setError(null); }}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
               className="bg-card hover:bg-accent text-foreground"
-              disabled={!data || showLoader} // <-- Deshabilitar si no hay data O si está cargando
+              disabled={showLoader || !data}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
-            {/* Asegúrate que el form usa `internalIsLoading` */}
-            {data /* Solo muestra el form si hay 'data' para obtener nombreTabla etc */ && (
+            {data && (
               <form onSubmit={handleAdd}>
                 <DialogHeader>
-                  {/* Usa data?.nombreTabla de forma segura */}
                   <DialogTitle>
                     Agregar {data?.nombreTabla || "Item"}
                   </DialogTitle>
@@ -401,19 +329,16 @@ export const SubjectsTable: React.FC<Props> = ({
                     Ingrese los datos de la nueva fila.
                   </DialogDescription>
                 </DialogHeader>
-                {/* Muestra error del form */}
-                {error &&
-                  !showLoader /* No mostrar error del form mientras carga */ && (
-                    <div className="px-6 py-2">
-                      <p className="text-sm text-red-600 dark:text-red-500">
-                        {error}
-                      </p>
-                    </div>
-                  )}
+                {error && !internalIsLoading && (addDialogOpen) && (
+                  <div className="px-6 py-2">
+                    <p className="text-sm text-red-600 dark:text-red-500">
+                      {error}
+                    </p>
+                  </div>
+                )}
                 <div className="grid gap-4 py-4 px-6">
-                  {/* Genera campos de forma segura */}
                   {columnEntries
-                    .filter(([key]) => key !== primaryKeyField)
+                    .filter(([key]) => key !== primaryKeyField) // Don't create input for primary key
                     .map(([key, label]) => (
                       <div
                         key={key}
@@ -433,7 +358,8 @@ export const SubjectsTable: React.FC<Props> = ({
                           }
                           className="col-span-3"
                           required
-                          disabled={internalIsLoading} // Deshabilitar solo con carga interna
+                          type={key === "semester" ? "number" : "text"}
+                          disabled={internalIsLoading}
                         />
                       </div>
                     ))}
@@ -461,22 +387,18 @@ export const SubjectsTable: React.FC<Props> = ({
         </Dialog>
       </div>
 
-      {/* Card de la Tabla */}
       <Card className="rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {/* Renderiza encabezados de forma segura */}
               {displayColumnKeys.map((key) => (
                 <TableHead key={key}>{columnNames[key] || key}</TableHead>
               ))}
               <TableHead className="w-[50px]" /> {/* Actions */}
             </TableRow>
           </TableHeader>
-          {/* ==================== TableBody Modificado ==================== */}
           <TableBody>
-            {showLoader ? ( // <-- Usa la variable combinada
-              // --- Estado de Carga (Inicial o CRUD) ---
+            {isDataLoading && !internalIsLoading ? ( // Show main loader from parent
               <TableRow>
                 <TableCell
                   colSpan={displayColumnKeys.length + 1}
@@ -488,20 +410,18 @@ export const SubjectsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : allRows && allRows.length === 0 ? ( // <-- Verifica allRows explícitamente
-              // --- Sin Resultados ---
+            ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={displayColumnKeys.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay resultados.
+                  {totalItems > 0 ? "No hay resultados en esta página." : "No hay resultados."}
                 </TableCell>
               </TableRow>
             ) : (
-              // --- Filas de Datos (solo si allRows existe y tiene elementos) ---
-              currentRows.map((row, index) => (
-                <TableRow key={row[primaryKeyField] ?? index}>
+              displayRows.map((row) => ( // data.filas are the current page's rows
+                <TableRow key={row[primaryKeyField] ?? Math.random()}> {/* Fallback key if id is somehow missing */}
                   {displayColumnKeys.map((key) => (
                     <TableCell key={key}>{row[key]}</TableCell>
                   ))}
@@ -511,7 +431,7 @@ export const SubjectsTable: React.FC<Props> = ({
                         <Button
                           variant="ghost"
                           className="h-8 w-8 p-0"
-                          disabled={internalIsLoading}
+                          disabled={showLoader} // Disable if parent is loading OR internal CUD is happening
                         >
                           <span className="sr-only">Abrir menú</span>
                           <MoreVertical className="h-4 w-4" />
@@ -519,15 +439,15 @@ export const SubjectsTable: React.FC<Props> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleOpenEdit(row, index)}
-                          disabled={internalIsLoading}
+                          onClick={() => handleOpenEdit(row)}
+                          disabled={showLoader}
                         >
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleOpenDelete(index)}
+                          onClick={() => handleOpenDelete(row)}
                           className="text-red-500 focus:text-red-600 focus:bg-red-100"
-                          disabled={internalIsLoading}
+                          disabled={showLoader}
                         >
                           Eliminar
                         </DropdownMenuItem>
@@ -538,20 +458,15 @@ export const SubjectsTable: React.FC<Props> = ({
               ))
             )}
           </TableBody>
-          {/* ============================================================ */}
         </Table>
 
-        {/* Controles de Paginación - Deshabilitados si está cargando */}
         <div className="flex justify-between items-center p-4 text-sm border-t border-border">
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
             <Select
               value={rowsPerPage.toString()}
-              onValueChange={(value) => {
-                setRowsPerPage(parseInt(value, 10));
-                setCurrentPage(1);
-              }}
-              disabled={showLoader || !allRows || allRows.length === 0} // Deshabilitar si carga o no hay filas
+              onValueChange={(value) => setRowsPerPage(parseInt(value, 10))}
+              disabled={showLoader || totalItems === 0}
             >
               <SelectTrigger className="w-[70px]">
                 <SelectValue placeholder={rowsPerPage} />
@@ -566,19 +481,13 @@ export const SubjectsTable: React.FC<Props> = ({
             </Select>
           </div>
           <div className="flex items-center gap-4">
-            {/* Muestra paginación de forma segura */}
             <span>
               Página {totalPages > 0 ? currentPage : 0} de {totalPages || 0}
             </span>
             <div className="flex gap-1">
               <Button
                 onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={
-                  currentPage === 1 ||
-                  showLoader ||
-                  !allRows ||
-                  allRows.length === 0
-                }
+                disabled={currentPage === 1 || showLoader || totalItems === 0}
                 variant="outline"
                 size="icon"
               >
@@ -586,13 +495,7 @@ export const SubjectsTable: React.FC<Props> = ({
               </Button>
               <Button
                 onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={
-                  currentPage === totalPages ||
-                  totalPages === 0 ||
-                  showLoader ||
-                  !allRows ||
-                  allRows.length === 0
-                }
+                disabled={currentPage === totalPages || totalPages === 0 || showLoader || totalItems === 0}
                 variant="outline"
                 size="icon"
               >
@@ -603,76 +506,75 @@ export const SubjectsTable: React.FC<Props> = ({
         </div>
       </Card>
 
-      {/* Dialog Editar - Asegúrate que usa `internalIsLoading` y maneja `editingRow` null */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setError(null); }}>
         <DialogContent>
-          {editingRow &&
-            data && ( // Necesita data para los nombres de columna
-              <form onSubmit={handleSaveEdit}>
-                <DialogHeader>
-                  <DialogTitle>Editar fila</DialogTitle>
-                  <DialogDescription>
-                    Modifique los campos según sea necesario.
-                  </DialogDescription>
-                </DialogHeader>
-                {/* Muestra error del form */}
-                {error && !showLoader && (
-                  <div className="px-6 py-2">
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      {error}
-                    </p>
-                  </div>
-                )}
-                <div className="grid gap-4 py-4 px-6">
-                  {columnEntries
-                    .filter(([key]) => key !== primaryKeyField)
-                    .map(([key, label]) => (
-                      <div
-                        key={key}
-                        className="grid grid-cols-4 items-center gap-4"
-                      >
-                        <Label htmlFor={`edit-${key}`} className="text-right">
-                          {label}
-                        </Label>
-                        <Input
-                          id={`edit-${key}`}
-                          value={editingRow[key] || ""}
-                          onChange={(e) =>
-                            setEditingRow((prev) =>
-                              prev ? { ...prev, [key]: e.target.value } : null
-                            )
-                          }
-                          className="col-span-3"
-                          required
-                          disabled={internalIsLoading} // Usa estado interno
-                        />
-                      </div>
-                    ))}
+          {editingRow && data && (
+            <form onSubmit={handleSaveEdit}>
+              <DialogHeader>
+                <DialogTitle>Editar {data.nombreTabla || "Item"}</DialogTitle>
+                <DialogDescription>
+                  Modifique los campos según sea necesario.
+                </DialogDescription>
+              </DialogHeader>
+              {error && !internalIsLoading && (editDialogOpen) && (
+                <div className="px-6 py-2">
+                  <p className="text-sm text-red-600 dark:text-red-500">
+                    {error}
+                  </p>
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setEditDialogOpen(false);
-                      setError(null);
-                      setEditingRow(null);
-                    }}
-                    disabled={internalIsLoading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={internalIsLoading}>
-                    {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
+              )}
+              <div className="grid gap-4 py-4 px-6">
+                {columnEntries
+                  .filter(([key]) => key !== primaryKeyField)
+                  .map(([key, label]) => (
+                    <div
+                      key={key}
+                      className="grid grid-cols-4 items-center gap-4"
+                    >
+                      <Label htmlFor={`edit-${key}`} className="text-right">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`edit-${key}`}
+                        value={editFormData[key as keyof UpdateMateriaPayload] || ""}
+                        onChange={(e) =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                        type={key === "semester" ? "number" : "text"}
+                        disabled={internalIsLoading}
+                      />
+                    </div>
+                  ))}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditDialogOpen(false);
+                    setError(null);
+                    setEditingRow(null);
+                    setEditFormData({});
+                  }}
+                  disabled={internalIsLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={internalIsLoading}>
+                  {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Eliminar - Asegúrate que usa `internalIsLoading` */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setError(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
@@ -681,8 +583,7 @@ export const SubjectsTable: React.FC<Props> = ({
               la fila seleccionada.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {/* Muestra error del dialog */}
-          {error && !showLoader && (
+          {error && !internalIsLoading && (
             <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
               {error}
             </p>
@@ -692,7 +593,7 @@ export const SubjectsTable: React.FC<Props> = ({
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setError(null);
-                setDeletingIndex(-1);
+                setDeletingRowId(null);
               }}
               disabled={internalIsLoading}
             >
