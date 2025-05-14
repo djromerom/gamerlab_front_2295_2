@@ -1,7 +1,7 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { JuryManagementTable, Data } from "./tabla2"; // Adjust path if needed
+import { JuryManagementTable, Data } from "../../components/grupo 12/JuryManagementTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
 
 const JuryManagementPage = () => {
