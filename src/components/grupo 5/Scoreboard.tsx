@@ -1,28 +1,49 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { BookOpen, HelpCircle } from "lucide-react"
+import { HelpCircle } from "lucide-react"
+
+type Rating = { stars: number, count: number }
 
 export default function Scoreboard() {
-  // Ahora las calificaciones pueden tener valores decimales
-  const ratings = [
-    { stars: 5.0, count: 10 },
-    { stars: 4.5, count: 6 },
-    { stars: 4.0, count: 5 },
-    { stars: 3.5, count: 1 },
-    { stars: 3.0, count: 1 },
-    { stars: 2.5, count: 1 },
-    { stars: 2.0, count: 2 },
-    { stars: 1.5, count: 0 },
-    { stars: 1.0, count: 0 },
-  ]
+  const [ratings, setRatings] = useState<Rating[]>([])
+  const [rawRatings, setRawRatings] = useState<number[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const totalRatings = ratings.reduce((sum, rating) => sum + rating.count, 0)
-  const weightedSum = ratings.reduce((sum, rating) => sum + rating.stars * rating.count, 0)
-  const averageRating = (weightedSum / totalRatings).toFixed(1)
+  useEffect(() => {
+    const fetchRawRatings = async () => {
+      setLoading(true)
+      await new Promise((res) => setTimeout(res, 1000))
 
-  // Función para renderizar estrellas con decimales
+      const raw: number[] = [3.6, 4.6, 4.6]
+      setRawRatings(raw)
+
+      const buckets: { [key: number]: number } = {}
+      raw.forEach((rating) => {
+        const rounded = Math.round(rating * 2) / 2
+        buckets[rounded] = (buckets[rounded] || 0) + 1
+      })
+
+      const possibleStars = [5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0]
+      const groupedRatings: Rating[] = possibleStars.map((stars) => ({
+        stars,
+        count: buckets[stars] || 0,
+      }))
+
+      setRatings(groupedRatings)
+      setLoading(false)
+    }
+
+    fetchRawRatings()
+  }, [])
+
+  const totalRatings = rawRatings.length
+  const averageRating = totalRatings === 0 ? "0.0" : (
+    rawRatings.reduce((sum, r) => sum + r, 0) / totalRatings
+  ).toFixed(1)
+
   const renderStars = (rating: number, size: "sm" | "md" = "sm") => {
     const starSize = size === "sm" ? "w-3 h-3" : "w-4 h-4"
     const stars = []
@@ -30,86 +51,51 @@ export default function Scoreboard() {
     const hasHalfStar = rating % 1 >= 0.5
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
-    // Estrellas completas
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <svg
-          key={`full-${i}`}
-          className={`${starSize} text-yellow-400`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg key={`full-${i}`} className={`${starSize} text-yellow-400`} fill="currentColor" viewBox="0 0 20 20">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>,
+        </svg>
       )
     }
 
-    // Media estrella si es necesario
     if (hasHalfStar) {
       stars.push(
-        <svg
-          key="half"
-          className={`${starSize} text-yellow-400`}
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg key="half" className={`${starSize} text-yellow-400`} viewBox="0 0 20 20">
           <defs>
             <linearGradient id="halfGradient">
               <stop offset="50%" stopColor="#FACC15" />
               <stop offset="50%" stopColor="#D1D5DB" />
             </linearGradient>
           </defs>
-          <path
-            fill="url(#halfGradient)"
-            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-          />
-        </svg>,
+          <path fill="url(#halfGradient)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
       )
     }
 
-    // Estrellas vacías
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
-        <svg
-          key={`empty-${i}`}
-          className={`${starSize} text-gray-300`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg key={`empty-${i}`} className={`${starSize} text-gray-300`} fill="currentColor" viewBox="0 0 20 20">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>,
+        </svg>
       )
     }
 
     return stars
   }
 
-  // Agrupar calificaciones para la visualización
   const groupedRatings = [
     { range: "5.0", count: ratings.find((r) => r.stars === 5.0)?.count || 0 },
-    {
-      range: "4.5-4.9",
-      count: ratings.filter((r) => r.stars >= 4.5 && r.stars < 5.0).reduce((sum, r) => sum + r.count, 0),
-    },
-    {
-      range: "4.0-4.4",
-      count: ratings.filter((r) => r.stars >= 4.0 && r.stars < 4.5).reduce((sum, r) => sum + r.count, 0),
-    },
-    {
-      range: "3.0-3.9",
-      count: ratings.filter((r) => r.stars >= 3.0 && r.stars < 4.0).reduce((sum, r) => sum + r.count, 0),
-    },
-    {
-      range: "2.0-2.9",
-      count: ratings.filter((r) => r.stars >= 2.0 && r.stars < 3.0).reduce((sum, r) => sum + r.count, 0),
-    },
-    {
-      range: "1.0-1.9",
-      count: ratings.filter((r) => r.stars >= 1.0 && r.stars < 2.0).reduce((sum, r) => sum + r.count, 0),
-    },
+    { range: "4.5-4.9", count: ratings.filter((r) => r.stars >= 4.5 && r.stars < 5.0).reduce((sum, r) => sum + r.count, 0) },
+    { range: "4.0-4.4", count: ratings.filter((r) => r.stars >= 4.0 && r.stars < 4.5).reduce((sum, r) => sum + r.count, 0) },
+    { range: "3.0-3.9", count: ratings.filter((r) => r.stars >= 3.0 && r.stars < 4.0).reduce((sum, r) => sum + r.count, 0) },
+    { range: "2.0-2.9", count: ratings.filter((r) => r.stars >= 2.0 && r.stars < 3.0).reduce((sum, r) => sum + r.count, 0) },
+    { range: "1.0-1.9", count: ratings.filter((r) => r.stars >= 1.0 && r.stars < 2.0).reduce((sum, r) => sum + r.count, 0) },
   ]
+
+  if (loading) {
+    return <div className="text-center p-8 text-gray-500">Cargando calificaciones...</div>
+  }
 
   return (
     <div className="flex w-full max-w-4xl mx-auto p-4">
@@ -123,10 +109,7 @@ export default function Scoreboard() {
         <CardContent className="p-6 pt-0 space-y-4">
           <div className="flex flex-col items-center mb-6">
             <div className="relative w-32 h-32">
-              {/* Círculo de fondo */}
               <div className="absolute inset-0 rounded-full border-8 border-gray-100"></div>
-
-              {/* Círculo de progreso */}
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#e5e7eb" strokeWidth="8" />
                 <circle
@@ -136,14 +119,12 @@ export default function Scoreboard() {
                   fill="none"
                   stroke="#facc15"
                   strokeWidth="8"
-                  strokeDasharray="289.02652413026095"
-                  strokeDashoffset={289.02652413026095 - (289.02652413026095 * Number.parseFloat(averageRating)) / 5}
+                  strokeDasharray="289.026"
+                  strokeDashoffset={289.026 - (289.026 * Number.parseFloat(averageRating)) / 5}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                 />
               </svg>
-
-              {/* Valor numérico */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold">{averageRating}</span>
                 <div className="flex mt-1">{renderStars(Number.parseFloat(averageRating))}</div>

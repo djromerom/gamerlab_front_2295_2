@@ -92,20 +92,64 @@ export function VerifyEmailPage() {
 
   useEffect(() => {
     let isMounted = true;
+    let processedFragment = false;
 
-    const foundErrorInFragment = processUrlFragmentErrors();
-    if (foundErrorInFragment) {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    const errorDescription = params.get("error_description");
+    const errorCode = params.get("error_code");
+
+    if (errorDescription || errorCode) {
+      processedFragment = true;
+      setStatus("error");
+      setMessage(
+        `Error: ${decodeURIComponent(
+          errorDescription?.replace(/\+/g, " ") || "Error desconocido"
+        )}` + (errorCode ? ` (Code: ${errorCode})` : "")
+      );
+
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
       return;
     }
 
-    setStatus("loading");
-    setMessage("Verificando confirmación de cuenta...");
+    if (accessToken) {
+      processedFragment = true;
+
+      setStatus("loading");
+      setMessage("Procesando verificación...");
+    } else {
+      setStatus("error");
+      setMessage(
+        "Enlace de verificación inválido, expirado, ya utilizado o no proporcionado."
+      );
+
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+      return;
+    }
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!isMounted) return;
 
-        if (event === "SIGNED_IN" && session?.user) {
+        console.log("Auth Event:", event, "Session:", !!session);
+
+        if (event === "SIGNED_IN" && session?.user && processedFragment) {
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search
+          );
+
           if (
             session.user.email_confirmed_at ||
             session.user.phone_confirmed_at
@@ -114,33 +158,30 @@ export function VerifyEmailPage() {
             setCurrentSessionToken(session.access_token);
             setStatus("awaiting_password");
             setMessage(
-              "¡Cuenta verificada! Por favor, establece tu contraseña para continuar."
-            );
-            window.history.replaceState(
-              null,
-              "",
-              window.location.pathname + window.location.search
+              "¡Cuenta verificada! Por favor, establece tu contraseña."
             );
           } else {
-            setMessage(
-              "Hubo un problema al verificar el estado de tu cuenta. Contacta a soporte."
-            );
             setStatus("error");
+            setMessage(
+              "Error inesperado: La sesión se inició pero la cuenta no aparece como confirmada."
+            );
           }
+          processedFragment = false;
         } else if (
           event === "INITIAL_SESSION" &&
           !session &&
-          status === "loading"
+          processedFragment
         ) {
-          setMessage(
-            "El enlace de verificación es inválido, ha expirado o ya fue utilizado. Por favor, intenta registrarte de nuevo o contacta a soporte."
-          );
-          setStatus("error");
           window.history.replaceState(
             null,
             "",
             window.location.pathname + window.location.search
           );
+          setStatus("error");
+          setMessage(
+            "El token de verificación en el enlace no pudo ser validado o ha expirado."
+          );
+          processedFragment = false;
         } else if (event === "SIGNED_OUT") {
           toast.info("Has cerrado sesión.");
           navigate("/login");
@@ -148,41 +189,11 @@ export function VerifyEmailPage() {
       }
     );
 
-    if (status === "loading") {
-      supabase.auth.getSession().then(({ data, error }) => {
-        if (!isMounted) return;
-        if (error) {
-          setMessage("Error al verificar sesión: " + error.message);
-          setStatus("error");
-        } else if (data.session && status === "loading") {
-          if (
-            data.session.user.email_confirmed_at ||
-            data.session.user.phone_confirmed_at
-          ) {
-            setCurrentUser(data.session.user);
-            setCurrentSessionToken(data.session.access_token);
-            setStatus("awaiting_password");
-            setMessage(
-              "¡Cuenta verificada! Por favor, establece tu contraseña."
-            );
-            window.history.replaceState(
-              null,
-              "",
-              window.location.pathname + window.location.search
-            );
-          } else {
-            setMessage("El estado de tu cuenta no está verificado aún.");
-            setStatus("error");
-          }
-        }
-      });
-    }
-
     return () => {
       isMounted = false;
       authListener?.subscription.unsubscribe();
     };
-  }, [navigate, processUrlFragmentErrors]);
+  }, [navigate]);
 
   const handleSetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,19 +244,14 @@ export function VerifyEmailPage() {
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (jsonError) {
-          // Ignora si no se puede parsear JSON
-        }
-        // Si el error específico es 401, damos un mensaje más útil
+        } catch (jsonError) {}
         if (response.status === 401) {
           errorMessage =
             "Error de autenticación. Verifica la configuración del servidor.";
         }
         throw new Error(errorMessage);
       }
-
       const responseData = await response.json();
-
       setStatus("success");
       const successMessage =
         "¡Contraseña establecida con éxito! Serás redirigido a iniciar sesión.";

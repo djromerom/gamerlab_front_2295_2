@@ -4,6 +4,8 @@ import { CombinedFormValues } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "@/components/ui/input";
+import { useFetch } from "@/hooks/useFetch";
+import { useEffect } from "react";
 
 export default function TeamStep() {
   const { next } = useMultiForm();
@@ -13,6 +15,30 @@ export default function TeamStep() {
     const isValid = await trigger('teamName');
     if (isValid) next();
   };
+
+  const TeamInfo = () => {
+  const fetch = useFetch();
+
+  useEffect(() => {
+    const getTeam = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/teams/name/TeamRocket");
+        if (!response.ok) {
+          throw new Error("No se pudo obtener el equipo");
+        }
+        const data = await response.json();
+        console.log("Equipo:", data);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    getTeam();
+  }, [fetch]);
+
+  return <div>Consulta de equipo</div>;
+};
+  
 
   return (
     <>

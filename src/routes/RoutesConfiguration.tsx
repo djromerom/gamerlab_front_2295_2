@@ -15,8 +15,10 @@ import HomePage from "@/pages/grupo 9/HomePage";
 import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
 import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
 import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
@@ -84,6 +86,11 @@ const routes: RouteConfig[] = [
     element: <StatisticsPage />,
     roles: ["Administrador"],
   },
+  {
+    path: "/jurados",
+    element: <JuryManagementPage />,
+    roles: ["Administrador"],
+  },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
     path: "/pendientes-calificar",
@@ -95,6 +102,8 @@ const routes: RouteConfig[] = [
     element: <RatePage params={{ id: "" }} />,
     roles: ["Jurado"],
   },
+  { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
+
   {
     path: "/mi-equipo",
     element: <RatedPage params={{ id: "" }} />,
@@ -115,12 +124,12 @@ const routes: RouteConfig[] = [
   {
     path: "/home-estudiante",
     element: <HomeStudentPage />,
-    roles: ["Estudiante", "Administrador"],
+    roles: ["Estudiante", "Profesor"],
   },
   {
     path: "/home-profesor",
     element: <HomeTeacherPage />,
-    roles: ["Profesor", "Administrador"],
+    roles: ["Profesor"],
   },
 ];
 

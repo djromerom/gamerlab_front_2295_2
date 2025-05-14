@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, FileText, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Progress } from "@/components/ui/progress"
 
 interface FeedbackDetail {
@@ -31,26 +31,41 @@ interface PromptItemProps {
   onViewFeedback: (id: number) => void
 }
 
+const getRatingBadgeClasses = (rating: string) => {
+  switch (rating) {
+    case "Excellent":
+      return "bg-green-50 text-green-700 border-green-200";
+    case "Good":
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case "Average":
+      return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    case "Bad":
+      return "bg-red-50 text-red-700 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+};
+
 const PromptItem = ({ id, rating, score, environment, date, onViewFeedback }: PromptItemProps) => {
   return (
     <Card className="mb-5 overflow-hidden">
       <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
+          <div className="flex items-center gap-3 w-full sm:w-1/4">
             <FileText className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm font-medium">Califacion</span>
+            <span className="text-sm font-medium">Calificacion</span>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center justify-start sm:justify-center w-full sm:w-1/4">
             <Badge
               variant={rating === "Excellent" ? "outline" : "secondary"}
-              className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200"
+              className={getRatingBadgeClasses(rating)}
             >
               {rating} {score}
             </Badge>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col w-full sm:w-1/4">
             <span className="text-sm font-medium">{environment}</span>
             <span className="text-xs text-muted-foreground">{date}</span>
           </div>
@@ -71,7 +86,7 @@ export default function Review() {
   const prompts = [
     {
       id: 1,
-      rating: "Excellent",
+      rating: "Bad",
       score: "5/5",
       environment: "Jurado #1",
       date: "April 17th, 2025",
@@ -98,7 +113,7 @@ export default function Review() {
       overallRating: "Excellent",
       overallScore: "5/5",
       details: [
-        { componentName: "Clarity", score: 5, maxScore: 5 },
+        { componentName: "Clarity", score: 4.5, maxScore: 5 },
         { componentName: "Relevance", score: 5, maxScore: 5 },
         { componentName: "Specificity", score: 5, maxScore: 5 },
         { componentName: "Context", score: 5, maxScore: 5 },
@@ -162,7 +177,7 @@ export default function Review() {
       </div>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-md p-6">
+        <SheetContent className="sm:max-w-md p-6 overflow-y-auto max-h-screen">
           <SheetHeader>
             <SheetTitle>Comentarios detallados</SheetTitle>
             <SheetDescription>Comentarios detallados por el jurado #{selectedFeedback?.id}</SheetDescription>
@@ -174,7 +189,7 @@ export default function Review() {
                 <h3 className="text-lg font-medium">Overall Rating</h3>
                 <Badge
                   variant={selectedFeedback.overallRating === "Excellent" ? "outline" : "secondary"}
-                  className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200"
+                  className={getRatingBadgeClasses(selectedFeedback.overallRating)}
                 >
                   {selectedFeedback.overallRating} {selectedFeedback.overallScore}
                 </Badge>
@@ -199,7 +214,10 @@ export default function Review() {
                         </span>
                       </div>
                     </div>
-                    <Progress value={(detail.score / detail.maxScore) * 100} className="h-2" />
+                    <Progress
+                      value={(detail.score / detail.maxScore) * 100}
+                      className="h-2 bg-yellow-100 [&>div]:bg-yellow-500"
+                    />
                   </div>
                 ))}
               </div>
