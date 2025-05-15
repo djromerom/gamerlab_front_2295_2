@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,44 +52,6 @@ export function VerifyEmailPage() {
   );
   const navigate = useNavigate();
 
-  const processUrlFragmentErrors = useCallback(() => {
-    try {
-      const hash = window.location.hash.substring(1);
-      if (!hash.includes("error_description") && !hash.includes("error_code")) {
-        if (!hash.includes("access_token")) {
-          window.history.replaceState(
-            null,
-            "",
-            window.location.pathname + window.location.search
-          );
-        }
-        return false;
-      }
-
-      const params = new URLSearchParams(hash);
-      const errorDescription = params.get("error_description");
-      const errorCode = params.get("error_code");
-
-      setMessage(
-        `Error: ${decodeURIComponent(
-          errorDescription?.replace(/\+/g, " ") || "Error desconocido"
-        )}` + (errorCode ? ` (Code: ${errorCode})` : "")
-      );
-      setStatus("error");
-
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-      return true;
-    } catch (e) {
-      setMessage("Error al procesar el enlace.");
-      setStatus("error");
-      return true;
-    }
-  }, []);
-
   useEffect(() => {
     let isMounted = true;
     let processedFragment = false;
@@ -97,7 +59,6 @@ export function VerifyEmailPage() {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
     const errorDescription = params.get("error_description");
     const errorCode = params.get("error_code");
 
@@ -228,16 +189,19 @@ export function VerifyEmailPage() {
     setMessage("Estableciendo tu contraseña...");
 
     try {
-      const response = await fetch("http://localhost:3000/auth/set-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentSessionToken}`,
-        },
-        body: JSON.stringify({
-          password: password,
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/set-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentSessionToken}`,
+          },
+          body: JSON.stringify({
+            password: password,
+          }),
+        }
+      );
 
       if (!response.ok) {
         let errorMessage = `Error del servidor: ${response.status}`;
@@ -251,7 +215,7 @@ export function VerifyEmailPage() {
         }
         throw new Error(errorMessage);
       }
-      const responseData = await response.json();
+
       setStatus("success");
       const successMessage =
         "¡Contraseña establecida con éxito! Serás redirigido a iniciar sesión.";

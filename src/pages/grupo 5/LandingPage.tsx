@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "@/index.css";
 import CountdownTimer from "@/components/grupo 5/CountdownTimer";
 import NavBar from "@/components/grupo 5/NavBar";

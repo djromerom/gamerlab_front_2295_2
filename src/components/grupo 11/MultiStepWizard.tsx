@@ -23,7 +23,13 @@ export default function MultiStepWizard() {
     defaultValues: {
       teamName: "",
       members: [
-        { nombre: "", apellido: "", correo: "", codigoEstudiantil: "", nrc: [] },
+        {
+          nombre: "",
+          apellido: "",
+          correo: "",
+          codigoEstudiantil: "",
+          nrc: [],
+        },
       ],
       gameName: "",
       description: "",
@@ -43,7 +49,10 @@ export default function MultiStepWizard() {
       const uploadedFileUrls: string[] = [];
       if (data.files && data.files.length > 0) {
         const uploads = Array.from(data.files).map(async (file) => {
-          const path = `uploads/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+          const path = `uploads/${Date.now()}-${file.name.replace(
+            /\s+/g,
+            "_"
+          )}`;
           const { error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(path, file, { cacheControl: "3600", upsert: false });
@@ -56,7 +65,8 @@ export default function MultiStepWizard() {
         (await Promise.all(uploads))
           .filter((u): u is string => !!u)
           .forEach((u) => uploadedFileUrls.push(u));
-        if (uploadToastId) toast.success("Archivos subidos", { id: uploadToastId });
+        if (uploadToastId)
+          toast.success("Archivos subidos", { id: uploadToastId });
       }
 
       const payload = {
@@ -75,12 +85,15 @@ export default function MultiStepWizard() {
         },
       };
 
-      const res = await customFetch("http://localhost:3000/teams", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       if (res.status === 201) {
         navigate("/equipos");
       } else {
@@ -90,7 +103,7 @@ export default function MultiStepWizard() {
     } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
       toast.error("Error en el registro", {
-        description: e.message || "Error inesperado",
+        description: (e as Error).message || "Error inesperado",
         duration: 5000,
       });
       setIsLoading(false);
@@ -106,7 +119,11 @@ export default function MultiStepWizard() {
               Procesando registro...
             </div>
           ) : (
-            <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6" noValidate>
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              className="space-y-6"
+              noValidate
+            >
               <StepRenderer />
             </form>
           )}

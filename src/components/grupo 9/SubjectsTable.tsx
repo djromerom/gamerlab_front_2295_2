@@ -102,7 +102,6 @@ export const SubjectsTable: React.FC<Props> = ({
   const [newRow, setNewRow] = useState<Record<string, any>>({});
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<RowData | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number>(-1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
@@ -348,10 +347,8 @@ export const SubjectsTable: React.FC<Props> = ({
   };
 
   // --- Resto de funciones handleOpenEdit, handleOpenDelete (sin cambios lógicos importantes, pero asegúrate que usan `allRows` de forma segura) ---
-  const handleOpenEdit = (row: RowData, index: number) => {
+  const handleOpenEdit = (row: RowData) => {
     setEditingRow({ ...row });
-    const actualIndex = (currentPage - 1) * rowsPerPage + index;
-    setEditingIndex(actualIndex);
     setEditDialogOpen(true);
     setError(null);
   };
@@ -519,7 +516,7 @@ export const SubjectsTable: React.FC<Props> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleOpenEdit(row, index)}
+                          onClick={() => handleOpenEdit(row)}
                           disabled={internalIsLoading}
                         >
                           Editar

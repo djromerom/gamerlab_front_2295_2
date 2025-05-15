@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import Breadcrumbs from "@/components/grupo 9/BreadCrums";
-import { Separator } from "@/components/ui/separator";
 
 import {
   SidebarInset,

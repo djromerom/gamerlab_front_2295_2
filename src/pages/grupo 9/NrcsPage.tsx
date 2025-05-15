@@ -1,7 +1,7 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { NrcsTable, Data, RowData } from "@/components/grupo 9/NrcsTable";
+import { NrcsTable, Data } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
 
 const NrcsPage = () => {
@@ -9,8 +9,8 @@ const NrcsPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = "http://localhost:3000/nrcs";
-  const API_BASE_URL = "http://localhost:3000";
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "nrcs";
 
   useEffect(() => {

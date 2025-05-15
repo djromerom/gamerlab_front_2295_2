@@ -2,29 +2,18 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import {
-  SubjectsTable,
-  Data,
-  RowData,
-} from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
+import { SubjectsTable, Data } from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
 
 // Define a more specific interface if possible, including 'active'
-interface SubjectRowData extends RowData {
-  id: number | string;
-  name: string;
-  code: string;
-  semester: number;
-  isActive: boolean; // Make sure 'active' is included and is a boolean
-}
 
 const SubjetsPage = () => {
   const [data, setData] = useState<Data | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = "http://localhost:3000/subjects";
-  const API_BASE_URL = "http://localhost:3000";
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/subjects`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "subjects";
 
   useEffect(() => {

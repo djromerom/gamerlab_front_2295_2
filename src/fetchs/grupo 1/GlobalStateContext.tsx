@@ -8,7 +8,7 @@ import React, {
   ReactNode,
   useEffect,
   useMemo,
-} from 'react';
+} from "react";
 
 // Tus interfaces (asegúrate que coincidan con los datos de tu BD)
 // src/contexts/GlobalStateContext.tsx
@@ -22,7 +22,7 @@ import React, {
 
 // En GlobalStateContext.tsx (solo la interfaz VideojuegoData)
 export interface VideojuegoData {
-  id: number | string;  // Coincide con Videogame.id
+  id: number | string; // Coincide con Videogame.id
   nombre: string; // Coincide con Videogame.name
   logoUrl?: string | null;
   materia?: string | null; // Nombre de la materia
@@ -41,27 +41,25 @@ export interface VideojuegoData {
 
 // Para las opciones en el filtro de "Materia"
 export interface MateriaData {
-  id: number;    // Coincide con Subject.id
+  id: number; // Coincide con Subject.id
   name: string; // Coincide con Subject.name
   // codigo?: string; // Coincide con Subject.code, si lo necesitas
 }
 
 // Para las opciones en el filtro de "NRC"
 export interface NRCData {
-  id: number;    // Coincide con NRC.id
+  id: number; // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
   materiaNombre?: string; // Si el endpoint de NRCs incluye el nombre de la materia
 }
 
-
 // Para el gráfico de torta "Distribución por Materia"
 // Asume que el backend devuelve los datos ya agregados.
 export interface DatosGraficoMateria {
-  name: string;  // Nombre de la materia
+  name: string; // Nombre de la materia
   value: number; // Valor para el gráfico (ej. promedio de videojuegos en esa materia, o cantidad)
   color?: string; // Color opcional para el segmento del gráfico
 }
-
 
 // --- INTERFAZ DEL VALOR DEL CONTEXTO GLOBAL ---
 export interface GlobalStateContextType {
@@ -69,12 +67,14 @@ export interface GlobalStateContextType {
   filtroMateria: string; // Puede ser "Todas" o un MateriaData.id.toString() o MateriaData.nombre
   setFiltroMateria: React.Dispatch<React.SetStateAction<string>>;
 
-  filtroNRC: string;     // Puede ser "Todos" o un NRCData.codigo.toString()
+  filtroNRC: string; // Puede ser "Todos" o un NRCData.codigo.toString()
   setFiltroNRC: React.Dispatch<React.SetStateAction<string>>;
 
   // Datos principales
   videojuegoSeleccionado: VideojuegoData | null;
-  setVideojuegoSeleccionado: React.Dispatch<React.SetStateAction<VideojuegoData | null>>;
+  setVideojuegoSeleccionado: React.Dispatch<
+    React.SetStateAction<VideojuegoData | null>
+  >;
   listaVideojuegos: VideojuegoData[]; // Lista completa de videojuegos recibida del API
 
   // Listas para poblar los <select> de los filtros
@@ -93,31 +93,38 @@ export interface GlobalStateContextType {
 }
 
 // 2. Crear el Contexto
-const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
+const GlobalStateContext = createContext<GlobalStateContextType | undefined>(
+  undefined
+);
 
 // 3. Crear el Componente Proveedor
 interface GlobalStateProviderProps {
   children: ReactNode;
 }
 
-export function GlobalStateProvider({ children }: GlobalStateProviderProps) { // Asegúrate que GlobalStateProviderProps esté definida
+export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
+  // Asegúrate que GlobalStateProviderProps esté definida
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
-  
 
   // Estados para los datos principales y la selección
-  const [listaVideojuegos, setListaVideojuegos] = useState<VideojuegoData[]>([]);
-  const [videojuegoSeleccionado, setVideojuegoSeleccionado] = useState<VideojuegoData | null>(null);
+  const [listaVideojuegos, setListaVideojuegos] = useState<VideojuegoData[]>(
+    []
+  );
+  const [videojuegoSeleccionado, setVideojuegoSeleccionado] =
+    useState<VideojuegoData | null>(null);
 
   // Estados para las LISTAS DE OPCIONES de los filtros
-  const [opcionesFiltroMateria, setOpcionesFiltroMateria] = useState<MateriaData[]>([]);
+  const [opcionesFiltroMateria, setOpcionesFiltroMateria] = useState<
+    MateriaData[]
+  >([]);
   const [opcionesFiltroNRC, setOpcionesFiltroNRC] = useState<NRCData[]>([]);
-  
 
   // Estado para los datos del gráfico de torta
-  const [datosGraficoTortaMaterias, setDatosGraficoTortaMaterias] = useState<DatosGraficoMateria[]>([]);
-
+  const [datosGraficoTortaMaterias, setDatosGraficoTortaMaterias] = useState<
+    DatosGraficoMateria[]
+  >([]);
 
   // Estados de carga y error
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -128,19 +135,27 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     setError(null);
     try {
       const responses = await Promise.all([
-        fetch('http://localhost:3000/reports/videojuegoData', {
+        fetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/videojuegoData`,
+          {
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        ),
+        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/MateriaData`, {
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
         }),
-        fetch('http://localhost:3000/reports/MateriaData', {
+        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/NRCData`, {
           credentials: "include",
         }),
-        fetch('http://localhost:3000/reports/NRCData', {
-          credentials: "include",
-        }),
-        fetch('http://localhost:3000/reports/DatosGraficoMateria', {
-          credentials: "include",
-        })
+        fetch(
+          `${
+            import.meta.env.VITE_ENDPOINT_BACKEND
+          }/reports/DatosGraficoMateria`,
+          {
+            credentials: "include",
+          }
+        ),
       ]);
 
       // Verificar todas las respuestas
@@ -148,7 +163,9 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
         if (!response.ok) {
           // Intenta obtener más detalles del error si es posible
           const errorData = await response.text(); // o response.json() si tu API devuelve errores JSON
-          throw new Error(`Error HTTP ${response.status}: ${response.statusText}. URL: ${response.url}. Details: ${errorData}`);
+          throw new Error(
+            `Error HTTP ${response.status}: ${response.statusText}. URL: ${response.url}. Details: ${errorData}`
+          );
         }
       }
 
@@ -157,24 +174,32 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
         fetchedVideojuegos,
         fetchedMaterias,
         fetchedNRCs,
-        fetchedDatosGraficoMateria
-      ] = await Promise.all(responses.map(res => res.json()));
+        fetchedDatosGraficoMateria,
+      ] = await Promise.all(responses.map((res) => res.json()));
 
       // Ahora TypeScript sabrá los tipos si los endpoints devuelven los JSON correctos
       setListaVideojuegos(fetchedVideojuegos as VideojuegoData[]);
       setOpcionesFiltroMateria(fetchedMaterias as MateriaData[]); // <-- CORRECCIÓN: Usar el setter correcto
-      setOpcionesFiltroNRC(fetchedNRCs as NRCData[]);          // <-- CORRECCIÓN: Usar el setter correcto
-      setDatosGraficoTortaMaterias(fetchedDatosGraficoMateria as DatosGraficoMateria[]); // <-- CORRECCIÓN: Nombre del estado y setter consistentes
+      setOpcionesFiltroNRC(fetchedNRCs as NRCData[]); // <-- CORRECCIÓN: Usar el setter correcto
+      setDatosGraficoTortaMaterias(
+        fetchedDatosGraficoMateria as DatosGraficoMateria[]
+      ); // <-- CORRECCIÓN: Nombre del estado y setter consistentes
 
-      if (fetchedVideojuegos && (fetchedVideojuegos as VideojuegoData[]).length > 0) {
+      if (
+        fetchedVideojuegos &&
+        (fetchedVideojuegos as VideojuegoData[]).length > 0
+      ) {
         setVideojuegoSeleccionado((fetchedVideojuegos as VideojuegoData[])[0]);
       } else {
         setVideojuegoSeleccionado(null);
       }
-
     } catch (e: any) {
       console.error("Failed to fetch global data:", e);
-      setError(e instanceof Error ? e : new Error(String(e.message || "Error desconocido al cargar datos")));
+      setError(
+        e instanceof Error
+          ? e
+          : new Error(String(e.message || "Error desconocido al cargar datos"))
+      );
     } finally {
       setIsLoading(false);
     }
@@ -186,13 +211,17 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
 
   // SUGERENCIA: Derivar la lista filtrada aquí
   const listaVideojuegosFiltrados = useMemo(() => {
-    return listaVideojuegos.filter(vj => {
-      const pasaMateria = filtroMateria === "Todas" ||
-        (vj.materia && opcionesFiltroMateria.find(m => m.name === filtroMateria)?.name === vj.materia); // Si filtroMateria es nombre
+    return listaVideojuegos.filter((vj) => {
+      const pasaMateria =
+        filtroMateria === "Todas" ||
+        (vj.materia &&
+          opcionesFiltroMateria.find((m) => m.name === filtroMateria)?.name ===
+            vj.materia); // Si filtroMateria es nombre
 
-        //console.log("Filtro de materia:", filtroMateria, "Pasa materia:", pasaMateria, "string pendejo:", opcionesFiltroMateria.find(m => m.id.toString()), "vj.materia:", vj.materia, 
+      //console.log("Filtro de materia:", filtroMateria, "Pasa materia:", pasaMateria, "string pendejo:", opcionesFiltroMateria.find(m => m.id.toString()), "vj.materia:", vj.materia,
       //"String god", opcionesFiltroMateria.find(m => m.name));
-      const pasaNRC = filtroNRC === "Todos" || (vj.nrc && vj.nrc.toString() === filtroNRC);
+      const pasaNRC =
+        filtroNRC === "Todos" || (vj.nrc && vj.nrc.toString() === filtroNRC);
 
       return pasaMateria && pasaNRC;
     });
@@ -200,35 +229,46 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
 
   console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
 
-  const contextValue = useMemo(() => ({
-    // Filtros seleccionados
-    filtroMateria, setFiltroMateria,
-    filtroNRC, setFiltroNRC,
+  const contextValue = useMemo(
+    () => ({
+      // Filtros seleccionados
+      filtroMateria,
+      setFiltroMateria,
+      filtroNRC,
+      setFiltroNRC,
 
-    // Datos de videojuegos
-    videojuegoSeleccionado, setVideojuegoSeleccionado,
-    listaVideojuegos,
-    listaVideojuegosFiltrados, // <-- SUGERENCIA: Añadir esto
+      // Datos de videojuegos
+      videojuegoSeleccionado,
+      setVideojuegoSeleccionado,
+      listaVideojuegos,
+      listaVideojuegosFiltrados, // <-- SUGERENCIA: Añadir esto
 
-    // Opciones para los filtros
-    opcionesFiltroMateria,
-    opcionesFiltroNRC,
-    // Datos para gráficos
-    datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
+      // Opciones para los filtros
+      opcionesFiltroMateria,
+      opcionesFiltroNRC,
+      // Datos para gráficos
+      datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
 
-    // Estado de carga/error
-    isLoading,
-    error,
-    fetchGlobalData,
-  }), [
-    // Dependencias: todos los estados que se incluyen en contextValue
-    filtroMateria, filtroNRC,
-    videojuegoSeleccionado, listaVideojuegos, listaVideojuegosFiltrados,
-    opcionesFiltroMateria, opcionesFiltroNRC,
-    datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
-    isLoading, error,
-    // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
-  ]);
+      // Estado de carga/error
+      isLoading,
+      error,
+      fetchGlobalData,
+    }),
+    [
+      // Dependencias: todos los estados que se incluyen en contextValue
+      filtroMateria,
+      filtroNRC,
+      videojuegoSeleccionado,
+      listaVideojuegos,
+      listaVideojuegosFiltrados,
+      opcionesFiltroMateria,
+      opcionesFiltroNRC,
+      datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
+      isLoading,
+      error,
+      // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
+    ]
+  );
 
   return (
     // Asumo que GlobalStateContext está definido más arriba
@@ -242,8 +282,9 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
 export function useGlobalState() {
   const context = useContext(GlobalStateContext);
   if (context === undefined) {
-    throw new Error('useGlobalState debe ser usado dentro de un GlobalStateProvider');
+    throw new Error(
+      "useGlobalState debe ser usado dentro de un GlobalStateProvider"
+    );
   }
   return context;
 }
-  

@@ -1,17 +1,35 @@
 // src/components/Filtros/FiltrosPanel.tsx (o la ruta que prefieras)
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  useGlobalState,
+  VideojuegoData,
+} from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
 
 const FiltrosPanel = () => {
   const {
     // Estados de los filtros seleccionados
-    filtroMateria, setFiltroMateria,
-    filtroNRC, setFiltroNRC,
+    filtroMateria,
+    setFiltroMateria,
+    filtroNRC,
+    setFiltroNRC,
 
     // Estado del videojuego seleccionado
-    videojuegoSeleccionado, setVideojuegoSeleccionado,
+    videojuegoSeleccionado,
+    setVideojuegoSeleccionado,
 
     // Listas de opciones para los filtros
     opcionesFiltroMateria,
@@ -24,7 +42,9 @@ const FiltrosPanel = () => {
 
   const handleVideojuegoChange = (value: string) => {
     // Asumimos que 'value' es el ID del videojuego como string
-    const seleccionado = listaVideojuegos.find((v) => v.id.toString() === value);
+    const seleccionado = listaVideojuegos.find(
+      (v) => v.id.toString() === value
+    );
     if (seleccionado) {
       setVideojuegoSeleccionado(seleccionado);
     } else if (listaVideojuegos.length > 0) {
@@ -36,12 +56,21 @@ const FiltrosPanel = () => {
   };
 
   // Puedes mostrar un estado de carga o deshabilitar los selects si isLoading es true
-  if (isLoading && (opcionesFiltroMateria.length === 0 && opcionesFiltroNRC.length === 0 && listaVideojuegos.length === 0)) {
+  if (
+    isLoading &&
+    opcionesFiltroMateria.length === 0 &&
+    opcionesFiltroNRC.length === 0 &&
+    listaVideojuegos.length === 0
+  ) {
     return (
       <div className="col-span-12 md:col-span-3">
         <Card className="h-full pt-2">
-          <CardHeader className="pt-2"><CardTitle>Filtros</CardTitle></CardHeader>
-          <CardContent><p>Cargando opciones de filtros...</p></CardContent>
+          <CardHeader className="pt-2">
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Cargando opciones de filtros...</p>
+          </CardContent>
         </Card>
       </div>
     );
@@ -49,16 +78,20 @@ const FiltrosPanel = () => {
 
   //console.log(opcionesFiltroMateria); // Para depurar y ver qué datos tienes
   return (
-    <div className="col-span-12 md:col-span-3"> {/* Mantén las clases de grid si este componente se coloca directamente en un grid */}
+    <div className="col-span-12 md:col-span-3">
+      {" "}
+      {/* Mantén las clases de grid si este componente se coloca directamente en un grid */}
       <Card className="h-full pt-2">
         <CardHeader className="pt-2">
           <CardTitle>Filtros</CardTitle>
           <CardDescription>Refina los resultados</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pb-5">
           {/* Filtro de Materia */}
           <div className="space-y-2">
-            <label htmlFor="filtro-materia" className="text-sm font-medium">Materia</label>
+            <label htmlFor="filtro-materia" className="text-sm font-medium">
+              Materia
+            </label>
             <Select
               value={filtroMateria}
               onValueChange={setFiltroMateria}
@@ -83,7 +116,9 @@ const FiltrosPanel = () => {
 
           {/* Filtro de NRC */}
           <div className="space-y-2">
-            <label htmlFor="filtro-nrc" className="text-sm font-medium">NRC</label>
+            <label htmlFor="filtro-nrc" className="text-sm font-medium">
+              NRC
+            </label>
             <Select
               value={filtroNRC}
               onValueChange={setFiltroNRC}
@@ -98,7 +133,8 @@ const FiltrosPanel = () => {
                 {opcionesFiltroNRC.map((nrc) => (
                   // Asumimos que el valor de filtroNRC es el código del NRC como string
                   <SelectItem key={nrc.id} value={nrc.codigo.toString()}>
-                    {nrc.codigo} {/* Puedes añadir más info si la tienes, ej: nrc.materiaNombre */}
+                    {nrc.codigo}{" "}
+                    {/* Puedes añadir más info si la tienes, ej: nrc.materiaNombre */}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -107,10 +143,16 @@ const FiltrosPanel = () => {
 
           {/* Selector de Videojuego (este no es un filtro para la lista, sino para seleccionar cuál ver en detalle) */}
           <div className="space-y-2">
-            <label htmlFor="select-videojuego" className="text-sm font-medium">Videojuego</label>
+            <label htmlFor="select-videojuego" className="text-sm font-medium">
+              Videojuego
+            </label>
             <Select
               // Si videojuegoSeleccionado puede ser null al inicio (antes de cargar datos)
-              value={videojuegoSeleccionado ? videojuegoSeleccionado.id.toString() : ""}
+              value={
+                videojuegoSeleccionado
+                  ? videojuegoSeleccionado.id.toString()
+                  : ""
+              }
               onValueChange={handleVideojuegoChange}
               disabled={isLoading || listaVideojuegos.length === 0}
               name="select-videojuego"
@@ -120,10 +162,15 @@ const FiltrosPanel = () => {
               </SelectTrigger>
               <SelectContent>
                 {listaVideojuegos.length === 0 && !isLoading && (
-                  <SelectItem value="" disabled>No hay videojuegos disponibles</SelectItem>
+                  <SelectItem value="" disabled>
+                    No hay videojuegos disponibles
+                  </SelectItem>
                 )}
                 {listaVideojuegos.map((videojuego: VideojuegoData) => (
-                  <SelectItem key={videojuego.id} value={videojuego.id.toString()}>
+                  <SelectItem
+                    key={videojuego.id}
+                    value={videojuego.id.toString()}
+                  >
                     {videojuego.nombre}
                   </SelectItem>
                 ))}

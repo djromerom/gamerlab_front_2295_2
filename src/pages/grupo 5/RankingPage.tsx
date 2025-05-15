@@ -84,7 +84,7 @@ const glowStyles = `
 `;
 
 export default function PodioGamer() {
-  const [teams, setTeams] = useState<Team[]>([
+  const [teams] = useState<Team[]>([
     { id: 1, name: "Team Alpha", score: 4.8, color: "bg-red-500" },
     { id: 2, name: "Team Beta", score: 4.7, color: "bg-blue-500" },
     { id: 3, name: "Team Gamma", score: 4.6, color: "bg-green-500" },
@@ -107,23 +107,7 @@ export default function PodioGamer() {
     { id: 20, name: "Team Upsilon", score: 3.1, color: "bg-gray-600" },
   ]);
 
-  const [teamId, setTeamId] = useState<string>("1");
-  const [newScore, setNewScore] = useState<string>("");
-
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
-
-  const updateScore = () => {
-    if (!newScore) return;
-
-    const id = Number.parseInt(teamId);
-    const score = Number.parseInt(newScore);
-
-    if (isNaN(id) || isNaN(score)) return;
-
-    setTeams(teams.map((team) => (team.id === id ? { ...team, score } : team)));
-
-    setNewScore("");
-  };
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
