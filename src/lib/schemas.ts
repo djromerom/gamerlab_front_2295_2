@@ -16,7 +16,7 @@ export const CombinedSchema = z.object({
       })
     )
     .min(1, 'Al menos un integrante')
-    .max(5, 'Máximo 5 integrantes'),
+    .max(6, 'Máximo 6 integrantes'),
   gameName: z.string().min(1, 'Requerido'),
   description: z.string().min(1, 'Requerido'),
   files: z
