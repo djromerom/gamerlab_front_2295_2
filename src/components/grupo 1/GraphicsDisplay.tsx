@@ -7,9 +7,9 @@ import { TabsContent } from "@/components/ui/tabs";
 import {
     BarChart,
     CartesianGrid,
-    Cell,
-    Pie,
-    PieChart,
+    //Cell,
+    //Pie,
+    //PieChart,
     Radar,
     RadarChart,
     PolarAngleAxis,
@@ -20,7 +20,7 @@ import {
     YAxis,
     ResponsiveContainer,
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartLegend, ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, /*ChartLegend,*/ ChartConfig } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ const GraphicDisplay = () => {
 
     const carouselRef = useRef<HTMLDivElement>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
-    const totalSlides = 3;
+    const totalSlides = 2;
 
     const navigateSlide = (direction: "prev" | "next") => {
         if (carouselRef.current) {
@@ -171,7 +171,7 @@ const GraphicDisplay = () => {
     // --- Chart Configurations (sin cambios) ---
     const barChartConfig = { valor: { label: "Promedio", color: "hsl(var(--chart-1))" } } satisfies ChartConfig;
     const radarChartConfig = { valor: { label: "Puntuación", color: "hsl(var(--chart-2))" } } satisfies ChartConfig;
-    const pieChartConfig = {} satisfies ChartConfig;
+    //const pieChartConfig = {} satisfies ChartConfig;
 
     return (
         <TabsContent value="graficos">
@@ -266,6 +266,7 @@ const GraphicDisplay = () => {
                     </div>
 
                     {/* Slide 3: Pie Chart (sin cambios internos significativos) */}
+                    {/*}
                     <div className="min-w-full snap-center p-0">
                         <CardHeader className="pt-4 px-4 md:px-6">
                             <CardTitle>Distribución por NRC/Materia</CardTitle>
@@ -311,7 +312,7 @@ const GraphicDisplay = () => {
                                 </div>
                             )}
                         </CardContent>
-                    </div>
+                    </div>*/}
                 </div>
 
                 {/* Position Indicators (sin cambios) */}
@@ -433,10 +434,10 @@ const GraphicDisplay = () => {
                 {/* Distribución por Materia Card (Details) */}
                 <Card>
                     <CardHeader className="pt-4">
-                        <CardTitle>Promedios por Materia/NRC</CardTitle>
+                        <CardTitle>Promedios por Materia</CardTitle>
                         <CardDescription>Detalle de la distribución</CardDescription>
                     </CardHeader>
-                    <CardContent className="pb-6"> {/* MODIFICADO AQUÍ: Added bottom padding */}
+                    <CardContent className="pb-6">
                         {pieChartData.length > 0 ? (
                              <div className="space-y-3">
                                 {pieChartData.map((item, index) => (

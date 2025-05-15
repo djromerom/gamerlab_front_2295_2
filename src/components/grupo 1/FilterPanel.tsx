@@ -7,7 +7,7 @@ import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateCont
 const FiltrosPanel = () => {
   const {
     // Estados de los filtros seleccionados
-    filtroMateria, setFiltroMateria,
+    filtroMateria, setFiltroMateriaExt,
     filtroNRC, setFiltroNRC,
 
     // Estado del videojuego seleccionado
@@ -15,8 +15,9 @@ const FiltrosPanel = () => {
 
     // Listas de opciones para los filtros
     opcionesFiltroMateria,
-    opcionesFiltroNRC,
+    //opcionesFiltroNRC,
     listaVideojuegos, // Para el selector de videojuegos
+    nrcsFiltrados,
 
     // Estado de carga (para deshabilitar filtros mientras se carga, opcional)
     isLoading,
@@ -36,7 +37,7 @@ const FiltrosPanel = () => {
   };
 
   // Puedes mostrar un estado de carga o deshabilitar los selects si isLoading es true
-  if (isLoading && (opcionesFiltroMateria.length === 0 && opcionesFiltroNRC.length === 0 && listaVideojuegos.length === 0)) {
+  if (isLoading && (opcionesFiltroMateria.length === 0 && nrcsFiltrados?.length === 0 && listaVideojuegos.length === 0)) {
     return (
       <div className="col-span-12 md:col-span-3">
         <Card className="h-full pt-2">
@@ -61,7 +62,7 @@ const FiltrosPanel = () => {
             <label htmlFor="filtro-materia" className="text-sm font-medium">Materia</label>
             <Select
               value={filtroMateria}
-              onValueChange={setFiltroMateria}
+              onValueChange={setFiltroMateriaExt}
               disabled={isLoading || opcionesFiltroMateria.length === 0}
               name="filtro-materia"
             >
@@ -87,7 +88,7 @@ const FiltrosPanel = () => {
             <Select
               value={filtroNRC}
               onValueChange={setFiltroNRC}
-              disabled={isLoading || opcionesFiltroNRC.length === 0}
+              disabled={isLoading || nrcsFiltrados?.length === 0}
               name="filtro-nrc"
             >
               <SelectTrigger id="filtro-nrc">
@@ -95,7 +96,7 @@ const FiltrosPanel = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todos los NRCs</SelectItem>
-                {opcionesFiltroNRC.map((nrc) => (
+                {nrcsFiltrados?.map((nrc) => (
                   // Asumimos que el valor de filtroNRC es el código del NRC como string
                   <SelectItem key={nrc.id} value={nrc.codigo.toString()}>
                     {nrc.codigo} {/* Puedes añadir más info si la tienes, ej: nrc.materiaNombre */}
