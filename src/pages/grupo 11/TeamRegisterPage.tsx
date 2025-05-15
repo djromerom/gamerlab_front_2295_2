@@ -2,7 +2,7 @@ import React from "react";
 import MultiStepWizard from "@/components/grupo 11/MultiStepWizard";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
-
+import { Toaster } from "sonner"
 const TeamRegisterPage: React.FC = () => {
   return (
     <>
@@ -21,6 +21,7 @@ const TeamRegisterPage: React.FC = () => {
             <MultiStepWizard />
           </CardContent>
         </Card>
+        <Toaster/>
       </div>
     </>
   );
