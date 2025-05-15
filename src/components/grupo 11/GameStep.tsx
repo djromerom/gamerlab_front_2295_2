@@ -86,7 +86,7 @@ export default function GameStep() {
       <FormField
         control={control}
         name="files"
-        render={({ field }) => (
+        render={() => (
           <FormItem>
             <FormLabel>Carga el logo</FormLabel>
             <FormDescription>Solo una imagen cuadrada de hasta 5 MB.</FormDescription>
