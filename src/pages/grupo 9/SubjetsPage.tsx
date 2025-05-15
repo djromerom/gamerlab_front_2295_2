@@ -12,8 +12,8 @@ const SubjetsPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/subjects`;
-  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `http://localhost:3000/subjects`;
+  const API_BASE_URL = `http://localhost:3000`;
   const TABLE_RESOURCE_NAME = "subjects";
 
   useEffect(() => {

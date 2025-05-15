@@ -28,7 +28,7 @@ export default function TeamsPage() {
     async function fetchTeams() {
       setLoading(true);
       const res = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+        `http://localhost:3000/videogames`,
         {
           method: "GET",
           credentials: "include",

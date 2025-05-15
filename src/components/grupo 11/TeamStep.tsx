@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { CombinedFormValues } from "@/lib/schemas";
@@ -10,14 +11,43 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner"
+
 
 export default function TeamStep() {
   const { next } = useMultiForm();
-  const { control, trigger } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setError, clearErrors } =
+    useFormContext<CombinedFormValues>();
+  const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
     const isValid = await trigger("teamName");
-    if (isValid) next();
+    if (!isValid) return;
+
+    const teamName = getValues("teamName");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`http://localhost:3000/teams/name/${teamName}`);
+      const exists = await res.json();
+
+      if (exists === true) {
+        setError("teamName", {
+          type: "manual",
+          message: "El equipo ya existe. Por favor elige otro nombre.",
+        });
+        return;
+      }
+
+      clearErrors("teamName");
+      next();
+    } catch (err) {
+      toast("Error de red", {
+          description: "No se pudo verificar el nombre del equipo.",
+        })
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,7 +66,9 @@ export default function TeamStep() {
         )}
       />
       <div className="flex justify-end pt-4">
-        <Button onClick={handleNext}>Siguiente</Button>
+        <Button onClick={handleNext} disabled={loading}>
+          {loading ? "Verificando..." : "Siguiente"}
+        </Button>
       </div>
     </>
   );

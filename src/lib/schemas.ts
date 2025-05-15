@@ -26,7 +26,7 @@ export const CombinedSchema = z.object({
     .refine((files) => files.every((f) => f.size <= 5 * 1024 * 1024), {
       message: 'El archivo debe pesar menos de 5 MB',
     }),
-  recaptcha: z.string(),
+  recaptcha: z.string().min(1, "Requerido")
 });
 
 export type CombinedFormValues = z.infer<typeof CombinedSchema>;

@@ -136,16 +136,16 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     try {
       const responses = await Promise.all([
         fetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/videojuegoData`,
+          `http://localhost:3000/reports/videojuegoData`,
           {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
           }
         ),
-        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/MateriaData`, {
+        fetch(`http://localhost:3000/reports/MateriaData`, {
           credentials: "include",
         }),
-        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/NRCData`, {
+        fetch(`http://localhost:3000/reports/NRCData`, {
           credentials: "include",
         }),
         fetch(

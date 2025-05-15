@@ -23,6 +23,7 @@ export function ImageCropperModal({ isOpen, onClose, imageFile, onCropComplete }
   const [scale, setScale] = useState(1)
   const [rotate, setRotate] = useState(0)
   const imgRef = useRef<HTMLImageElement>(null)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [imgSrc, setImgSrc] = useState<string>("")
 
   // Load image when file changes
@@ -168,7 +169,7 @@ export function ImageCropperModal({ isOpen, onClose, imageFile, onCropComplete }
                     min={0.5}
                     max={3}
                     step={0.01}
-                    onValueChange={(value: any) => setScale(value[0])}
+                    onValueChange={(value) => setScale(value[0])}
                     className="flex-1"
                   />
                   <ZoomIn className="h-4 w-4" />

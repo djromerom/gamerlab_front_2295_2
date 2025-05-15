@@ -86,7 +86,7 @@ export default function MultiStepWizard() {
       };
 
       const res = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+        `http://localhost:3000/teams`,
         {
           method: "POST",
           credentials: "include",

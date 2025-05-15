@@ -11,7 +11,7 @@ import { CloudUpload } from "lucide-react"
 import { useMultiForm } from "@/contexts/MultiFormContext"
 import { useFormContext } from "react-hook-form"
 import type { CombinedFormValues } from "@/lib/schemas"
-import { ImageCropper } from "@/components/grupo 11/ImageCropper"
+import { ImageCropper } from "./ImageCropper"
 
 export default function GameStep() {
   const { back } = useMultiForm()
@@ -86,7 +86,7 @@ export default function GameStep() {
       <FormField
         control={control}
         name="files"
-        render={() => (
+        render={({ field }) => (
           <FormItem>
             <FormLabel>Carga el logo</FormLabel>
             <FormDescription>Solo una imagen cuadrada de hasta 5 MB.</FormDescription>
@@ -158,7 +158,7 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Verificación de seguridad</FormLabel>
             <FormControl>
-              <ReCAPTCHA sitekey="Your-client-site-key" onChange={(val: unknown) => setValue("recaptcha", val + "")} />
+              <ReCAPTCHA sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko" onChange={(val: unknown) => setValue("recaptcha", val + "")} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -183,3 +183,4 @@ export default function GameStep() {
     </>
   )
 }
+

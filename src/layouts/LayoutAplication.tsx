@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import Breadcrumbs from "@/components/grupo 9/BreadCrums";
-
+import { Toaster } from "@/components/ui/sonner"
 import {
   SidebarInset,
   SidebarProvider,
@@ -29,6 +29,8 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
           </div>
         </header>
         {children}
+        
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );

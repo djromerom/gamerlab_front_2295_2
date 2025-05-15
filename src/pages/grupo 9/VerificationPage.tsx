@@ -190,7 +190,7 @@ export function VerifyEmailPage() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/set-password`,
+        `http://localhost:3000/auth/set-password`,
         {
           method: "POST",
           headers: {
