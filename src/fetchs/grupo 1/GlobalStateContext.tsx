@@ -35,10 +35,14 @@ export interface VideojuegoData {
   totalJuradosAsignados?: number; // Total de jurados que deben evaluar
   juradosAsignados?: string[]; // Nombres de jurados asignados (si es necesario)
   juradosCompletos?: string[]; // Nombres de jurados que completaron la evaluación
-  // Otros campos que el backend pueda proveer, como 'estadoVideojuego', etc.
-  // Por ejemplo, si el endpoint también devuelve el equipo, el estado, etc.
-  // teamName?: string;
-  // status?: string;
+}
+
+export interface Jurados {
+  id: number;
+  nombre: string;
+  correo?: string; // Si tienes el correo, si no, omite o ajusta
+  videojuegosAsignados: string[]; // Nombres de los videojuegos asignados
+  videojuegosCompletos: string[]; // Nombres de los videojuegos que completaron
 }
 
 // Para las opciones en el filtro de "Materia"
@@ -53,6 +57,7 @@ export interface NRCData {
   id: number;    // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
   materiaNombre: string; // Si el endpoint de NRCs incluye el nombre de la materia
+  promedioxNRC?: number; // Promedio de NRC, si es necesario
 }
 
 
@@ -89,6 +94,7 @@ export interface GlobalStateContextType {
 
   listaVideojuegosFiltrados?: VideojuegoData[]; // SUGERENCIA: Añadir esto
   nrcsFiltrados?: NRCData[]; // SUGERENCIA: Añadir esto
+  listaJurados?: Jurados[]; // Lista de jurados, si es necesario
 
   // Estado de carga y error para los datos globales
   isLoading: boolean;
@@ -117,6 +123,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   // Estados para los datos principales y la selección
   const [listaVideojuegos, setListaVideojuegos] = useState<VideojuegoData[]>([]);
   const [videojuegoSeleccionado, setVideojuegoSeleccionado] = useState<VideojuegoData | null>(null);
+  const [listaJurados, setListaJurados] = useState<Jurados[]>([]); // Si necesitas la lista de jurados
 
   // Estados para las LISTAS DE OPCIONES de los filtros
   const [opcionesFiltroMateria, setOpcionesFiltroMateria] = useState<MateriaData[]>([]);
@@ -159,7 +166,12 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        })
+        }),
+        fetch(`${API_ENDPOINT}/jurados`, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }),
       ]);
 
       // Verificar todas las respuestas
@@ -176,7 +188,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
         fetchedVideojuegos,
         fetchedMaterias,
         fetchedNRCs,
-        fetchedDatosGraficoMateria
+        fetchedDatosGraficoMateria,
+        fetchedJurados
       ] = await Promise.all(responses.map(res => res.json()));
 
       // Ahora TypeScript sabrá los tipos si los endpoints devuelven los JSON correctos
@@ -184,6 +197,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
       setOpcionesFiltroMateria(fetchedMaterias as MateriaData[]); // <-- CORRECCIÓN: Usar el setter correcto
       setOpcionesFiltroNRC(fetchedNRCs as NRCData[]);          // <-- CORRECCIÓN: Usar el setter correcto
       setDatosGraficoTortaMaterias(fetchedDatosGraficoMateria as DatosGraficoMateria[]); // <-- CORRECCIÓN: Nombre del estado y setter consistentes
+      setListaJurados(fetchedJurados as Jurados[]);
 
       if (fetchedVideojuegos && (fetchedVideojuegos as VideojuegoData[]).length > 0) {
         setVideojuegoSeleccionado((fetchedVideojuegos as VideojuegoData[])[0]);
@@ -240,6 +254,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     listaVideojuegos,
     listaVideojuegosFiltrados, // <-- SUGERENCIA: Añadir esto
     nrcsFiltrados,
+    listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
 
     // Opciones para los filtros
     opcionesFiltroMateria,
@@ -256,6 +271,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     filtroMateria, filtroNRC,
     videojuegoSeleccionado, listaVideojuegos, listaVideojuegosFiltrados,
     opcionesFiltroMateria, opcionesFiltroNRC, nrcsFiltrados,
+    listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
