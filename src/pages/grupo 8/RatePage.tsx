@@ -101,7 +101,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
     let evaluationId;
     try {
       const resEval = await fetch(
-        `http://localhost:3000/evaluation`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation`,
         {
           method: "POST",
           credentials: "include", // Incluye cookies si es necesario
@@ -138,7 +138,7 @@ export default function RatePage({ params }: { params: { id: string } }) {
 
     try {
       await fetch(
-        `http://localhost:3000/evaluation/details`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/details`,
         {
           method: "POST",
           credentials: "include", // Incluye cookies si es necesario

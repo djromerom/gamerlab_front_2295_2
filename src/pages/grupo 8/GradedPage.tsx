@@ -33,7 +33,7 @@ const GradedPage: React.FC = () => {
     const fetchVideogames = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/graded-games`,
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/graded-games`,
           {
             method: "GET",
             credentials: "include", // Incluye cookies si es necesario

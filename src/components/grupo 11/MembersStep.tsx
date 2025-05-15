@@ -42,7 +42,9 @@ export default function MembersStep() {
 
   const [isPageLoading, setIsPageLoading] = useState(true); // Initialize to true
   const [error, setError] = useState<string | null>(null);
-  const API_ENDPOINT = `http://localhost:3000/nrcs/select-options`;
+  const API_ENDPOINT = `${
+    import.meta.env.VITE_ENDPOINT_BACKEND
+  }/nrcs/select-options`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]); // Typed state
 
