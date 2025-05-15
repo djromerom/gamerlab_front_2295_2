@@ -137,7 +137,7 @@ export default function MembersStep() {
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nombre completo" />
+                    <Input {...field} placeholder="Nombre(s)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +152,7 @@ export default function MembersStep() {
                 <FormItem>
                   <FormLabel>Apellido</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Apellido completo" />
+                    <Input {...field} placeholder="Apellido(s)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

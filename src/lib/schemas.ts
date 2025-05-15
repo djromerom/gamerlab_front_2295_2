@@ -10,7 +10,7 @@ export const CombinedSchema = z.object({
       z.object({
         nombre: z.string().min(1, 'Requerido'),
         apellido: z.string().min(1, 'Requerido'),
-        correo: z.string().email('Email inválido').endsWith("@uninorte.edu.co", "Debe ser un correo uninorte"),
+        correo: z.string().email('Email inválido').endsWith("@uninorte.edu.co", "Debe ser un correo institucional (uninorte)"),
         codigoEstudiantil: z.string().min(1, 'Requerido'),
         nrc: z.array(z.string()).min(1, "mínimo 1")
       })
