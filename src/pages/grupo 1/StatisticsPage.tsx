@@ -1,13 +1,12 @@
 // StatisticsPage.tsx 
 "use client"
 
-import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw } from "lucide-react"
+import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import LayoutAplication from "@/layouts/LayoutAplication"
-import ReportsZoneTable from "@/components/grupo 1/ReportsZoneTable"
 
 import GraphicDisplay from "@/components/grupo 1/GraphicsDisplay"
 import TablaRanking from "@/components/grupo 1/RankingTable"
@@ -16,6 +15,7 @@ import FiltrosPanel from "@/components/grupo 1/FilterPanel"
 
 // Ya no necesitas importar GlobalStateProvider aquí
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext" // Ajusta la ruta
+import DownloadReport from "@/components/grupo 1/DownloadReport"
 
 // Este es ahora tu componente principal de la página
 export default function StatisticsPage() {
@@ -70,8 +70,8 @@ export default function StatisticsPage() {
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               {isLoading ? "Actualizando..." : "Actualizar datos"}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportExcel}><FileSpreadsheet className="mr-2 h-4 w-4" />Exportar Excel</Button>
-            <Button variant="outline" size="sm" onClick={handleExportPdf}><FilePdf className="mr-2 h-4 w-4" />Exportar PDF</Button>
+            {/* <Button variant="outline" size="sm" onClick={handleExportExcel}><FileSpreadsheet className="mr-2 h-4 w-4" />Exportar Excel</Button> */}
+            {/* <Button variant="outline" size="sm" onClick={handleExportPdf}><FilePdf className="mr-2 h-4 w-4" />Exportar PDF</Button> */}
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export default function StatisticsPage() {
         </div>
 
         {/* ReportsZoneTable: Asumir que usa contexto o recibe `listaVideojuegosFiltrados` si es necesario */}
-        <ReportsZoneTable /* videojuegos={listaVideojuegosFiltradosSiLoNecesitaDirectamente} */ />
+        <DownloadReport /> {/*<--videojuegos={listaVideojuegosFiltradosSiLoNecesitaDirectamente}  */}
       </div>
     </LayoutAplication>
   );

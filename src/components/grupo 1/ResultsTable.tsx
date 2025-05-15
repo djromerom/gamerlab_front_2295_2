@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
 import { TabsContent } from '@/components/ui/tabs'; // Asumiendo que lo usas dentro de Tabs
+import { Loader2 } from "lucide-react"; // Icono de carga
 
 // Nombres de los criterios como se espera que vengan del backend en VideojuegoData.criterios
 // O como los quieres mostrar en la cabecera. Es mejor si coinciden.
@@ -21,7 +22,14 @@ const TablaResultados = () => {
   const { listaVideojuegosFiltrados, isLoading, error, fetchGlobalData } = useGlobalState();
 
   if (isLoading) {
-    return <TabsContent value="tabla"><p>Cargando tabla de resultados...</p></TabsContent>;
+    return (
+      <TabsContent value="ranking" className="flex items-center justify-center py-10">
+        <div className="flex flex-col items-center space-y-2 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p>Cargando tabla de resultados...</p>
+        </div>
+      </TabsContent>
+    );
   }
 
   if (error) {

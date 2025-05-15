@@ -33,6 +33,8 @@ export interface VideojuegoData {
   };
   evaluacionesCompletadas?: number; // Número de evaluaciones recibidas
   totalJuradosAsignados?: number; // Total de jurados que deben evaluar
+  juradosAsignados?: string[]; // Nombres de jurados asignados (si es necesario)
+  juradosCompletos?: string[]; // Nombres de jurados que completaron la evaluación
   // Otros campos que el backend pueda proveer, como 'estadoVideojuego', etc.
   // Por ejemplo, si el endpoint también devuelve el equipo, el estado, etc.
   // teamName?: string;
@@ -50,7 +52,7 @@ export interface MateriaData {
 export interface NRCData {
   id: number;    // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
-  materiaNombre?: string; // Si el endpoint de NRCs incluye el nombre de la materia
+  materiaNombre: string; // Si el endpoint de NRCs incluye el nombre de la materia
 }
 
 
@@ -68,6 +70,7 @@ export interface GlobalStateContextType {
   // Estados de los filtros (los valores serán strings que representan "Todos" o un ID/nombre específico)
   filtroMateria: string; // Puede ser "Todas" o un MateriaData.id.toString() o MateriaData.nombre
   setFiltroMateria: React.Dispatch<React.SetStateAction<string>>;
+  setFiltroMateriaExt: (value: string) => void; // Función para cambiar el filtro de materia y resetear NRC
 
   filtroNRC: string;     // Puede ser "Todos" o un NRCData.codigo.toString()
   setFiltroNRC: React.Dispatch<React.SetStateAction<string>>;
@@ -85,6 +88,7 @@ export interface GlobalStateContextType {
   datosGraficoTortaMaterias: DatosGraficoMateria[];
 
   listaVideojuegosFiltrados?: VideojuegoData[]; // SUGERENCIA: Añadir esto
+  nrcsFiltrados?: NRCData[]; // SUGERENCIA: Añadir esto
 
   // Estado de carga y error para los datos globales
   isLoading: boolean;
@@ -105,6 +109,10 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
   
+  const setFiltroMateriaExt = (value: string) => {
+    setFiltroMateria(value);
+    setFiltroNRC("Todos"); // Resetea el filtro de NRC si se selecciona "Todas"
+  };
 
   // Estados para los datos principales y la selección
   const [listaVideojuegos, setListaVideojuegos] = useState<VideojuegoData[]>([]);
@@ -209,17 +217,29 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     });
   }, [listaVideojuegos, filtroMateria, filtroNRC, opcionesFiltroMateria]);
 
+  const nrcsFiltrados = useMemo<NRCData[]>(() => {
+    if (!Array.isArray(opcionesFiltroNRC)) return [];
+
+    return filtroMateria === "Todas" 
+    ? opcionesFiltroNRC 
+    : opcionesFiltroNRC.filter(nrc => {
+        // También puedes agregar verificación para nrc.materiaNombre si es necesario
+        return nrc.materiaNombre === filtroMateria;
+      });
+  }, [filtroMateria, opcionesFiltroNRC]);
+
   console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
 
   const contextValue = useMemo(() => ({
     // Filtros seleccionados
-    filtroMateria, setFiltroMateria,
+    filtroMateria, setFiltroMateria, setFiltroMateriaExt,
     filtroNRC, setFiltroNRC,
 
     // Datos de videojuegos
     videojuegoSeleccionado, setVideojuegoSeleccionado,
     listaVideojuegos,
     listaVideojuegosFiltrados, // <-- SUGERENCIA: Añadir esto
+    nrcsFiltrados,
 
     // Opciones para los filtros
     opcionesFiltroMateria,
@@ -235,7 +255,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
     // Dependencias: todos los estados que se incluyen en contextValue
     filtroMateria, filtroNRC,
     videojuegoSeleccionado, listaVideojuegos, listaVideojuegosFiltrados,
-    opcionesFiltroMateria, opcionesFiltroNRC,
+    opcionesFiltroMateria, opcionesFiltroNRC, nrcsFiltrados,
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.

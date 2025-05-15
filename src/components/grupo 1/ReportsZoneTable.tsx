@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import CustomTableRow from "./CustomTableRow"
+import { CustomTableRow } from "./CustomTableRow"
 
 
 const ReportsZoneTable = () => {
