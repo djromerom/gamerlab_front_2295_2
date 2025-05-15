@@ -123,23 +123,34 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  //const customFetch = useFetch(); 
+
+  const API_ENDPOINT = "http://localhost:3000/reports";
+
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const responses = await Promise.all([
-        fetch('http://localhost:3000/reports/videojuegoData', {
+        fetch(`${API_ENDPOINT}/videojuegoData`, {
+          method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
-        fetch('http://localhost:3000/reports/MateriaData', {
+        fetch(`${API_ENDPOINT}/MateriaData`, {
+          method: "GET",
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
         }),
-        fetch('http://localhost:3000/reports/NRCData', {
+        fetch(`${API_ENDPOINT}/NRCData`, {
+          method: "GET",
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
         }),
-        fetch('http://localhost:3000/reports/DatosGraficoMateria', {
+        fetch(`${API_ENDPOINT}/DatosGraficoMateria`, {
+          method: "GET",
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
         })
       ]);
 
