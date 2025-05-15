@@ -309,7 +309,7 @@ export default function MembersStep() {
         </div>
       ))}
 
-      {fields.length < 5 && (
+      {fields.length < 6 && (
         <Button
           variant="outline"
           onClick={() =>
