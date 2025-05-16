@@ -31,8 +31,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd /home/proyecto
-          git clone https://github.com/openlabun/Arkad-Front.git
+          cd /home/proyecto/Arkad-Front
           git pull origin main
           git status
           docker stop arkad
