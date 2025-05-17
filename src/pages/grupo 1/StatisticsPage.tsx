@@ -1,7 +1,7 @@
 // StatisticsPage.tsx 
 "use client"
 
-import { FileSpreadsheet, FileIcon as FilePdf, RefreshCw, Download } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,6 +27,9 @@ export default function StatisticsPage() {
     error,
     fetchGlobalData
   } = useGlobalState(); // Se consume el contexto directamente
+
+  console.log("Is loading:", isLoading);
+  console.log("Lista de videojuegos:", listaVideojuegos);
 
   const breadcrumbs = [{ label: "Estadisticas", href: "/estadisticas" }];
 

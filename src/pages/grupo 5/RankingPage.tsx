@@ -3,12 +3,25 @@
 import NavBar from "@/components/grupo 5/NavBar";
 import { useState, useEffect } from "react";
 
-interface Team {
+type Team = {
   id: number;
   name: string;
   score: number;
   color: string;
-}
+};
+
+const colors = [
+  "bg-red-500",
+  "bg-blue-500",
+  "bg-green-500",
+  "bg-yellow-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-indigo-500",
+  "bg-teal-500",
+];
+
+const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -84,28 +97,29 @@ const glowStyles = `
 `;
 
 export default function PodioGamer() {
-  const [teams, setTeams] = useState<Team[]>([
-    { id: 1, name: "Team Alpha", score: 4.8, color: "bg-red-500" },
-    { id: 2, name: "Team Beta", score: 4.7, color: "bg-blue-500" },
-    { id: 3, name: "Team Gamma", score: 4.6, color: "bg-green-500" },
-    { id: 4, name: "Team Delta", score: 4.5, color: "bg-yellow-500" },
-    { id: 5, name: "Team Epsilon", score: 4.4, color: "bg-purple-500" },
-    { id: 6, name: "Team Zeta", score: 4.4, color: "bg-pink-500" },
-    { id: 7, name: "Team Eta", score: 4.3, color: "bg-orange-500" },
-    { id: 8, name: "Team Theta", score: 4.3, color: "bg-teal-500" },
-    { id: 9, name: "Team Iota", score: 4.3, color: "bg-indigo-500" },
-    { id: 10, name: "Team Kappa", score: 4.2, color: "bg-gray-500" },
-    { id: 11, name: "Team Lambda", score: 4.1, color: "bg-gray-600" },
-    { id: 12, name: "Team Mu", score: 4.0, color: "bg-gray-700" },
-    { id: 13, name: "Team Nu", score: 4.0, color: "bg-gray-800" },
-    { id: 14, name: "Team Xi", score: 4.0, color: "bg-gray-900" },
-    { id: 15, name: "Team Omicron", score: 3.8, color: "bg-gray-100" },
-    { id: 16, name: "Team Pi", score: 3.7, color: "bg-gray-200" },
-    { id: 17, name: "Team Rho", score: 3.5, color: "bg-gray-300" },
-    { id: 18, name: "Team Sigma", score: 3.4, color: "bg-gray-400" },
-    { id: 19, name: "Team Tau", score: 3.3, color: "bg-gray-500" },
-    { id: 20, name: "Team Upsilon", score: 3.1, color: "bg-gray-600" },
-  ]);
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/reports/videojuegoData");
+        const data = await res.json();
+
+        const formattedTeams = data.map((team: any) => ({
+          id: team.id,
+          name: team.nombre,
+          score: team.promedio,
+          color: getRandomColor(),
+        }));
+
+        setTeams(formattedTeams);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const [teamId, setTeamId] = useState<string>("1");
   const [newScore, setNewScore] = useState<string>("");

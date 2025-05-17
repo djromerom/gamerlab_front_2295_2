@@ -32,7 +32,7 @@ export const CustomTableRow = ({ title, description, date }: CustomTableRowProps
 // Opcional: Si realmente necesitas CustomTableRowBeta, dale un propósito único.
 export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) => {
   return (
-    <TableRow > {/* Ejemplo: estilo diferenciado */}
+    <TableRow > 
       <TableCell className="font-medium">{title}</TableCell>
       <TableCell>{description}</TableCell>
       <TableCell>

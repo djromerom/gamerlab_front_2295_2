@@ -242,7 +242,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
       });
   }, [filtroMateria, opcionesFiltroNRC]);
 
-  console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
+  // console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
 
   const contextValue = useMemo(() => ({
     // Filtros seleccionados
