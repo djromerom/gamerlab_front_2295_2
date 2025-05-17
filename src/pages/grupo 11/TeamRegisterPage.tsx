@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import MultiStepWizard from "@/components/grupo 11/MultiStepWizard";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
 import { Toaster } from "sonner"
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+
 const TeamRegisterPage: React.FC = () => {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   return (
     <>
       <NavBar />
@@ -21,8 +30,9 @@ const TeamRegisterPage: React.FC = () => {
             <MultiStepWizard />
           </CardContent>
         </Card>
-        <Toaster/>
+        <Toaster />
       </div>
+      <TextSizeControls />
     </>
   );
 };

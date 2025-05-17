@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 export interface Team {
@@ -19,6 +20,13 @@ export interface Team {
 }
 
 export default function TeamsPage() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -99,6 +107,7 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
+      <TextSizeControls />
     </main>
   );
 }

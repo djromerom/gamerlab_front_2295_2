@@ -2,6 +2,7 @@
 
 import NavBar from "@/components/grupo 5/NavBar";
 import { useState, useEffect } from "react";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 interface Team {
   id: number;
@@ -84,6 +85,13 @@ const glowStyles = `
 `;
 
 export default function PodioGamer() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [teams] = useState<Team[]>([
     { id: 1, name: "Team Alpha", score: 4.8, color: "bg-red-500" },
     { id: 2, name: "Team Beta", score: 4.7, color: "bg-blue-500" },
@@ -284,6 +292,7 @@ export default function PodioGamer() {
               </table>
             </div>
           </div>
+          <TextSizeControls />
         </div>
       </div>
     </>
