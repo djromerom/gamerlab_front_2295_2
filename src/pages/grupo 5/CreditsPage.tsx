@@ -1,18 +1,13 @@
 "use client"
-import { Link } from "react-router-dom"
 import { useEffect, useState, useRef } from "react"
 import {
   Code,
   Github,
-  Linkedin,
-  Mail,
   Users,
   Heart,
   Star,
   Coffee,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
   Palette,
   Cpu,
   Globe,
@@ -328,14 +323,6 @@ export default function DevelopersCredits() {
 
   const nextTeamSlide = () => {
     setCurrentTeamSlide((prev) => (prev === totalTeamSlides - 1 ? 0 : prev + 1))
-  }
-
-  const prevTeamSlide = () => {
-    setCurrentTeamSlide((prev) => (prev === 0 ? totalTeamSlides - 1 : prev - 1))
-  }
-
-  const goToTeamSlide = (index: number) => {
-    setCurrentTeamSlide(index)
   }
 
   // Update carousel position when currentTeamSlide changes
