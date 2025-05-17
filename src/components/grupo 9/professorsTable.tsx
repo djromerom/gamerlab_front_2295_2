@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -64,30 +64,20 @@ interface Props {
   professors: ProfessorRowData[] | null;
   apiBaseUrl: string;
   isDataLoading?: boolean;
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
-  rowsPerPage: number;
-  setRowsPerPage: (rows: number) => void;
-  totalPages: number;
-  totalItems: number;
-  onDataChange: () => void;
-  onProfessorUpdate: (professor: ProfessorRowData) => void;
 }
 
 export const ProfessorsTable: React.FC<Props> = ({
   professors,
   apiBaseUrl,
   isDataLoading = false,
-  currentPage,
-  setCurrentPage,
-  rowsPerPage,
-  setRowsPerPage,
-  totalPages,
-  totalItems,
-  onDataChange,
-  onProfessorUpdate,
 }) => {
   const customFetch = useFetch();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [allProfessors, setAllProfessors] = useState<ProfessorRowData[]>(
+    professors || []
+  );
+  const [currentRows, setCurrentRows] = useState<ProfessorRowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newProfessor, setNewProfessor] = useState<ProfessorFormData>({
     name: "",
@@ -102,6 +92,7 @@ export const ProfessorsTable: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
 
   const showLoader = isDataLoading || internalIsLoading;
+  const totalPages = Math.ceil(allProfessors.length / rowsPerPage);
 
   const columns = [
     { key: "name", label: "Nombre" },
@@ -117,19 +108,46 @@ export const ProfessorsTable: React.FC<Props> = ({
             return "PENDIENTE";
           case 3:
             return "EXPIRADO";
-          default:
-            return "DESCONOCIDO";
         }
       },
     },
   ];
 
+  // Efecto para actualizar los datos cuando cambia la prop professors
+  useEffect(() => {
+    if (professors && professors !== allProfessors) {
+      setAllProfessors(professors);
+    }
+    if (professors === null && allProfessors.length > 0) {
+      setAllProfessors([]);
+    }
+  }, [professors]);
+
+  // Efecto para paginación
+  useEffect(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    setCurrentRows(allProfessors.slice(start, end));
+
+    // Ajustar página si es necesario
+    const currentTotalPages = Math.ceil(allProfessors.length / rowsPerPage);
+    if (currentPage > currentTotalPages && currentTotalPages > 0) {
+      setCurrentPage(currentTotalPages);
+    } else if (currentPage < 1 && currentTotalPages > 0) {
+      setCurrentPage(1);
+    } else if (allProfessors.length === 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, rowsPerPage, allProfessors]);
+
+  // Función para crear un nuevo profesor
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
     setError(null);
 
     try {
+      // Validación básica del email
       if (!newProfessor.email.includes("@")) {
         throw new Error("El email debe ser válido");
       }
@@ -148,10 +166,10 @@ export const ProfessorsTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al crear el profesor");
       }
 
-      await response.json();
+      const createdProfessor: ProfessorRowData = await response.json();
+      setAllProfessors((prev) => [createdProfessor, ...prev]);
       setNewProfessor({ name: "", email: "" });
       setAddDialogOpen(false);
-      onDataChange();
     } catch (err: any) {
       setError(err.message || "Error al agregar el profesor");
     } finally {
@@ -159,6 +177,7 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   };
 
+  // Función para actualizar un profesor
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfessor) return;
@@ -167,6 +186,7 @@ export const ProfessorsTable: React.FC<Props> = ({
     setError(null);
 
     try {
+      // Validación básica del email
       if (!editingProfessor.email.includes("@")) {
         throw new Error("El email debe ser válido");
       }
@@ -189,7 +209,9 @@ export const ProfessorsTable: React.FC<Props> = ({
       }
 
       const updatedProfessor: ProfessorRowData = await response.json();
-      onProfessorUpdate(updatedProfessor);
+      setAllProfessors((prev) =>
+        prev.map((p) => (p.id === updatedProfessor.id ? updatedProfessor : p))
+      );
       setEditDialogOpen(false);
       setEditingProfessor(null);
     } catch (err: any) {
@@ -199,6 +221,7 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   };
 
+  // Función para eliminar (soft delete) un profesor
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
 
@@ -218,7 +241,16 @@ export const ProfessorsTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al desactivar el profesor");
       }
 
-      onDataChange();
+      // Actualizar el estado local para reflejar el cambio
+      setAllProfessors(
+        (prevProfessors) =>
+          prevProfessors?.map((professor) =>
+            professor.id === deletingId
+              ? { ...professor, isActive: false }
+              : professor
+          ) || []
+      );
+
       setDeleteDialogOpen(false);
       setDeletingId(null);
     } catch (err: any) {
@@ -228,13 +260,13 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   };
 
-  const displayProfessors = professors || [];
-
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader && !internalIsLoading ? "opacity-75" : ""
-        }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${
+        showLoader ? "opacity-75" : ""
+      }`}
     >
+      {/* Encabezado */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Profesores</h1>
 
@@ -243,7 +275,7 @@ export const ProfessorsTable: React.FC<Props> = ({
             <Button
               variant="outline"
               className="bg-card hover:bg-accent text-foreground"
-              disabled={showLoader}
+              disabled={!professors || showLoader}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar Profesor
             </Button>
@@ -256,7 +288,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Complete los datos del nuevo profesor.
                 </DialogDescription>
               </DialogHeader>
-              {error && !internalIsLoading && (
+              {error && !showLoader && (
                 <div className="px-6 py-2">
                   <p className="text-sm text-red-600 dark:text-red-500">
                     {error}
@@ -314,6 +346,7 @@ export const ProfessorsTable: React.FC<Props> = ({
         </Dialog>
       </div>
 
+      {/* Tabla */}
       <Card className="rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader className="bg-card border-b border-border">
@@ -325,7 +358,7 @@ export const ProfessorsTable: React.FC<Props> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isDataLoading && !internalIsLoading ? (
+            {showLoader ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length + 1}
@@ -337,7 +370,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : displayProfessors.length === 0 ? (
+            ) : allProfessors.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length + 1}
@@ -347,62 +380,63 @@ export const ProfessorsTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              displayProfessors.map((professor) => (
-                <TableRow key={professor.id}>
-                  {columns.map(({ key, render }) => (
-                    <TableCell key={key}>
-                      {render
-                        ? render(
-                          professor[key as keyof ProfessorRowData] as number
-                        )
-                        : professor[
-                          key as keyof ProfessorRowData
-                        ]?.toString()}
+              currentRows
+                .filter((professor) => professor.isActive)
+                .map((professor) => (
+                  <TableRow key={professor.id}>
+                    {columns.map(({ key, render }) => (
+                      <TableCell key={key}>
+                        {render
+                          ? render(
+                              professor[key as keyof ProfessorRowData] as number
+                            )
+                          : professor[
+                              key as keyof ProfessorRowData
+                            ]?.toString()}
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            disabled={internalIsLoading}
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingProfessor(professor);
+                              setEditDialogOpen(true);
+                            }}
+                            disabled={internalIsLoading}
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingId(professor.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                            disabled={internalIsLoading}
+                          >
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
-                  ))}
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingProfessor(professor);
-                            setEditDialogOpen(true);
-                            setError(null);
-                          }}
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setDeletingId(professor.id);
-                            setDeleteDialogOpen(true);
-                            setError(null);
-                          }}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100"
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                  </TableRow>
+                ))
             )}
           </TableBody>
         </Table>
 
+        {/* Paginación */}
         <div className="flex justify-between items-center p-4 text-sm border-t border-border">
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
@@ -410,8 +444,9 @@ export const ProfessorsTable: React.FC<Props> = ({
               value={rowsPerPage.toString()}
               onValueChange={(value) => {
                 setRowsPerPage(parseInt(value, 10));
+                setCurrentPage(1);
               }}
-              disabled={showLoader || totalItems === 0}
+              disabled={showLoader || allProfessors.length === 0}
             >
               <SelectTrigger className="w-[70px]">
                 <SelectValue placeholder={rowsPerPage} />
@@ -433,7 +468,7 @@ export const ProfessorsTable: React.FC<Props> = ({
               <Button
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={
-                  currentPage === 1 || showLoader || totalItems === 0
+                  currentPage === 1 || showLoader || allProfessors.length === 0
                 }
                 variant="outline"
                 size="icon"
@@ -455,6 +490,7 @@ export const ProfessorsTable: React.FC<Props> = ({
         </div>
       </Card>
 
+      {/* Diálogo de Edición */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           {editingProfessor && (
@@ -465,7 +501,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Modifique los campos del profesor según sea necesario.
                 </DialogDescription>
               </DialogHeader>
-              {error && !internalIsLoading && (
+              {error && !showLoader && (
                 <div className="px-6 py-2">
                   <p className="text-sm text-red-600 dark:text-red-500">
                     {error}
@@ -501,24 +537,6 @@ export const ProfessorsTable: React.FC<Props> = ({
                       />
                     </div>
                   ))}
-                {/* Email field for editing, assuming it's also editable */}
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="edit-email"
-                    value={editingProfessor.email || ""}
-                    onChange={(e) =>
-                      setEditingProfessor((prev) =>
-                        prev ? { ...prev, email: e.target.value } : null
-                      )
-                    }
-                    className="col-span-3"
-                    required
-                    type="email"
-                  />
-                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -542,15 +560,17 @@ export const ProfessorsTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Diálogo de Eliminación */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción desactivará al profesor. No podrá deshacer esta acción directamente aquí.
+              Esta acción desactivará al profesor. Podrá reactivarlo más tarde
+              si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !internalIsLoading && (
+          {error && !showLoader && (
             <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
               {error}
             </p>
