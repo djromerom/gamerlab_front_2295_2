@@ -7,22 +7,24 @@ const TeamRegisterPage: React.FC = () => {
   return (
     <>
       <NavBar />
-
+    <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
       <div
-        className="flex flex-col items-center justify-center min-h-screen px-4 py-20 dark bg-black"
+        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float"
         style={{
           backgroundImage: "url('/background.webp')",
-          backgroundSize: "150%",
-          backgroundPosition: "center",
         }}
+      ></div>
+      <div
+        className="flex flex-col z-10 items-center justify-center min-h-screen pt-18 dark overflow-hidden "
       >
-        <Card className="w-full max-w-2xl shadow-lg rounded-lg p-6">
+        <Card className="w-full z-10 max-w-2xl shadow-lg rounded-lg p-6 bg-black/50 ">
           <CardContent>
             <MultiStepWizard />
           </CardContent>
         </Card>
         <Toaster/>
       </div>
+    </div>
     </>
   );
 };

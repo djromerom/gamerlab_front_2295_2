@@ -59,7 +59,7 @@ export function ThemeToggle() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="mt-auto mb-2 mx-2 px-2 w-[calc(100%-16px)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]">
+                <SidebarMenuButton className="mt-auto mb-2 mx-2 px-2 w-[calc(100%-16px)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer">
                         <ThemeIcon className="h-4 w-4" />
                         {<span className="group-data-[collapsible=icon]:opacity-0">Tema</span>}
                 </SidebarMenuButton>

@@ -30,7 +30,11 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
         </header>
         {children}
         
-        <Toaster />
+        <Toaster
+          toastOptions={{
+            className: "bg-white text-black dark:bg-blue dark:text-white",
+          }}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

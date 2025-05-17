@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -89,10 +90,14 @@ export const ProfessorsTable: React.FC<Props> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const showLoader = isDataLoading || internalIsLoading;
   const totalPages = Math.ceil(allProfessors.length / rowsPerPage);
+
+  // Función para mostrar errores como toast
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
 
   const columns = [
     { key: "name", label: "Nombre" },
@@ -144,7 +149,6 @@ export const ProfessorsTable: React.FC<Props> = ({
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       // Validación básica del email
@@ -170,8 +174,9 @@ export const ProfessorsTable: React.FC<Props> = ({
       setAllProfessors((prev) => [createdProfessor, ...prev]);
       setNewProfessor({ name: "", email: "" });
       setAddDialogOpen(false);
+      toast.success("Profesor agregado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al agregar el profesor");
+      showError(err.message || "Error al agregar el profesor");
     } finally {
       setInternalIsLoading(false);
     }
@@ -183,7 +188,6 @@ export const ProfessorsTable: React.FC<Props> = ({
     if (!editingProfessor) return;
 
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       // Validación básica del email
@@ -214,8 +218,9 @@ export const ProfessorsTable: React.FC<Props> = ({
       );
       setEditDialogOpen(false);
       setEditingProfessor(null);
+      toast.success("Profesor actualizado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el profesor");
+      showError(err.message || "Error al actualizar el profesor");
     } finally {
       setInternalIsLoading(false);
     }
@@ -226,7 +231,6 @@ export const ProfessorsTable: React.FC<Props> = ({
     if (!deletingId) return;
 
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       const response = await customFetch(
@@ -253,8 +257,9 @@ export const ProfessorsTable: React.FC<Props> = ({
 
       setDeleteDialogOpen(false);
       setDeletingId(null);
+      toast.success("Profesor eliminado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al desactivar el profesor");
+      showError(err.message || "Error al desactivar el profesor");
     } finally {
       setInternalIsLoading(false);
     }
@@ -274,10 +279,10 @@ export const ProfessorsTable: React.FC<Props> = ({
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
               disabled={!professors || showLoader}
             >
-              <Plus className="mr-2 h-4 w-4" /> Agregar Profesor
+              <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -288,13 +293,6 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Complete los datos del nuevo profesor.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
                 {columns
                   .filter((c) => c.key !== "confirmationStatusId")
@@ -327,17 +325,17 @@ export const ProfessorsTable: React.FC<Props> = ({
               <DialogFooter>
                 <Button
                   type="button"
+                  className="cursor-pointer"
                   variant="outline"
                   onClick={() => {
                     setAddDialogOpen(false);
-                    setError(null);
                     setNewProfessor({ name: "", email: "" });
                   }}
                   disabled={internalIsLoading}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button className="cursor-pointer" type="submit" disabled={internalIsLoading}>
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -400,7 +398,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             <span className="sr-only">Abrir menú</span>
@@ -414,6 +412,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                               setEditDialogOpen(true);
                             }}
                             disabled={internalIsLoading}
+                            className="cursor-pointer"
                           >
                             Editar
                           </DropdownMenuItem>
@@ -422,7 +421,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                               setDeletingId(professor.id);
                               setDeleteDialogOpen(true);
                             }}
-                            className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             Eliminar
@@ -448,12 +447,12 @@ export const ProfessorsTable: React.FC<Props> = ({
               }}
               disabled={showLoader || allProfessors.length === 0}
             >
-              <SelectTrigger className="w-[70px]">
+              <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
                     {n}
                   </SelectItem>
                 ))}
@@ -472,6 +471,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -482,6 +482,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -501,16 +502,9 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Modifique los campos del profesor según sea necesario.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
                 {columns
-                  .filter((c) => c.key === "name")
+                  .filter((c) => c.key !== "confirmationStatusId")
                   .map(({ key, label }) => (
                     <div
                       key={key}
@@ -544,14 +538,14 @@ export const ProfessorsTable: React.FC<Props> = ({
                   variant="outline"
                   onClick={() => {
                     setEditDialogOpen(false);
-                    setError(null);
                     setEditingProfessor(null);
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button className="cursor-pointer" type="submit" disabled={internalIsLoading}>
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -570,25 +564,20 @@ export const ProfessorsTable: React.FC<Props> = ({
               si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !showLoader && (
-            <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
-              {error}
-            </p>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setDeleteDialogOpen(false);
-                setError(null);
                 setDeletingId(null);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
               {internalIsLoading ? "Eliminando..." : "Confirmar"}

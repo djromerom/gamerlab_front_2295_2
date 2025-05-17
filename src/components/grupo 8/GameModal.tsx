@@ -46,7 +46,7 @@ const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
           {/* Botón de salida */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
             aria-label="Cerrar"
           >
 
@@ -90,9 +90,9 @@ const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
         <div className="pt-4 flex justify-end px-5">
           <Button
             size="sm"
-            className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${game.isEvaluated
-              ? "bg-gray-700 hover:bg-gray-700 text-foreground cursor-not-allowed"
-              : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)]"
+            className={`px-7 py-2 text-lg font-bold  rounded-md ${game.isEvaluated
+              ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
+              : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] shadow-md"
               }`}
             onClick={() => !game.isEvaluated && handleCalificarClick()} // Solo permite clic si no está evaluado
             disabled={game.isEvaluated} // Deshabilita el botón si está evaluado

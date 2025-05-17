@@ -1,4 +1,3 @@
-// TablaGenerica.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner"; // Importamos toast de sonner
 import {
   Table,
   TableBody,
@@ -91,7 +91,6 @@ export const SubjectsTable: React.FC<Props> = ({
   apiBaseUrl,
   isDataLoading = false,
 }) => {
-  // <-- Recibe isDataLoading
   const customFetch = useFetch();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -104,7 +103,7 @@ export const SubjectsTable: React.FC<Props> = ({
   const [editingRow, setEditingRow] = useState<RowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
-  const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
+  const [internalIsLoading, setInternalIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
@@ -121,6 +120,17 @@ export const SubjectsTable: React.FC<Props> = ({
   const columnNames = data?.nombreColumnas || {};
 
   const totalPages = Math.ceil(allRows.length / rowsPerPage);
+
+  // Función para mostrar errores como toast
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+    setError(errorMessage);
+  };
+
+  // Función para mostrar mensajes de éxito como toast
+  const showSuccess = (message: string) => {
+    toast.success(message);
+  };
 
   const getApiUrl = (id?: number | string) => {
     // Asegúrate que data y data.nombreTabla existen antes de usarlos
@@ -165,31 +175,27 @@ export const SubjectsTable: React.FC<Props> = ({
     }
   }, [currentPage, rowsPerPage, allRows]); // Depende de allRows
 
-  // --- Funciones handleAdd, handleOpenEdit, handleSaveEdit, handleOpenDelete, handleConfirmDelete ---
-  // Asegúrate de usar setInternalIsLoading(true/false) en lugar de setIsLoading
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInternalIsLoading(true); // Usa el estado interno
+    setInternalIsLoading(true);
     setError(null);
-    // ... resto de la lógica de validación y fetch ...
-    // Asegúrate de que getApiUrl() no se llame si data es null
+    
     const apiUrl = getApiUrl();
     if (!apiUrl) {
-      setError("Configuración de tabla inválida.");
+      showError("Configuración de tabla inválida.");
       setInternalIsLoading(false);
       return;
     }
 
-    // ... validación de newRow ...
     const { name, code, semester: semesterStr } = newRow;
     if (!name || !code || !semesterStr) {
-      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
+      showError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       setInternalIsLoading(false);
       return;
     }
     const semesterAsNumber = parseInt(semesterStr, 10);
     if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
-      setError("El semestre debe ser un número válido mayor o igual a 1.");
+      showError("El semestre debe ser un número válido mayor o igual a 1.");
       setInternalIsLoading(false);
       return;
     }
@@ -201,42 +207,43 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       const response = await customFetch(apiUrl, {
-        /*...*/ body: JSON.stringify(dataToSend),
+        body: JSON.stringify(dataToSend),
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al crear la materia");
       }
       const addedRow: RowData = await response.json();
-      setAllRows((prevRows) => [addedRow, ...(prevRows || [])]); // Maneja prevRows null
+      setAllRows((prevRows) => [addedRow, ...(prevRows || [])]);
       setNewRow({});
       setAddDialogOpen(false);
+      showSuccess("Materia agregada exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al agregar.");
+      showError(err.message || "Error al agregar la materia.");
       console.error("Error en handleAdd:", err);
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      setInternalIsLoading(false);
     }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRow) {
-      /*...*/ return;
+      return;
     }
-    setInternalIsLoading(true); // Usa el estado interno
+    setInternalIsLoading(true);
     setError(null);
 
     const idValue = editingRow[primaryKeyField];
     const apiUrl = getApiUrl(idValue);
     if (!apiUrl || idValue === undefined) {
-      setError("No se puede actualizar la fila (falta ID o configuración).");
+      showError("No se puede actualizar la fila (falta ID o configuración).");
       setInternalIsLoading(false);
       return;
     }
 
-    // ... validación de editingRow ...
     const { name, code, semester: semesterStr } = editingRow;
     if (
       !name ||
@@ -245,13 +252,13 @@ export const SubjectsTable: React.FC<Props> = ({
       semesterStr === null ||
       semesterStr === ""
     ) {
-      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
+      showError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       setInternalIsLoading(false);
       return;
     }
     const semesterAsNumber = parseInt(String(semesterStr), 10);
     if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
-      setError("El semestre debe ser un número válido mayor o igual a 1.");
+      showError("El semestre debe ser un número válido mayor o igual a 1.");
       setInternalIsLoading(false);
       return;
     }
@@ -263,36 +270,35 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       const response = await customFetch(apiUrl, {
-        /*...*/ body: JSON.stringify(dataToSend),
+        body: JSON.stringify(dataToSend),
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al actualizar la materia");
       }
       const updatedRowFromApi: RowData = await response.json();
       setAllRows((prevRows) =>
         (prevRows || []).map(
-          (
-            row // Maneja prevRows null
-          ) => (row[primaryKeyField] === idValue ? updatedRowFromApi : row)
+          (row) => (row[primaryKeyField] === idValue ? updatedRowFromApi : row)
         )
       );
       setEditDialogOpen(false);
       setEditingRow(null);
+      showSuccess("Materia actualizada exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al guardar cambios.");
+      showError(err.message || "Error al guardar cambios.");
       console.error("Error en handleSaveEdit:", err);
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      setInternalIsLoading(false);
     }
   };
 
   const handleConfirmDelete = async () => {
     if (deletingIndex < 0 || !allRows || deletingIndex >= allRows.length) {
-      /*...*/
-      setError("Índice inválido para eliminar.");
-      setDeleteDialogOpen(false); // Cierra si el índice es malo
+      showError("Índice inválido para eliminar.");
+      setDeleteDialogOpen(false);
       return;
     }
 
@@ -301,52 +307,50 @@ export const SubjectsTable: React.FC<Props> = ({
     const apiUrl = getApiUrl(idToDelete);
 
     if (!apiUrl || idToDelete === undefined) {
-      setError("No se puede eliminar la fila (falta ID o configuración).");
-      setDeleteDialogOpen(false); // Cierra si falta info
+      showError("No se puede eliminar la fila (falta ID o configuración).");
+      setDeleteDialogOpen(false);
       setDeletingIndex(-1);
       return;
     }
 
-    setInternalIsLoading(true); // Usa el estado interno
+    setInternalIsLoading(true);
     setError(null);
 
-    let deleteSuccess = false; // Flag para saber si cerrar el diálogo
+    let deleteSuccess = false;
     try {
       const response = await customFetch(apiUrl, { method: "DELETE" });
       if (!response.ok) {
-        /* ... manejo de error ... */ throw new Error("...");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al eliminar la materia");
       }
 
-      // Éxito
       setAllRows((prevRows) =>
         (prevRows || []).filter((_, i) => i !== deletingIndex)
-      ); // Maneja prevRows null
-      deleteSuccess = true; // Marcar éxito
+      );
+      deleteSuccess = true;
       console.log("Fila eliminada (ID):", idToDelete);
-      // Ajustar paginación si es necesario (sin cambios)
-      const newTotalRows = (allRows?.length || 1) - 1; // Calcula antes de actualizar estado
+      
+      const newTotalRows = (allRows?.length || 1) - 1;
       const newTotalPages = Math.ceil(newTotalRows / rowsPerPage);
       if (currentPage > newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages);
       } else if (newTotalRows === 0) {
         setCurrentPage(1);
       }
+      
+      showSuccess("Materia eliminada exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al eliminar.");
+      showError(err.message || "Error al eliminar la materia.");
       console.error("Error en handleConfirmDelete:", err);
-      // No cierres el diálogo aquí si hay error, muestra el mensaje
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      setInternalIsLoading(false);
       if (deleteSuccess) {
-        setDeleteDialogOpen(false); // Cierra SÓLO si fue exitoso
+        setDeleteDialogOpen(false);
         setDeletingIndex(-1);
       }
-      // Si hubo error, el diálogo permanece abierto mostrando el error
-      // El botón Cancelar se encargará de cerrarlo y limpiar el error/índice
     }
   };
 
-  // --- Resto de funciones handleOpenEdit, handleOpenDelete (sin cambios lógicos importantes, pero asegúrate que usan `allRows` de forma segura) ---
   const handleOpenEdit = (row: RowData) => {
     setEditingRow({ ...row });
     setEditDialogOpen(true);
@@ -361,7 +365,6 @@ export const SubjectsTable: React.FC<Props> = ({
   };
 
   return (
-    // Añade un contenedor div si data es null para mantener la estructura
     <div
       className={`bg-background text-foreground min-h-screen p-4 ${
         showLoader ? "opacity-75" : ""
@@ -369,46 +372,39 @@ export const SubjectsTable: React.FC<Props> = ({
     >
       {/* Encabezado (Título y Botón Agregar) */}
       <div className="flex justify-between items-center mb-6 px-4">
-        {/* Muestra título de forma segura */}
         <h1 className="text-xl font-medium">
           {data?.titulo || "Cargando Título..."}
         </h1>
 
-        {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
-              disabled={!data || showLoader} // <-- Deshabilitar si no hay data O si está cargando
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
+              disabled={!data || showLoader}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
-            {/* Asegúrate que el form usa `internalIsLoading` */}
-            {data /* Solo muestra el form si hay 'data' para obtener nombreTabla etc */ && (
+            {data && (
               <form onSubmit={handleAdd}>
                 <DialogHeader>
-                  {/* Usa data?.nombreTabla de forma segura */}
                   <DialogTitle>
-                    Agregar {data?.nombreTabla || "Item"}
+                    Agregar Nueva Materia
                   </DialogTitle>
                   <DialogDescription>
                     Ingrese los datos de la nueva fila.
                   </DialogDescription>
                 </DialogHeader>
-                {/* Muestra error del form */}
-                {error &&
-                  !showLoader /* No mostrar error del form mientras carga */ && (
-                    <div className="px-6 py-2">
-                      <p className="text-sm text-red-600 dark:text-red-500">
-                        {error}
-                      </p>
-                    </div>
-                  )}
+                {error && !showLoader && (
+                  <div className="px-6 py-2">
+                    <p className="text-sm text-red-600 dark:text-red-500">
+                      {error}
+                    </p>
+                  </div>
+                )}
                 <div className="grid gap-4 py-4 px-6">
-                  {/* Genera campos de forma segura */}
                   {columnEntries
                     .filter(([key]) => key !== primaryKeyField)
                     .map(([key, label]) => (
@@ -430,7 +426,7 @@ export const SubjectsTable: React.FC<Props> = ({
                           }
                           className="col-span-3"
                           required
-                          disabled={internalIsLoading} // Deshabilitar solo con carga interna
+                          disabled={internalIsLoading}
                         />
                       </div>
                     ))}
@@ -438,6 +434,7 @@ export const SubjectsTable: React.FC<Props> = ({
                 <DialogFooter>
                   <Button
                     type="button"
+                    className="cursor-pointer"
                     variant="outline"
                     onClick={() => {
                       setAddDialogOpen(false);
@@ -448,7 +445,7 @@ export const SubjectsTable: React.FC<Props> = ({
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={internalIsLoading}>
+                  <Button type="submit" className="cursor-pointer" disabled={internalIsLoading}>
                     {internalIsLoading ? "Guardando..." : "Guardar"}
                   </Button>
                 </DialogFooter>
@@ -463,17 +460,14 @@ export const SubjectsTable: React.FC<Props> = ({
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {/* Renderiza encabezados de forma segura */}
               {displayColumnKeys.map((key) => (
                 <TableHead key={key}>{columnNames[key] || key}</TableHead>
               ))}
               <TableHead className="w-[50px]" /> {/* Actions */}
             </TableRow>
           </TableHeader>
-          {/* ==================== TableBody Modificado ==================== */}
           <TableBody>
-            {showLoader ? ( // <-- Usa la variable combinada
-              // --- Estado de Carga (Inicial o CRUD) ---
+            {showLoader ? (
               <TableRow>
                 <TableCell
                   colSpan={displayColumnKeys.length + 1}
@@ -485,8 +479,7 @@ export const SubjectsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : allRows && allRows.length === 0 ? ( // <-- Verifica allRows explícitamente
-              // --- Sin Resultados ---
+            ) : allRows && allRows.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={displayColumnKeys.length + 1}
@@ -496,7 +489,6 @@ export const SubjectsTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              // --- Filas de Datos (solo si allRows existe y tiene elementos) ---
               currentRows.map((row, index) => (
                 <TableRow key={row[primaryKeyField] ?? index}>
                   {displayColumnKeys.map((key) => (
@@ -507,7 +499,7 @@ export const SubjectsTable: React.FC<Props> = ({
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 cursor-pointer"
                           disabled={internalIsLoading}
                         >
                           <span className="sr-only">Abrir menú</span>
@@ -518,12 +510,13 @@ export const SubjectsTable: React.FC<Props> = ({
                         <DropdownMenuItem
                           onClick={() => handleOpenEdit(row)}
                           disabled={internalIsLoading}
+                          className="cursor-pointer"
                         >
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleOpenDelete(index)}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                          className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                           disabled={internalIsLoading}
                         >
                           Eliminar
@@ -535,10 +528,9 @@ export const SubjectsTable: React.FC<Props> = ({
               ))
             )}
           </TableBody>
-          {/* ============================================================ */}
         </Table>
 
-        {/* Controles de Paginación - Deshabilitados si está cargando */}
+        {/* Controles de Paginación */}
         <div className="flex justify-between items-center p-4 text-sm border-t border-border">
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
@@ -548,14 +540,14 @@ export const SubjectsTable: React.FC<Props> = ({
                 setRowsPerPage(parseInt(value, 10));
                 setCurrentPage(1);
               }}
-              disabled={showLoader || !allRows || allRows.length === 0} // Deshabilitar si carga o no hay filas
+              disabled={showLoader || !allRows || allRows.length === 0}
             >
-              <SelectTrigger className="w-[70px]">
+              <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem key={n} value={n.toString()} className="cursor-pointer">
                     {n}
                   </SelectItem>
                 ))}
@@ -563,13 +555,13 @@ export const SubjectsTable: React.FC<Props> = ({
             </Select>
           </div>
           <div className="flex items-center gap-4">
-            {/* Muestra paginación de forma segura */}
             <span>
               Página {totalPages > 0 ? currentPage : 0} de {totalPages || 0}
             </span>
             <div className="flex gap-1">
               <Button
                 onClick={() => setCurrentPage(currentPage - 1)}
+                className="cursor-pointer"
                 disabled={
                   currentPage === 1 ||
                   showLoader ||
@@ -583,6 +575,7 @@ export const SubjectsTable: React.FC<Props> = ({
               </Button>
               <Button
                 onClick={() => setCurrentPage(currentPage + 1)}
+                className="cursor-pointer"
                 disabled={
                   currentPage === totalPages ||
                   totalPages === 0 ||
@@ -600,75 +593,74 @@ export const SubjectsTable: React.FC<Props> = ({
         </div>
       </Card>
 
-      {/* Dialog Editar - Asegúrate que usa `internalIsLoading` y maneja `editingRow` null */}
+      {/* Dialog Editar */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
-          {editingRow &&
-            data && ( // Necesita data para los nombres de columna
-              <form onSubmit={handleSaveEdit}>
-                <DialogHeader>
-                  <DialogTitle>Editar fila</DialogTitle>
-                  <DialogDescription>
-                    Modifique los campos según sea necesario.
-                  </DialogDescription>
-                </DialogHeader>
-                {/* Muestra error del form */}
-                {error && !showLoader && (
-                  <div className="px-6 py-2">
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      {error}
-                    </p>
-                  </div>
-                )}
-                <div className="grid gap-4 py-4 px-6">
-                  {columnEntries
-                    .filter(([key]) => key !== primaryKeyField)
-                    .map(([key, label]) => (
-                      <div
-                        key={key}
-                        className="grid grid-cols-4 items-center gap-4"
-                      >
-                        <Label htmlFor={`edit-${key}`} className="text-right">
-                          {label}
-                        </Label>
-                        <Input
-                          id={`edit-${key}`}
-                          value={editingRow[key] || ""}
-                          onChange={(e) =>
-                            setEditingRow((prev) =>
-                              prev ? { ...prev, [key]: e.target.value } : null
-                            )
-                          }
-                          className="col-span-3"
-                          required
-                          disabled={internalIsLoading} // Usa estado interno
-                        />
-                      </div>
-                    ))}
+          {editingRow && data && (
+            <form onSubmit={handleSaveEdit}>
+              <DialogHeader>
+                <DialogTitle>Editar fila</DialogTitle>
+                <DialogDescription>
+                  Modifique los campos según sea necesario.
+                </DialogDescription>
+              </DialogHeader>
+              {error && !showLoader && (
+                <div className="px-6 py-2">
+                  <p className="text-sm text-red-600 dark:text-red-500">
+                    {error}
+                  </p>
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setEditDialogOpen(false);
-                      setError(null);
-                      setEditingRow(null);
-                    }}
-                    disabled={internalIsLoading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={internalIsLoading}>
-                    {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
+              )}
+              <div className="grid gap-4 py-4 px-6">
+                {columnEntries
+                  .filter(([key]) => key !== primaryKeyField)
+                  .map(([key, label]) => (
+                    <div
+                      key={key}
+                      className="grid grid-cols-4 items-center gap-4"
+                    >
+                      <Label htmlFor={`edit-${key}`} className="text-right">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`edit-${key}`}
+                        value={editingRow[key] || ""}
+                        onChange={(e) =>
+                          setEditingRow((prev) =>
+                            prev ? { ...prev, [key]: e.target.value } : null
+                          )
+                        }
+                        className="col-span-3"
+                        required
+                        disabled={internalIsLoading}
+                      />
+                    </div>
+                  ))}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditDialogOpen(false);
+                    setError(null);
+                    setEditingRow(null);
+                  }}
+                  disabled={internalIsLoading}
+                  className="cursor-pointer"
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={internalIsLoading} className="cursor-pointer">
+                  {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Eliminar - Asegúrate que usa `internalIsLoading` */}
+      {/* Dialog Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -678,7 +670,6 @@ export const SubjectsTable: React.FC<Props> = ({
               la fila seleccionada.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {/* Muestra error del dialog */}
           {error && !showLoader && (
             <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
               {error}
@@ -692,12 +683,13 @@ export const SubjectsTable: React.FC<Props> = ({
                 setDeletingIndex(-1);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
               {internalIsLoading ? "Eliminando..." : "Eliminar"}

@@ -2,6 +2,7 @@ import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
 // Tipo para los datos del videojuego
 interface VideogameDetails {
@@ -66,9 +67,7 @@ const GradedPage: React.FC = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {loading ? (
-        <div className="flex justify-center items-center h-screen text-black dark:text-white ">
-          <p>Cargando juegos calificados...</p>
-        </div>
+        <LoadingScreen text="Cargando juegos calificados..." />
       ) : (
         <PendingGamesGrid
           games={gradedGames.map((videogame) => ({

@@ -91,7 +91,7 @@ const PendingGradesPage: React.FC = () => {
       {metadata && (
         <div className="flex justify-center items-center gap-4 mt-6 py-6">
           <button
-            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700"
+            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 cursor-pointer"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={metadata.currentPage === 1}
           >
@@ -101,7 +101,7 @@ const PendingGradesPage: React.FC = () => {
             Página {metadata.currentPage} de {metadata.totalPages}
           </span>
           <button
-            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700"
+            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 cursor-pointer"
             onClick={() => setPage((p) => Math.min(metadata.totalPages, p + 1))}
             disabled={metadata.currentPage === metadata.totalPages}
           >

@@ -157,7 +157,7 @@ export const PendingGamesGrid: React.FC<
           <div className="relative">
             <Button
               variant="outline"
-              className="bg-[#1a1a2e] border border-[#4d5474] text-foreground h-9 flex items-center justify-center gap-1 px-4 dark:hover:bg-[#1a1a2e]"
+              className="bg-[#1a1a2e] border border-[#4d5474] text-foreground h-9 flex items-center justify-center gap-1 px-4 dark:hover:bg-[#1a1a2e] cursor-pointer"
               onClick={toggleDropdown}
             >
               <ChevronDownIcon />
@@ -165,7 +165,7 @@ export const PendingGamesGrid: React.FC<
             </Button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#d1d5dc] text-foreground z-10 dark:bg-[#171717]">
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background text-foreground z-10">
                 <div className="py-1">
                   <div
                     className="block px-4 py-2 text-sm text-foreground hover:bg-[#f3f4f6] cursor-pointer dark:hover:bg-[#2a2a40]"
@@ -243,20 +243,20 @@ export const PendingGamesGrid: React.FC<
               {/* Botón de información (izquierda) */}
               <button
                 onClick={() => handleOpenModal(game)}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors cursor-pointer"
                 aria-label="Información"
               >
                 <InfoIcon />
               </button>
 
               {/* Botón de calificar (derecha) - centrado con el círculo */}
-              <div className="flex justify-end mt-auto pt-2 px-8">
+              <div className="flex justify-end mt-auto pt-2 px-8">     
                 <Button
                   size="sm"
-                  className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${
+                  className={`px-7 py-2 text-lg font-bold rounded-md ${
                     game.isEvaluated
-                      ? "bg-gray-700 hover:bg-gray-700 text-foreground cursor-not-allowed"
-                      : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)]"
+                      ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
+                      : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] shadow-md"
                   }`}
                   onClick={() =>
                     !game.isEvaluated && handleCalificarClick(game)

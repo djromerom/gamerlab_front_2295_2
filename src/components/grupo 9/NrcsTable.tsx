@@ -1,4 +1,3 @@
-// NrcsTable.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +10,7 @@ import {
   Loader2, // Asegúrate que Loader2 está importado
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch"; // Asume que este hook existe y funciona
+import { toast } from "sonner"; // Importamos la biblioteca toast
 import {
   Table,
   TableBody,
@@ -172,6 +172,16 @@ export const NrcsTable: React.FC<Props> = ({
   const [professorsList, setProfessorsList] = useState<Professor[]>([]);
   const [selectsLoading, setSelectsLoading] = useState(false);
 
+  // Función para mostrar errores como toast
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
+
+  // Función para mostrar mensajes de éxito como toast
+  const showSuccess = (successMessage: string) => {
+    toast.success(successMessage);
+  };
+
   // TODO: Implementar fetch para subjects y professors al montar o al abrir diálogos
   useEffect(() => {
     const fetchSelectData = async () => {
@@ -194,7 +204,8 @@ export const NrcsTable: React.FC<Props> = ({
         setProfessorsList(professorsData || []);
       } catch (err: any) {
         console.error("Error fetching select data:", err);
-        setError("Error al cargar datos para formularios."); // Mostrar error general
+        showError("Error al cargar datos para formularios."); // Usamos toast para mostrar errores
+        setError("Error al cargar datos para formularios."); // Mantén el estado de error para los formularios
       } finally {
         setSelectsLoading(false);
       }
@@ -260,6 +271,7 @@ export const NrcsTable: React.FC<Props> = ({
 
     const apiUrl = getApiUrl();
     if (!apiUrl || !data?.TableName) {
+      showError("Configuración de tabla inválida.");
       setError("Configuración de tabla inválida.");
       setInternalIsLoading(false);
       return;
@@ -274,6 +286,7 @@ export const NrcsTable: React.FC<Props> = ({
 
     const codeValue = Number(code); // Asegúrate de que sea un número
     if (!codeValue || !newSubjectId || !newProfessorId) {
+      showError("Código, Materia y Profesor son requeridos.");
       setError("Código, Materia y Profesor son requeridos.");
       setInternalIsLoading(false);
       return;
@@ -309,7 +322,9 @@ export const NrcsTable: React.FC<Props> = ({
       setAllRows((prevRows) => [addedRow, ...(prevRows || [])]);
       setNewRow({}); // Resetear formulario
       setAddDialogOpen(false);
+      showSuccess("NRC agregado exitosamente"); // Notificación de éxito
     } catch (err: any) {
+      showError(err.message || "Error al agregar NRC.");
       setError(err.message || "Error al agregar NRC.");
       console.error("Error en handleAdd:", err);
     } finally {
@@ -332,6 +347,7 @@ export const NrcsTable: React.FC<Props> = ({
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRow || !editFormData) {
+      showError("No hay fila seleccionada para editar.");
       setError("No hay fila seleccionada para editar.");
       return;
     }
@@ -342,6 +358,7 @@ export const NrcsTable: React.FC<Props> = ({
     const apiUrl = getApiUrl(idValue);
 
     if (!apiUrl || idValue === undefined) {
+      showError("No se puede actualizar la fila (falta ID o configuración).");
       setError("No se puede actualizar la fila (falta ID o configuración).");
       setInternalIsLoading(false);
       return;
@@ -354,12 +371,14 @@ export const NrcsTable: React.FC<Props> = ({
       professorId: editProfessorId,
     } = editFormData;
     if (!code || !editSubjectId || !editProfessorId) {
+      showError("Código, Materia y Profesor son requeridos.");
       setError("Código, Materia y Profesor son requeridos.");
       setInternalIsLoading(false);
       return;
     }
 
     if (isNaN(editSubjectId) || !editProfessorId) {
+      showError("ID de Materia o Profesor inválido.");
       setError("ID de Materia o Profesor inválido.");
       setInternalIsLoading(false);
       return;
@@ -404,7 +423,9 @@ export const NrcsTable: React.FC<Props> = ({
       setEditDialogOpen(false);
       setEditingRow(null); // Limpiar fila en edición
       setEditFormData({}); // Limpiar datos del form de edición
+      showSuccess("NRC actualizado exitosamente"); // Notificación de éxito
     } catch (err: any) {
+      showError(err.message || "Error al guardar cambios.");
       setError(err.message || "Error al guardar cambios.");
       console.error("Error en handleSaveEdit:", err);
     } finally {
@@ -420,6 +441,7 @@ export const NrcsTable: React.FC<Props> = ({
 
   const handleConfirmDelete = async () => {
     if (deletingRowId === null) {
+      showError("No hay fila seleccionada para eliminar.");
       setError("No hay fila seleccionada para eliminar.");
       setDeleteDialogOpen(false);
       return;
@@ -428,6 +450,7 @@ export const NrcsTable: React.FC<Props> = ({
     const apiUrl = getApiUrl(deletingRowId);
 
     if (!apiUrl) {
+      showError("No se puede eliminar la fila (configuración inválida).");
       setError("No se puede eliminar la fila (configuración inválida).");
       setDeleteDialogOpen(false);
       setDeletingRowId(null);
@@ -460,6 +483,7 @@ export const NrcsTable: React.FC<Props> = ({
       );
       deleteSuccess = true;
       console.log("NRC eliminado (ID):", deletingRowId);
+      showSuccess("NRC eliminado exitosamente"); // Notificación de éxito
 
       // Reajustar paginación si es necesario
       const newTotalRows = (allRows?.length || 1) - 1;
@@ -470,6 +494,7 @@ export const NrcsTable: React.FC<Props> = ({
         setCurrentPage(1);
       }
     } catch (err: any) {
+      showError(err.message || "Error al eliminar NRC.");
       setError(err.message || "Error al eliminar NRC.");
       console.error("Error en handleConfirmDelete:", err);
     } finally {
@@ -501,7 +526,7 @@ export const NrcsTable: React.FC<Props> = ({
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
               // Deshabilitar si no hay datos O si está cargando (inicial, crud o selects)
               disabled={!data || showLoader}
             >
@@ -514,7 +539,7 @@ export const NrcsTable: React.FC<Props> = ({
               <form onSubmit={handleAdd}>
                 <DialogHeader>
                   {/* Usa data?.TableName */}
-                  <DialogTitle>Agregar {data?.TableName || "Item"}</DialogTitle>
+                  <DialogTitle>Agregar Nuevo Nrc</DialogTitle>
                   <DialogDescription>
                     Ingrese los datos del nuevo NRC.
                   </DialogDescription>
@@ -562,13 +587,14 @@ export const NrcsTable: React.FC<Props> = ({
                       }
                       disabled={internalIsLoading || subjectsList.length === 0}
                     >
-                      <SelectTrigger className="col-span-3 w-full">
+                      <SelectTrigger className="col-span-3 w-full cursor-pointer">
                         <SelectValue placeholder="Seleccione una materia" />
                       </SelectTrigger>
                       <SelectContent>
                         {subjectsList.map((subject) => (
                           <SelectItem
                             key={subject.id}
+                            className="cursor-pointer"
                             value={subject.id.toString()}
                           >
                             {subject.name} ({subject.code})
@@ -594,12 +620,12 @@ export const NrcsTable: React.FC<Props> = ({
                         internalIsLoading || professorsList.length === 0
                       }
                     >
-                      <SelectTrigger className="col-span-3 w-full">
+                      <SelectTrigger className="col-span-3 w-full cursor-pointer">
                         <SelectValue placeholder="Seleccione un profesor" />
                       </SelectTrigger>
                       <SelectContent>
                         {professorsList.map((prof) => (
-                          <SelectItem key={prof.id} value={prof.id.toString()}>
+                          <SelectItem className="cursor-pointer" key={prof.id} value={prof.id.toString()}>
                             {prof.name}
                           </SelectItem>
                         ))}
@@ -611,6 +637,7 @@ export const NrcsTable: React.FC<Props> = ({
                   <Button
                     type="button"
                     variant="outline"
+                    className="cursor-pointer"
                     onClick={() => {
                       setAddDialogOpen(false);
                       setError(null);
@@ -623,6 +650,7 @@ export const NrcsTable: React.FC<Props> = ({
                   <Button
                     type="submit"
                     disabled={internalIsLoading || selectsLoading}
+                    className="cursor-pointer"
                   >
                     {internalIsLoading ? "Guardando..." : "Guardar"}
                   </Button>
@@ -687,7 +715,7 @@ export const NrcsTable: React.FC<Props> = ({
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 cursor-pointer"
                           disabled={internalIsLoading || selectsLoading} // Deshabilitar si carga CRUD o selects
                         >
                           <span className="sr-only">Abrir menú</span>
@@ -697,13 +725,14 @@ export const NrcsTable: React.FC<Props> = ({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => handleOpenEdit(row)}
+                          className="cursor-pointer"
                           disabled={internalIsLoading || selectsLoading} // Deshabilitar si carga
                         >
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleOpenDelete(row)}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                          className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                           disabled={internalIsLoading} // Solo deshabilitar en carga CRUD
                         >
                           Eliminar
@@ -729,12 +758,12 @@ export const NrcsTable: React.FC<Props> = ({
               }}
               disabled={showLoader || !allRows || allRows.length === 0}
             >
-              <SelectTrigger className="w-[70px]">
+              <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
                     {n}
                   </SelectItem>
                 ))}
@@ -756,6 +785,7 @@ export const NrcsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -770,6 +800,7 @@ export const NrcsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -833,7 +864,7 @@ export const NrcsTable: React.FC<Props> = ({
                     }
                     disabled={internalIsLoading || subjectsList.length === 0}
                   >
-                    <SelectTrigger className="col-span-3 w-full">
+                    <SelectTrigger className="col-span-3 w-full cursor-pointer">
                       <SelectValue placeholder="Seleccione una materia" />
                     </SelectTrigger>
                     <SelectContent>
@@ -841,6 +872,7 @@ export const NrcsTable: React.FC<Props> = ({
                         <SelectItem
                           key={subject.id}
                           value={subject.id.toString()}
+                          className="cursor-pointer"
                         >
                           {subject.name} ({subject.code})
                         </SelectItem>
@@ -863,12 +895,12 @@ export const NrcsTable: React.FC<Props> = ({
                     }
                     disabled={internalIsLoading || professorsList.length === 0}
                   >
-                    <SelectTrigger className="col-span-3 w-full">
+                    <SelectTrigger className="col-span-3 w-full cursor-pointer">
                       <SelectValue placeholder="Seleccione un profesor" />
                     </SelectTrigger>
                     <SelectContent>
                       {professorsList.map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id.toString()}>
+                        <SelectItem className="cursor-pointer" key={prof.id} value={prof.id.toString()}>
                           {prof.name}
                         </SelectItem>
                       ))}
@@ -887,12 +919,14 @@ export const NrcsTable: React.FC<Props> = ({
                     setEditFormData({}); // Limpiar form data
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={internalIsLoading || selectsLoading}
+                  className="cursor-pointer"
                 >
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
@@ -930,12 +964,13 @@ export const NrcsTable: React.FC<Props> = ({
                 setDeletingRowId(null); // Limpia ID
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-destructive-foreground cursor-pointer"
               disabled={internalIsLoading}
             >
               {internalIsLoading ? "Eliminando..." : "Eliminar"}

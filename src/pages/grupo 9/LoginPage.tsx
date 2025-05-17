@@ -41,9 +41,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen dark">
+    <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
       <div
-        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float bg-black"
+        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat  animate-float"
         style={{
           backgroundImage: "url('/background.webp')",
         }}
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   ) : (
                     <Button
                       type="submit"
-                      className="w-full bg-[#B3C7FF] text-base sm:text-[20px] hover:bg-[#8a70ff]"
+                      className="w-full bg-[#B3C7FF] text-base sm:text-[20px] hover:bg-[#8a70ff] cursor-pointer"
                       disabled={isSubmitting}
                     >
                       Ingresar

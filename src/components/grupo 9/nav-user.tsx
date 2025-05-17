@@ -29,7 +29,7 @@ export const NavUser: React.FC<any> = ({ user }) => {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={""} alt={user?.username} />
@@ -67,7 +67,7 @@ export const NavUser: React.FC<any> = ({ user }) => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem className="cursor-pointer" onClick={logout}>
               <LogOut />
               Salir
             </DropdownMenuItem>

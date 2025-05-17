@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner"; // Importamos toast de sonner
 import {
   Table,
   TableBody,
@@ -99,10 +100,14 @@ export const CriterionTable: React.FC<Props> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const showLoader = isDataLoading || internalIsLoading;
   const totalPages = Math.ceil(allCriteria.length / rowsPerPage);
+
+  // Función para mostrar errores como toast
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
 
   const columns = [
     { key: "name", label: "Nombre" },
@@ -141,7 +146,6 @@ export const CriterionTable: React.FC<Props> = ({
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       if (newCriterion.weight === "" || isNaN(parseFloat(newCriterion.weight))) {
@@ -164,15 +168,17 @@ export const CriterionTable: React.FC<Props> = ({
       });
 
       if (!response.ok) {
-        throw new Error("Error al crear el criterio");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al crear el criterio");
       }
 
       const createdCriterion: Criterion = await response.json();
       setAllCriteria((prev) => [createdCriterion, ...prev]);
       setNewCriterion({ name: "", description: "", weight: "" });
       setAddDialogOpen(false);
+      toast.success("Criterio agregado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al agregar el criterio");
+      showError(err.message || "Error al agregar el criterio");
     } finally {
       setInternalIsLoading(false);
     }
@@ -183,23 +189,22 @@ export const CriterionTable: React.FC<Props> = ({
     e.preventDefault();
     if (!editingCriterion) return;
 
-    if (
-      editingCriterion.weight === undefined ||
-      editingCriterion.weight < 0 ||
-      editingCriterion.weight > 1
-    ) {
-      setError("El peso debe ser un valor entre 0 y 1");
-      return;
-    }
     setInternalIsLoading(true);
-    setError(null);
 
     try {
+      if (
+        editingCriterion.weight === undefined ||
+        isNaN(parseFloat(editingCriterion.weight?.toString() || ""))
+      ) {
+        throw new Error("El peso debe ser un número válido");
+      }
+
       const weightValue = parseFloat(
         editingCriterion.weight?.toString() || "0"
       );
-      if (isNaN(weightValue)) {
-        throw new Error("El peso debe ser un número válido");
+      
+      if (weightValue < 0 || weightValue > 1) {
+        throw new Error("El peso debe estar entre 0 y 1");
       }
 
       const response = await customFetch(
@@ -216,7 +221,8 @@ export const CriterionTable: React.FC<Props> = ({
       );
 
       if (!response.ok) {
-        throw new Error("Error al actualizar el criterio");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al actualizar el criterio");
       }
 
       const updatedCriterion: Criterion = await response.json();
@@ -225,8 +231,9 @@ export const CriterionTable: React.FC<Props> = ({
       );
       setEditDialogOpen(false);
       setEditingCriterion(null);
+      toast.success("Criterio actualizado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el criterio");
+      showError(err.message || "Error al actualizar el criterio");
     } finally {
       setInternalIsLoading(false);
     }
@@ -237,7 +244,6 @@ export const CriterionTable: React.FC<Props> = ({
     if (!deletingId) return;
 
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       // 1. Enviar solicitud de soft delete al backend
@@ -249,7 +255,8 @@ export const CriterionTable: React.FC<Props> = ({
       );
 
       if (!response.ok) {
-        throw new Error("Error al desactivar el criterio");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al desactivar el criterio");
       }
 
       // 2. Actualizar el estado local para reflejar el cambio
@@ -264,8 +271,9 @@ export const CriterionTable: React.FC<Props> = ({
 
       setDeleteDialogOpen(false);
       setDeletingId(null);
+      toast.success("Criterio eliminado exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al desactivar el criterio");
+      showError(err.message || "Error al desactivar el criterio");
     } finally {
       setInternalIsLoading(false);
     }
@@ -285,10 +293,10 @@ export const CriterionTable: React.FC<Props> = ({
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
               disabled={!criteria || showLoader}
             >
-              <Plus className="mr-2 h-4 w-4" /> Agregar Criterio
+              <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -299,13 +307,6 @@ export const CriterionTable: React.FC<Props> = ({
                   Complete los datos del nuevo criterio de evaluación.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
                 {columns.map(({ key, label }) => (
                   <div
@@ -333,17 +334,17 @@ export const CriterionTable: React.FC<Props> = ({
               <DialogFooter>
                 <Button
                   type="button"
+                  className="cursor-pointer"
                   variant="outline"
                   onClick={() => {
                     setAddDialogOpen(false);
-                    setError(null);
                     setNewCriterion({ name: "", description: "", weight: "" });
                   }}
                   disabled={internalIsLoading}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button className="cursor-pointer" type="submit" disabled={internalIsLoading}>
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -398,7 +399,7 @@ export const CriterionTable: React.FC<Props> = ({
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             <span className="sr-only">Abrir menú</span>
@@ -412,6 +413,7 @@ export const CriterionTable: React.FC<Props> = ({
                               setEditDialogOpen(true);
                             }}
                             disabled={internalIsLoading}
+                            className="cursor-pointer"
                           >
                             Editar
                           </DropdownMenuItem>
@@ -420,7 +422,7 @@ export const CriterionTable: React.FC<Props> = ({
                               setDeletingId(criterion.id);
                               setDeleteDialogOpen(true);
                             }}
-                            className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             Eliminar
@@ -446,12 +448,12 @@ export const CriterionTable: React.FC<Props> = ({
               }}
               disabled={showLoader || allCriteria.length === 0}
             >
-              <SelectTrigger className="w-[70px]">
+              <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
                     {n}
                   </SelectItem>
                 ))}
@@ -470,6 +472,7 @@ export const CriterionTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -480,6 +483,7 @@ export const CriterionTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -499,13 +503,6 @@ export const CriterionTable: React.FC<Props> = ({
                   Modifique los campos del criterio según sea necesario.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
                 {columns.map(({ key, label }) => (
                   <div
@@ -538,14 +535,14 @@ export const CriterionTable: React.FC<Props> = ({
                   variant="outline"
                   onClick={() => {
                     setEditDialogOpen(false);
-                    setError(null);
                     setEditingCriterion(null);
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button className="cursor-pointer" type="submit" disabled={internalIsLoading}>
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -564,25 +561,20 @@ export const CriterionTable: React.FC<Props> = ({
               más tarde si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !showLoader && (
-            <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
-              {error}
-            </p>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setDeleteDialogOpen(false);
-                setError(null);
                 setDeletingId(null);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
               {internalIsLoading ? "Eliminando..." : "Confirmar"}
