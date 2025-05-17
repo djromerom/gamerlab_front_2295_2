@@ -42,7 +42,9 @@ export default function MembersStep() {
 
   const [isPageLoading, setIsPageLoading] = useState(true); // Initialize to true
   const [error, setError] = useState<string | null>(null);
-  const API_ENDPOINT = `http://localhost:3000/nrcs/select-options`;
+  const API_ENDPOINT = `${
+    import.meta.env.VITE_ENDPOINT_BACKEND
+  }/nrcs/select-options`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]); // Typed state
 
@@ -137,7 +139,7 @@ export default function MembersStep() {
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nombre completo" />
+                    <Input {...field} placeholder="Nombre(s)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +154,7 @@ export default function MembersStep() {
                 <FormItem>
                   <FormLabel>Apellido</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Apellido completo" />
+                    <Input {...field} placeholder="Apellido(s)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -309,7 +311,7 @@ export default function MembersStep() {
         </div>
       ))}
 
-      {fields.length < 5 && (
+      {fields.length < 6 && (
         <Button
           variant="outline"
           onClick={() =>

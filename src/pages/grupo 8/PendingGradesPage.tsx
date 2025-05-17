@@ -24,25 +24,25 @@ interface Metadata {
   totalPages: number;
 }
 
-
 const PendingGradesPage: React.FC = () => {
   const breadcrumbs = [
     { label: "Pendientes por calificar", href: "/pendientes-calificar" },
   ];
   const [videogames, setVideogames] = useState<VideogameDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [jurorId, setJurorId] = useState<string | null>(null); // Nuevo estado
+  const [jurorId] = useState<string | null>(null); // Nuevo estado
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [page, setPage] = useState(1);
   const limit = 10;
-
 
   useEffect(() => {
     const fetchVideogames = async () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/pending-games?page=${page}&limit=${limit}`,
+          `${
+            import.meta.env.ENDPOINT_BACKEND
+          }/pending-games?page=${page}&limit=${limit}`,
           {
             method: "GET",
             credentials: "include", // Asegúrate de incluir las cookies o el token

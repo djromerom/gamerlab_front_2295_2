@@ -77,7 +77,7 @@ export const JuryManagementTable: React.FC<Props> = ({
   apiBaseUrl,
   isDataLoading = false,
 }) => {
-    // console.log("data", data);
+  // console.log("data", data);
   // <-- Recibe isDataLoading
   const customFetch = useFetch();
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,7 +89,6 @@ export const JuryManagementTable: React.FC<Props> = ({
   const [newRow, setNewRow] = useState<Record<string, any>>({});
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<RowData | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number>(-1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
@@ -203,14 +202,17 @@ export const JuryManagementTable: React.FC<Props> = ({
           addedRow.confirmationStatusId = "Expirado";
       }
 
-      addedRow.lastSignInAt = new Date(addedRow.lastSignInAt).toLocaleString("es-ES", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      
+      addedRow.lastSignInAt = new Date(addedRow.lastSignInAt).toLocaleString(
+        "es-ES",
+        {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+
       setAllRows((prevRows) => [addedRow, ...(prevRows || [])]); // Maneja prevRows null
       setNewRow({});
       setAddDialogOpen(false);
@@ -221,7 +223,6 @@ export const JuryManagementTable: React.FC<Props> = ({
       setInternalIsLoading(false); // Usa el estado interno
     }
   };
-
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,27 +263,29 @@ export const JuryManagementTable: React.FC<Props> = ({
         throw new Error("Error al actualizar la fila.");
       }
 
-      const updatedRowFromApi: RowData = await response.json()
+      const updatedRowFromApi: RowData = await response.json();
       // console.log("response", updatedRowFromApi);
-      
-      switch (updatedRowFromApi.confirmationStatusId) {
-          case 1:
-            updatedRowFromApi.confirmationStatusId = "Aceptado";
-            break;
-          case 2:
-            updatedRowFromApi.confirmationStatusId = "Pendiente";
-            break;
-          default:
-            updatedRowFromApi.confirmationStatusId = "Expirado";
-        }
 
-        updatedRowFromApi.lastSignInAt = new Date(updatedRowFromApi.lastSignInAt).toLocaleString("es-ES", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+      switch (updatedRowFromApi.confirmationStatusId) {
+        case 1:
+          updatedRowFromApi.confirmationStatusId = "Aceptado";
+          break;
+        case 2:
+          updatedRowFromApi.confirmationStatusId = "Pendiente";
+          break;
+        default:
+          updatedRowFromApi.confirmationStatusId = "Expirado";
+      }
+
+      updatedRowFromApi.lastSignInAt = new Date(
+        updatedRowFromApi.lastSignInAt
+      ).toLocaleString("es-ES", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
       setAllRows((prevRows) =>
         (prevRows || []).map((row) =>
@@ -298,7 +301,6 @@ export const JuryManagementTable: React.FC<Props> = ({
       setInternalIsLoading(false);
     }
   };
-
 
   const handleConfirmDelete = async () => {
     if (deletingIndex < 0 || !allRows || deletingIndex >= allRows.length) {
@@ -325,7 +327,9 @@ export const JuryManagementTable: React.FC<Props> = ({
     let deleteSuccess = false; // Flag para saber si cerrar el diálogo
     try {
       // console.log("apiUrl:", apiUrl);
-      const response = await customFetch(`${apiUrl}/delete`, { method: "PATCH" });
+      const response = await customFetch(`${apiUrl}/delete`, {
+        method: "PATCH",
+      });
       if (!response.ok) {
         /* ... manejo de error ... */ throw new Error("...");
       }
@@ -360,10 +364,8 @@ export const JuryManagementTable: React.FC<Props> = ({
   };
 
   // --- Resto de funciones handleOpenEdit, handleOpenDelete (sin cambios lógicos importantes, pero asegúrate que usan `allRows` de forma segura) ---
-  const handleOpenEdit = (row: RowData, index: number) => {
+  const handleOpenEdit = (row: RowData) => {
     setEditingRow({ ...row });
-    const actualIndex = (currentPage - 1) * rowsPerPage + index;
-    setEditingIndex(actualIndex);
     setEditDialogOpen(true);
     setError(null);
   };
@@ -531,7 +533,7 @@ export const JuryManagementTable: React.FC<Props> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleOpenEdit(row, index)}
+                          onClick={() => handleOpenEdit(row)}
                           disabled={internalIsLoading}
                         >
                           Editar

@@ -11,6 +11,7 @@ export interface LoginCredentials {
 }
 
 export interface AuthContextType {
+  loading: Boolean;
   accessToken: string | null;
   userRole: Role | null;
   user: UserProfile | null;

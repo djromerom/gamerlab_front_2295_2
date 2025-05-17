@@ -1,5 +1,5 @@
 "use client";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import {
   Calendar,
@@ -261,10 +261,6 @@ export default function CompetitionInfo() {
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
   };
 
   const nextTestimonialSlide = () => {

@@ -68,10 +68,10 @@ export function ImageCropper({
     const pixelRatio = window.devicePixelRatio
 
     // Calcular dimensiones del recorte
-    const cropWidth = crop.width * scaleX
-    const cropHeight = crop.height * scaleY
-    const cropX = crop.x * scaleX
-    const cropY = crop.y * scaleY
+    const cropWidth = crop.width * (imgRef.current.width / 100)
+    const cropHeight = crop.height * (imgRef.current.height / 100)
+    const cropX = crop.x * (imgRef.current.width / 100)
+    const cropY = crop.y * (imgRef.current.height / 100)
 
     // Configurar el canvas
     canvas.width = cropWidth * pixelRatio
@@ -85,7 +85,17 @@ export function ImageCropper({
     ctx.imageSmoothingQuality = "high"
 
     // Dibujar la imagen recortada
-    ctx.drawImage(imgRef.current, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+    ctx.drawImage(
+      imgRef.current,
+      cropX * scaleX,
+      cropY * scaleY,
+      cropWidth * scaleX,
+      cropHeight * scaleY,
+      0,
+      0,
+      cropWidth,
+      cropHeight,
+    )
 
     // Convertir a blob y crear archivo
     canvas.toBlob(

@@ -12,11 +12,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
   const { user, userRole, loading } = useAuth();
 
   // Mientras carga perfil…
-  if (loading) return <>
-    <div className="flex h-screen w-full items-center justify-center">
-      <p>Cargando...</p>
-    </div>
-  </>;
+  if (loading)
+    return (
+      <>
+        <div className="flex h-screen w-full items-center justify-center">
+          <p>Cargando...</p>
+        </div>
+      </>
+    );
 
   // Si no hay usuario autenticado, vamos a /inicio-sesion
   if (!user) {

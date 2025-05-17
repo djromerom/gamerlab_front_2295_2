@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import PurpleButton from "./PurpleButton";
 
 export default function navBar(): React.ReactElement {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const navigate = useNavigate(); // If you want to use it manually (not mandatory here, but I'll leave it in case you want to use navigate())
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">

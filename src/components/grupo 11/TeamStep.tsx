@@ -1,44 +1,55 @@
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { CombinedFormValues } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
 import { Input } from "@/components/ui/input";
-import { useFetch } from "@/hooks/useFetch";
-import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function TeamStep() {
   const { next } = useMultiForm();
-  const { control, trigger } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setError, clearErrors } =
+    useFormContext<CombinedFormValues>();
+  const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    const isValid = await trigger('teamName');
-    if (isValid) next();
-  };
+    const isValid = await trigger("teamName");
+    if (!isValid) return;
 
-  const TeamInfo = () => {
-  const fetch = useFetch();
+    const teamName = getValues("teamName");
+    setLoading(true);
 
-  useEffect(() => {
-    const getTeam = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/teams/name/TeamRocket");
-        if (!response.ok) {
-          throw new Error("No se pudo obtener el equipo");
-        }
-        const data = await response.json();
-        console.log("Equipo:", data);
-      } catch (error) {
-        console.error("Error:", error);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/name/${teamName}`
+      );
+      const exists = await res.json();
+
+      if (exists === true) {
+        setError("teamName", {
+          type: "manual",
+          message: "El equipo ya existe. Por favor elige otro nombre.",
+        });
+        return;
       }
-    };
 
-    getTeam();
-  }, [fetch]);
-
-  return <div>Consulta de equipo</div>;
-};
-  
+      clearErrors("teamName");
+      next();
+    } catch (err) {
+      toast("Error de red", {
+        description: "No se pudo verificar el nombre del equipo.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -56,7 +67,9 @@ export default function TeamStep() {
         )}
       />
       <div className="flex justify-end pt-4">
-        <Button onClick={handleNext}>Siguiente</Button>
+        <Button onClick={handleNext} disabled={loading}>
+          {loading ? "Verificando..." : "Siguiente"}
+        </Button>
       </div>
     </>
   );

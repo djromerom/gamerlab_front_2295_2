@@ -14,10 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export default function LoginPage({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -70,7 +67,7 @@ export default function LoginPage({
               Introduce tu correo electrónico para acceder a tu cuenta
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="w-full p-0">
             <form onSubmit={handleLogIn}>
               <div className="flex flex-col gap-4 sm:gap-6 items-center w-full">
@@ -100,7 +97,11 @@ export default function LoginPage({
                     className="w-full"
                   />
                 </div>
-                {error && <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">{error}</p>}
+                {error && (
+                  <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">
+                    {error}
+                  </p>
+                )}
                 <div className="w-full mt-2 sm:mt-4">
                   {isSubmitting ? (
                     <ButtonLoading className="w-full" />

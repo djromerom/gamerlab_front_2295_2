@@ -19,7 +19,6 @@ import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
 import GradedPage from "@/pages/grupo 8/GradedPage";
-import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
@@ -104,12 +103,6 @@ const routes: RouteConfig[] = [
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
-  {
-    path: "/mi-equipo",
-    element: <RatedPage params={{ id: "" }} />,
-    roles: ["Consultor"],
-  },
-
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -122,7 +115,7 @@ const routes: RouteConfig[] = [
     element: <VerifyEmailPage />,
   },
   {
-    path: "/home-estudiante",
+    path: "/mi-equipo",
     element: <HomeStudentPage />,
     roles: ["Estudiante", "Profesor"],
   },

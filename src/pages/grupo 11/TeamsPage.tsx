@@ -27,14 +27,25 @@ export default function TeamsPage() {
   useEffect(() => {
     async function fetchTeams() {
       setLoading(true);
-      const res = await customFetch("http://localhost:3000/videogames", {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       const rawData = await res.json();
-      const data: Team[] = rawData.map((team) => ({
+      interface RawTeam {
+        id: number;
+        name: string;
+        teamName: string;
+        status: string;
+        logoUrl: string;
+      }
+
+      const data: Team[] = rawData.map((team: RawTeam) => ({
         id: team.id,
         gameName: team.name,
         teamName: team.teamName,
@@ -68,9 +79,7 @@ export default function TeamsPage() {
     >
       <NavBar />
       <div className="max-w-7xl mx-auto">
-        <h1
-          className="text-4xl md:text-5xl font-bold text-center mb-16 text-[#AC7CFF]"
-        >
+        <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 text-[#AC7CFF]">
           ¡Echa un vistazo a los equipos participantes!
         </h1>
 
@@ -110,7 +119,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           type="text"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          placeholder="Busca por ID o nombre de equipo"
+          placeholder="Busca por nombre de equipo"
           className="w-64 md:w-96 pl-10"
         />
       </div>
