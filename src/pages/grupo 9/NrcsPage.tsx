@@ -42,7 +42,7 @@ const NrcsPage = () => {
           columns: {
             code: "Código",
             "subject.name": "Nombre de la Materia",
-            "professor.name": "profesor",
+            "professor.name": "Profesor",
           },
           rows: dataRespond.data,
         });

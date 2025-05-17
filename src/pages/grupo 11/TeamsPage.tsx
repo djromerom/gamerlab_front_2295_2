@@ -119,7 +119,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           type="text"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          placeholder="Busca por nombre de equipo"
+          placeholder="Busca por nombre de equipo o videojuego"
           className="w-64 md:w-96 pl-10"
         />
       </div>
