@@ -407,10 +407,10 @@ export const JuryManagementTable: React.FC<Props> = ({
                 <DialogHeader>
                   {/* Usa data?.nombreTabla de forma segura */}
                   <DialogTitle>
-                    Agregar {data?.nombreTabla || "Item"}
+                    Agregar jurado
                   </DialogTitle>
                   <DialogDescription>
-                    Ingrese los datos de la nueva fila.
+                    Ingrese los datos del nuevo jurado.
                   </DialogDescription>
                 </DialogHeader>
                 {/* Muestra error del form */}
