@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/grupo 8/textarea";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { Loader } from "lucide-react"; // Asegúrate de tener este import
+import ConfirmModal from "@/components/grupo 8/ConfirmModal";
 
 // Tipos
 
@@ -33,38 +34,28 @@ interface EvaluationCriteria {
   maxScore: number;
 }
 
-export default function RatePage({ params }: { params: { id: string } }) {
-  const navigate = useNavigate();
-  const location = useLocation(); // Obtén el estado de navegación
-  const game = location.state?.game; // Extrae los datos del juego del estado
+export default function RatePage() {
+    
+    const navigate = useNavigate();
+    const location = useLocation(); // Obtén el estado de navegación
+    const game = location.state?.game; // Extrae los datos del juego del estado
+    const [loading, setLoading] = useState(true)
+    const [comments, setComments] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [comments, setComments] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
-    { id: "interfaz", name: "Interfaz de usuario", score: 1, maxScore: 5 },
-    { id: "interaccion", name: "Interacción", score: 1, maxScore: 5 },
-    { id: "resultados", name: "Resultados", score: 1, maxScore: 5 },
-    {
-      id: "presentacion",
-      name: "Presentación del proyecto",
-      score: 1,
-      maxScore: 5,
-    },
-    {
-      id: "funcionamiento",
-      name: "Funcionamiento del programa",
-      score: 1,
-      maxScore: 5,
-    },
-    {
-      id: "presentacion_grupo",
-      name: "Presentación personal grupo",
-      score: 1,
-      maxScore: 5,
-    },
-  ]);
+
+    const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
+        { id: "interfaz", name: "Interfaz de usuario (10%)", score: 1, maxScore: 5 },
+        { id: "interaccion", name: "Interacción (20%)", score: 1, maxScore: 5 },
+        { id: "resultados", name: "Resultados (40%)", score: 1, maxScore: 5 },
+        { id: "presentacion", name: "Presentación del proyecto (10%)", score: 1, maxScore: 5 },
+        { id: "funcionamiento", name: "Funcionamiento del programa (10%)", score: 1, maxScore: 5 },
+        { id: "presentacion_grupo", name: "Presentación personal grupo (10%)", score: 1, maxScore: 5 },
+    ])
+
+
 
   useEffect(() => {
     if (game) {
@@ -82,20 +73,30 @@ export default function RatePage({ params }: { params: { id: string } }) {
     );
   };
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    // 1. Calcular promedio
-    const promedio_puntaje =
-      criteria.reduce((acc, curr) => acc + curr.score, 0) / criteria.length;
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
+        // 1. Calcular el puntaje final basado en los porcentajes
+        const porcentajeMap: Record<string, number> = {
+            interfaz: 0.1, // 10%
+            interaccion: 0.2, // 20%
+            resultados: 0.4, // 40%
+            presentacion: 0.1, // 10%
+            funcionamiento: 0.1, // 10%
+            presentacion_grupo: 0.1, // 10%
+        };
 
-    // 2. Preparar datos para evaluacion
-    const fecha_creacion = new Date().toISOString();
-    const evaluationPayload = {
-      date: fecha_creacion,
-      videogameId: game.id,
-      totalScore: promedio_puntaje,
-      comments: comments,
-    };
+        const puntajeFinal = criteria.reduce((acc, curr) => {
+            const porcentaje = porcentajeMap[curr.id] || 0; // Obtén el porcentaje del criterio
+            return acc + curr.score * porcentaje; // Multiplica el puntaje por el porcentaje
+        }, 0);
+        // 2. Preparar datos para evaluacion
+        const fecha_creacion = new Date().toISOString();
+        const evaluationPayload = {
+            date: fecha_creacion,
+            videogameId: game.id,
+            totalScore: puntajeFinal,
+            comments: comments,
+        };
 
     // 3. Enviar a tabla evaluacion y obtener id_evaluacion
     let evaluationId;
@@ -154,19 +155,19 @@ export default function RatePage({ params }: { params: { id: string } }) {
     }
   };
 
-  if (loading) {
-    return (
-      <LayoutAplication breadcrumbs={[]}>
-        <div className="flex justify-center items-center h-screen text-white">
-          <p>Cargando información del juego...</p>
-        </div>
-      </LayoutAplication>
-    );
-  }
-  const breadcrumbs = [
-    { label: "Pendientes por calificar", href: "/pendientes-calificar" },
-    { label: game?.nombre || "Juego", href: `/juego/${params.id}` },
-  ];
+    if (loading) {
+        return (
+            <LayoutAplication breadcrumbs={[]}>
+                <div className="flex justify-center items-center h-screen text-white">
+                    <p>Cargando información del juego...</p>
+                </div>
+            </LayoutAplication>
+        );
+    }
+    const breadcrumbs = [
+        { label: `Pendientes por calificar >  ${game?.nombre}`, href: "/pendientes-calificar" },
+
+    ];
 
   const getDescription = (id: string): string => {
     switch (id) {
@@ -346,26 +347,34 @@ export default function RatePage({ params }: { params: { id: string } }) {
                   />
                 </div>
 
-                <div className="flex justify-end mt-6">
-                  <Button
-                    className="bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white font-bold min-w-[170px] flex justify-center items-center"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex justify-center items-center w-full">
-                        <Loader className="animate-spin w-5 h-5" />
-                      </span>
-                    ) : (
-                      "Enviar Evaluación"
-                    )}
-                  </Button>
+                                <div className="flex justify-end mt-6">
+                                    <Button
+                                        className="bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white font-bold min-w-[170px] flex justify-center items-center"
+                                        onClick={() => setIsModalOpen(true)} // Abre el modal
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <span className="flex justify-center items-center w-full">
+                                                <Loader className="animate-spin w-5 h-5" />
+                                            </span>
+                                        ) : (
+                                            "Enviar Evaluación"
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </LayoutAplication>
-  );
+                <ConfirmModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)} // Cierra el modal
+                    onConfirm={() => {
+                        setIsModalOpen(false); // Cierra el modal
+                        handleSubmit(); // Llama a la función para enviar la evaluación
+                    }}
+                />
+            </div>
+        </LayoutAplication>
+    );
 }

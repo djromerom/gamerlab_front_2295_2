@@ -103,7 +103,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/pendientes-calificar/:id",
-    element: <RatePage params={{ id: "" }} />,
+    element: <RatePage />,
     roles: ["Jurado"],
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
