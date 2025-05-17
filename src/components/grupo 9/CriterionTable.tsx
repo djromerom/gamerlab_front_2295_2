@@ -110,7 +110,25 @@ export const CriterionTable: React.FC<Props> = ({
     { key: "weight", label: "Peso" },
   ];
 
-  // Efecto para actualizar los datos cuando cambia la prop criteria
+  const calculateTotalWeight = (
+    criteria: Criterion[],
+    excludeId?: number
+  ): number => {
+    return criteria.reduce((total, criterion) => {
+      if (!criterion.isActive || (excludeId !== undefined && criterion.id === excludeId)) {
+        return total;
+      }
+      return total + (criterion.weight || 0);
+    }, 0);
+  };
+
+  const getTotalWeight = (): number => {
+    return allCriteria.reduce((total, criterion) => {
+      if (!criterion.isActive) return total;
+      return total + (criterion.weight || 0);
+    }, 0);
+  };
+
   useEffect(() => {
     if (criteria && criteria !== allCriteria) {
       setAllCriteria(criteria);
@@ -120,13 +138,11 @@ export const CriterionTable: React.FC<Props> = ({
     }
   }, [criteria]);
 
-  // Efecto para paginación
   useEffect(() => {
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
     setCurrentRows(allCriteria.slice(start, end));
 
-    // Ajustar página si es necesario
     const currentTotalPages = Math.ceil(allCriteria.length / rowsPerPage);
     if (currentPage > currentTotalPages && currentTotalPages > 0) {
       setCurrentPage(currentTotalPages);
@@ -137,20 +153,29 @@ export const CriterionTable: React.FC<Props> = ({
     }
   }, [currentPage, rowsPerPage, allCriteria]);
 
-  // Función para crear un nuevo criterio
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
     setError(null);
 
     try {
-      if (newCriterion.weight === "" || isNaN(parseFloat(newCriterion.weight))) {
+      if (
+        newCriterion.weight === "" ||
+        isNaN(parseFloat(newCriterion.weight))
+      ) {
         throw new Error("El peso debe ser un número válido");
       }
-  
+
       const weightValue = parseFloat(newCriterion.weight);
-      if (weightValue < 0 || weightValue > 1) {
-        throw new Error("El peso debe estar entre 0 y 1");
+      if (weightValue <= 0 || weightValue > 1) {
+        throw new Error("El peso debe ser mayor a 0 y menor o igual a 1");
+      }
+      
+      const currentTotalWeight = calculateTotalWeight(allCriteria);
+      if (currentTotalWeight + weightValue > 1) {
+        throw new Error(
+          `La suma de los pesos no puede exceder 1. Actual: ${currentTotalWeight.toFixed(4)}, nuevo peso: ${weightValue}`
+        );
       }
 
       const response = await customFetch(`${apiBaseUrl}/criteria`, {
@@ -178,22 +203,11 @@ export const CriterionTable: React.FC<Props> = ({
     }
   };
 
-  // Función para actualizar un criterio
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCriterion) return;
-
-    if (
-      editingCriterion.weight === undefined ||
-      editingCriterion.weight < 0 ||
-      editingCriterion.weight > 1
-    ) {
-      setError("El peso debe ser un valor entre 0 y 1");
-      return;
-    }
     setInternalIsLoading(true);
     setError(null);
-
     try {
       const weightValue = parseFloat(
         editingCriterion.weight?.toString() || "0"
@@ -201,7 +215,20 @@ export const CriterionTable: React.FC<Props> = ({
       if (isNaN(weightValue)) {
         throw new Error("El peso debe ser un número válido");
       }
-
+      if (weightValue <= 0 || weightValue > 1) {
+        throw new Error("El peso debe ser mayor a 0 y menor o igual a 1");
+      }
+      
+      const currentTotalWeight = calculateTotalWeight(
+        allCriteria,
+        editingCriterion.id
+      );
+      if (currentTotalWeight + weightValue > 1) {
+        throw new Error(
+          `La suma de los pesos no puede exceder 1. Actual: ${currentTotalWeight.toFixed(4)}, nuevo peso: ${(weightValue + currentTotalWeight).toFixed(4)}`
+        );
+      }
+      
       const response = await customFetch(
         `${apiBaseUrl}/criteria/${editingCriterion.id}`,
         {
@@ -214,11 +241,11 @@ export const CriterionTable: React.FC<Props> = ({
           }),
         }
       );
-
+      
       if (!response.ok) {
         throw new Error("Error al actualizar el criterio");
       }
-
+      
       const updatedCriterion: Criterion = await response.json();
       setAllCriteria((prev) =>
         prev.map((c) => (c.id === updatedCriterion.id ? updatedCriterion : c))
@@ -232,15 +259,11 @@ export const CriterionTable: React.FC<Props> = ({
     }
   };
 
-  // Función para eliminar (soft delete) un criterio
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
-
     setInternalIsLoading(true);
     setError(null);
-
     try {
-      // 1. Enviar solicitud de soft delete al backend
       const response = await customFetch(
         `${apiBaseUrl}/criteria/${deletingId}`,
         {
@@ -252,16 +275,14 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error("Error al desactivar el criterio");
       }
 
-      // 2. Actualizar el estado local para reflejar el cambio
-      setAllCriteria(
-        (prevCriteria) =>
-          prevCriteria?.map((criterion) =>
-            criterion.id === deletingId
-              ? { ...criterion, isActive: false } // Marcar como inactivo
-              : criterion
-          ) || []
+      setAllCriteria((prevCriteria) =>
+        prevCriteria.map((criterion) =>
+          criterion.id === deletingId
+            ? { ...criterion, isActive: false }
+            : criterion
+        )
       );
-
+      
       setDeleteDialogOpen(false);
       setDeletingId(null);
     } catch (err: any) {
@@ -271,16 +292,19 @@ export const CriterionTable: React.FC<Props> = ({
     }
   };
 
+  const activeCriteria = allCriteria.filter((c) => c.isActive);
+  const totalWeight = getTotalWeight();
+  const showWarning =
+    activeCriteria.length > 0 && Math.abs(totalWeight - 1) > 0.0001;
+
   return (
     <div
       className={`bg-background text-foreground min-h-screen p-4 ${
         showLoader ? "opacity-75" : ""
       }`}
     >
-      {/* Encabezado */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Criterios de Evaluación</h1>
-
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -352,7 +376,31 @@ export const CriterionTable: React.FC<Props> = ({
         </Dialog>
       </div>
 
-      {/* Tabla */}
+      {showWarning && (
+        <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-md border border-yellow-200">
+          <div className="flex items-start">
+            <svg
+              className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <p className="font-medium">Advertencia</p>
+              <p>
+                La suma total de los pesos es {totalWeight}, debe ser
+                exactamente 1 para que el sistema funcione correctamente.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader className="bg-card border-b border-border">
@@ -434,7 +482,6 @@ export const CriterionTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        {/* Paginación */}
         <div className="flex justify-between items-center p-4 text-sm border-t border-border">
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
@@ -488,7 +535,6 @@ export const CriterionTable: React.FC<Props> = ({
         </div>
       </Card>
 
-      {/* Diálogo de Edición */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           {editingCriterion && (
@@ -554,7 +600,6 @@ export const CriterionTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Eliminación */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
