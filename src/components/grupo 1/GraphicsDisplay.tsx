@@ -83,6 +83,8 @@ const GraphicDisplay = () => {
         nrcsFiltrados, // Para la lógica del nuevo gráfico de barras
     } = useGlobalState();
 
+    console.log("Datos Grafico Torta Materias:", datosGraficoTortaMaterias);
+
     const carouselRef = useRef<HTMLDivElement>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
     const totalSlides = 3; // AHORA SON 3 SLIDES
@@ -229,7 +231,7 @@ const GraphicDisplay = () => {
           {message}
         </div>
     );
-    console.log("Datos para BarChart Vertical:", datosCriteriosChart);
+    //console.log("Datos para BarChart Vertical:", datosCriteriosChart);
     console.log("Datos para BarChart Horizontal:", barChartHorizontalData);
     return (
         <TabsContent value="graficos">

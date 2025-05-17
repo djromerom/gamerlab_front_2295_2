@@ -167,7 +167,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
-        fetch(`${API_ENDPOINT}/jurados`, {
+        fetch(`${API_ENDPOINT}/JuradosData`, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

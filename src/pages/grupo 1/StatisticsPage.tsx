@@ -16,6 +16,7 @@ import FiltrosPanel from "@/components/grupo 1/FilterPanel"
 // Ya no necesitas importar GlobalStateProvider aquí
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext" // Ajusta la ruta
 import DownloadReport from "@/components/grupo 1/DownloadReport"
+import TablaPorJurado from "@/components/grupo 1/JudgesTable"
 
 // Este es ahora tu componente principal de la página
 export default function StatisticsPage() {
@@ -56,6 +57,7 @@ export default function StatisticsPage() {
       return <LayoutAplication breadcrumbs={breadcrumbs}><div className="p-10 text-red-500">Error: {error.message} <Button onClick={fetchGlobalData}>Reintentar</Button></div></LayoutAplication>;
   }
 
+  const VALUE_Jurados = "tablaJurados";
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       <div className="container mx-auto py-6 p-10">
@@ -84,23 +86,24 @@ export default function StatisticsPage() {
 
         {/* Cuerpo Principal: Filtros y Tabs */}
         <div className="grid grid-cols-12 gap-6 mb-6">
-          <FiltrosPanel /> {/* No necesita props, toma del contexto */}
+          <FiltrosPanel /> 
           <div className="col-span-12 md:col-span-9">
             <Tabs defaultValue="tabla" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="tabla">Tabla de Resultados</TabsTrigger>
                 <TabsTrigger value="ranking">Ranking</TabsTrigger>
                 <TabsTrigger value="graficos">Gráficos</TabsTrigger>
+                <TabsTrigger value={VALUE_Jurados}>Tabla de Jurados</TabsTrigger>
               </TabsList>
               <TabsContent value="tabla"><TablaResultados /></TabsContent>
               <TabsContent value="ranking"><TablaRanking /></TabsContent>
               <TabsContent value="graficos"><GraphicDisplay /></TabsContent>
+              <TabsContent value={VALUE_Jurados}> <TablaPorJurado /></TabsContent>
             </Tabs>
           </div>
         </div>
 
-        {/* ReportsZoneTable: Asumir que usa contexto o recibe `listaVideojuegosFiltrados` si es necesario */}
-        <DownloadReport /> {/*<--videojuegos={listaVideojuegosFiltradosSiLoNecesitaDirectamente}  */}
+        <DownloadReport /> 
       </div>
     </LayoutAplication>
   );
