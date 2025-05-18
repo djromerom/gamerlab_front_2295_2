@@ -12,28 +12,48 @@ export default function Scoreboard() {
   const [rawRatings, setRawRatings] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  useEffect(() => { 
     const fetchRawRatings = async () => {
       setLoading(true)
-      await new Promise((res) => setTimeout(res, 1000))
+      try {
+        const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        })
 
-      const raw: number[] = [3.6, 4.6, 4.6]
-      setRawRatings(raw)
+        if (!res.ok) {
+          alert("Error fetching ratings")
+          setLoading(false)
+        }
+        const data = await res.json()
 
-      const buckets: { [key: number]: number } = {}
-      raw.forEach((rating) => {
-        const rounded = Math.round(rating * 2) / 2
-        buckets[rounded] = (buckets[rounded] || 0) + 1
-      })
+        const raw: number[] = data.data.map((item: { evaluationScore: number }) => item.evaluationScore);
 
-      const possibleStars = [5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0]
-      const groupedRatings: Rating[] = possibleStars.map((stars) => ({
-        stars,
-        count: buckets[stars] || 0,
-      }))
+        setRawRatings(raw)
 
-      setRatings(groupedRatings)
-      setLoading(false)
+        const buckets: { [key: number]: number } = {}
+        raw.forEach((rating) => {
+          const rounded = Math.round(rating * 2) / 2
+          buckets[rounded] = (buckets[rounded] || 0) + 1
+        })
+
+        const possibleStars = [5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0]
+        const groupedRatings: Rating[] = possibleStars.map((stars) => ({
+          stars,
+          count: buckets[stars] || 0,
+        }))
+
+        setRatings(groupedRatings)
+      } catch (error) {
+        console.error("Error fetching ratings:", error)
+        setRawRatings([])
+        setRatings([])
+      } finally {
+        setLoading(false)
+      }
+
+      
     }
 
     fetchRawRatings()
@@ -99,11 +119,11 @@ export default function Scoreboard() {
 
   return (
     <div className="flex w-full max-w-4xl mx-auto p-4">
-      <Card className="w-full shadow-sm">
+      <Card className="w-full shadow-sm border-purple-800">
         <CardHeader className="p-6 pb-2">
-          <CardTitle className="text-lg font-medium text-foreground">Task Submission Feedback</CardTitle>
+          <CardTitle className="text-lg font-medium text-foreground text-purple-500">Retroalimentación del VideoJuego</CardTitle>
           <CardDescription className="text-sm text-foreground/50">
-            Task submissions are scored against project specifications. View your task feedback below.
+            Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tus tareas a continuación.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 pt-0 space-y-4">
@@ -138,7 +158,7 @@ export default function Scoreboard() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button className="ml-1">
-                      <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                      <HelpCircle className="h-3.5 w-3.5 text-blue-300" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -153,7 +173,7 @@ export default function Scoreboard() {
             {groupedRatings.map((group, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-16 text-sm text-right">{group.range}</div>
-                <div className="flex-1 relative h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="flex-1 relative h-2 bg-gray-400 rounded-full overflow-hidden ">
                   <div
                     className="absolute top-0 left-0 h-full bg-yellow-400 rounded-full"
                     style={{ width: `${(group.count / totalRatings) * 100}%` }}
@@ -161,7 +181,7 @@ export default function Scoreboard() {
                 </div>
                 <div className="w-14 text-xs text-gray-500 flex justify-between">
                   <span>{group.count}</span>
-                  <span className="text-gray-400">{((group.count / totalRatings) * 100).toFixed(1)}%</span>
+                  <span className="text-gray-100">{((group.count / totalRatings) * 100).toFixed(1)}%</span>
                 </div>
               </div>
             ))}
