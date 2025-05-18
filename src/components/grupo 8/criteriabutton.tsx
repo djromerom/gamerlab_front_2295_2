@@ -10,8 +10,8 @@ export default function Criteriabutton({ description }: CriteriabuttonProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="rounded-lg border border-[#B2B5FF] bg-transparent h-7 w-7 hover:bg-[#e5e7eb] dark:hover:bg-[#1C1930] transition-colors">
-          <Menu  className="text-[#a0a3a9] dark:text-white "/>
+        <Button className="rounded-lg border bg-transparent h-7 w-7 hover:bg-sidebar transition-colors cursor-pointer">
+          <Menu  className="text-foreground "/>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 text-sm text-muted-foreground">

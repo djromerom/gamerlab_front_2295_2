@@ -1,10 +1,12 @@
 "use client";
 
-import Criteriabutton from "@/components/grupo 8/criteriabutton"; // Importa el componente criteriabutton
+import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner"; // Importamos toast de sonner
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
 import {
   Card,
   CardContent,
@@ -22,11 +24,18 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/grupo 8/textarea";
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { Loader } from "lucide-react"; // Asegúrate de tener este import
-import ConfirmModal from "@/components/grupo 8/ConfirmModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Tipos
-
 interface EvaluationCriteria {
   id: string;
   name: string;
@@ -35,37 +44,56 @@ interface EvaluationCriteria {
 }
 
 export default function RatePage() {
-    
-    const navigate = useNavigate();
-    const location = useLocation(); // Obtén el estado de navegación
-    const game = location.state?.game; // Extrae los datos del juego del estado
-    const [loading, setLoading] = useState(true)
-    const [comments, setComments] = useState("")
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const game = location.state?.game;
+  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
+  // Función para mostrar errores como toast
 
-
-    const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
-        { id: "interfaz", name: "Interfaz de usuario (10%)", score: 1, maxScore: 5 },
-        { id: "interaccion", name: "Interacción (20%)", score: 1, maxScore: 5 },
-        { id: "resultados", name: "Resultados (40%)", score: 1, maxScore: 5 },
-        { id: "presentacion", name: "Presentación del proyecto (10%)", score: 1, maxScore: 5 },
-        { id: "funcionamiento", name: "Funcionamiento del programa (10%)", score: 1, maxScore: 5 },
-        { id: "presentacion_grupo", name: "Presentación personal grupo (10%)", score: 1, maxScore: 5 },
-    ])
-
-
+  const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
+    { id: "interfaz", name: "Interfaz de usuario (10%)", score: 1, maxScore: 5 },
+    { id: "interaccion", name: "Interacción (20%)", score: 1, maxScore: 5 },
+    { id: "resultados", name: "Resultados (40%)", score: 1, maxScore: 5 },
+    { id: "presentacion", name: "Presentación del proyecto (10%)", score: 1, maxScore: 5 },
+    { id: "funcionamiento", name: "Funcionamiento del programa (10%)", score: 1, maxScore: 5 },
+    { id: "presentacion_grupo", name: "Presentación personal grupo (10%)", score: 1, maxScore: 5 },
+  ]);
 
   useEffect(() => {
     if (game) {
-      // Si los datos del juego están disponibles, desactiva el estado de carga
       setLoading(false);
     } else {
-      // Si no hay datos del juego, redirige a la página de pendientes
       navigate("/pendientes-calificar");
     }
   }, [game, navigate]);
+
+  // Función para mostrar errores como toast
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+    setError(errorMessage);
+  };
+
+  // Función para mostrar mensajes de éxito como toast
+  const showSuccess = (message: string) => {
+    // Mostrar el toast de éxito
+    toast.success(message, {
+      duration: 2000 // Duración del toast (2 segundos)
+    });
+    
+    // Programar la redirección después de que el toast haya tenido tiempo de mostrarse
+    setTimeout(() => {
+      setShowSuccessLoading(true);
+      setTimeout(() => {
+        navigate("/pendientes-calificar");
+      }, 1000); // Asegurarse que la pantalla de carga se muestre por al menos 1 segundo
+    }, 2500); // Esperar un poco más que la duración del toast para asegurarnos que se vio
+  };
 
   const handleScoreChange = (criteriaId: string, score: number) => {
     setCriteria(
@@ -73,30 +101,33 @@ export default function RatePage() {
     );
   };
 
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-        // 1. Calcular el puntaje final basado en los porcentajes
-        const porcentajeMap: Record<string, number> = {
-            interfaz: 0.1, // 10%
-            interaccion: 0.2, // 20%
-            resultados: 0.4, // 40%
-            presentacion: 0.1, // 10%
-            funcionamiento: 0.1, // 10%
-            presentacion_grupo: 0.1, // 10%
-        };
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    
+    // 1. Calcular el puntaje final basado en los porcentajes
+    const porcentajeMap: Record<string, number> = {
+      interfaz: 0.1, // 10%
+      interaccion: 0.2, // 20%
+      resultados: 0.4, // 40%
+      presentacion: 0.1, // 10%
+      funcionamiento: 0.1, // 10%
+      presentacion_grupo: 0.1, // 10%
+    };
 
-        const puntajeFinal = criteria.reduce((acc, curr) => {
-            const porcentaje = porcentajeMap[curr.id] || 0; // Obtén el porcentaje del criterio
-            return acc + curr.score * porcentaje; // Multiplica el puntaje por el porcentaje
-        }, 0);
-        // 2. Preparar datos para evaluacion
-        const fecha_creacion = new Date().toISOString();
-        const evaluationPayload = {
-            date: fecha_creacion,
-            videogameId: game.id,
-            totalScore: puntajeFinal,
-            comments: comments,
-        };
+    const puntajeFinal = criteria.reduce((acc, curr) => {
+      const porcentaje = porcentajeMap[curr.id] || 0;
+      return acc + curr.score * porcentaje;
+    }, 0);
+    
+    // 2. Preparar datos para evaluacion
+    const fecha_creacion = new Date().toISOString();
+    const evaluationPayload = {
+      date: fecha_creacion,
+      videogameId: game.id,
+      totalScore: puntajeFinal,
+      comments: comments,
+    };
 
     // 3. Enviar a tabla evaluacion y obtener id_evaluacion
     let evaluationId;
@@ -105,15 +136,22 @@ export default function RatePage() {
         `http://localhost:3000/evaluation`,
         {
           method: "POST",
-          credentials: "include", // Incluye cookies si es necesario
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(evaluationPayload),
         }
       );
+      
+      if (!resEval.ok) {
+        const errorData = await resEval.json();
+        throw new Error(errorData.message || "Error al guardar la evaluación");
+      }
+      
       const evalData = await resEval.json();
-      evaluationId = evalData.evaluationId; // Ajusta según la respuesta de tu backend
-    } catch (err) {
-      alert("Error guardando la evaluación");
+      evaluationId = evalData.evaluationId;
+    } catch (err: any) {
+      showError(err.message || "Error guardando la evaluación");
+      setIsSubmitting(false);
       return;
     }
 
@@ -138,36 +176,57 @@ export default function RatePage() {
     }));
 
     try {
-      await fetch(
+      const resDetails = await fetch(
         `http://localhost:3000/evaluation/details`,
         {
           method: "POST",
-          credentials: "include", // Incluye cookies si es necesario
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ details }),
         }
       );
-      navigate("/pendientes-calificar");
-    } catch (err) {
-      alert("Error guardando los detalles de la evaluación");
-    } finally {
+      
+      if (!resDetails.ok) {
+        const errorData = await resDetails.json();
+        throw new Error(errorData.message || "Error al guardar los detalles de la evaluación");
+      }
+      
+      // Primero cerrar el diálogo de confirmación
+      setConfirmDialogOpen(false);
+      // Mostrar mensaje de éxito
+      showSuccess(`Evaluación del juego "${game.nombre}" enviada exitosamente`);
+      // No se navega aquí - la navegación ocurrirá en la función showSuccess después del toast
+      
+    } catch (err: any) {
+      showError(err.message || "Error guardando los detalles de la evaluación");
       setIsSubmitting(false);
+      setConfirmDialogOpen(false);
     }
   };
 
-    if (loading) {
-        return (
-            <LayoutAplication breadcrumbs={[]}>
-                <div className="flex justify-center items-center h-screen text-white">
-                    <p>Cargando información del juego...</p>
-                </div>
-            </LayoutAplication>
-        );
-    }
-    const breadcrumbs = [
-        { label: `Pendientes por calificar >  ${game?.nombre}`, href: "/pendientes-calificar" },
+  // Pantalla de carga después de enviar evaluación exitosamente
+  if (showSuccessLoading) {
+    return (
+      <LayoutAplication breadcrumbs={[]}>
+        <LoadingScreen text="Redirigiendo a pendientes por calificar..." />
+      </LayoutAplication>
+    );
+  }
 
-    ];
+  // Pantalla de carga inicial
+  if (loading) {
+    return (
+      <LayoutAplication breadcrumbs={[]}>
+        <div className="flex justify-center items-center h-screen text-white">
+          <p>Cargando información del juego...</p>
+        </div>
+      </LayoutAplication>
+    );
+  }
+  
+  const breadcrumbs = [
+    { label: `Pendientes por calificar >  ${game?.nombre}`, href: "/pendientes-calificar" },
+  ];
 
   const getDescription = (id: string): string => {
     switch (id) {
@@ -205,6 +264,7 @@ export default function RatePage() {
               variant="outline"
               size="sm"
               onClick={() => navigate("/pendientes-calificar")}
+              className="cursor-pointer"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Volver a pendientes
@@ -316,13 +376,10 @@ export default function RatePage() {
                               }
                               className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
                               style={{
-                                background: `linear-gradient(to right, #b3c7ff ${
-                                  ((criterion.score - 1) / 4) * 100
-                                }%, #e5e7eb ${
-                                  ((criterion.score - 1) / 4) * 100
-                                }%)`,
-                                accentColor: "#b3c7ff dark:", // Cambia el color del círculo del slider
+                                background: `linear-gradient(to right, var(--selected) ${((criterion.score - 1) / 4) * 100}%, #e5e7eb ${((criterion.score - 1) / 4) * 100}%)`,
+                                accentColor: "var(--selected)", // morado (tailwind purple-500)
                               }}
+                              
                             />
                             <span className="text-sm font-medium px-0">
                               {criterion.score}
@@ -342,39 +399,67 @@ export default function RatePage() {
                   <Textarea
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    className="w-full h-32 bg-[#1a1a2e] text-black border border-[#4d5474] rounded-md"
+                    className="w-full h-32 bg-sidebar text-foreground border rounded-md"
                     placeholder="Escribe tus comentarios sobre el juego..."
                   />
                 </div>
 
-                                <div className="flex justify-end mt-6">
-                                    <Button
-                                        className="bg-[#6644ff] hover:bg-[#5a3be5] dark:bg-[#b3bcff] dark:text-[#1a1a2e] dark:hover:bg-[#b3c7ff] text-white font-bold min-w-[170px] flex justify-center items-center"
-                                        onClick={() => setIsModalOpen(true)} // Abre el modal
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? (
-                                            <span className="flex justify-center items-center w-full">
-                                                <Loader className="animate-spin w-5 h-5" />
-                                            </span>
-                                        ) : (
-                                            "Enviar Evaluación"
-                                        )}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                <div className="flex justify-end mt-6">
+                  <Button
+                    className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer"
+                    onClick={() => setConfirmDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex justify-center items-center w-full">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </span>
+                    ) : (
+                      "Enviar Evaluación"
+                    )}
+                  </Button>
                 </div>
-                <ConfirmModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)} // Cierra el modal
-                    onConfirm={() => {
-                        setIsModalOpen(false); // Cierra el modal
-                        handleSubmit(); // Llama a la función para enviar la evaluación
-                    }}
-                />
-            </div>
-        </LayoutAplication>
-    );
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* AlertDialog para confirmar envío de evaluación */}
+        <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción enviará su evaluación del juego {game?.nombre}. Una vez enviada, no podrá ser modificada.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {error && !isSubmitting && (
+              <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
+                {error}
+              </p>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => {
+                  setConfirmDialogOpen(false);
+                  setError(null);
+                }}
+                disabled={isSubmitting}
+                className="cursor-pointer"
+              >
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSubmit}
+                className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] cursor-pointer"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Enviando..." : "Confirmar Envío"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </LayoutAplication>
+  );
 }

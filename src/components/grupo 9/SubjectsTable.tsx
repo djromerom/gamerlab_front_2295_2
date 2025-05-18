@@ -445,7 +445,7 @@ export const SubjectsTable: React.FC<Props> = ({
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" className="cursor-pointer" disabled={internalIsLoading}>
+                  <Button type="submit" className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]" disabled={internalIsLoading}>
                     {internalIsLoading ? "Guardando..." : "Guardar"}
                   </Button>
                 </DialogFooter>
@@ -651,7 +651,7 @@ export const SubjectsTable: React.FC<Props> = ({
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading} className="cursor-pointer">
+                <Button type="submit" disabled={internalIsLoading} className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]">
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>

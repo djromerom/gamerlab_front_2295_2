@@ -67,19 +67,19 @@ export function ThemeToggle() {
             <DropdownMenuContent
                 align={isMobile ? "center" : state === "expanded" ? "end" : "start"}
                 side={isMobile ? "bottom" : "right"}
-                className="w-36"
+                className="w-36 bg-[var(--theme)]  text-[var(--foreground)] shadow-md rounded-md"
             >
-                <DropdownMenuItem onClick={() => changeTheme("light")}>
+                <DropdownMenuItem className="hover:bg-[var(--muted)]" onClick={() => changeTheme("light")}>
                     <Sun className="mr-2 h-4 w-4" />
                     <span>Claro</span>
                     {theme === "light" && <Check className="ml-auto h-4 w-4" />}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => changeTheme("dark")}>
+                <DropdownMenuItem className="hover:bg-[var(--muted)]" onClick={() => changeTheme("dark")}>
                     <Moon className="mr-2 h-4 w-4" />
                     <span>Oscuro</span>
                     {theme === "dark" && <Check className="ml-auto h-4 w-4" />}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => changeTheme("high-contrast")}>
+                <DropdownMenuItem className="hover:bg-[var(--muted)]" onClick={() => changeTheme("high-contrast")}>
                     <ZapIcon className="mr-2 h-4 w-4" />
                     <span>Alto Contraste</span>
                     {theme === "high-contrast" && <Check className="ml-auto h-4 w-4" />}
