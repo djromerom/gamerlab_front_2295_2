@@ -3,6 +3,7 @@
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { CriterionTable } from "@/components/grupo 9/CriterionTable"; // Ajusta la ruta según tu estructura
 import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
 
 interface CriterionRowData {
   id: number;
@@ -19,8 +20,8 @@ const CriteriaPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/criteria`;
-  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `http://localhost:3000/criteria`;
+  const API_BASE_URL = `http://localhost:3000`;
 
   useEffect(() => {
     const fetchCriteria = async () => {
@@ -67,28 +68,34 @@ const CriteriaPage = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {/* Error display */}
-      {error && !criteria && (
-        <div
-          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-          role="alert"
-        >
-          <span className="font-medium">Error:</span> {error}
-        </div>
-      )}
+      {isPageLoading ? (
+        <LoadingScreen text="Cargando criterios de calificación..." />
+      ) : (
+        <>
+        {/* Error display */}
+        {error && !criteria && (
+          <div
+            className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+            role="alert"
+          >
+            <span className="font-medium">Error:</span> {error}
+          </div>
+        )}
 
-      {/* Tabla de criterios */}
-      <CriterionTable
-        criteria={criteria}
-        apiBaseUrl={API_BASE_URL}
-        isDataLoading={isPageLoading}
-      />
+        {/* Tabla de criterios */}
+        <CriterionTable
+          criteria={criteria}
+          apiBaseUrl={API_BASE_URL}
+          isDataLoading={isPageLoading}
+        />
 
-      {/* No results message */}
-      {!isPageLoading && !error && criteria && criteria.length === 0 && (
-        <div className="p-4 text-center text-gray-500">
-          No se encontraron criterios activos.
-        </div>
+        {/* No results message */}
+        {!isPageLoading && !error && criteria && criteria.length === 0 && (
+          <div className="p-4 text-center text-gray-500">
+            No se encontraron criterios activos.
+          </div>
+        )}
+        </>
       )}
     </LayoutAplication>
   );

@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "@/index.css";
 import CountdownTimer from "@/components/grupo 5/CountdownTimer";
 import NavBar from "@/components/grupo 5/NavBar";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 function Landing(): React.ReactElement {
-  const targetDate = new Date("2025-06-05T14:00:00");
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
+  const targetDate = new Date("2025-06-04T08:30:00");
   const navigate = useNavigate();
 
   return (
@@ -40,6 +48,7 @@ function Landing(): React.ReactElement {
               Registra tu equipo aquí
             </button>
           </div>
+          <TextSizeControls />
         </div>
       </div>
     </>

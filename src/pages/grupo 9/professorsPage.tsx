@@ -3,6 +3,7 @@
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Ajusta la ruta según tu estructura
 import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
 
 export interface ProfessorRowData {
   id: string;
@@ -19,8 +20,8 @@ export const ProfessorsPage: React.FC = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors`;
-  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `http://localhost:3000/professors`;
+  const API_BASE_URL = `http://localhost:3000`;
 
   useEffect(() => {
     const fetchProfessors = async () => {
@@ -68,28 +69,37 @@ export const ProfessorsPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {/* Error display */}
-      {error && !professors && (
-        <div
-          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-          role="alert"
-        >
-          <span className="font-medium">Error:</span> {error}
-        </div>
-      )}
+      {/* Pantalla de carga */}
+      {isPageLoading ? (
+        <LoadingScreen text="Cargando profesores..." />
+      ) : (
+        <>
+          {/* Error display */}
+          {error && !professors && (
+            <div
+              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+              role="alert"
+            >
+              <span className="font-medium">Error:</span> {error}
+            </div>
+          )}
 
-      <ProfessorsTable
-        professors={professors}
-        apiBaseUrl={API_BASE_URL}
-        isDataLoading={isPageLoading}
-      />
+          <ProfessorsTable
+            professors={professors}
+            apiBaseUrl={API_BASE_URL}
+            isDataLoading={false} // Ya no necesitamos pasar isPageLoading aquí porque manejamos la carga a nivel de página
+          />
 
-      {/* No results message */}
-      {!isPageLoading && !error && professors && professors.length === 0 && (
-        <div className="p-4 text-center text-gray-500">
-          No se encontraron profesores activos.
-        </div>
+          {/* No results message */}
+          {!error && professors && professors.length === 0 && (
+            <div className="p-4 text-center text-gray-500">
+              No se encontraron profesores activos.
+            </div>
+          )}
+        </>
       )}
     </LayoutAplication>
   );
 };
+
+export default ProfessorsPage;

@@ -3,6 +3,7 @@ import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/types/auth";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; 
 
 interface ProtectedRouteProps {
   roles?: Role[];
@@ -15,9 +16,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
   if (loading)
     return (
       <>
-        <div className="flex h-screen w-full items-center justify-center">
-          <p>Cargando...</p>
-        </div>
+        <LoadingScreen />
       </>
     );
 

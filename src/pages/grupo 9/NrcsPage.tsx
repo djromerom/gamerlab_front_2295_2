@@ -3,14 +3,15 @@
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { NrcsTable, Data } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
 const NrcsPage = () => {
   const [data, setData] = useState<Data | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs`;
-  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `http://localhost:3000/nrcs`;
+  const API_BASE_URL = `http://localhost:3000`;
   const TABLE_RESOURCE_NAME = "nrcs";
 
   useEffect(() => {
@@ -42,7 +43,7 @@ const NrcsPage = () => {
           columns: {
             code: "Código",
             "subject.name": "Nombre de la Materia",
-            "professor.name": "profesor",
+            "professor.name": "Profesor",
           },
           rows: dataRespond.data,
         });
@@ -63,24 +64,31 @@ const NrcsPage = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {error && !data && (
-        <div
-          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-          role="alert"
-        >
-          <span className="font-medium">Error:</span> {error}
-        </div>
-      )}
+      {isPageLoading ? (
+              <LoadingScreen text="Cargando nrc's..." />
+      ) : (
+          <>
+          {/* Error display */}
+          {error && !data && (
+            <div
+              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+              role="alert"
+            >
+              <span className="font-medium">Error:</span> {error}
+            </div>
+          )}
 
-      <NrcsTable
-        data={data}
-        apiBaseUrl={API_BASE_URL}
-        isDataLoading={isPageLoading}
-      />
-      {!isPageLoading && !error && data && data.rows.length === 0 && (
-        <div className="p-4 text-center text-gray-500">
-          No se encontraron NRC's activos.
-        </div>
+          <NrcsTable
+            data={data}
+            apiBaseUrl={API_BASE_URL}
+            isDataLoading={isPageLoading}
+          />
+          {!isPageLoading && !error && data && data.rows.length === 0 && (
+            <div className="p-4 text-center text-gray-500">
+              No se encontraron NRC's activos.
+            </div>
+          )}
+          </>
       )}
     </LayoutAplication>
   );

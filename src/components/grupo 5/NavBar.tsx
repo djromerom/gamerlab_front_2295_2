@@ -43,6 +43,12 @@ export default function navBar(): React.ReactElement {
             >
               Información
             </Link>
+            <Link
+              to="/contribuidores"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
+            </Link>
           </nav>
 
           {/* CTA Button + Mobile Menu Toggle */}
@@ -88,6 +94,14 @@ export default function navBar(): React.ReactElement {
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
               Información
+            </Link>
+            <Link
+              to="/contribuidores"
+
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
             </Link>
           </nav>
         </div>
