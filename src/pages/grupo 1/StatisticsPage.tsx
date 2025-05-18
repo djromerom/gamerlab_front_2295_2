@@ -45,12 +45,12 @@ export default function StatisticsPage() {
     ? (totalEvaluaciones / totalJuradosAsignadosGeneral) * 100
     : 0;
 
-  const handleExportExcel = () => {
-    console.warn("Exportar Excel no implementado");
+  /*const handleExportExcel = () => {
+    console.warn("Exportar Excel no implementado");*/
     // Aquí podrías usar `listaVideojuegosFiltrados` si está disponible en el contexto y lo necesitas para exportar
     // const { listaVideojuegosFiltrados } = useGlobalState(); // O pasarlo desde arriba si es necesario
-  };
-  const handleExportPdf = () => console.warn("Exportar PDF no implementado");
+  //};
+  //const handleExportPdf = () => console.warn("Exportar PDF no implementado");
 
   // Manejo de carga y error a nivel de página (opcional, si los hijos ya lo hacen)
   if (isLoading && totalVideojuegos === 0) {

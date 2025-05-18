@@ -18,14 +18,10 @@ import {
     ResponsiveContainer,
     Rectangle, // <--- IMPORTAR RECTANGLE
     type RectangleProps, // <--- IMPORTAR EL TIPO PARA LAS PROPS
-    // Tooltip, // ChartTooltip lo envuelve
-    // Legend, // ChartLegend lo envuelve
 } from "recharts";
 import {
     ChartContainer,
     ChartTooltip,
-    // ChartLegend, // La leyenda puede ser opcional para el bar chart si solo hay una serie
-    // ChartLegendContent,
     ChartConfig
 } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
@@ -149,7 +145,6 @@ const GraphicDisplay = () => {
                 .filter(vj => vj.materia === filtroMateria)
                 .map(vj => ({
                     name: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.codigo.toString() || "N/A", // Asegúrate de que nrcsFiltrados esté definido
-                    //promedio: typeof vj.promedio === 'number' ? vj.promedio : 0,
                     promedio: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.promedioxNRC || 0, // Asegúrate de que nrcsFiltrados esté definido
                 }))
                 .sort((a,b) => b.promedio - a.promedio); // Opcional: ordenar
@@ -223,7 +218,7 @@ const GraphicDisplay = () => {
     // --- Chart Configurations ---
     const barChartVerticalConfig = { valor: { label: "Promedio", color: "hsl(var(--chart-1))" } } satisfies ChartConfig;
     const radarChartConfig = { valor: { label: "Puntuación", color: "hsl(var(--chart-2))" } } satisfies ChartConfig;
-    const barChartHorizontalConfig = { promedio: { label: "Promedio", color: "hsl(var(--chart-3))" } } satisfies ChartConfig; // Nueva config
+    const barChartHorizontalConfig = { promedio: { label: "Promedio", color: "hsl(var(--chart-3))" } } satisfies ChartConfig;
 
     // Helper para mensaje de no datos en gráficos
     const renderNoDataMessage = (message: string) => (
@@ -368,8 +363,6 @@ const GraphicDisplay = () => {
                                                     name="Promedio"
                                                     // barSize={20} // Puedes fijar un tamaño si lo prefieres
                                                 />
-                                                {/* La leyenda es opcional aquí, podría ser redundante */}
-                                                {/* <ChartLegend /> */}
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </ChartContainer>
@@ -416,7 +409,7 @@ const GraphicDisplay = () => {
                         {criteriosSeleccionado ? ( /* ... tu código ... */
                             <div className="space-y-4">
                                 {Object.entries(criteriosSeleccionado)
-                                    .filter(([key, value]) => typeof value === 'number' && !isNaN(value))
+                                    .filter(([_key, value]) => typeof value === 'number' && !isNaN(value))
                                     .map(([criterio, valor]) => (
                                     <div key={criterio} className="space-y-1">
                                         <div className="flex items-center justify-between">

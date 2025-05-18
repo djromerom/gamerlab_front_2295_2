@@ -96,13 +96,16 @@ const glowStyles = `
   }
 `;
 
+const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports`;
+//const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:3000/reports/videojuegoData");
+        const res = await fetch(`${API_ENDPOINT}/videojuegoData`);
         const data = await res.json();
 
         const formattedTeams = data.map((team: any) => ({
@@ -121,12 +124,12 @@ export default function PodioGamer() {
     fetchData();
   }, []);
 
-  const [teamId, setTeamId] = useState<string>("1");
-  const [newScore, setNewScore] = useState<string>("");
+  /*const [teamId, setTeamId] = useState<string>("1");
+  const [newScore, setNewScore] = useState<string>("");*/
 
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
 
-  const updateScore = () => {
+  /*const updateScore = () => {
     if (!newScore) return;
 
     const id = Number.parseInt(teamId);
@@ -137,7 +140,7 @@ export default function PodioGamer() {
     setTeams(teams.map((team) => (team.id === id ? { ...team, score } : team)));
 
     setNewScore("");
-  };
+  };*/
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {

@@ -23,11 +23,7 @@ const DownloadReport = () => {
                 <TableBody>
                   <CustomTableRowBeta
                     title="Reporte General"
-                    description="Evaluaciones completas de todos los videojuegos"
-                  />
-                  <CustomTableRowBeta
-                    title="Reporte por Materia"
-                    description="Evaluaciones agrupadas por materia"
+                    description="Datos de videojuegos basados en los filtros activos (materia y/o NRC)."
                   />
                 </TableBody>
               </Table>
