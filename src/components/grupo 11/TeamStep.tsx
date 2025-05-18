@@ -12,7 +12,6 @@ import {
 } from "../ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner"
-import { Home } from "lucide-react";
 
 
 export default function TeamStep() {
