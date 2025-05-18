@@ -167,7 +167,7 @@ export default function MembersStep() {
               name={`members.${idx}.correo` as const}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo</FormLabel>
+                  <FormLabel>Correo Institucional</FormLabel>
                   <FormControl>
                     <Input
                       {...field}

@@ -360,7 +360,7 @@ export function VerifyEmailPage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff]"
+              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff] cursor-pointer"
               disabled={status === "submitting"}
             >
               {status === "submitting" ? (
