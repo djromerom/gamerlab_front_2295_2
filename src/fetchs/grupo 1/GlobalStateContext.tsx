@@ -114,7 +114,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
-  
+
   const setFiltroMateriaExt = (value: string) => {
     setFiltroMateria(value);
     setFiltroNRC("Todos"); // Resetea el filtro de NRC si se selecciona "Todas"
@@ -128,7 +128,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   // Estados para las LISTAS DE OPCIONES de los filtros
   const [opcionesFiltroMateria, setOpcionesFiltroMateria] = useState<MateriaData[]>([]);
   const [opcionesFiltroNRC, setOpcionesFiltroNRC] = useState<NRCData[]>([]);
-  
+
 
   // Estado para los datos del gráfico de torta
   const [datosGraficoTortaMaterias, setDatosGraficoTortaMaterias] = useState<DatosGraficoMateria[]>([]);
@@ -219,24 +219,37 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
 
   // SUGERENCIA: Derivar la lista filtrada aquí
   const listaVideojuegosFiltrados = useMemo(() => {
-    return listaVideojuegos.filter(vj => {
-      const pasaMateria = filtroMateria === "Todas" ||
-        (vj.materia && opcionesFiltroMateria.find(m => m.name === filtroMateria)?.name === vj.materia); // Si filtroMateria es nombre
+    // Primero, manejar el caso de que listaVideojuegos no esté definida o esté vacía
+    if (!listaVideojuegos || listaVideojuegos.length === 0) {
+      return [];
+    }
 
-        //console.log("Filtro de materia:", filtroMateria, "Pasa materia:", pasaMateria, "string pendejo:", opcionesFiltroMateria.find(m => m.id.toString()), "vj.materia:", vj.materia, 
-      //"String god", opcionesFiltroMateria.find(m => m.name));
-      const pasaNRC = filtroNRC === "Todos" || (vj.nrc && vj.nrc.toString() === filtroNRC);
+    // Empezar con todos los videojuegos si no hay filtros activos o si la lista base está vacía
+    let filtradosIntermedios = [...listaVideojuegos];
 
-      return pasaMateria && pasaNRC;
-    });
-  }, [listaVideojuegos, filtroMateria, filtroNRC, opcionesFiltroMateria]);
+    // Aplicar filtro de Materia
+    if (filtroMateria !== "Todas") {
+      filtradosIntermedios = filtradosIntermedios.filter(
+        (vj) => vj.materia === filtroMateria
+      );
+    }
+
+    // Aplicar filtro de NRC (sobre los ya filtrados por materia, si aplica)
+    if (filtroNRC !== "Todos") {
+      filtradosIntermedios = filtradosIntermedios.filter(
+        (vj) => vj.nrc?.toString() === filtroNRC // Asegurar comparación de strings si vj.nrc puede ser number
+      );
+    }
+
+    return filtradosIntermedios;
+  }, [listaVideojuegos, filtroMateria, filtroNRC]);
 
   const nrcsFiltrados = useMemo<NRCData[]>(() => {
     if (!Array.isArray(opcionesFiltroNRC)) return [];
 
-    return filtroMateria === "Todas" 
-    ? opcionesFiltroNRC 
-    : opcionesFiltroNRC.filter(nrc => {
+    return filtroMateria === "Todas"
+      ? opcionesFiltroNRC
+      : opcionesFiltroNRC.filter(nrc => {
         // También puedes agregar verificación para nrc.materiaNombre si es necesario
         return nrc.materiaNombre === filtroMateria;
       });
@@ -293,4 +306,3 @@ export function useGlobalState() {
   }
   return context;
 }
-  
