@@ -243,7 +243,7 @@ const TablaPorJurado = () => {
     return (
         <Card className="mt-4">
             <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
+                <p className="text-center text-muted-foreground pb-3">
                     Ningún jurado tiene videojuegos (asignados o evaluados) que coincidan con los filtros actuales para mostrar.
                 </p>
             </CardContent>

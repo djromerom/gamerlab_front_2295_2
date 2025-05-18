@@ -21,6 +21,7 @@ const FiltrosPanel = () => {
     isLoading,
   } = useGlobalState();
 
+  console.log("Opciones filtro materia:", opcionesFiltroMateria);
   // Efecto para ajustar videojuegoSeleccionado si ya no es válido
   // cuando la lista de videojuegos filtrados cambia.
   useEffect(() => {
@@ -60,8 +61,8 @@ const FiltrosPanel = () => {
 
   const handleVideojuegoChange = (value: string) => {
     if (!value) { // Si se selecciona la opción placeholder/vacía
-        setVideojuegoSeleccionado(null);
-        return;
+      setVideojuegoSeleccionado(null);
+      return;
     }
     // Buscar en la lista filtrada que se está mostrando en el Select
     const seleccionado = listaVideojuegosFiltrados?.find(
@@ -118,7 +119,7 @@ const FiltrosPanel = () => {
             <Select
               value={filtroNRC}
               onValueChange={handleNrcChange}
-              disabled={isLoading || !nrcsFiltrados || nrcsFiltrados.length === 0 || filtroMateria === "Todas"}
+              disabled={isLoading || !nrcsFiltrados || nrcsFiltrados.length === 0}
             >
               <SelectTrigger id="filtro-nrc">
                 <SelectValue placeholder="Seleccionar NRC" />
@@ -135,10 +136,10 @@ const FiltrosPanel = () => {
           </div>
 
           {/* Selector de Videojuego */}
-          <div className="space-y-2">
+          <div className="space-y-2 pb-3">
             <label htmlFor="select-videojuego" className="text-sm font-medium">Videojuego</label>
             <Select
-              value={videojuegoSeleccionado ? videojuegoSeleccionado.id.toString() : ""}
+              value={videojuegoSeleccionado ? videojuegoSeleccionado.id.toString() : undefined}
               onValueChange={handleVideojuegoChange}
               // Deshabilitar si isLoading o si la lista de videojuegos filtrados (que es la fuente de opciones) está vacía
               disabled={isLoading || !listaVideojuegosFiltrados || listaVideojuegosFiltrados.length === 0}
@@ -149,18 +150,27 @@ const FiltrosPanel = () => {
               <SelectContent>
                 {/* Mensaje si no hay opciones */}
                 {(!listaVideojuegosFiltrados || listaVideojuegosFiltrados.length === 0) && !isLoading && (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">
                     {filtroMateria === "Todas" && filtroNRC === "Todos"
                       ? "No hay videojuegos disponibles"
                       : "No hay videojuegos con los filtros actuales"}
-                  </SelectItem>
+                  </div>
                 )}
                 {/* Iterar sobre listaVideojuegosFiltrados para las opciones */}
-                {listaVideojuegosFiltrados?.map((videojuego: VideojuegoData) => (
-                  <SelectItem key={videojuego.id} value={videojuego.id.toString()}>
-                    {videojuego.nombre}
-                  </SelectItem>
-                ))}
+                {listaVideojuegosFiltrados?.map((videojuego: VideojuegoData) => {
+                  // Asegurarse que el ID nunca sea una cadena vacía
+                  const videojuegoIdString = videojuego.id.toString();
+                  if (videojuegoIdString === "") {
+                    // Esto no debería ocurrir si los IDs son válidos, pero es una salvaguarda
+                    console.warn("Videojuego con ID vacío encontrado:", videojuego);
+                    return null; // Omitir este SelectItem
+                  }
+                  return (
+                    <SelectItem key={videojuego.id} value={videojuegoIdString}>
+                      {videojuego.nombre}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
