@@ -12,6 +12,7 @@ import {
 } from "../ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner"
+import { Home } from "lucide-react";
 
 
 export default function TeamStep() {
@@ -66,7 +67,7 @@ export default function TeamStep() {
         )}
       />
       <div className="flex justify-end pt-4">
-        <Button onClick={handleNext} disabled={loading}>
+        <Button variant="home" onClick={handleNext} disabled={loading}>
           {loading ? "Verificando..." : "Siguiente"}
         </Button>
       </div>

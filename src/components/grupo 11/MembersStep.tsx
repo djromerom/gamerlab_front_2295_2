@@ -122,7 +122,7 @@ export default function MembersStep() {
           <div className="flex justify-between items-start mb-3">
             <span>Integrante {idx + 1}</span>
             {fields.length > 1 && (
-              <Button variant="ghost" size="icon" onClick={() => remove(idx)}>
+              <Button variant="ghost" className="cursor-pointer" size="icon" onClick={() => remove(idx)}>
                 <Trash2 />
               </Button>
             )}
@@ -236,7 +236,7 @@ export default function MembersStep() {
                               !isPageLoading)
                           }
                         >
-                          <SelectTrigger style={{ width: "100%" }}>
+                          <SelectTrigger className="cursor-pointer" style={{ width: "100%" }}>
                             <span className="text-muted-foreground">
                               {triggerText}
                             </span>
@@ -247,6 +247,7 @@ export default function MembersStep() {
                             allNrcOptionsFromState.length > 0 ? (
                               availableNrcOptionsToSelect.map((nrcOption) => (
                                 <SelectItem
+                                  className="cursor-pointer"
                                   key={String(nrcOption.code)} // Use unique code as key
                                   value={String(nrcOption.code)} // Use code as value
                                 >
@@ -280,7 +281,7 @@ export default function MembersStep() {
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10"
+                                  className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10 cursor-pointer"
                                   onClick={() =>
                                     field.onChange(
                                       selectedNRCs.filter((n) => n !== val)
@@ -311,6 +312,7 @@ export default function MembersStep() {
 
       {fields.length < 6 && (
         <Button
+          className="cursor-pointer"
           variant="outline"
           onClick={() =>
             append({
@@ -327,10 +329,10 @@ export default function MembersStep() {
       )}
 
       <div className="flex justify-between space-x-4 pt-6">
-        <Button variant="outline" onClick={back}>
+        <Button className="cursor-pointer" variant="outline" onClick={back}>
           Atrás
         </Button>
-        <Button onClick={handleNext}>Siguiente</Button>
+        <Button variant="home" onClick={handleNext}>Siguiente</Button>
       </div>
     </>
   );
