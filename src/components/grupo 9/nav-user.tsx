@@ -18,8 +18,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserProfile } from "@/types/auth";
 
-export const NavUser: React.FC<any> = ({ user }) => {
+interface Props {
+  user: UserProfile;
+}
+
+export const NavUser: React.FC<Props> = ({ user }) => {
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
   return (
@@ -32,13 +37,19 @@ export const NavUser: React.FC<any> = ({ user }) => {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={""} alt={user?.username} />
+                <AvatarImage
+                  src={""}
+                  alt={user.firstName + " " + user.lastName}
+                />
                 <AvatarFallback className="rounded-lg">
-                  {user.username.slice(0, 2).toUpperCase()}
+                  {user.firstName.slice(0, 1).toUpperCase() +
+                    user.lastName.slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.username}</span>
+                <span className="truncate font-semibold">
+                  {user.firstName + " " + user.lastName}
+                </span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -53,14 +64,18 @@ export const NavUser: React.FC<any> = ({ user }) => {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={""} alt={user.username} />
+                  <AvatarImage
+                    src={""}
+                    alt={user.firstName + " " + user.lastName}
+                  />
                   <AvatarFallback className="rounded-lg">
-                    {user.username.slice(0, 2).toUpperCase()}
+                    {user.firstName.slice(0, 1).toUpperCase() +
+                      user.lastName.slice(0, 1).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {user.username}
+                    {user.firstName + " " + user.lastName}
                   </span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>

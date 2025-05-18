@@ -10,7 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
-import { toast } from "sonner"; // Importamos toast de sonner
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -71,22 +71,33 @@ interface CriterionFormData {
   weight: string;
 }
 
+interface PaginationMetadata {
+  totalItems: number;
+  itemsOnCurrentPage: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+}
+
 interface Props {
   criteria: Criterion[] | null;
+  pagination: PaginationMetadata;
   apiBaseUrl: string;
   isDataLoading?: boolean;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
 }
 
 export const CriterionTable: React.FC<Props> = ({
   criteria,
+  pagination,
   apiBaseUrl,
   isDataLoading = false,
+  onPageChange,
+  onLimitChange,
 }) => {
   const customFetch = useFetch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [allCriteria, setAllCriteria] = useState<Criterion[]>(criteria || []);
-  const [currentRows, setCurrentRows] = useState<Criterion[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newCriterion, setNewCriterion] = useState<CriterionFormData>({
     name: "",
@@ -94,26 +105,12 @@ export const CriterionTable: React.FC<Props> = ({
     weight: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(
-    null
-  );
+  const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
   const showLoader = isDataLoading || internalIsLoading;
-  const totalPages = Math.ceil(allCriteria.length / rowsPerPage);
-
-  // Función para mostrar errores como toast
-  const showError = (errorMessage: string) => {
-    toast.error(errorMessage);
-  };
-
-  const columns = [
-    { key: "name", label: "Nombre" },
-    { key: "description", label: "Descripción" },
-    { key: "weight", label: "Peso" },
-  ];
 
   // Efecto para actualizar los datos cuando cambia la prop criteria
   useEffect(() => {
@@ -125,22 +122,15 @@ export const CriterionTable: React.FC<Props> = ({
     }
   }, [criteria]);
 
-  // Efecto para paginación
-  useEffect(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    setCurrentRows(allCriteria.slice(start, end));
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
 
-    // Ajustar página si es necesario
-    const currentTotalPages = Math.ceil(allCriteria.length / rowsPerPage);
-    if (currentPage > currentTotalPages && currentTotalPages > 0) {
-      setCurrentPage(currentTotalPages);
-    } else if (currentPage < 1 && currentTotalPages > 0) {
-      setCurrentPage(1);
-    } else if (allCriteria.length === 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, rowsPerPage, allCriteria]);
+  const columns = [
+    { key: "name", label: "Nombre" },
+    { key: "description", label: "Descripción" },
+    { key: "weight", label: "Peso" },
+  ];
 
   // Función para crear un nuevo criterio
   const handleAdd = async (e: React.FormEvent) => {
@@ -173,7 +163,8 @@ export const CriterionTable: React.FC<Props> = ({
       }
 
       const createdCriterion: Criterion = await response.json();
-      setAllCriteria((prev) => [createdCriterion, ...prev]);
+      // Refresh data after adding
+      onPageChange(1);
       setNewCriterion({ name: "", description: "", weight: "" });
       setAddDialogOpen(false);
       toast.success("Criterio agregado exitosamente");
@@ -226,9 +217,8 @@ export const CriterionTable: React.FC<Props> = ({
       }
 
       const updatedCriterion: Criterion = await response.json();
-      setAllCriteria((prev) =>
-        prev.map((c) => (c.id === updatedCriterion.id ? updatedCriterion : c))
-      );
+      // Refresh data after editing
+      onPageChange(pagination.currentPage);
       setEditDialogOpen(false);
       setEditingCriterion(null);
       toast.success("Criterio actualizado exitosamente");
@@ -246,7 +236,6 @@ export const CriterionTable: React.FC<Props> = ({
     setInternalIsLoading(true);
 
     try {
-      // 1. Enviar solicitud de soft delete al backend
       const response = await customFetch(
         `${apiBaseUrl}/criteria/${deletingId}`,
         {
@@ -259,16 +248,8 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al desactivar el criterio");
       }
 
-      // 2. Actualizar el estado local para reflejar el cambio
-      setAllCriteria(
-        (prevCriteria) =>
-          prevCriteria?.map((criterion) =>
-            criterion.id === deletingId
-              ? { ...criterion, isActive: false } // Marcar como inactivo
-              : criterion
-          ) || []
-      );
-
+      // Refresh data after deleting
+      onPageChange(pagination.currentPage);
       setDeleteDialogOpen(false);
       setDeletingId(null);
       toast.success("Criterio eliminado exitosamente");
@@ -387,7 +368,7 @@ export const CriterionTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              currentRows
+              allCriteria
                 .filter((criterion) => criterion.isActive)
                 .map((criterion) => (
                   <TableRow key={criterion.id}>
@@ -441,15 +422,14 @@ export const CriterionTable: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
             <Select
-              value={rowsPerPage.toString()}
+              value={pagination.itemsPerPage.toString()}
               onValueChange={(value) => {
-                setRowsPerPage(parseInt(value, 10));
-                setCurrentPage(1);
+                onLimitChange(parseInt(value, 10));
               }}
               disabled={showLoader || allCriteria.length === 0}
             >
               <SelectTrigger className="w-[70px] cursor-pointer">
-                <SelectValue placeholder={rowsPerPage} />
+                <SelectValue placeholder={pagination.itemsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
@@ -462,13 +442,13 @@ export const CriterionTable: React.FC<Props> = ({
           </div>
           <div className="flex items-center gap-4">
             <span>
-              Página {totalPages > 0 ? currentPage : 0} de {totalPages}
+              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de {pagination.totalPages}
             </span>
             <div className="flex gap-1">
               <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
+                onClick={() => onPageChange(pagination.currentPage - 1)}
                 disabled={
-                  currentPage === 1 || showLoader || allCriteria.length === 0
+                  pagination.currentPage === 1 || showLoader || allCriteria.length === 0
                 }
                 variant="outline"
                 size="icon"
@@ -477,9 +457,11 @@ export const CriterionTable: React.FC<Props> = ({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => onPageChange(pagination.currentPage + 1)}
                 disabled={
-                  currentPage === totalPages || totalPages === 0 || showLoader
+                  pagination.currentPage === pagination.totalPages || 
+                  pagination.totalPages === 0 || 
+                  showLoader
                 }
                 variant="outline"
                 size="icon"
