@@ -42,7 +42,8 @@ export const NavUser: React.FC<Props> = ({ user }) => {
                   alt={user.firstName + " " + user.lastName}
                 />
                 <AvatarFallback className="rounded-lg">
-                  {user.firstName.slice(0, 1) + " " + user.lastName.slice(0, 1)}
+                  {user.firstName.slice(0, 1).toUpperCase() +
+                    user.lastName.slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -68,9 +69,8 @@ export const NavUser: React.FC<Props> = ({ user }) => {
                     alt={user.firstName + " " + user.lastName}
                   />
                   <AvatarFallback className="rounded-lg">
-                    {user.firstName.slice(0, 1) +
-                      " " +
-                      user.lastName.slice(0, 1)}
+                    {user.firstName.slice(0, 1).toUpperCase() +
+                      user.lastName.slice(0, 1).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
