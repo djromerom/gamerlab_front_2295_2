@@ -43,7 +43,7 @@ function Landing(): React.ReactElement {
           <div className="mt-8">
             <button
               onClick={() => navigate("/registro-equipo")}
-              className="bg-white text-[#060312] py-3 px-5 rounded-lg font-medium hover:bg-gray-200 transition cursor-pointer"
+              className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
             >
               Registra tu equipo aquí
             </button>
