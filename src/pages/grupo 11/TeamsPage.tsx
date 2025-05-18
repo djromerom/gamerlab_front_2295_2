@@ -85,7 +85,7 @@ export default function TeamsPage() {
       <NavBar />
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
-          ¡Echa un vistazo a los equipos participantes!
+          ¡Echa un vistazo a los videojuegos participantes!
         </h1>
 
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
