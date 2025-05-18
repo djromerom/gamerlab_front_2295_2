@@ -131,8 +131,9 @@ export default function GameStep() {
                           <div className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</div>
                         </div>
                         <Button
-                          variant="ghost"
+                          variant="home"
                           size="icon"
+                          className="cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleDeleteFile()
@@ -164,7 +165,7 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Verificación de seguridad</FormLabel>
             <FormControl>
-              <ReCAPTCHA sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko" onChange={(val: unknown) => setValue("recaptcha", val + "")} />
+              <ReCAPTCHA className="cursor-pointer" sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko" onChange={(val: unknown) => setValue("recaptcha", val + "")} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -172,11 +173,11 @@ export default function GameStep() {
       />
 
       <div className="flex justify-between space-x-4 pt-4">
-        <Button type="button" variant="outline" onClick={back}>
+        <Button type="button" className="cursor-pointer" variant="outline" onClick={back}>
           Atrás
         </Button>
 
-        <Button type="submit">Enviar</Button>
+        <Button variant="home" type="submit">Enviar</Button>
       </div>
 
       {/* Modal de recorte de imagen */}

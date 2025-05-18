@@ -387,6 +387,13 @@ export default function CompetitionInfo() {
       quote:
         "Desde mi experiencia como monitora y jurado en la feria gamer, considero que este espacio, si bien aún presenta muchas oportunidades para mejorar y crecer, también representa una gran oportunidad para mostrar a las demás carreras los proyectos desarrollados por los alumnos. Además, permite que tanto participantes como visitantes observen, reflexionen y aprecien de primera mano cómo se evidencian los avances en resultados a medida que se progresa de semestre.",
     },
+    {
+      id: 2,
+      name: "Margarita Gamarra Acosta",
+      role: "Profesora Departamento de Ingeniería de Sistemas y Computación",
+      quote:
+        "Para mi la feria gamer es una muestra del trabajo, esfuerzo y pasión de todos los estudiantes participantes. El trabajo en equipo se ve reflejado en los excelentes resultados que muestran en cada uno de sus videojuegos, esta es ya la tercera versión de la feria y cada vez quedo mas sorprendida con las presentaciones y la creatividad de los trabajos que presentan, cada semestre agregan nuevas y mejores herramientas a los videojuegos y este semestre se unen mas estudiantes interesados en participar, este semestre queremos brindarle un espacio habierto para toda la comunidad uninorteña, para que los proyectos sean visibles ante toda la comunidad académica.",
+    },
   ];
 
   return (
