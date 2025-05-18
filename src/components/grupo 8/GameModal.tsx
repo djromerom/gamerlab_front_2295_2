@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/grupo 8/boton"; // Asegúrate que esta ruta es correcta
+import { Button } from "@/components/ui/button";
 
 interface GameModalProps {
   open: boolean;
@@ -49,7 +49,7 @@ const GameModal: React.FC<GameModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="bg-white dark:bg-[#18182A] text-gray-900 dark:text-white max-w-lg w-full rounded-lg p-6 shadow-xl border border-gray-200 dark:border-gray-700"
+        className="bg-card text-foreground max-w-lg w-full rounded-lg p-6 shadow-xl border "
       >
         <DialogHeader className="relative mb-1">
           <DialogTitle className="text-3xl font-bold text-left leading-tight text-gray-900 dark:text-white">
@@ -117,11 +117,11 @@ const GameModal: React.FC<GameModalProps> = ({
         <div className="mt-6 flex justify-end">
           <Button
             size="sm"
-            className={`px-6 py-2 text-base font-semibold rounded-md shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 
+            className={`px-6 py-2 text-base font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 
               ${
                 game.isEvaluated
-                  ? "bg-gray-500 hover:bg-gray-400 text-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-300 cursor-not-allowed focus:ring-gray-500 dark:focus:ring-gray-600 focus:ring-offset-white dark:focus:ring-offset-[#18182A]"
-                  : "bg-blue-600 hover:bg-blue-700 text-white dark:bg-[#7B6CF0] dark:hover:bg-[#6a5acd] dark:text-white focus:ring-blue-600 dark:focus:ring-[#7B6CF0] focus:ring-offset-white dark:focus:ring-offset-[#18182A]"
+                  ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
+                  : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] shadow-md cursor-pointer"
               }`}
             onClick={() => !game.isEvaluated && handleCalificarClick()}
             disabled={game.isEvaluated}

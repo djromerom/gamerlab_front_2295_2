@@ -2,7 +2,7 @@ import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
-import { Loader } from "lucide-react"; // Asegúrate de tener este import
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
 
 
 interface VideogameDetails {
@@ -57,12 +57,10 @@ const PendingGradesPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {loading ? (
-        <div className="flex flex-col justify-center items-center h-screen text-black dark:text-white">
-          <p className="mb-4">Cargando juegos pendientes...</p> {/* Texto con margen inferior */}
-          <Loader className="animate-spin w-8 h-8" /> {/* Loader centrado debajo del texto */}
-        </div>
-      ) : (
+      {/* Pantalla de carga */}
+        {loading ? (
+          <LoadingScreen text="Cargando juegos pendientes por calificar..." />
+        ) : (
         <>
           <PendingGamesGrid
             games={visibleGames.map((videogame) => ({
@@ -85,7 +83,7 @@ const PendingGradesPage: React.FC = () => {
           {allGames.length > 0 && (
             <div className="flex justify-center items-center gap-4 mt-6 py-6">
               <button
-                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
@@ -95,7 +93,7 @@ const PendingGradesPage: React.FC = () => {
                 Página {currentPage} de {totalPages}
               </span>
               <button
-                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >

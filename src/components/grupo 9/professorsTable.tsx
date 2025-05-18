@@ -335,7 +335,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                 >
                   Cancelar
                 </Button>
-                <Button className="cursor-pointer" type="submit" disabled={internalIsLoading}>
+                <Button className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]" type="submit" disabled={internalIsLoading}>
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>

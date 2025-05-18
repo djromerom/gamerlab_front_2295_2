@@ -650,7 +650,7 @@ export const NrcsTable: React.FC<Props> = ({
                   <Button
                     type="submit"
                     disabled={internalIsLoading || selectsLoading}
-                    className="cursor-pointer"
+                    className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
                   >
                     {internalIsLoading ? "Guardando..." : "Guardar"}
                   </Button>
@@ -926,7 +926,7 @@ export const NrcsTable: React.FC<Props> = ({
                 <Button
                   type="submit"
                   disabled={internalIsLoading || selectsLoading}
-                  className="cursor-pointer"
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
                 >
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
