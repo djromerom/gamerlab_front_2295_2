@@ -22,10 +22,10 @@ export interface AuthContextType {
 export interface UserProfile {
   /** UUID único del usuario */
   id: string;
-  /** Nombre completo */
-  name: string;
-  /** Nombre de usuario (username) */
-  username: string;
+  /** Primer nombre */
+  firstName: string;
+  /** Apellidos */
+  lastName: string;
   /** Correo electrónico */
   email: string;
   /** Indica si la cuenta está activa */
