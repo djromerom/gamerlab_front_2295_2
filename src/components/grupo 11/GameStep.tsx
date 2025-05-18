@@ -71,12 +71,18 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Descripción</FormLabel>
             <FormControl>
-              <textarea
-                placeholder="Escribe la descripción del videojuego"
-                {...field}
-                rows={4}
-                className="w-full rounded border px-3 py-2"
-              />
+              <div className="flex flex-col">
+                <textarea
+                  placeholder="Escribe la descripción del videojuego"
+                  {...field}
+                  rows={4}
+                  maxLength={300}
+                  className="w-full rounded border px-3 py-2"
+                />
+                <div className="flex justify-end mt-1 text-xs text-muted-foreground">
+                  {field.value?.length || 0}/300 caracteres
+                </div>
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>

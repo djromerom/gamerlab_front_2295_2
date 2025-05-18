@@ -121,7 +121,7 @@ export default function Scoreboard() {
     <div className="flex w-full max-w-4xl mx-auto p-4">
       <Card className="w-full shadow-sm border-purple-800">
         <CardHeader className="p-6 pb-2">
-          <CardTitle className="text-lg font-medium text-foreground text-purple-500">Retroalimentación del VideoJuego</CardTitle>
+          <CardTitle className="text-lg font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
           <CardDescription className="text-sm text-foreground/50">
             Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tus tareas a continuación.
           </CardDescription>
@@ -181,7 +181,7 @@ export default function Scoreboard() {
                 </div>
                 <div className="w-14 text-xs text-gray-500 flex justify-between">
                   <span>{group.count}</span>
-                  <span className="text-gray-100">{((group.count / totalRatings) * 100).toFixed(1)}%</span>
+                  <span>{((group.count / totalRatings) * 100).toFixed(1)}%</span>
                 </div>
               </div>
             ))}

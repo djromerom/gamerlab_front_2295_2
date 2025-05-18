@@ -109,8 +109,6 @@ export default function Review() {
       const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
           method: "GET",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
-
       })
       if (!res.ok) {
         alert("Error fetching ratings")

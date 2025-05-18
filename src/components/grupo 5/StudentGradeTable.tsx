@@ -22,6 +22,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+
 // NRC y estudiantes asociados
 const studentsByNRC: Record<
   string,
