@@ -16,8 +16,8 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles = "rounded-md font-medium transition-colors focus:outline-none flex items-center justify-center"
 
   const variantStyles = {
-    default: "bg-[#2a2a40] hover:bg-[#3a3a50] text-[#110d20]",
-    outline: "bg-transparent border border-[#2a2a40] hover:bg-[#f3f4f6] text-black",
+    default: "bg-card hover:bg-card text-foreground",
+    outline: "border text-black",
     primary: "bg-[#b3c7ff] hover:bg-[#a0b8ff] text-[#1a1a2e] font-medium",
   }
 

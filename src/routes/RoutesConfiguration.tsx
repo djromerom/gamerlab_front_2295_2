@@ -24,6 +24,7 @@ import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import CreditsPage from "@/pages/grupo 5/CreditsPage";
 
 type Role =
   | "Profesor"
@@ -72,6 +73,10 @@ const routes: RouteConfig[] = [
     element: <InformationPage />,
   },
   {
+    path: "/contribuidores",
+    element: <CreditsPage />,
+  },
+  {
     path: "/login",
     element: <LoginPage />,
   },
@@ -98,7 +103,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/pendientes-calificar/:id",
-    element: <RatePage params={{ id: "" }} />,
+    element: <RatePage />,
     roles: ["Jurado"],
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },

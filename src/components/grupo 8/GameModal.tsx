@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useNavigate } from "react-router-dom"; // Importa useNavigate
-import { Button } from "@/components/grupo 8/boton"; // Importa el componente de botón reutilizable
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface GameModalProps {
   open: boolean;
@@ -21,81 +21,110 @@ interface GameModalProps {
     nrc: string;
     participantes: string[];
     descripcion: string;
-    imagen?: string; // logo del juego
-    isEvaluated: boolean; // Indica si el juego ya ha sido calificado
+    imagen?: string;
+    isEvaluated: boolean;
+    comments?: string;
   };
+  showTotalScore?: boolean;
+  showComments?: boolean;
 }
 
-const GameModal: React.FC<GameModalProps> = ({ open, onClose, game }) => {
-  const navigate = useNavigate(); // Inicializa useNavigate
+const GameModal: React.FC<GameModalProps> = ({
+  open,
+  onClose,
+  game,
+  showComments = false,
+}) => {
+  const navigate = useNavigate();
 
   if (!game) return null;
 
   const handleCalificarClick = () => {
-    navigate(`/pendientes-calificar/${game.id}`, { state: { game } }); // Navega a la página de calificación con los datos del juego
-    onClose(); // Cierra el modal después de navegar
+    navigate(`/pendientes-calificar/${game.id}`, { state: { game } });
+    onClose();
   };
+
+
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-white dark:bg-[#1a1a2e] text-foreground max-w-md w-full rounded-xl p-6">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold mb-4">
-            {game.nombre}
+      <DialogContent
+        className="bg-card text-foreground max-w-lg w-full rounded-lg p-6 shadow-xl border "
+      >
+        <DialogHeader className="relative mb-1">
+          <DialogTitle className="text-3xl font-bold text-left leading-tight text-gray-900 dark:text-white">
+            {game.nombre.toUpperCase()}
           </DialogTitle>
-          {/* Botón de salida */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="absolute top-0 right-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors"
             aria-label="Cerrar"
           >
-
+          
           </button>
         </DialogHeader>
 
-        {/* Contenedor de contenido + imagen */}
-        <div className="flex justify-between gap-4 text-sm">
-          {/* Información del juego */}
-          <div className="space-y-1 flex-1">
-            <p>
-              <strong>Equipo:</strong> {game.equipo}
-            </p>
-            <p>
-              <strong>Materia:</strong> {game.materia}
-            </p>
-            <p>
-              <strong>NRC:</strong> {game.nrc}
-            </p>
-            <p>
-              <strong>Participantes:</strong> {game.participantes.join(", ")}
-            </p>
-            <p>
+        <div className="mt-4 ">
+          <div className="flex flex-row">
+            <div className="flex-grow space-y-0.5 text-sm leading-snug text-gray-700 dark:text-gray-300">
+              <p>
+                <strong>Equipo:</strong> {game.equipo}
+              </p>
+              <p>
+                <strong>Materia:</strong> {game.materia}
+              </p>
+              <p>
+                <strong>Nrc:</strong> {game.nrc}
+              </p>
+              <p>
+                <strong>Participantes:</strong> {game.participantes.join(", ")}
+              </p>
+            </div>
+
+            {game.imagen ? (
+              <div className="flex-shrink-0">
+                <img
+                  src={game.imagen}
+                  alt={`Logo de ${game.nombre}`}
+                  className="w-28 h-28 rounded-full object-cover bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            ) : (
+              // Placeholder si no hay imagen
+              <div className="flex-shrink-0">
+                <div className="w-28 h-28 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600">
+                  {/* Opcional: Iniciales o un icono genérico */}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
               <strong>Descripción:</strong> {game.descripcion}
             </p>
           </div>
 
-          {/* Logo del juego */}
-          {game.imagen && (
-            <div className="shrink-0 px-3">
-              <img
-                src={game.imagen}
-                alt="Logo del juego"
-                className="w-30 h-30 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
-              />
+          {showComments && game.comments && (
+            <div>
+              <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
+                <strong>Comentarios:</strong> {game.comments}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Botón de calificar */}
-        <div className="pt-4 flex justify-end px-5">
+        <div className="mt-6 flex justify-end">
           <Button
             size="sm"
-            className={`px-7 py-2 text-lg font-bold shadow-md rounded-md ${game.isEvaluated
-              ? "bg-gray-700 hover:bg-gray-700 text-foreground cursor-not-allowed"
-              : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)]"
+            className={`px-6 py-2 text-base font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 
+              ${
+                game.isEvaluated
+                  ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
+                  : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] shadow-md cursor-pointer"
               }`}
-            onClick={() => !game.isEvaluated && handleCalificarClick()} // Solo permite clic si no está evaluado
-            disabled={game.isEvaluated} // Deshabilita el botón si está evaluado
+            onClick={() => !game.isEvaluated && handleCalificarClick()}
+            disabled={game.isEvaluated}
           >
             {game.isEvaluated ? "Calificado" : "Calificar"}
           </Button>
