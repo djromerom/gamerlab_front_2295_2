@@ -1,74 +1,96 @@
+// ProfessorsPage.tsx
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { NrcsTable, Data } from "@/components/grupo 9/NrcsTable"; // Ajusta la ruta
+import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Adjust the path according to your structure
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Ajusta la ruta
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
-const NrcsPage = () => {
-  const [data, setData] = useState<Data | null>(null);
+export interface ProfessorRowData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  confirmationStatusId: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const ProfessorsPage: React.FC = () => {
+  const [professors, setProfessors] = useState<ProfessorRowData[] | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `http://localhost:3000/nrcs`;
+  // Set a very large limit to fetch all active Professors.
+  const FETCH_ALL_LIMIT = 10000; // Or a more reasonable "max" like 1000
+
+  // Ensure these URLs are correct for your environment
+  // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
+  // Assuming your /professors endpoint also supports 'limit' and 'includeInactive'
+  const API_ENDPOINT = `http://localhost:3000/professors?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
   const API_BASE_URL = `http://localhost:3000`;
-  const TABLE_RESOURCE_NAME = "nrcs";
 
   useEffect(() => {
-    console.log("inicio de la carga de NRC's");
-    const fetchNrcs = async () => {
+    const fetchProfessors = async () => {
       setIsPageLoading(true);
       setError(null);
-      setData(null);
+      setProfessors(null); // Clear previous data on new fetch
+
       try {
         const res = await fetch(API_ENDPOINT, {
+          // Use the updated API_ENDPOINT
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
 
         if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch NRCs`; // Corrected error message
+          let errorMsg = `Error ${res.status}: Failed to fetch professors`;
           try {
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {}
+          } catch (e) {
+            // Ignore if error body is not JSON or empty
+          }
           throw new Error(errorMsg);
         }
-        const dataRespond = await res.json();
 
-        setData({
-          title: "NRC'S",
-          TableName: TABLE_RESOURCE_NAME,
-          columns: {
-            code: "Código",
-            "subject.name": "Nombre de la Materia",
-            professorFullName: "Profesor", // CHANGED: Key for custom handling
-          },
-          rows: dataRespond.data || dataRespond, // Handle if data is directly the array or in a .data property
-        });
+        const dataRespond = await res.json(); // This should be PaginatedResult<ProfessorRowData>
+
+        // Ensure the response has the expected structure
+        if (!dataRespond || !dataRespond.data) {
+          throw new Error(
+            "Invalid data structure received from API for professors."
+          );
+        }
+
+        // The ProfessorsTable expects 'professors' to be a direct array of ProfessorRowData
+        setProfessors(dataRespond.data); // Use the 'data' array from the paginated response
       } catch (err: any) {
-        console.error("Error fetching NRCs:", err); // Corrected console error
+        console.error("Error fetching professors:", err);
         setError(
-          err.message || "Ocurrió un error desconocido al cargar los NRCs." // Corrected error message
+          err.message ||
+            "Ocurrió un error desconocido al cargar los profesores."
         );
-        setData(null);
+        setProfessors(null); // Ensure professors is null on error
       } finally {
         setIsPageLoading(false);
       }
     };
-    fetchNrcs();
-  }, []);
 
-  const breadcrumbs = [{ label: "NRC's", href: "/nrcs" }];
+    fetchProfessors();
+  }, []); // API_ENDPOINT is static, so no need for it in dependencies
+
+  const breadcrumbs = [{ label: "Profesores", href: "/professors" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
-        <LoadingScreen text="Cargando NRC's..." />
+        <LoadingScreen text="Cargando profesores..." />
       ) : (
         <>
-          {error && !data && (
+          {error && !professors && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -77,20 +99,24 @@ const NrcsPage = () => {
             </div>
           )}
 
-          <NrcsTable
-            data={data}
+          <ProfessorsTable
+            professors={professors}
             apiBaseUrl={API_BASE_URL}
-            isDataLoading={isPageLoading && data === null} // Pass true if page is loading AND data is not yet set
+            isDataLoading={isPageLoading && professors === null}
           />
-          {!isPageLoading && !error && data && data.rows.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No se encontraron NRC's. {/* Simplified message */}
-            </div>
-          )}
+
+          {!error &&
+            professors &&
+            professors.filter((p) => p.isActive).length === 0 && // This filter is fine if professors array contains all (active+inactive) and table filters
+            !isPageLoading && (
+              <div className="p-4 text-center text-gray-500">
+                No se encontraron profesores activos.
+              </div>
+            )}
         </>
       )}
     </LayoutAplication>
   );
 };
 
-export default NrcsPage;
+export default ProfessorsPage;
