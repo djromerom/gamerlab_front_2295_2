@@ -57,12 +57,32 @@ export default function RatePage() {
   // Función para mostrar errores como toast
 
   const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
-    { id: "interfaz", name: "Interfaz de usuario (10%)", score: 1, maxScore: 5 },
+    {
+      id: "interfaz",
+      name: "Interfaz de usuario (10%)",
+      score: 1,
+      maxScore: 5,
+    },
     { id: "interaccion", name: "Interacción (20%)", score: 1, maxScore: 5 },
     { id: "resultados", name: "Resultados (40%)", score: 1, maxScore: 5 },
-    { id: "presentacion", name: "Presentación del proyecto (10%)", score: 1, maxScore: 5 },
-    { id: "funcionamiento", name: "Funcionamiento del programa (10%)", score: 1, maxScore: 5 },
-    { id: "presentacion_grupo", name: "Presentación personal grupo (10%)", score: 1, maxScore: 5 },
+    {
+      id: "presentacion",
+      name: "Presentación del proyecto (10%)",
+      score: 1,
+      maxScore: 5,
+    },
+    {
+      id: "funcionamiento",
+      name: "Funcionamiento del programa (10%)",
+      score: 1,
+      maxScore: 5,
+    },
+    {
+      id: "presentacion_grupo",
+      name: "Presentación personal grupo (10%)",
+      score: 1,
+      maxScore: 5,
+    },
   ]);
 
   useEffect(() => {
@@ -83,9 +103,9 @@ export default function RatePage() {
   const showSuccess = (message: string) => {
     // Mostrar el toast de éxito
     toast.success(message, {
-      duration: 2000 // Duración del toast (2 segundos)
+      duration: 2000, // Duración del toast (2 segundos)
     });
-    
+
     // Programar la redirección después de que el toast haya tenido tiempo de mostrarse
     setTimeout(() => {
       setShowSuccessLoading(true);
@@ -104,7 +124,7 @@ export default function RatePage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
-    
+
     // 1. Calcular el puntaje final basado en los porcentajes
     const porcentajeMap: Record<string, number> = {
       interfaz: 0.1, // 10%
@@ -119,7 +139,7 @@ export default function RatePage() {
       const porcentaje = porcentajeMap[curr.id] || 0;
       return acc + curr.score * porcentaje;
     }, 0);
-    
+
     // 2. Preparar datos para evaluacion
     const fecha_creacion = new Date().toISOString();
     const evaluationPayload = {
@@ -133,7 +153,7 @@ export default function RatePage() {
     let evaluationId;
     try {
       const resEval = await fetch(
-        `http://localhost:3000/evaluation`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation`,
         {
           method: "POST",
           credentials: "include",
@@ -141,12 +161,12 @@ export default function RatePage() {
           body: JSON.stringify(evaluationPayload),
         }
       );
-      
+
       if (!resEval.ok) {
         const errorData = await resEval.json();
         throw new Error(errorData.message || "Error al guardar la evaluación");
       }
-      
+
       const evalData = await resEval.json();
       evaluationId = evalData.evaluationId;
     } catch (err: any) {
@@ -177,7 +197,7 @@ export default function RatePage() {
 
     try {
       const resDetails = await fetch(
-        `http://localhost:3000/evaluation/details`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/details`,
         {
           method: "POST",
           credentials: "include",
@@ -185,18 +205,19 @@ export default function RatePage() {
           body: JSON.stringify({ details }),
         }
       );
-      
+
       if (!resDetails.ok) {
         const errorData = await resDetails.json();
-        throw new Error(errorData.message || "Error al guardar los detalles de la evaluación");
+        throw new Error(
+          errorData.message || "Error al guardar los detalles de la evaluación"
+        );
       }
-      
+
       // Primero cerrar el diálogo de confirmación
       setConfirmDialogOpen(false);
       // Mostrar mensaje de éxito
       showSuccess(`Evaluación del juego "${game.nombre}" enviada exitosamente`);
       // No se navega aquí - la navegación ocurrirá en la función showSuccess después del toast
-      
     } catch (err: any) {
       showError(err.message || "Error guardando los detalles de la evaluación");
       setIsSubmitting(false);
@@ -223,9 +244,12 @@ export default function RatePage() {
       </LayoutAplication>
     );
   }
-  
+
   const breadcrumbs = [
-    { label: `Pendientes por calificar >  ${game?.nombre}`, href: "/pendientes-calificar" },
+    {
+      label: `Pendientes por calificar >  ${game?.nombre}`,
+      href: "/pendientes-calificar",
+    },
   ];
 
   const getDescription = (id: string): string => {
@@ -376,10 +400,13 @@ export default function RatePage() {
                               }
                               className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
                               style={{
-                                background: `linear-gradient(to right, var(--selected) ${((criterion.score - 1) / 4) * 100}%, #e5e7eb ${((criterion.score - 1) / 4) * 100}%)`,
+                                background: `linear-gradient(to right, var(--selected) ${
+                                  ((criterion.score - 1) / 4) * 100
+                                }%, #e5e7eb ${
+                                  ((criterion.score - 1) / 4) * 100
+                                }%)`,
                                 accentColor: "var(--selected)", // morado (tailwind purple-500)
                               }}
-                              
                             />
                             <span className="text-sm font-medium px-0">
                               {criterion.score}
@@ -412,7 +439,7 @@ export default function RatePage() {
                   >
                     {isSubmitting ? (
                       <span className="flex justify-center items-center w-full">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <Loader2 className="h-6 w-6 animate-spin text-foreground" />
                       </span>
                     ) : (
                       "Enviar Evaluación"
@@ -425,12 +452,16 @@ export default function RatePage() {
         </div>
 
         {/* AlertDialog para confirmar envío de evaluación */}
-        <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialog
+          open={confirmDialogOpen}
+          onOpenChange={setConfirmDialogOpen}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción enviará su evaluación del juego {game?.nombre}. Una vez enviada, no podrá ser modificada.
+                Esta acción enviará su evaluación del juego {game?.nombre}. Una
+                vez enviada, no podrá ser modificada.
               </AlertDialogDescription>
             </AlertDialogHeader>
             {error && !isSubmitting && (

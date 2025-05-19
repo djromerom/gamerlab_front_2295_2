@@ -17,6 +17,7 @@ import {
   Calendar,
 } from "lucide-react"
 import NavBar from "@/components/grupo 5/NavBar"
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -375,7 +376,7 @@ export default function DevelopersCredits() {
       id: "qa",
       name: "QA & Testing",
       icon: <Star className="w-5 h-5" />,
-      description: "Garantizan la calidad y el correcto funcionamiento de la plataforma.",
+      description: "Garantiza la calidad y el correcto funcionamiento de la plataforma.",
     },
     {
       id: "devops",
@@ -542,7 +543,7 @@ export default function DevelopersCredits() {
       id: 20,
       name: "Daniel Romero",
       role: "Product manager",
-      department: "",
+      department: "qa",
       github: "https://github.com/djromerom",
       email: "djromero@uninorte.edu.co",
     },
@@ -837,6 +838,7 @@ export default function DevelopersCredits() {
             </p>
             <p className="text-gray-400 text-sm">© 2025 Arkad. Todos los derechos reservados.</p>
           </div>
+          <TextSizeControls />
         </div>
       </div>
     </>

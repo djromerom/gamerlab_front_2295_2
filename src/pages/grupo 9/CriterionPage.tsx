@@ -28,7 +28,9 @@ interface PaginatedCriteria {
 }
 
 const CriteriaPage = () => {
-  const [criteriaData, setCriteriaData] = useState<PaginatedCriteria | null>(null);
+  const [criteriaData, setCriteriaData] = useState<PaginatedCriteria | null>(
+    null
+  );
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -37,18 +39,21 @@ const CriteriaPage = () => {
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
 
-  const API_BASE_URL = `http://localhost:3000`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const fetchCriteria = async (page: number, limit: number) => {
     setIsPageLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/criteria?page=${page}&limit=${limit}`, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/criteria?page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (!res.ok) {
         let errorMsg = `Error ${res.status}: Failed to fetch criteria`;
@@ -73,7 +78,7 @@ const CriteriaPage = () => {
   };
 
   const refreshData = () => {
-    setRefreshFlag(prev => !prev);
+    setRefreshFlag((prev) => !prev);
   };
 
   useEffect(() => {
@@ -81,7 +86,7 @@ const CriteriaPage = () => {
   }, [pagination.page, pagination.limit, refreshFlag]);
 
   const handlePageChange = (page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+    setPagination((prev) => ({ ...prev, page }));
   };
 
   const handleLimitChange = (limit: number) => {
@@ -113,7 +118,6 @@ const CriteriaPage = () => {
               refreshData={refreshData}
             />
           )}
-
           {!isPageLoading && !error && criteriaData && criteriaData.data.length === 0 && (
             <div className="p-4 text-center text-gray-500">
               No se encontraron criterios activos.

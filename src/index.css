@@ -79,6 +79,10 @@
   --selected-foreground: oklch(0.99 0 0);
   --selected-hover: oklch(0.5 0.239 281.93);
   --graded: oklch(60% 0.2 250 / 0);
+  --toast-success: oklch(0.78 0.1887 148.29);
+  --toast-success-border: oklch(0.72 0.1887 148.29);
+  --toast-error: oklch(0.44 0.1684 14.02);
+  --toast-error-border: oklch(0.4 0.1684 14.02);
 }
 
 .dark {
@@ -118,6 +122,10 @@
   --selected-foreground: oklch(0.18 0.0386 291.6);
   --selected-hover: oklch(0.8 0.0984 270.09);
   --graded: oklch(60% 0.2 250 / 0);
+  --toast-success: oklch(0.73 0.1999 146.98);
+  --toast-success-border: oklch(0.78 0.1999 146.98);
+  --toast-error: oklch(0.57 0.2048 20.12);
+  --toast-error-border: oklch(0.62 0.2048 20.12);
 }
 
 .high-contrast {

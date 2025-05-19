@@ -42,7 +42,9 @@ export default function MembersStep() {
 
   const [isPageLoading, setIsPageLoading] = useState(true); // Initialize to true
   const [error, setError] = useState<string | null>(null);
-  const API_ENDPOINT = `http://localhost:3000/nrcs/select-options`;
+  const API_ENDPOINT = `${
+    import.meta.env.VITE_ENDPOINT_BACKEND
+  }/nrcs/select-options`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]); // Typed state
 
@@ -122,7 +124,12 @@ export default function MembersStep() {
           <div className="flex justify-between items-start mb-3">
             <span>Integrante {idx + 1}</span>
             {fields.length > 1 && (
-              <Button variant="ghost" className="cursor-pointer" size="icon" onClick={() => remove(idx)}>
+              <Button
+                variant="ghost"
+                className="cursor-pointer"
+                size="icon"
+                onClick={() => remove(idx)}
+              >
                 <Trash2 />
               </Button>
             )}
@@ -236,7 +243,10 @@ export default function MembersStep() {
                               !isPageLoading)
                           }
                         >
-                          <SelectTrigger className="cursor-pointer" style={{ width: "100%" }}>
+                          <SelectTrigger
+                            className="cursor-pointer"
+                            style={{ width: "100%" }}
+                          >
                             <span className="text-muted-foreground">
                               {triggerText}
                             </span>
@@ -332,7 +342,9 @@ export default function MembersStep() {
         <Button className="cursor-pointer" variant="outline" onClick={back}>
           Atrás
         </Button>
-        <Button variant="home" onClick={handleNext}>Siguiente</Button>
+        <Button variant="home" onClick={handleNext}>
+          Siguiente
+        </Button>
       </div>
     </>
   );
