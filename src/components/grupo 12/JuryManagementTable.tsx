@@ -530,41 +530,34 @@ export const JuryManagementTable: React.FC<Props> = ({
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              {/* Usa data?.nombreTabla de forma segura */}
                               <DialogTitle>
                                 {columnNames[key]}
-                                {/* {row[0]} */}
                               </DialogTitle>
                               <DialogDescription>
                                 Jurado {row.name}
                               </DialogDescription>
                             </DialogHeader>
-                            {/* TRY changing div to table component */}
-                            {/* <div className="max-h-[75vh] overflow-y-auto"> */}
                             <Table>
+                              <TableBody>
                               {key === "evaluatedCount" ? (
-                                row.evaluatedGameNames.map((game, index) => (
-                                  <TableBody>
+                                row.evaluatedGameNames.map((game, index) => (    
                                     <TableRow key={index}>
                                       <TableCell>
                                         {game}
                                       </TableCell>
                                     </TableRow>
-                                  </TableBody>
                                 ))
                               ) : (
                                 row.unevaluatedGameNames.map((game, index) => (
-                                  <TableBody>
                                     <TableRow key={index}>
                                       <TableCell>
                                         {game}
                                       </TableCell>
                                     </TableRow>
-                                  </TableBody>
                                 ))
                               )}
+                              </TableBody>
                             </Table>
-                            {/* </div> */}
                           </DialogContent>
                         </Dialog>
                       ) : (
