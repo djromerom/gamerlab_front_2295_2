@@ -25,7 +25,6 @@ import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
-import { ToastTest } from "@/pages/grupo 5/ToastTest";
 
 type Role =
   | "Profesor"
