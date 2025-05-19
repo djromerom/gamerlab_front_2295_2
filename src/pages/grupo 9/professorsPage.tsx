@@ -1,113 +1,152 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Adjust the path according to your structure
+import { ProfessorsTable } from "@/components/grupo 9/professorsTable";
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
+// Interface for a single professor (can be enhanced if more fields come from API)
 export interface ProfessorRowData {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  confirmationStatusId: number; // Changed from Number to number
+  confirmationStatusId: number;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: string; // Optional, adjust if always present
+  updatedAt?: string; // Optional, adjust if always present
+}
+
+// Interface for the paginated response from the API
+export interface PaginatedProfessors {
+  data: ProfessorRowData[];
+  metadata: {
+    totalItems: number;
+    itemsOnCurrentPage: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  };
 }
 
 export const ProfessorsPage: React.FC = () => {
-  const [professors, setProfessors] = useState<ProfessorRowData[] | null>(null);
+  const [professorsData, setProfessorsData] =
+    useState<PaginatedProfessors | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5, // Default items per page
+  });
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
-  // Ensure these URLs are correct for your environment
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const PROFESSORS_API_ENDPOINT = `${API_BASE_URL}/professors`;
+
+  const fetchProfessors = async (page: number, limit: number) => {
+    setIsPageLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(
+        `${PROFESSORS_API_ENDPOINT}?page=${page}&limit=${limit}&includeInactive=true`, // Added includeInactive=true to get all, filtering is in table
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to fetch professors`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) {
+          /* ignore */
+        }
+        throw new Error(errorMsg);
+      }
+
+      const dataRespond: PaginatedProfessors = await res.json();
+
+      // If the current page is empty (e.g., after deleting the last item)
+      // and it's not the first page, fetch the previous page.
+      if (
+        dataRespond.data.length === 0 &&
+        page > 1 &&
+        dataRespond.metadata.totalItems > 0
+      ) {
+        // Check totalItems to prevent infinite loop if backend returns 0 items always
+        return fetchProfessors(page - 1, limit);
+      }
+
+      setProfessorsData(dataRespond);
+    } catch (err: any) {
+      console.error("Error fetching professors:", err);
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar los profesores."
+      );
+      setProfessorsData(null); // Clear data on error
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  // Function to trigger a data refresh
+  const refreshData = () => {
+    setRefreshFlag((prev) => !prev); // Toggle flag to re-trigger useEffect
+  };
 
   useEffect(() => {
-    const fetchProfessors = async () => {
-      setIsPageLoading(true);
-      setError(null);
-      // Set professors to null initially on fetch, or keep previous data?
-      // Setting to null to ensure loader for table doesn't show stale data if fetch fails.
-      // setProfessors(null); // This is already done before this component by the table
+    fetchProfessors(pagination.page, pagination.limit);
+  }, [pagination.page, pagination.limit, refreshFlag]); // Re-fetch when page, limit, or refreshFlag changes
 
-      try {
-        const res = await fetch(API_ENDPOINT, {
-          method: "GET",
-          credentials: "include", // Be mindful of CORS if frontend and backend are on different origins
-          headers: { "Content-Type": "application/json" },
-        });
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
 
-        if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch professors`;
-          try {
-            const errorBody = await res.json();
-            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {
-            // Ignore if error body is not JSON or empty
-          }
-          throw new Error(errorMsg);
-        }
+  const handleLimitChange = (newLimit: number) => {
+    // Reset to page 1 when limit changes to avoid being on an invalid page
+    setPagination({ page: 1, limit: newLimit });
+  };
 
-        const dataRespond = await res.json();
-
-        // Assuming the API returns { data: ProfessorRowData[] }
-        // If the structure is different, adjust dataRespond.data accordingly
-        setProfessors(dataRespond.data || dataRespond); // Handle if data is directly the array
-      } catch (err: any) {
-        console.error("Error fetching professors:", err);
-        setError(
-          err.message ||
-            "Ocurrió un error desconocido al cargar los profesores."
-        );
-        setProfessors(null); // Ensure professors is null on error
-      } finally {
-        setIsPageLoading(false);
-      }
-    };
-
-    fetchProfessors();
-  }, []); // API_ENDPOINT can be added to dependency array if it can change, but it's a const here.
-
-  const breadcrumbs = [{ label: "Profesores", href: "/professors" }]; // Adjust href as needed
+  const breadcrumbs = [{ label: "Profesores", href: "/professors" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {isPageLoading ? (
+      {isPageLoading && !professorsData ? ( // Show full page loader only on initial load or when data is completely absent
         <LoadingScreen text="Cargando profesores..." />
       ) : (
         <>
-          {error &&
-            !professors && ( // Show error only if there are no professors loaded
-              <div
-                className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-                role="alert"
-              >
-                <span className="font-medium">Error:</span> {error}
-              </div>
-            )}
+          {error && !professorsData && (
+            <div
+              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+              role="alert"
+            >
+              <span className="font-medium">Error:</span> {error}
+            </div>
+          )}
 
-          <ProfessorsTable
-            professors={professors}
-            apiBaseUrl={API_BASE_URL}
-            // isDataLoading is managed internally by ProfessorsTable for its own operations,
-            // and page-level loading is handled by isPageLoading here.
-            // So, we don't pass isPageLoading to isDataLoading directly.
-            // The ProfessorsTable's isDataLoading prop is for when the table itself might be refetching
-            // due to an external trigger, which is not the case here as data is passed via props.
-            // The internal loader in ProfessorsTable will be active during CRUD operations.
-            isDataLoading={isPageLoading && professors === null} // Show table's own loader if page is loading and no data yet
-          />
+          {professorsData && (
+            <ProfessorsTable
+              professors={professorsData.data} // Pass only the data array for the current page
+              paginationMeta={professorsData.metadata} // Pass pagination metadata
+              apiBaseUrl={API_BASE_URL}
+              isDataLoading={isPageLoading} // To show loader in table while fetching new page data
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              refreshData={refreshData} // Pass the refresh function
+            />
+          )}
 
-          {/* Message for no active professors if fetch was successful but returned empty */}
-          {!error &&
-            professors &&
-            professors.filter((p) => p.isActive).length === 0 &&
-            !isPageLoading && (
+          {/* Message for no professors found if fetch was successful but returned empty overall */}
+          {!isPageLoading &&
+            !error &&
+            professorsData &&
+            professorsData.metadata.totalItems === 0 && (
               <div className="p-4 text-center text-gray-500">
-                No se encontraron profesores activos.
+                No se encontraron profesores.
               </div>
             )}
         </>

@@ -62,24 +62,34 @@ interface ProfessorFormData {
   email: string;
 }
 
+interface PaginationMetadata {
+  totalItems: number;
+  itemsOnCurrentPage: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+}
+
 interface Props {
-  professors: ProfessorRowData[] | null;
+  professors: ProfessorRowData[] | null; // Now receives only the current page's data
+  paginationMeta: PaginationMetadata; // Receives pagination metadata from parent
   apiBaseUrl: string;
-  isDataLoading?: boolean;
+  isDataLoading?: boolean; // For the table to show a loader when parent is fetching
+  onPageChange: (page: number) => void; // Callback to parent
+  onLimitChange: (limit: number) => void; // Callback to parent
+  refreshData: () => void; // Callback to parent
 }
 
 export const ProfessorsTable: React.FC<Props> = ({
   professors,
+  paginationMeta,
   apiBaseUrl,
   isDataLoading = false,
+  onPageChange,
+  onLimitChange,
+  refreshData,
 }) => {
   const customFetch = useFetch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [allProfessors, setAllProfessors] = useState<ProfessorRowData[]>(
-    professors || []
-  );
-  const [currentRows, setCurrentRows] = useState<ProfessorRowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newProfessor, setNewProfessor] = useState<ProfessorFormData>({
     firstName: "",
@@ -91,10 +101,11 @@ export const ProfessorsTable: React.FC<Props> = ({
     useState<ProfessorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [internalIsLoading, setInternalIsLoading] = useState(false);
+  const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
 
+  // isDataLoading from props indicates parent is fetching (e.g., new page)
+  // internalIsLoading is for this component's own async operations (add, edit, delete)
   const showLoader = isDataLoading || internalIsLoading;
-  const totalPages = Math.ceil(allProfessors.length / rowsPerPage);
 
   const showError = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -128,31 +139,13 @@ export const ProfessorsTable: React.FC<Props> = ({
         }
       },
     },
+    {
+      key: "isActive",
+      label: "Activo",
+      renderCell: (professor: ProfessorRowData) =>
+        professor.isActive ? "Sí" : "No",
+    },
   ];
-
-  useEffect(() => {
-    if (professors && professors !== allProfessors) {
-      setAllProfessors(professors);
-    }
-    if (professors === null && allProfessors.length > 0) {
-      setAllProfessors([]);
-    }
-  }, [professors]);
-
-  useEffect(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    setCurrentRows(allProfessors.slice(start, end));
-
-    const currentTotalPages = Math.ceil(allProfessors.length / rowsPerPage);
-    if (currentPage > currentTotalPages && currentTotalPages > 0) {
-      setCurrentPage(currentTotalPages);
-    } else if (currentPage < 1 && currentTotalPages > 0) {
-      setCurrentPage(1);
-    } else if (allProfessors.length === 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, rowsPerPage, allProfessors]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,15 +173,18 @@ export const ProfessorsTable: React.FC<Props> = ({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al crear el profesor." }));
         throw new Error(errorData.message || "Error al crear el profesor.");
       }
 
-      const createdProfessor: ProfessorRowData = await response.json();
-      setAllProfessors((prev) => [createdProfessor, ...prev]);
+      // const createdProfessor: ProfessorRowData = await response.json(); // Not strictly needed to update local state here
       setNewProfessor({ firstName: "", lastName: "", email: "" });
       setAddDialogOpen(false);
       toast.success("Profesor agregado exitosamente.");
+      onPageChange(1); // Go to first page to see the new professor, or just refresh
+      refreshData(); // Tell parent to refetch data
     } catch (err: any) {
       showError(err.message || "Error al agregar el profesor.");
     } finally {
@@ -209,6 +205,8 @@ export const ProfessorsTable: React.FC<Props> = ({
       if (!editingProfessor.lastName.trim()) {
         throw new Error("El campo Apellidos es requerido.");
       }
+      // Email is typically not editable after creation or handled differently
+      // For now, only first and last name are editable as per your original code.
 
       const response = await customFetch(
         `${apiBaseUrl}/professors/${editingProfessor.id}`,
@@ -218,24 +216,25 @@ export const ProfessorsTable: React.FC<Props> = ({
           body: JSON.stringify({
             firstName: editingProfessor.firstName,
             lastName: editingProfessor.lastName,
+            // email: editingProfessor.email, // If email is editable
           }),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al actualizar el profesor." }));
         throw new Error(
           errorData.message || "Error al actualizar el profesor."
         );
       }
 
-      const updatedProfessor: ProfessorRowData = await response.json();
-      setAllProfessors((prev) =>
-        prev.map((p) => (p.id === updatedProfessor.id ? updatedProfessor : p))
-      );
+      // const updatedProfessor: ProfessorRowData = await response.json(); // Not strictly needed here
       setEditDialogOpen(false);
       setEditingProfessor(null);
       toast.success("Profesor actualizado exitosamente.");
+      refreshData(); // Tell parent to refetch data
     } catch (err: any) {
       showError(err.message || "Error al actualizar el profesor.");
     } finally {
@@ -248,33 +247,25 @@ export const ProfessorsTable: React.FC<Props> = ({
     setInternalIsLoading(true);
     try {
       const response = await customFetch(
-        `${apiBaseUrl}/professors/${deletingId}`,
+        `${apiBaseUrl}/professors/${deletingId}`, // This should be a DELETE or a PATCH to an /inactive endpoint
         {
-          method: "DELETE",
+          method: "DELETE", // Assuming hard delete, or PATCH for soft delete
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Error al desactivar el profesor."
-        );
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al eliminar el profesor." }));
+        throw new Error(errorData.message || "Error al eliminar el profesor.");
       }
-
-      setAllProfessors(
-        (prevProfessors) =>
-          prevProfessors?.map((professor) =>
-            professor.id === deletingId
-              ? { ...professor, isActive: false }
-              : professor
-          ) || []
-      );
 
       setDeleteDialogOpen(false);
       setDeletingId(null);
       toast.success("Profesor eliminado exitosamente.");
+      refreshData(); // Tell parent to refetch, which handles page adjustment if needed
     } catch (err: any) {
-      showError(err.message || "Error al desactivar el profesor.");
+      showError(err.message || "Error al eliminar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -283,7 +274,7 @@ export const ProfessorsTable: React.FC<Props> = ({
   return (
     <div
       className={`bg-background text-foreground min-h-screen p-4 ${
-        showLoader ? "opacity-75" : ""
+        showLoader ? "opacity-75 pointer-events-none" : "" // Added pointer-events-none
       }`}
     >
       <div className="flex justify-between items-center mb-6 px-4">
@@ -293,7 +284,7 @@ export const ProfessorsTable: React.FC<Props> = ({
             <Button
               variant="outline"
               className="bg-card hover:bg-accent text-foreground cursor-pointer"
-              disabled={!professors || showLoader}
+              disabled={showLoader} // Disable if any loading is happening
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
@@ -322,6 +313,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                     }
                     className="col-span-3"
                     required
+                    disabled={internalIsLoading}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -339,6 +331,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                     }
                     className="col-span-3"
                     required
+                    disabled={internalIsLoading}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -357,6 +350,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                     }
                     className="col-span-3"
                     required
+                    disabled={internalIsLoading}
                   />
                 </div>
               </div>
@@ -378,6 +372,9 @@ export const ProfessorsTable: React.FC<Props> = ({
                   type="submit"
                   disabled={internalIsLoading}
                 >
+                  {internalIsLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -393,11 +390,11 @@ export const ProfessorsTable: React.FC<Props> = ({
               {columnsToDisplay.map(({ key, label }) => (
                 <TableHead key={key}>{label}</TableHead>
               ))}
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[50px] text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {showLoader ? (
+            {showLoader && (!professors || professors.length === 0) ? ( // Show loader if loading and no rows yet for current page
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -409,24 +406,25 @@ export const ProfessorsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : allProfessors.length === 0 ? (
+            ) : !showLoader && (!professors || professors.length === 0) ? ( // No data and not loading
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay profesores disponibles.
+                  No hay profesores para mostrar en esta página.
                 </TableCell>
               </TableRow>
             ) : (
-              currentRows
-                .filter((professor) => professor.isActive)
-                .map((professor) => (
+              professors?.map(
+                (
+                  professor // Render rows if professors array is not null/empty
+                ) => (
                   <TableRow key={professor.id}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(professor)}</TableCell>
                     ))}
-                    <TableCell>
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -449,6 +447,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                           >
                             Editar
                           </DropdownMenuItem>
+                          {/* Assuming DELETE actually deactivates or hard deletes */}
                           <DropdownMenuItem
                             onClick={() => {
                               setDeletingId(professor.id);
@@ -457,76 +456,85 @@ export const ProfessorsTable: React.FC<Props> = ({
                             className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                             disabled={internalIsLoading}
                           >
-                            Eliminar
+                            {professor.isActive
+                              ? "Desactivar"
+                              : "Eliminar Def."}{" "}
+                            {/* Or just "Eliminar" */}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))
+                )
+              )
             )}
           </TableBody>
         </Table>
 
-        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-          <div className="flex items-center gap-2">
-            <span>Filas por página</span>
-            <Select
-              value={rowsPerPage.toString()}
-              onValueChange={(value) => {
-                setRowsPerPage(parseInt(value, 10));
-                setCurrentPage(1);
-              }}
-              disabled={showLoader || allProfessors.length === 0}
-            >
-              <SelectTrigger className="w-[70px] cursor-pointer">
-                <SelectValue placeholder={rowsPerPage} />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20].map((n) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={n}
-                    value={n.toString()}
-                  >
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>
-              Página {totalPages > 0 ? currentPage : 0} de {totalPages}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={
-                  currentPage === 1 || showLoader || allProfessors.length === 0
-                }
-                variant="outline"
-                size="icon"
-                className="cursor-pointer"
+        {/* Pagination Controls - Driven by paginationMeta from props */}
+        {paginationMeta && paginationMeta.totalItems > 0 && (
+          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+            <div className="flex items-center gap-2">
+              <span>Filas por página</span>
+              <Select
+                value={paginationMeta.itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  onLimitChange(parseInt(value, 10));
+                }}
+                disabled={showLoader}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={
-                  currentPage === totalPages || totalPages === 0 || showLoader
-                }
-                variant="outline"
-                size="icon"
-                className="cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <SelectTrigger className="w-[70px] cursor-pointer">
+                  <SelectValue placeholder={paginationMeta.itemsPerPage} />
+                </SelectTrigger>
+                <SelectContent>
+                  {[5, 10, 15, 20].map((n) => (
+                    <SelectItem
+                      className="cursor-pointer"
+                      key={n}
+                      value={n.toString()}
+                    >
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>
+                Página{" "}
+                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
+                de {paginationMeta.totalPages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  onClick={() => onPageChange(paginationMeta.currentPage - 1)}
+                  disabled={paginationMeta.currentPage === 1 || showLoader}
+                  variant="outline"
+                  size="icon"
+                  className="cursor-pointer"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => onPageChange(paginationMeta.currentPage + 1)}
+                  disabled={
+                    paginationMeta.currentPage === paginationMeta.totalPages ||
+                    paginationMeta.totalPages === 0 ||
+                    showLoader
+                  }
+                  variant="outline"
+                  size="icon"
+                  className="cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           {editingProfessor && (
@@ -534,7 +542,7 @@ export const ProfessorsTable: React.FC<Props> = ({
               <DialogHeader>
                 <DialogTitle>Editar Profesor</DialogTitle>
                 <DialogDescription>
-                  Modifique los campos del profesor según sea necesario.
+                  Modifique los datos del profesor. El email no se puede editar.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4 px-6">
@@ -552,6 +560,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                     }
                     className="col-span-3"
                     required
+                    disabled={internalIsLoading}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -568,6 +577,20 @@ export const ProfessorsTable: React.FC<Props> = ({
                     }
                     className="col-span-3"
                     required
+                    disabled={internalIsLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editingProfessor.email || ""}
+                    className="col-span-3"
+                    disabled // Email is typically not editable
+                    readOnly
                   />
                 </div>
               </div>
@@ -585,10 +608,13 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Cancelar
                 </Button>
                 <Button
-                  className="cursor-pointer"
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
                   type="submit"
                   disabled={internalIsLoading}
                 >
+                  {internalIsLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -597,13 +623,14 @@ export const ProfessorsTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Delete/Deactivate Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción desactivará al profesor. Podrá reactivarlo más tarde
-              si es necesario.
+              Esta acción eliminará (o desactivará) al profesor. Confirme para
+              proceder.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -622,7 +649,10 @@ export const ProfessorsTable: React.FC<Props> = ({
               className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
-              {internalIsLoading ? "Eliminando..." : "Confirmar"}
+              {internalIsLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {internalIsLoading ? "Procesando..." : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
