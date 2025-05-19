@@ -188,9 +188,7 @@ export const ProfessorsTable: React.FC<Props> = ({
       setAllProfessors((prev) => [createdProfessor, ...prev]);
       setNewProfessor({ firstName: "", lastName: "", email: "" });
       setAddDialogOpen(false);
-      toast.success("Profesor agregado exitosamente.", {
-        duration: 30000,
-      });
+      toast.success("Profesor agregado exitosamente.");
     } catch (err: any) {
       showError(err.message || "Error al agregar el profesor.");
     } finally {

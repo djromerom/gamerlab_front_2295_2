@@ -23,6 +23,7 @@ interface PaginatedCriteria {
     currentPage: number;
     itemsPerPage: number;
     totalPages: number;
+    totalWeight: number; // Nuevo campo
   };
 }
 
@@ -36,7 +37,7 @@ const CriteriaPage = () => {
     page: 1,
     limit: 5,
   });
-  const [refreshFlag, setRefreshFlag] = useState(false); // Nueva bandera de refresco
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -66,6 +67,12 @@ const CriteriaPage = () => {
       }
 
       const dataRespond: PaginatedCriteria = await res.json();
+
+      // Si la página actual está vacía pero no es la primera, retroceder
+      if (dataRespond.data.length === 0 && page > 1) {
+        return fetchCriteria(page - 1, limit);
+      }
+
       setCriteriaData(dataRespond);
     } catch (err: any) {
       console.error("Error fetching criteria:", err);
@@ -77,15 +84,13 @@ const CriteriaPage = () => {
       setIsPageLoading(false);
     }
   };
-
-  // Función para forzar el refresco de datos
   const refreshData = () => {
     setRefreshFlag((prev) => !prev);
   };
 
   useEffect(() => {
     fetchCriteria(pagination.page, pagination.limit);
-  }, [pagination.page, pagination.limit, refreshFlag]); // Añadimos refreshFlag como dependencia
+  }, [pagination.page, pagination.limit, refreshFlag]);
 
   const handlePageChange = (page: number) => {
     setPagination((prev) => ({ ...prev, page }));
@@ -103,7 +108,6 @@ const CriteriaPage = () => {
         <LoadingScreen text="Cargando criterios de calificación..." />
       ) : (
         <>
-          {/* Error display */}
           {error && !criteriaData && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
@@ -113,7 +117,6 @@ const CriteriaPage = () => {
             </div>
           )}
 
-          {/* Tabla de criterios */}
           {criteriaData && (
             <CriterionTable
               criteria={criteriaData.data}
@@ -122,11 +125,9 @@ const CriteriaPage = () => {
               isDataLoading={isPageLoading}
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
-              refreshData={refreshData} // Pasamos la función de refresco
+              refreshData={refreshData}
             />
           )}
-
-          {/* No results message */}
           {!isPageLoading &&
             !error &&
             criteriaData &&

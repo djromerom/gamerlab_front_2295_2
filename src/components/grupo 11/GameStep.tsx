@@ -15,10 +15,11 @@ import { ImageCropper } from "./ImageCropper"
 
 export default function GameStep() {
   const { back } = useMultiForm()
-  const { control, setValue, watch } = useFormContext<CombinedFormValues>()
+  const { control, setValue, watch, setError, clearErrors } = useFormContext<CombinedFormValues>()
   const [fileError, setFileError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentFiles = watch("files") || []
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
 
   // Estado para el modal de recorte
   const [cropperOpen, setCropperOpen] = useState(false)
@@ -47,6 +48,21 @@ export default function GameStep() {
   const handleDeleteFile = () => {
     setValue("files", [])
   }
+
+  // Handle reCAPTCHA change - almacena solamente el token para validación en backend
+  const handleRecaptchaChange = (token: string | null) => {
+    if (!token) {
+      setError("recaptcha", {
+        type: "manual",
+        message: "Por favor, complete la verificación de reCAPTCHA"
+      });
+      return;
+    }
+    
+    // Simplemente almacenamos el token para enviarlo al backend
+    setValue("recaptcha", token);
+    clearErrors("recaptcha");
+  };
 
   return (
     <>
@@ -159,7 +175,14 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Verificación de seguridad</FormLabel>
             <FormControl>
-              <ReCAPTCHA className="cursor-pointer" sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko" onChange={(val: unknown) => setValue("recaptcha", val + "")} />
+              <div>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  className="cursor-pointer"
+                  sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko"
+                  onChange={handleRecaptchaChange}
+                />
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -171,7 +194,12 @@ export default function GameStep() {
           Atrás
         </Button>
 
-        <Button variant="home" type="submit">Enviar</Button>
+        <Button 
+          variant="home" 
+          type="submit"
+        >
+          Enviar
+        </Button>
       </div>
 
       {/* Modal de recorte de imagen */}
@@ -182,6 +210,5 @@ export default function GameStep() {
         onCropComplete={handleCroppedImage}
       />
     </>
-  )
+  );
 }
-

@@ -1,90 +1,106 @@
-// SubjetsPage.tsx
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { SubjectsTable, Data } from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
+import { SubjectsTable } from "@/components/grupo 9/SubjectsTable";
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
-// Assuming your backend for subjects also uses a similar PaginationQueryDto
-// and returns a PaginatedResult structure like { data: Subject[], metadata: {...} }
+interface Subject {
+  id: number;
+  name: string;
+  code: string;
+  semester: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const SubjetsPage = () => {
-  const [data, setData] = useState<Data | null>(null);
+interface PaginatedSubjects {
+  data: Subject[];
+  metadata: {
+    totalItems: number;
+    itemsOnCurrentPage: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  };
+}
+
+const SubjectsPage = () => {
+  const [subjectsData, setSubjectsData] = useState<PaginatedSubjects | null>(
+    null
+  );
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+  });
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
-  // Set a very large limit to fetch all active Subjects.
-  const FETCH_ALL_LIMIT = 10000; // Or a more reasonable "max" like 1000
-
-  // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
-  // Assuming your /subjects endpoint also supports 'limit' and 'includeInactive'
-  const API_ENDPOINT = `${
-    import.meta.env.ENDPOINT_BACKEND
-  }/subjects?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
-  const TABLE_RESOURCE_NAME = "subjects";
 
-  useEffect(() => {
-    const fetchMateria = async () => {
-      setIsPageLoading(true);
-      setError(null);
-      setData(null);
+  const fetchSubjects = async (page: number, limit: number) => {
+    setIsPageLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch(API_ENDPOINT, {
-          // Use the updated API_ENDPOINT
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/subjects?page=${page}&limit=${limit}`,
+        {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        });
-
-        if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
-          try {
-            const errorBody = await res.json();
-            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {
-            /* ignore */
-          }
-          throw new Error(errorMsg);
         }
+      );
 
-        const dataRespond = await res.json(); // This should be PaginatedResult<Subject>
-
-        // Ensure the response has the expected structure
-        if (!dataRespond || !dataRespond.data) {
-          throw new Error(
-            "Invalid data structure received from API for subjects."
-          );
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) {
+          /* ignore */
         }
-
-        setData({
-          titulo: "Materias", // "titulo" instead of "title" as per your SubjectsTable Data interface
-          nombreTabla: TABLE_RESOURCE_NAME,
-          nombreColumnas: {
-            name: "Nombre",
-            code: "Código",
-            semester: "Semestre",
-          },
-          filas: dataRespond.data, // Use the 'data' array from the paginated response
-          primaryKey: "id",
-        });
-      } catch (err: any) {
-        console.error("Error fetching subjects:", err);
-        setError(
-          err.message || "Ocurrió un error desconocido al cargar las materias."
-        );
-        setData(null);
-      } finally {
-        setIsPageLoading(false);
+        throw new Error(errorMsg);
       }
-    };
 
-    fetchMateria();
-  }, []); // API_ENDPOINT is static, so no need for it in dependencies
+      const dataRespond: PaginatedSubjects = await res.json();
 
-  const breadcrumbs = [{ label: "Materias", href: "/materias" }];
+      // Si la página actual está vacía pero no es la primera, retroceder
+      if (dataRespond.data.length === 0 && page > 1) {
+        return fetchSubjects(page - 1, limit);
+      }
+
+      setSubjectsData(dataRespond);
+    } catch (err: any) {
+      console.error("Error fetching subjects:", err);
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar las materias."
+      );
+      setSubjectsData(null);
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  const refreshData = () => {
+    setRefreshFlag((prev) => !prev);
+  };
+
+  useEffect(() => {
+    fetchSubjects(pagination.page, pagination.limit);
+  }, [pagination.page, pagination.limit, refreshFlag]);
+
+  const handlePageChange = (page: number) => {
+    setPagination((prev) => ({ ...prev, page }));
+  };
+
+  const handleLimitChange = (limit: number) => {
+    setPagination({ page: 1, limit });
+  };
+
+  const breadcrumbs = [{ label: "Materias", href: "/subjects" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -92,7 +108,7 @@ const SubjetsPage = () => {
         <LoadingScreen text="Cargando materias..." />
       ) : (
         <>
-          {error && !data && (
+          {error && !subjectsData && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -101,21 +117,29 @@ const SubjetsPage = () => {
             </div>
           )}
 
-          <SubjectsTable
-            data={data}
-            apiBaseUrl={API_BASE_URL}
-            isDataLoading={isPageLoading && data === null} // Consistent loading prop
-          />
-
-          {!isPageLoading && !error && data && data.filas.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No se encontraron materias activas.
-            </div>
+          {subjectsData && (
+            <SubjectsTable
+              subjects={subjectsData.data}
+              pagination={subjectsData.metadata}
+              apiBaseUrl={API_BASE_URL}
+              isDataLoading={isPageLoading}
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              refreshData={refreshData}
+            />
           )}
+          {!isPageLoading &&
+            !error &&
+            subjectsData &&
+            subjectsData.data.length === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                No se encontraron materias activas.
+              </div>
+            )}
         </>
       )}
     </LayoutAplication>
   );
 };
 
-export default SubjetsPage;
+export default SubjectsPage;
