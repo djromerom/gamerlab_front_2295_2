@@ -199,7 +199,6 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al crear el criterio");
       }
 
-      const createdCriterion: Criterion = await response.json();
       onPageChange(1);
       setNewCriterion({ name: "", description: "", weight: "" });
       setAddDialogOpen(false);

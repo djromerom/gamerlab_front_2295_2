@@ -104,9 +104,9 @@ const JuryManagementPage = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
-                    <LoadingScreen text="Cargando jurados..." />
+        <LoadingScreen text="Cargando jurados..." />
       ) : (
-          <>
+        <>
           {/* Error display */}
           {error && !data && (
             <div
@@ -130,7 +130,7 @@ const JuryManagementPage = () => {
               No se encontraron jurados. {/* Optional: Update message */}
             </div>
           )}
-          </>
+        </>
       )}
     </LayoutAplication>
   );

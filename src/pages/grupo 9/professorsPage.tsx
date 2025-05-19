@@ -22,8 +22,8 @@ export const ProfessorsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Ensure these URLs are correct for your environment
-  const API_ENDPOINT = `http://localhost:3000/professors`;
-  const API_BASE_URL = `http://localhost:3000`;
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   useEffect(() => {
     const fetchProfessors = async () => {
