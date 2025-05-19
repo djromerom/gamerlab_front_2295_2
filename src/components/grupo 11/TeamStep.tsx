@@ -11,8 +11,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner"
-
+import { toast } from "sonner";
 
 export default function TeamStep() {
   const { next } = useMultiForm();
@@ -28,7 +27,9 @@ export default function TeamStep() {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:3000/teams/name/${teamName}`);
+      const res = await fetch(
+        `${import.meta.env.ENDPOINT_BACKEND}/teams/name/${teamName}`
+      );
       const exists = await res.json();
 
       if (exists === true) {
@@ -43,8 +44,8 @@ export default function TeamStep() {
       next();
     } catch (err) {
       toast("Error de red", {
-          description: "No se pudo verificar el nombre del equipo.",
-        })
+        description: "No se pudo verificar el nombre del equipo.",
+      });
     } finally {
       setLoading(false);
     }

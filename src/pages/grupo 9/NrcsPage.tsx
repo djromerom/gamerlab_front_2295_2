@@ -28,8 +28,10 @@ export const ProfessorsPage: React.FC = () => {
   // Ensure these URLs are correct for your environment
   // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
   // Assuming your /professors endpoint also supports 'limit' and 'includeInactive'
-  const API_ENDPOINT = `http://localhost:3000/professors?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
-  const API_BASE_URL = `http://localhost:3000`;
+  const API_ENDPOINT = `${
+    import.meta.env.ENDPOINT_BACKEND
+  }/professors?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
+  const API_BASE_URL = `${import.meta.env.ENDPOINT_BACKEND}`;
 
   useEffect(() => {
     const fetchProfessors = async () => {

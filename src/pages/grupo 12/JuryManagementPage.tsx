@@ -10,8 +10,8 @@ const JuryManagementPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `http://localhost:3000/juror`;
-  const API_BASE_URL = `http://localhost:3000`;
+  const API_ENDPOINT = `${import.meta.env.ENDPOINT_BACKEND}/juror`;
+  const API_BASE_URL = `${import.meta.env.ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "juror";
 
   useEffect(() => {
@@ -104,9 +104,9 @@ const JuryManagementPage = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
-                    <LoadingScreen text="Cargando jurados..." />
+        <LoadingScreen text="Cargando jurados..." />
       ) : (
-          <>
+        <>
           {/* Error display */}
           {error && !data && (
             <div
@@ -130,7 +130,7 @@ const JuryManagementPage = () => {
               No se encontraron jurados. {/* Optional: Update message */}
             </div>
           )}
-          </>
+        </>
       )}
     </LayoutAplication>
   );
