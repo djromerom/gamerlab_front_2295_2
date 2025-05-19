@@ -139,12 +139,6 @@ export const ProfessorsTable: React.FC<Props> = ({
         }
       },
     },
-    {
-      key: "isActive",
-      label: "Activo",
-      renderCell: (professor: ProfessorRowData) =>
-        professor.isActive ? "Sí" : "No",
-    },
   ];
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -390,7 +384,7 @@ export const ProfessorsTable: React.FC<Props> = ({
               {columnsToDisplay.map(({ key, label }) => (
                 <TableHead key={key}>{label}</TableHead>
               ))}
-              <TableHead className="w-[50px] text-right">Acciones</TableHead>
+              <TableHead className="w-[50px] text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

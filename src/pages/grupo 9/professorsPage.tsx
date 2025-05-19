@@ -49,7 +49,7 @@ export const ProfessorsPage: React.FC = () => {
 
     try {
       const res = await fetch(
-        `${PROFESSORS_API_ENDPOINT}?page=${page}&limit=${limit}&includeInactive=true`, // Added includeInactive=true to get all, filtering is in table
+        `${PROFESSORS_API_ENDPOINT}?page=${page}&limit=${limit}`, // Added includeInactive=true to get all, filtering is in table
         {
           method: "GET",
           credentials: "include",
