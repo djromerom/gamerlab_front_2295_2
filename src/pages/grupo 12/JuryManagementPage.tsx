@@ -1,9 +1,10 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { JuryManagementTable, Data } from "./tabla2"; // Adjust path if needed
+import { JuryManagementTable, Data } from "../../components/grupo 12/JuryManagementTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { formatDate, mapConfirmationStatus } from "../../components/grupo 12/utils"; // Adjust path if needed
 
 const JuryManagementPage = () => {
   const [data, setData] = useState<Data | null>(null);
@@ -41,48 +42,30 @@ const JuryManagementPage = () => {
           }
           throw new Error(errorMsg);
         }
-
-        // Expecting an array where each object has an 'active' boolean property
         const dataRespond = await res.json(); // Use the more specific type
-        for (const jurado of dataRespond.data) {
-          jurado._count = jurado._count.evaluationsSubmitted;
+        
+        const transformedJurors = dataRespond.data.map((jurado: any) => ({
+          ...jurado,
+          confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
+          lastSignInAt: formatDate(jurado.lastSignInAt),
+        }));
 
-          switch (jurado.confirmationStatusId) {
-            case 1:
-              jurado.confirmationStatusId = "Aceptado";
-              break;
-            case 2:
-              jurado.confirmationStatusId = "Pendiente";
-              break;
-            default:
-              jurado.confirmationStatusId = "Expirado";
-          }
-
-          jurado.lastSignInAt = new Date(jurado.lastSignInAt).toLocaleString(
-            "es-ES",
-            {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          );
-        }
         setData({
           // Optional: Update title to reflect filtering
           titulo: "Jurados",
           nombreTabla: TABLE_RESOURCE_NAME,
           nombreColumnas: {
             id: "ID",
-            name: "Nombre",
+            firstName: "Nombre",
+            lastName: "Apellido",
             email: "Correo",
             confirmationStatusId: "Estado",
-            lastSignInAt: "Última actualización",
-            _count: "Juegos revisados",
+            lastSignInAt: "Última conexión",
+            evaluatedCount: "Juegos revisados",
+            unevaluatedCount: "Juegos pendientes",
           },
           // Pass the FILTERED array to the table
-          filas: dataRespond.data,
+          filas: transformedJurors,
           primaryKey: "id", // Ensure 'id' exists in your RowData
         });
       } catch (err: any) {
@@ -104,9 +87,9 @@ const JuryManagementPage = () => {
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
-                    <LoadingScreen text="Cargando jurados..." />
+        <LoadingScreen text="Cargando jurados..." />
       ) : (
-          <>
+        <>
           {/* Error display */}
           {error && !data && (
             <div
@@ -130,7 +113,7 @@ const JuryManagementPage = () => {
               No se encontraron jurados. {/* Optional: Update message */}
             </div>
           )}
-          </>
+        </>
       )}
     </LayoutAplication>
   );
