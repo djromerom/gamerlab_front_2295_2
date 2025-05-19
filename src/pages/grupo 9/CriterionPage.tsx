@@ -67,16 +67,23 @@ const CriteriaPage = () => {
       }
 
       const dataRespond: PaginatedCriteria = await res.json();
+
+      // Si la página actual está vacía pero no es la primera, retroceder
+      if (dataRespond.data.length === 0 && page > 1) {
+        return fetchCriteria(page - 1, limit);
+      }
+
       setCriteriaData(dataRespond);
     } catch (err: any) {
       console.error("Error fetching criteria:", err);
-      setError(err.message || "Ocurrió un error desconocido al cargar los criterios.");
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar los criterios."
+      );
       setCriteriaData(null);
     } finally {
       setIsPageLoading(false);
     }
   };
-
   const refreshData = () => {
     setRefreshFlag((prev) => !prev);
   };
@@ -102,7 +109,10 @@ const CriteriaPage = () => {
       ) : (
         <>
           {error && !criteriaData && (
-            <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center" role="alert">
+            <div
+              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+              role="alert"
+            >
               <span className="font-medium">Error:</span> {error}
             </div>
           )}
@@ -118,11 +128,14 @@ const CriteriaPage = () => {
               refreshData={refreshData}
             />
           )}
-          {!isPageLoading && !error && criteriaData && criteriaData.data.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No se encontraron criterios activos.
-            </div>
-          )}
+          {!isPageLoading &&
+            !error &&
+            criteriaData &&
+            criteriaData.data.length === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                No se encontraron criterios activos.
+              </div>
+            )}
         </>
       )}
     </LayoutAplication>
