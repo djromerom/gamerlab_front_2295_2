@@ -75,7 +75,7 @@ export default function LoginPage({
                     />
                   </div>
                   {error && <p className="text-red-600">{error}</p>}
-                  <Button type="submit" className="w-80">
+                  <Button type="submit" className="w-80 cursor-pointer">
                     Ingresar
                   </Button>
                 </div>

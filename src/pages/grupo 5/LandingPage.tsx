@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "@/index.css";
 import CountdownTimer from "@/components/grupo 5/CountdownTimer";
 import NavBar from "@/components/grupo 5/NavBar";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 function Landing(): React.ReactElement {
-  const targetDate = new Date("2025-06-05T14:00:00");
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
+  const targetDate = new Date("2025-06-04T08:30:00");
   const navigate = useNavigate();
 
   return (
@@ -35,11 +43,12 @@ function Landing(): React.ReactElement {
           <div className="mt-8">
             <button
               onClick={() => navigate("/registro-equipo")}
-              className="bg-white text-[#060312] py-3 px-5 rounded-lg font-medium hover:bg-gray-200 transition cursor-pointer"
+              className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
             >
               Registra tu equipo aquí
             </button>
           </div>
+          <TextSizeControls />
         </div>
       </div>
     </>

@@ -19,6 +19,7 @@ import {
   User,
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -244,6 +245,13 @@ const glowStyles = `
 `;
 
 export default function CompetitionInfo() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
   const [isTestimonialChanging, setIsTestimonialChanging] = useState(false);
@@ -295,9 +303,8 @@ export default function CompetitionInfo() {
   // Update carousel position when currentSlide changes
   useEffect(() => {
     if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${
-        currentSlide * 100
-      }%)`;
+      carouselRef.current.style.transform = `translateX(-${currentSlide * 100
+        }%)`;
     }
   }, [currentSlide]);
 
@@ -380,12 +387,19 @@ export default function CompetitionInfo() {
       quote:
         "Desde mi experiencia como monitora y jurado en la feria gamer, considero que este espacio, si bien aún presenta muchas oportunidades para mejorar y crecer, también representa una gran oportunidad para mostrar a las demás carreras los proyectos desarrollados por los alumnos. Además, permite que tanto participantes como visitantes observen, reflexionen y aprecien de primera mano cómo se evidencian los avances en resultados a medida que se progresa de semestre.",
     },
+    {
+      id: 2,
+      name: "Margarita Gamarra Acosta",
+      role: "Profesora Departamento de Ingeniería de Sistemas y Computación",
+      quote:
+        "Para mi la feria gamer es una muestra del trabajo, esfuerzo y pasión de todos los estudiantes participantes. El trabajo en equipo se ve reflejado en los excelentes resultados que muestran en cada uno de sus videojuegos, esta es ya la tercera versión de la feria y cada vez quedo mas sorprendida con las presentaciones y la creatividad de los trabajos que presentan, cada semestre agregan nuevas y mejores herramientas a los videojuegos y este semestre se unen mas estudiantes interesados en participar, este semestre queremos brindarle un espacio habierto para toda la comunidad uninorteña, para que los proyectos sean visibles ante toda la comunidad académica.",
+    },
   ];
 
   return (
     <>
       <NavBar />
-      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
+      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden dark">
         <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
           style={{ backgroundImage: "url('/background.webp')" }}
@@ -715,9 +729,8 @@ export default function CompetitionInfo() {
             <div className="flex items-center gap-3 mb-6 justify-center">
               <Quote className="w-6 h-6 text-[#AC7CFF]" />
               <h2
-                className={`text-2xl font-bold text-center ${
-                  isTitleChanging ? "title-fade-out" : "title-fade-in"
-                }`}
+                className={`text-2xl font-bold text-center ${isTitleChanging ? "title-fade-out" : "title-fade-in"
+                  }`}
               >
                 Lo Que Dicen Nuestros{" "}
                 {testimonialType === "participants"
@@ -729,11 +742,10 @@ export default function CompetitionInfo() {
             <div className="flex justify-center mb-8">
               <div className="bg-[#110D20] p-1 rounded-full flex">
                 <button
-                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${
-                    testimonialType === "participants"
+                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants"
                       ? "bg-[#AC7CFF] text-[#060312]"
                       : "text-gray-300"
-                  }`}
+                    }`}
                   onClick={() => {
                     if (testimonialType !== "participants") {
                       setIsTestimonialChanging(true);
@@ -753,11 +765,10 @@ export default function CompetitionInfo() {
                   Participantes
                 </button>
                 <button
-                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${
-                    testimonialType === "attendees"
+                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees"
                       ? "bg-[#AC7CFF] text-[#060312]"
                       : "text-gray-300"
-                  }`}
+                    }`}
                   onClick={() => {
                     if (testimonialType !== "attendees") {
                       setIsTestimonialChanging(true);
@@ -784,18 +795,16 @@ export default function CompetitionInfo() {
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
                 <div
-                  className={`carousel h-auto ${
-                    isTestimonialChanging
+                  className={`carousel h-auto ${isTestimonialChanging
                       ? "testimonial-fade-out"
                       : "testimonial-fade-in"
-                  }`}
+                    }`}
                 >
                   <div
                     className="carousel-inner h-full"
                     style={{
-                      transform: `translateX(-${
-                        currentTestimonialSlide * 100
-                      }%)`,
+                      transform: `translateX(-${currentTestimonialSlide * 100
+                        }%)`,
                     }}
                   >
                     {(testimonialType === "participants"
@@ -850,9 +859,8 @@ export default function CompetitionInfo() {
                     ).map((_, index) => (
                       <div
                         key={index}
-                        className={`carousel-indicator ${
-                          currentTestimonialSlide === index ? "active" : ""
-                        }`}
+                        className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
+                          }`}
                         onClick={() => goToTestimonialSlide(index)}
                       ></div>
                     ))}
@@ -907,6 +915,7 @@ export default function CompetitionInfo() {
               © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
             </p>
           </div>
+          <TextSizeControls />
         </div>
       </div>
     </>

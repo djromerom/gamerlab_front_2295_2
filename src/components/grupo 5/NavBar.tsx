@@ -29,7 +29,7 @@ export default function navBar(): React.ReactElement {
               to="/equipos"
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
-              Equipos
+              Videojuegos
             </Link>
             <Link
               to="/ranking"
@@ -42,6 +42,12 @@ export default function navBar(): React.ReactElement {
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
               Información
+            </Link>
+            <Link
+              to="/contribuidores"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
             </Link>
           </nav>
 
@@ -73,7 +79,7 @@ export default function navBar(): React.ReactElement {
               onClick={() => setIsMenuOpen(false)}
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
-              Equipos
+              Videojuegos
             </Link>
             <Link
               to="/ranking"
@@ -88,6 +94,14 @@ export default function navBar(): React.ReactElement {
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
               Información
+            </Link>
+            <Link
+              to="/contribuidores"
+
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
             </Link>
           </nav>
         </div>

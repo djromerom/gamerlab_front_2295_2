@@ -67,7 +67,7 @@ export default function TeamStep() {
         )}
       />
       <div className="flex justify-end pt-4">
-        <Button onClick={handleNext} disabled={loading}>
+        <Button variant="home" onClick={handleNext} disabled={loading}>
           {loading ? "Verificando..." : "Siguiente"}
         </Button>
       </div>

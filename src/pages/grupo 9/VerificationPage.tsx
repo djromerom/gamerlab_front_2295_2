@@ -259,6 +259,7 @@ export function VerifyEmailPage() {
                   onClick={() => navigate("/login")}
                   variant="outline"
                   size="sm"
+                  className="cursor-pointer"
                 >
                   Ir a Iniciar Sesión
                 </Button>
@@ -359,7 +360,7 @@ export function VerifyEmailPage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff]"
+              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff] cursor-pointer"
               disabled={status === "submitting"}
             >
               {status === "submitting" ? (
@@ -391,7 +392,7 @@ export function VerifyEmailPage() {
       : "Confirmando tu cuenta...";
 
   return (
-    <div className="relative min-h-svh flex items-center justify-center">
+    <div className="relative min-h-svh flex items-center justify-center overflow-hidden bg-[#060312]">
       {/* Fondo con opacidad reducida */}
       <div
         className="absolute inset-0 z-0 bg-center bg-no-repeat animate-float"
@@ -421,7 +422,7 @@ export function VerifyEmailPage() {
                 ¿Ya tienes una cuenta o tienes problemas?{" "}
                 <a
                   href="/login"
-                  className="text-blue-600 hover:underline dark:text-blue-400 font-medium"
+                  className="text-blue-600 hover:underline dark:text-blue-400 font-medium cursor-pointer"
                 >
                   Iniciar sesión
                 </a>

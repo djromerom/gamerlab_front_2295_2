@@ -1,24 +1,32 @@
-// ViewTeams.tsx
-"use client";
-import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import NavBar from "@/components/grupo 5/NavBar";
-import { useFetch } from "@/hooks/useFetch";
+"use client"
+import { useState, useEffect } from "react"
+import { Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent } from "@/components/ui/card"
+import NavBar from "@/components/grupo 5/NavBar"
+import { useFetch } from "@/hooks/useFetch"
+import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton"
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
-export type TeamStatus = "pendiente" | "confirmado" | "expirado";
+export type TeamStatus = "pendiente" | "confirmado" | "expirado"
 export interface Team {
-  id: number;
-  gameName: string;
-  teamName: string;
-  image?: string;
-  status: TeamStatus;
+  id: number
+  gameName: string
+  teamName: string
+  image?: string
+  status: TeamStatus
 }
 
 export default function TeamsPage() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -26,23 +34,20 @@ export default function TeamsPage() {
 
   useEffect(() => {
     async function fetchTeams() {
-      setLoading(true);
-      const res = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      setLoading(true)
+      const res = await customFetch(`http://localhost:3000/videogames`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      })
 
-      const rawData = await res.json();
+      const rawData = await res.json()
       interface RawTeam {
-        id: number;
-        name: string;
-        teamName: string;
-        status: string;
-        logoUrl: string;
+        id: number
+        name: string
+        teamName: string
+        status: string
+        logoUrl: string
       }
 
       const data: Team[] = rawData.map((team: RawTeam) => ({
@@ -51,26 +56,26 @@ export default function TeamsPage() {
         teamName: team.teamName,
         status: team.status.toLowerCase() as TeamStatus,
         image: team.logoUrl,
-      }));
-      setTeams(data);
-      setLoading(false);
+      }))
+      setTeams(data)
+      setLoading(false)
     }
-    fetchTeams();
-  }, []);
+    fetchTeams()
+  }, [])
 
   const filteredTeams = teams.filter(
     (team) =>
       team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.teamName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      team.teamName.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   const handleFilter = (value: string) => {
-    setSearchQuery(value);
-  };
+    setSearchQuery(value)
+  }
 
   return (
     <main
-      className="min-h-screen py-23 px-4 md:px-8 bg-black dark"
+      className="min-h-screen py-23 pt-30 px-4 md:px-8 bg-black dark"
       style={{
         backgroundImage: "url('/background.webp')",
         backgroundSize: "150%",
@@ -79,17 +84,15 @@ export default function TeamsPage() {
     >
       <NavBar />
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 text-[#AC7CFF]">
-          ¡Echa un vistazo a los equipos participantes!
+        <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
+          ¡Echa un vistazo a los videojuegos participantes!
         </h1>
 
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
 
         <div className="relative">
           {loading ? (
-            <div className="text-center py-20 text-xl text-white animate-pulse">
-              Cargando equipos...
-            </div>
+            <TeamSkeletonGrid />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
@@ -99,17 +102,18 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
+      <TextSizeControls />
     </main>
-  );
+  )
 }
 
 interface FiltersProps {
-  onFilter: (value: string) => void;
-  initialFilter: string;
+  onFilter: (value: string) => void
+  initialFilter: string
 }
 
 function Filters({ onFilter, initialFilter }: FiltersProps) {
-  const [filterText, setFilterText] = useState(initialFilter);
+  const [filterText, setFilterText] = useState(initialFilter)
 
   return (
     <div className="flex justify-center items-center mb-10 gap-2">
@@ -119,7 +123,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           type="text"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          placeholder="Busca por nombre de equipo"
+          placeholder="Busca por nombre de equipo o videojuego"
           className="w-64 md:w-96 pl-10"
         />
       </div>
@@ -127,31 +131,31 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
         Filtrar
       </Button>
     </div>
-  );
+  )
 }
 
 interface TeamCardProps {
-  team: Team;
+  team: Team
 }
 
 function TeamCard({ team }: TeamCardProps) {
   const getStatusInfo = (status: TeamStatus) => {
     switch (status) {
       case "pendiente":
-        return { text: "Pendiente de confirmación", color: "text-purple-400" };
+        return { text: "Pendiente de confirmación", color: "text-purple-400" }
       case "confirmado":
-        return { text: "Inscripción completa", color: "text-blue-400" };
+        return { text: "Inscripción completa", color: "text-blue-400" }
       case "expirado":
-        return { text: "Rechazada", color: "text-red-400" };
+        return { text: "Rechazada", color: "text-red-400" }
     }
-  };
-  const { text, color } = getStatusInfo(team.status);
+  }
+  const { text, color } = getStatusInfo(team.status)
 
   return (
     <Card>
       <CardContent className="flex space-x-5 py-5 px-7">
         <Avatar className="w-20 h-20">
-          <AvatarImage src={team.image} alt={team.teamName} />
+          <AvatarImage src={team.image || "/placeholder.svg"} alt={team.teamName} />
           <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="space-y-1">
@@ -161,5 +165,5 @@ function TeamCard({ team }: TeamCardProps) {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

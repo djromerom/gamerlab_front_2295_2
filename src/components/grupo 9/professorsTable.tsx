@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -53,10 +54,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProfessorRowData } from "@/pages/grupo 9/professorsPage";
+import { ProfessorRowData } from "@/pages/grupo 9/professorsPage"; // Adjust path as needed
 
 interface ProfessorFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
 }
 
@@ -80,7 +82,8 @@ export const ProfessorsTable: React.FC<Props> = ({
   const [currentRows, setCurrentRows] = useState<ProfessorRowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newProfessor, setNewProfessor] = useState<ProfessorFormData>({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -89,31 +92,44 @@ export const ProfessorsTable: React.FC<Props> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const showLoader = isDataLoading || internalIsLoading;
   const totalPages = Math.ceil(allProfessors.length / rowsPerPage);
 
-  const columns = [
-    { key: "name", label: "Nombre" },
-    { key: "email", label: "Email" },
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
+
+  const columnsToDisplay = [
+    {
+      key: "fullName",
+      label: "Nombre",
+      renderCell: (professor: ProfessorRowData) =>
+        `${professor.firstName} ${professor.lastName}`,
+    },
+    {
+      key: "email",
+      label: "Email",
+      renderCell: (professor: ProfessorRowData) => professor.email,
+    },
     {
       key: "confirmationStatusId",
       label: "Estado de Confirmación",
-      render: (value: number) => {
-        switch (value) {
+      renderCell: (professor: ProfessorRowData) => {
+        switch (professor.confirmationStatusId) {
           case 1:
             return "CONFIRMADO";
           case 2:
             return "PENDIENTE";
           case 3:
             return "EXPIRADO";
+          default:
+            return professor.confirmationStatusId?.toString() || "DESCONOCIDO";
         }
       },
     },
   ];
 
-  // Efecto para actualizar los datos cuando cambia la prop professors
   useEffect(() => {
     if (professors && professors !== allProfessors) {
       setAllProfessors(professors);
@@ -123,13 +139,11 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   }, [professors]);
 
-  // Efecto para paginación
   useEffect(() => {
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
     setCurrentRows(allProfessors.slice(start, end));
 
-    // Ajustar página si es necesario
     const currentTotalPages = Math.ceil(allProfessors.length / rowsPerPage);
     if (currentPage > currentTotalPages && currentTotalPages > 0) {
       setCurrentPage(currentTotalPages);
@@ -140,55 +154,60 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   }, [currentPage, rowsPerPage, allProfessors]);
 
-  // Función para crear un nuevo profesor
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
-    setError(null);
 
     try {
-      // Validación básica del email
       if (!newProfessor.email.includes("@")) {
-        throw new Error("El email debe ser válido");
+        throw new Error("El email debe ser válido.");
+      }
+      if (!newProfessor.firstName.trim()) {
+        throw new Error("El campo Nombres es requerido.");
+      }
+      if (!newProfessor.lastName.trim()) {
+        throw new Error("El campo Apellidos es requerido.");
       }
 
       const response = await customFetch(`${apiBaseUrl}/professors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newProfessor.name,
+          firstName: newProfessor.firstName,
+          lastName: newProfessor.lastName,
           email: newProfessor.email,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error al crear el profesor");
+        throw new Error(errorData.message || "Error al crear el profesor.");
       }
 
       const createdProfessor: ProfessorRowData = await response.json();
       setAllProfessors((prev) => [createdProfessor, ...prev]);
-      setNewProfessor({ name: "", email: "" });
+      setNewProfessor({ firstName: "", lastName: "", email: "" });
       setAddDialogOpen(false);
+      toast.success("Profesor agregado exitosamente.");
     } catch (err: any) {
-      setError(err.message || "Error al agregar el profesor");
+      showError(err.message || "Error al agregar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
   };
 
-  // Función para actualizar un profesor
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfessor) return;
 
     setInternalIsLoading(true);
-    setError(null);
 
     try {
-      // Validación básica del email
-      if (!editingProfessor.email.includes("@")) {
-        throw new Error("El email debe ser válido");
+      if (!editingProfessor.firstName.trim()) {
+        throw new Error("El campo Nombres es requerido.");
+      }
+      if (!editingProfessor.lastName.trim()) {
+        throw new Error("El campo Apellidos es requerido.");
       }
 
       const response = await customFetch(
@@ -197,15 +216,17 @@ export const ProfessorsTable: React.FC<Props> = ({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: editingProfessor.name,
-            email: editingProfessor.email,
+            firstName: editingProfessor.firstName,
+            lastName: editingProfessor.lastName,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error al actualizar el profesor");
+        throw new Error(
+          errorData.message || "Error al actualizar el profesor."
+        );
       }
 
       const updatedProfessor: ProfessorRowData = await response.json();
@@ -214,20 +235,17 @@ export const ProfessorsTable: React.FC<Props> = ({
       );
       setEditDialogOpen(false);
       setEditingProfessor(null);
+      toast.success("Profesor actualizado exitosamente.");
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el profesor");
+      showError(err.message || "Error al actualizar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
   };
 
-  // Función para eliminar (soft delete) un profesor
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
-
     setInternalIsLoading(true);
-    setError(null);
-
     try {
       const response = await customFetch(
         `${apiBaseUrl}/professors/${deletingId}`,
@@ -238,10 +256,11 @@ export const ProfessorsTable: React.FC<Props> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error al desactivar el profesor");
+        throw new Error(
+          errorData.message || "Error al desactivar el profesor."
+        );
       }
 
-      // Actualizar el estado local para reflejar el cambio
       setAllProfessors(
         (prevProfessors) =>
           prevProfessors?.map((professor) =>
@@ -253,8 +272,9 @@ export const ProfessorsTable: React.FC<Props> = ({
 
       setDeleteDialogOpen(false);
       setDeletingId(null);
+      toast.success("Profesor eliminado exitosamente.");
     } catch (err: any) {
-      setError(err.message || "Error al desactivar el profesor");
+      showError(err.message || "Error al desactivar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -266,18 +286,16 @@ export const ProfessorsTable: React.FC<Props> = ({
         showLoader ? "opacity-75" : ""
       }`}
     >
-      {/* Encabezado */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Profesores</h1>
-
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
               disabled={!professors || showLoader}
             >
-              <Plus className="mr-2 h-4 w-4" /> Agregar Profesor
+              <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -288,56 +306,78 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Complete los datos del nuevo profesor.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
-                {columns
-                  .filter((c) => c.key !== "confirmationStatusId")
-                  .map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-4 items-center gap-4"
-                    >
-                      <Label htmlFor={`add-${key}`} className="text-right">
-                        {label}
-                      </Label>
-                      <Input
-                        id={`add-${key}`}
-                        value={
-                          newProfessor[key as keyof ProfessorFormData] || ""
-                        }
-                        onChange={(e) =>
-                          setNewProfessor((prev) => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        className="col-span-3"
-                        required
-                        type={key === "email" ? "email" : "text"}
-                      />
-                    </div>
-                  ))}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-firstName" className="text-right">
+                    Nombres
+                  </Label>
+                  <Input
+                    id="add-firstName"
+                    value={newProfessor.firstName}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-lastName" className="text-right">
+                    Apellidos
+                  </Label>
+                  <Input
+                    id="add-lastName"
+                    value={newProfessor.lastName}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="add-email"
+                    type="email"
+                    value={newProfessor.email}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button
                   type="button"
+                  className="cursor-pointer"
                   variant="outline"
                   onClick={() => {
                     setAddDialogOpen(false);
-                    setError(null);
-                    setNewProfessor({ name: "", email: "" });
+                    setNewProfessor({ firstName: "", lastName: "", email: "" });
                   }}
                   disabled={internalIsLoading}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -346,12 +386,11 @@ export const ProfessorsTable: React.FC<Props> = ({
         </Dialog>
       </div>
 
-      {/* Tabla */}
       <Card className="rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {columns.map(({ key, label }) => (
+              {columnsToDisplay.map(({ key, label }) => (
                 <TableHead key={key}>{label}</TableHead>
               ))}
               <TableHead className="w-[50px]"></TableHead>
@@ -361,7 +400,7 @@ export const ProfessorsTable: React.FC<Props> = ({
             {showLoader ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + 1}
+                  colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
                   <div className="flex justify-center items-center gap-2">
@@ -373,7 +412,7 @@ export const ProfessorsTable: React.FC<Props> = ({
             ) : allProfessors.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + 1}
+                  colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
                   No hay profesores disponibles.
@@ -384,23 +423,15 @@ export const ProfessorsTable: React.FC<Props> = ({
                 .filter((professor) => professor.isActive)
                 .map((professor) => (
                   <TableRow key={professor.id}>
-                    {columns.map(({ key, render }) => (
-                      <TableCell key={key}>
-                        {render
-                          ? render(
-                              professor[key as keyof ProfessorRowData] as number
-                            )
-                          : professor[
-                              key as keyof ProfessorRowData
-                            ]?.toString()}
-                      </TableCell>
+                    {columnsToDisplay.map(({ key, renderCell }) => (
+                      <TableCell key={key}>{renderCell(professor)}</TableCell>
                     ))}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             <span className="sr-only">Abrir menú</span>
@@ -414,6 +445,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                               setEditDialogOpen(true);
                             }}
                             disabled={internalIsLoading}
+                            className="cursor-pointer"
                           >
                             Editar
                           </DropdownMenuItem>
@@ -422,7 +454,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                               setDeletingId(professor.id);
                               setDeleteDialogOpen(true);
                             }}
-                            className="text-red-500 focus:text-red-600 focus:bg-red-100"
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
                             disabled={internalIsLoading}
                           >
                             Eliminar
@@ -436,7 +468,6 @@ export const ProfessorsTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        {/* Paginación */}
         <div className="flex justify-between items-center p-4 text-sm border-t border-border">
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
@@ -448,12 +479,16 @@ export const ProfessorsTable: React.FC<Props> = ({
               }}
               disabled={showLoader || allProfessors.length === 0}
             >
-              <SelectTrigger className="w-[70px]">
+              <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={n}
+                    value={n.toString()}
+                  >
                     {n}
                   </SelectItem>
                 ))}
@@ -472,6 +507,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -482,6 +518,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -490,7 +527,6 @@ export const ProfessorsTable: React.FC<Props> = ({
         </div>
       </Card>
 
-      {/* Diálogo de Edición */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           {editingProfessor && (
@@ -501,42 +537,39 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Modifique los campos del profesor según sea necesario.
                 </DialogDescription>
               </DialogHeader>
-              {error && !showLoader && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
-                {columns
-                  .filter((c) => c.key === "name")
-                  .map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-4 items-center gap-4"
-                    >
-                      <Label htmlFor={`edit-${key}`} className="text-right">
-                        {label}
-                      </Label>
-                      <Input
-                        id={`edit-${key}`}
-                        value={
-                          editingProfessor[
-                            key as keyof ProfessorRowData
-                          ]?.toString() || ""
-                        }
-                        onChange={(e) =>
-                          setEditingProfessor((prev) =>
-                            prev ? { ...prev, [key]: e.target.value } : null
-                          )
-                        }
-                        className="col-span-3"
-                        required
-                        type={key === "email" ? "email" : "text"}
-                      />
-                    </div>
-                  ))}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-firstName" className="text-right">
+                    Nombres
+                  </Label>
+                  <Input
+                    id="edit-firstName"
+                    value={editingProfessor.firstName || ""}
+                    onChange={(e) =>
+                      setEditingProfessor((prev) =>
+                        prev ? { ...prev, firstName: e.target.value } : null
+                      )
+                    }
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-lastName" className="text-right">
+                    Apellidos
+                  </Label>
+                  <Input
+                    id="edit-lastName"
+                    value={editingProfessor.lastName || ""}
+                    onChange={(e) =>
+                      setEditingProfessor((prev) =>
+                        prev ? { ...prev, lastName: e.target.value } : null
+                      )
+                    }
+                    className="col-span-3"
+                    required
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -544,14 +577,18 @@ export const ProfessorsTable: React.FC<Props> = ({
                   variant="outline"
                   onClick={() => {
                     setEditDialogOpen(false);
-                    setError(null);
                     setEditingProfessor(null);
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -560,7 +597,6 @@ export const ProfessorsTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Eliminación */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -570,25 +606,20 @@ export const ProfessorsTable: React.FC<Props> = ({
               si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !showLoader && (
-            <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
-              {error}
-            </p>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setDeleteDialogOpen(false);
-                setError(null);
                 setDeletingId(null);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
               {internalIsLoading ? "Eliminando..." : "Confirmar"}

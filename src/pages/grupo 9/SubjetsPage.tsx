@@ -4,6 +4,7 @@
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { SubjectsTable, Data } from "@/components/grupo 9/SubjectsTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"; // Importamos el componente LoadingScreen
 
 // Define a more specific interface if possible, including 'active'
 
@@ -77,28 +78,34 @@ const SubjetsPage = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {/* Error display */}
-      {error && !data && (
-        <div
-          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-          role="alert"
-        >
-          <span className="font-medium">Error:</span> {error}
-        </div>
-      )}
+      {isPageLoading ? (
+        <LoadingScreen text="Cargando materias..." />
+      ) : (
+        <>
+        {/* Error display */}
+        {error && !data && (
+          <div
+            className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+            role="alert"
+          >
+            <span className="font-medium">Error:</span> {error}
+          </div>
+        )}
 
-      {/* Tabla component receives already filtered data */}
-      <SubjectsTable
-        data={data}
-        apiBaseUrl={API_BASE_URL}
-        isDataLoading={isPageLoading}
-      />
+        {/* Tabla component receives already filtered data */}
+        <SubjectsTable
+          data={data}
+          apiBaseUrl={API_BASE_URL}
+          isDataLoading={isPageLoading}
+        />
 
-      {/* No results message (will show if activeRows is empty) */}
-      {!isPageLoading && !error && data && data.filas.length === 0 && (
-        <div className="p-4 text-center text-gray-500">
-          No se encontraron materias activas. {/* Optional: Update message */}
-        </div>
+        {/* No results message (will show if activeRows is empty) */}
+        {!isPageLoading && !error && data && data.filas.length === 0 && (
+          <div className="p-4 text-center text-gray-500">
+            No se encontraron materias activas. {/* Optional: Update message */}
+          </div>
+        )}
+        </>
       )}
     </LayoutAplication>
   );
