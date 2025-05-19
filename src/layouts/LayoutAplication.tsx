@@ -31,8 +31,15 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
         {children}
         
         <Toaster
+          richColors={false}
           toastOptions={{
-            className: "bg-white text-black dark:bg-blue dark:text-white",
+            unstyled: true,
+            classNames: {
+              success: 'bg-[var(--toast-success)] border border-[var(--toast-success-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+              error: 'bg-[var(--toast-error)] border border-[var(--toast-error-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+              info: 'bg-blue-600 text-white px-4 py-3 rounded-md shadow-md',
+              // ...
+            },
           }}
         />
       </SidebarInset>

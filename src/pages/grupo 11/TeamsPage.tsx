@@ -74,16 +74,15 @@ export default function TeamsPage() {
   }
 
   return (
-    <main
-      className="min-h-screen py-23 pt-30 px-4 md:px-8 bg-black dark"
-      style={{
-        backgroundImage: "url('/background.webp')",
-        backgroundSize: "150%",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
+          style={{ backgroundImage: "url('/background.webp')" }}
+        >
+          <div className="absolute inset-0"></div>
+        </div>
       <NavBar />
-      <div className="max-w-7xl mx-auto">
+      <div className=" max-w-7xl mx-auto relative z-10 items-center p-4 pb-12 pt-30 text-white">
         <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
           ¡Echa un vistazo a los videojuegos participantes!
         </h1>
@@ -103,7 +102,7 @@ export default function TeamsPage() {
         </div>
       </div>
       <TextSizeControls />
-    </main>
+    </div>
   )
 }
 
@@ -127,7 +126,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           className="w-64 md:w-96 pl-10"
         />
       </div>
-      <Button variant="outline" onClick={() => onFilter(filterText)}>
+      <Button variant="outline" className="cursor-pointer" onClick={() => onFilter(filterText)}>
         Filtrar
       </Button>
     </div>

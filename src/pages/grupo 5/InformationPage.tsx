@@ -890,11 +890,6 @@ export default function CompetitionInfo() {
                       Registrarse
                     </button>
                   </Link>
-                  <Link to="/informacion">
-                    <button className="px-6 py-3 border border-[#AC7CFF] text-[#AC7CFF] hover:bg-[#110D20] font-medium rounded-lg transition-colors cursor-pointer">
-                      Más información
-                    </button>
-                  </Link>
                 </div>
               </div>
             </div>
@@ -907,12 +902,12 @@ export default function CompetitionInfo() {
               <p className="text-gray-300">
                 Para más información contacta a:{" "}
                 <span className="text-[#AC7CFF]">
-                  feriagamer@uninorte.edu.co
+                  djromero@uninorte.edu.co
                 </span>
               </p>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
+              © 2025 Arkad. Todos los derechos reservados.
             </p>
           </div>
           <TextSizeControls />
