@@ -1,4 +1,3 @@
-
 // Updated MembersStep.tsx
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -164,190 +163,192 @@ export default function MembersStep() {
     <>
       <h2 className="text-xl font-medium">Integrantes</h2>
 
-      {fields.map((member, idx) => (
-        <div key={member.id} className="border-b border-gray-200 pb-4 mb-4">
-          <div className="flex justify-between items-start mb-3">
-            <span>Integrante {idx + 1}</span>
-            {fields.length > 1 && (
-              <Button
-                variant="ghost"
-                className="cursor-pointer"
-                size="icon"
-                onClick={() => remove(idx)}
-              >
-                <Trash2 />
-              </Button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nombre */}
-            <FormField
-              control={control}
-              name={`members.${idx}.nombre` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Nombre(s)" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+        {fields.map((member, idx) => (
+          <div key={member.id} className="border-b border-gray-200 pb-4 mb-4">
+            <div className="flex justify-between items-start mb-3">
+              <span>Integrante {idx + 1}</span>
+              {fields.length > 1 && (
+                <Button
+                  variant="ghost"
+                  className="cursor-pointer"
+                  size="icon"
+                  onClick={() => remove(idx)}
+                >
+                  <Trash2 />
+                </Button>
               )}
-            />
+            </div>
 
-            {/* Apellido */}
-            <FormField
-              control={control}
-              name={`members.${idx}.apellido` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Apellido</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Apellido(s)" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Correo */}
-            <FormField
-              control={control}
-              name={`members.${idx}.correo` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Correo Institucional</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="email"
-                      placeholder="correo@uninorte.edu.co"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Código Estudiantil */}
-            <FormField
-              control={control}
-              name={`members.${idx}.codigoEstudiantil` as const}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Código estudiantil</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="12345678" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* NRC */}
-            <FormField
-              control={control}
-              name={`members.${idx}.nrc` as const}
-              render={({ field }) => {
-                const selectedNRCs: string[] = field.value || [];
-                const allNrcOptionsFromState: NrcOption[] = nrcActivos;
-
-                const availableNrcOptionsToSelect =
-                  allNrcOptionsFromState.filter(
-                    (nrcOption) =>
-                      !selectedNRCs.includes(String(nrcOption.code))
-                  );
-
-                let triggerText = "Selecciona uno o más NRCs";
-                if (isPageLoading) {
-                  triggerText = "Cargando NRCs...";
-                } else if (allNrcOptionsFromState.length === 0) {
-                  triggerText = "No hay NRCs disponibles";
-                }
-
-                return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Nombre */}
+              <FormField
+                control={control}
+                name={`members.${idx}.nombre` as const}
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>NRC</FormLabel>
+                    <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                      <div className="space-y-2">
-                        <Select
-                          onValueChange={(selectedCodeValue) =>
-                            selectedCodeValue &&
-                            field.onChange([...selectedNRCs, selectedCodeValue])
-                          }
-                          disabled={
-                            isPageLoading ||
-                            (allNrcOptionsFromState.length === 0 &&
-                              !isPageLoading)
-                          }
-                        >
-                          <SelectTrigger
-                            className="cursor-pointer"
-                            style={{ width: "100%" }}
-                          >
-                            <span className="text-muted-foreground">
-                              {triggerText}
-                            </span>
-                          </SelectTrigger>
-                          <SelectContent style={{ width: "100%" }}>
-                            {!isPageLoading &&
-                            allNrcOptionsFromState.length > 0 ? (
-                              availableNrcOptionsToSelect.map((nrcOption) => (
-                                <SelectItem
-                                  className="cursor-pointer"
-                                  key={String(nrcOption.code)}
-                                  value={String(nrcOption.code)}
-                                >
-                                  {nrcOption.name
-                                    ? `${nrcOption.code} - ${nrcOption.name}`
-                                    : String(nrcOption.code)}
-                                </SelectItem>
-                              ))
-                            ) : !isPageLoading &&
-                              allNrcOptionsFromState.length === 0 ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                No hay NRCs disponibles.
-                              </div>
-                            ) : null}
-                          </SelectContent>
-                        </Select>
-
-                        {selectedNRCs.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-2">
-                            {selectedNRCs.map((val) => (
-                              <div
-                                key={val}
-                                className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 cursor-pointer transition"
-                              >
-                                <span>{val}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10 cursor-pointer"
-                                  onClick={() =>
-                                    field.onChange(
-                                      selectedNRCs.filter((n) => n !== val)
-                                    )
-                                  }
-                                >
-                                  ✕
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <Input {...field} placeholder="Nombre(s)" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
+
+              {/* Apellido */}
+              <FormField
+                control={control}
+                name={`members.${idx}.apellido` as const}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apellido</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Apellido(s)" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Correo */}
+              <FormField
+                control={control}
+                name={`members.${idx}.correo` as const}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Institucional</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="correo@uninorte.edu.co"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Código Estudiantil */}
+              <FormField
+                control={control}
+                name={`members.${idx}.codigoEstudiantil` as const}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Código estudiantil</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="12345678" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* NRC */}
+              <FormField
+                control={control}
+                name={`members.${idx}.nrc` as const}
+                render={({ field }) => {
+                  const selectedNRCs: string[] = field.value || [];
+                  const allNrcOptionsFromState: NrcOption[] = nrcActivos;
+
+                  const availableNrcOptionsToSelect =
+                    allNrcOptionsFromState.filter(
+                      (nrcOption) =>
+                        !selectedNRCs.includes(String(nrcOption.code))
+                    );
+
+                  let triggerText = "Selecciona uno o más NRCs";
+                  if (isPageLoading) {
+                    triggerText = "Cargando NRCs...";
+                  } else if (allNrcOptionsFromState.length === 0) {
+                    triggerText = "No hay NRCs disponibles";
+                  }
+
+                  return (
+                    <FormItem>
+                      <FormLabel>NRC</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Select
+                            onValueChange={(selectedCodeValue) =>
+                              selectedCodeValue &&
+                              field.onChange([...selectedNRCs, selectedCodeValue])
+                            }
+                            disabled={
+                              isPageLoading ||
+                              (allNrcOptionsFromState.length === 0 &&
+                                !isPageLoading)
+                            }
+                          >
+                            <SelectTrigger
+                              className="cursor-pointer"
+                              style={{ width: "100%" }}
+                            >
+                              <span className="text-muted-foreground">
+                                {triggerText}
+                              </span>
+                            </SelectTrigger>
+                            <SelectContent style={{ width: "100%" }}>
+                              {!isPageLoading &&
+                              allNrcOptionsFromState.length > 0 ? (
+                                availableNrcOptionsToSelect.map((nrcOption) => (
+                                  <SelectItem
+                                    className="cursor-pointer"
+                                    key={String(nrcOption.code)}
+                                    value={String(nrcOption.code)}
+                                  >
+                                    {nrcOption.name
+                                      ? `${nrcOption.code} - ${nrcOption.name}`
+                                      : String(nrcOption.code)}
+                                  </SelectItem>
+                                ))
+                              ) : !isPageLoading &&
+                                allNrcOptionsFromState.length === 0 ? (
+                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                  No hay NRCs disponibles.
+                                </div>
+                              ) : null}
+                            </SelectContent>
+                          </Select>
+
+                          {selectedNRCs.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              {selectedNRCs.map((val) => (
+                                <div
+                                  key={val}
+                                  className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 cursor-pointer transition"
+                                >
+                                  <span>{val}</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10 cursor-pointer"
+                                    onClick={() =>
+                                      field.onChange(
+                                        selectedNRCs.filter((n) => n !== val)
+                                      )
+                                    }
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {fields.length < 6 && (
         <Button
