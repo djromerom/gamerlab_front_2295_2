@@ -13,7 +13,7 @@ const TextSizeContext = createContext<TextSizeContextType | undefined>(undefined
 
 const DEFAULT_FONT_SIZE = 16
 const MIN_FONT_SIZE = 12
-const MAX_FONT_SIZE = 24
+const MAX_FONT_SIZE = 20
 const STEP_SIZE = 2
 const STORAGE_KEY = "app-font-size"
 

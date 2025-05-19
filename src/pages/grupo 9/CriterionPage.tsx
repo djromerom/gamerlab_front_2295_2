@@ -34,6 +34,7 @@ const CriteriaPage = () => {
     page: 1,
     limit: 5,
   });
+  const [refreshFlag, setRefreshFlag] = useState(false); // Nueva bandera de refresco
 
   const API_BASE_URL = `http://localhost:3000`;
 
@@ -72,9 +73,14 @@ const CriteriaPage = () => {
     }
   };
 
+  // Función para forzar el refresco de datos
+  const refreshData = () => {
+    setRefreshFlag(prev => !prev);
+  };
+
   useEffect(() => {
     fetchCriteria(pagination.page, pagination.limit);
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, refreshFlag]); // Añadimos refreshFlag como dependencia
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, page }));
@@ -111,6 +117,7 @@ const CriteriaPage = () => {
               isDataLoading={isPageLoading}
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
+              refreshData={refreshData} // Pasamos la función de refresco
             />
           )}
 

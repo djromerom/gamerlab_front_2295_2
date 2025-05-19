@@ -75,7 +75,7 @@ export default function navBar(): React.ReactElement {
         >
           <nav className="flex flex-col space-y-4 pb-4 pt-6">
             <Link
-              to="/features"
+              to="/equipos"
               onClick={() => setIsMenuOpen(false)}
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
