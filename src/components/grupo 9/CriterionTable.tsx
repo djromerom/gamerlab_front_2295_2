@@ -105,7 +105,9 @@ export const CriterionTable: React.FC<Props> = ({
     weight: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
+  const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(
+    null
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
@@ -138,10 +140,13 @@ export const CriterionTable: React.FC<Props> = ({
     setInternalIsLoading(true);
 
     try {
-      if (newCriterion.weight === "" || isNaN(parseFloat(newCriterion.weight))) {
+      if (
+        newCriterion.weight === "" ||
+        isNaN(parseFloat(newCriterion.weight))
+      ) {
         throw new Error("El peso debe ser un número válido");
       }
-  
+
       const weightValue = parseFloat(newCriterion.weight);
       if (weightValue < 0 || weightValue > 1) {
         throw new Error("El peso debe estar entre 0 y 1");
@@ -162,7 +167,6 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al crear el criterio");
       }
 
-      const createdCriterion: Criterion = await response.json();
       // Refresh data after adding
       onPageChange(1);
       setNewCriterion({ name: "", description: "", weight: "" });
@@ -193,7 +197,7 @@ export const CriterionTable: React.FC<Props> = ({
       const weightValue = parseFloat(
         editingCriterion.weight?.toString() || "0"
       );
-      
+
       if (weightValue < 0 || weightValue > 1) {
         throw new Error("El peso debe estar entre 0 y 1");
       }
@@ -216,7 +220,6 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al actualizar el criterio");
       }
 
-      const updatedCriterion: Criterion = await response.json();
       // Refresh data after editing
       onPageChange(pagination.currentPage);
       setEditDialogOpen(false);
@@ -325,7 +328,11 @@ export const CriterionTable: React.FC<Props> = ({
                 >
                   Cancelar
                 </Button>
-                <Button className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]" type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -433,7 +440,11 @@ export const CriterionTable: React.FC<Props> = ({
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={n}
+                    value={n.toString()}
+                  >
                     {n}
                   </SelectItem>
                 ))}
@@ -442,13 +453,16 @@ export const CriterionTable: React.FC<Props> = ({
           </div>
           <div className="flex items-center gap-4">
             <span>
-              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de {pagination.totalPages}
+              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de{" "}
+              {pagination.totalPages}
             </span>
             <div className="flex gap-1">
               <Button
                 onClick={() => onPageChange(pagination.currentPage - 1)}
                 disabled={
-                  pagination.currentPage === 1 || showLoader || allCriteria.length === 0
+                  pagination.currentPage === 1 ||
+                  showLoader ||
+                  allCriteria.length === 0
                 }
                 variant="outline"
                 size="icon"
@@ -459,8 +473,8 @@ export const CriterionTable: React.FC<Props> = ({
               <Button
                 onClick={() => onPageChange(pagination.currentPage + 1)}
                 disabled={
-                  pagination.currentPage === pagination.totalPages || 
-                  pagination.totalPages === 0 || 
+                  pagination.currentPage === pagination.totalPages ||
+                  pagination.totalPages === 0 ||
                   showLoader
                 }
                 variant="outline"
@@ -524,7 +538,11 @@ export const CriterionTable: React.FC<Props> = ({
                 >
                   Cancelar
                 </Button>
-                <Button className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]" type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
