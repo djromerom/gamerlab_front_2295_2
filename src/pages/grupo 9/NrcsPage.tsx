@@ -29,7 +29,7 @@ export const ProfessorsPage: React.FC = () => {
   // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
   // Assuming your /professors endpoint also supports 'limit' and 'includeInactive'
   const API_ENDPOINT = `${
-    import.meta.env.ENDPOINT_BACKEND
+    import.meta.env.VITE_ENDPOINT_BACKEND
   }/professors?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 

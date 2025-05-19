@@ -20,7 +20,7 @@ const SubjetsPage = () => {
   // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
   // Assuming your /subjects endpoint also supports 'limit' and 'includeInactive'
   const API_ENDPOINT = `${
-    import.meta.env.ENDPOINT_BACKEND
+    import.meta.env.VITE_ENDPOINT_BACKEND
   }/subjects?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "subjects";
