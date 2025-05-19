@@ -1,33 +1,40 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const CombinedSchema = z.object({
-  //Validar que el nombre del equipo sea único
-
-  
-  teamName: z.string().min(1, 'Requerido'),
-  members: z
-    .array(
-      z.object({
-        nombre: z.string().min(1, 'Requerido'),
-        apellido: z.string().min(1, 'Requerido'),
-        correo: z.string().email('Email inválido').endsWith("@uninorte.edu.co", "Debe ser un correo institucional (uninorte)"),
-        codigoEstudiantil: z.string().min(1, 'Requerido'),
-        nrc: z.array(z.string()).min(1, "mínimo 1")
-      })
-    )
-    .min(1, 'Al menos un integrante')
-    .max(6, 'Máximo 6 integrantes'),
-  gameName: z.string().min(1, 'Requerido'),
-  description: z.string().min(1, 'Requerido'),
-  files: z
-    .array(z.custom<File>())
-    .min(1, 'Selecciona al menos un archivo')
-    .max(1, 'Solo un archivo')
-    .refine((files) => files.every((f) => f.size <= 5 * 1024 * 1024), {
-      message: 'El archivo debe pesar menos de 5 MB',
+export const MemberSchema = z.object({
+  nombre: z.string().min(1, { message: 'El nombre es obligatorio' }),
+  apellido: z.string().min(1, { message: 'El apellido es obligatorio' }),
+  correo: z
+    .string()
+    .min(1, { message: 'El correo es obligatorio' })
+    .email({ message: 'El correo debe ser válido' })
+    .refine((email) => email.endsWith('@uninorte.edu.co'), {
+      message: 'El correo debe ser institucional (@uninorte.edu.co)',
     }),
-  recaptcha: z.string().min(1, "Requerido")
+  codigoEstudiantil: z.string().min(1, { message: 'El código estudiantil es obligatorio' }),
+  nrc: z.array(z.string()).min(1, { message: 'Debe seleccionar al menos un NRC' }),
 });
 
-export type CombinedFormValues = z.infer<typeof CombinedSchema>;
+export const CombinedSchema = z.object({
+  teamName: z.string().min(1, { message: 'El nombre del equipo es obligatorio' }),
+  members: z.array(MemberSchema).min(1, { message: 'El equipo debe tener al menos un integrante' }),
+  gameName: z.string().min(1, { message: 'El nombre del videojuego es obligatorio' }),
+  description: z.string(),
+  files: z.array(z.instanceof(File)).default([]),
+  recaptcha: z.string().min(1, { message: 'La verificación de reCAPTCHA es obligatoria' }),
+});
 
+// Define CombinedFormValues with explicit types to match form expectations
+export type CombinedFormValues = {
+  teamName: string;
+  members: {
+    nombre: string;
+    apellido: string;
+    correo: string;
+    codigoEstudiantil: string;
+    nrc: string[];
+  }[];
+  gameName: string;
+  description: string;
+  files: File[];
+  recaptcha: string;
+};

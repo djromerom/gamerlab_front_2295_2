@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const fetchProfile = async () => {
     const res = await fetch(
-      `http://localhost:3000/auth/me`,
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
       {
         method: "GET",
         credentials: "include",
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
     const res = await fetch(
-      `http://localhost:3000/auth/login`,
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
       {
         method: "POST",
         credentials: "include",
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAccessToken = async () => {
     try {
-      await fetch(`http://localhost:3000/auth/refresh`, {
+      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    await fetch(`http://localhost:3000/auth/logout`, {
+    await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
