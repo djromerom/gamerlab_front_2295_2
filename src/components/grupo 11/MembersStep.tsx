@@ -66,7 +66,7 @@ export default function MembersStep() {
       
       // Check each email in the result
       let allValid = true;
-      fields.forEach((field, index) => {
+      fields.forEach((_, index) => {
         const email = watch(`members.${index}.correo`);
         if (email && result[email]) {
           setError(`members.${index}.correo`, {
