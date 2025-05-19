@@ -1,5 +1,3 @@
-// data/videojuegos.ts
-
 // src/contexts/GlobalStateContext.tsx
 import React, {
   createContext,
@@ -11,16 +9,7 @@ import React, {
 } from 'react';
 
 // Tus interfaces (asegúrate que coincidan con los datos de tu BD)
-// src/contexts/GlobalStateContext.tsx
-//import React from 'react'; // Asegúrate de importar React si usas Dispatch, SetStateAction
 
-// --- INTERFACES PARA LOS DATOS QUE LLEGAN DE LOS ENDPOINTS ---
-// Estas interfaces deben coincidir con la estructura JSON que tu API devuelve.
-
-// Para un elemento en la lista de videojuegos y para el videojuego seleccionado.
-// Asume que el backend ya calculó promedios y formateó los criterios.
-
-// En GlobalStateContext.tsx (solo la interfaz VideojuegoData)
 export interface VideojuegoData {
   id: number | string;  // Coincide con Videogame.id
   nombre: string; // Coincide con Videogame.name
@@ -49,23 +38,21 @@ export interface Jurados {
 export interface MateriaData {
   id: number;    // Coincide con Subject.id
   name: string; // Coincide con Subject.name
-  // codigo?: string; // Coincide con Subject.code, si lo necesitas
 }
 
 // Para las opciones en el filtro de "NRC"
 export interface NRCData {
   id: number;    // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
-  materiaNombre: string; // Si el endpoint de NRCs incluye el nombre de la materia
+  materiaNombre: string; // Nombre de la materia asociada
   promedioxNRC?: number; // Promedio de NRC, si es necesario
 }
 
 
 // Para el gráfico de torta "Distribución por Materia"
-// Asume que el backend devuelve los datos ya agregados.
 export interface DatosGraficoMateria {
   name: string;  // Nombre de la materia
-  value: number; // Valor para el gráfico (ej. promedio de videojuegos en esa materia, o cantidad)
+  value: number; // Valor para el gráfico (promedio de videojuegos en esa materia)
   color?: string; // Color opcional para el segmento del gráfico
 }
 
@@ -92,9 +79,9 @@ export interface GlobalStateContextType {
   // Datos para otros gráficos globales
   datosGraficoTortaMaterias: DatosGraficoMateria[];
 
-  listaVideojuegosFiltrados?: VideojuegoData[]; // SUGERENCIA: Añadir esto
-  nrcsFiltrados?: NRCData[]; // SUGERENCIA: Añadir esto
-  listaJurados?: Jurados[]; // Lista de jurados, si es necesario
+  listaVideojuegosFiltrados?: VideojuegoData[];
+  nrcsFiltrados?: NRCData[];
+  listaJurados?: Jurados[];
 
   // Estado de carga y error para los datos globales
   isLoading: boolean;
@@ -110,7 +97,7 @@ interface GlobalStateProviderProps {
   children: ReactNode;
 }
 
-export function GlobalStateProvider({ children }: GlobalStateProviderProps) { // Asegúrate que GlobalStateProviderProps esté definida
+export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
@@ -138,9 +125,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) { //
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  //const customFetch = useFetch(); 
-
-  const API_ENDPOINT = "http://localhost:3000/reports";
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
   const fetchGlobalData = async () => {
     setIsLoading(true);

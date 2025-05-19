@@ -96,8 +96,8 @@ const glowStyles = `
   }
 `;
 
-const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports`;
-//const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);

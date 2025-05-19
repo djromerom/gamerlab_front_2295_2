@@ -16,8 +16,8 @@ import {
     XAxis,
     YAxis,
     ResponsiveContainer,
-    Rectangle, // <--- IMPORTAR RECTANGLE
-    type RectangleProps, // <--- IMPORTAR EL TIPO PARA LAS PROPS
+    Rectangle,
+    type RectangleProps,
 } from "recharts";
 import {
     ChartContainer,
@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 interface CriterioChartData {
     criterio: string;
@@ -121,6 +121,7 @@ const GraphicDisplay = () => {
             return NOMBRES_CRITERIOS_GRAFICOS.map(config => ({
                 criterio: config.displayKey,
                 valor: 0,
+                fill: config.color, // Opcional
             }));
         }
         return NOMBRES_CRITERIOS_GRAFICOS.map(config => {
@@ -130,6 +131,7 @@ const GraphicDisplay = () => {
                 valor: typeof valorDelBackend === 'number' && !isNaN(valorDelBackend)
                     ? Math.max(0, Math.min(valorDelBackend, 5)) // Asegurar que el valor es un número y está en rango
                     : 0, // Valor por defecto si no se encuentra o no es número
+                fill: config.color, // Opcional: para configurar colores en ChartContainer
             };
         });
     }, [criteriosSeleccionado]);
