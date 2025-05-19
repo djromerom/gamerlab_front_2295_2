@@ -28,7 +28,7 @@ export default function TeamStep() {
 
     try {
       const res = await fetch(
-        `${import.meta.env.ENDPOINT_BACKEND}/teams/name/${teamName}`
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/name/${teamName}`
       );
       const exists = await res.json();
 

@@ -10,8 +10,8 @@ const JuryManagementPage = () => {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_ENDPOINT = `${import.meta.env.ENDPOINT_BACKEND}/juror`;
-  const API_BASE_URL = `${import.meta.env.ENDPOINT_BACKEND}`;
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "juror";
 
   useEffect(() => {

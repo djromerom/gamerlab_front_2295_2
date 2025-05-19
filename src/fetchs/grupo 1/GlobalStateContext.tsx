@@ -135,14 +135,17 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setError(null);
     try {
       const responses = await Promise.all([
-        fetch(`${import.meta.env.ENDPOINT_BACKEND}/reports/videojuegoData`, {
+        fetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/videojuegoData`,
+          {
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        ),
+        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/MateriaData`, {
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
         }),
-        fetch(`${import.meta.env.ENDPOINT_BACKEND}/reports/MateriaData`, {
-          credentials: "include",
-        }),
-        fetch(`${import.meta.env.ENDPOINT_BACKEND}/reports/NRCData`, {
+        fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/NRCData`, {
           credentials: "include",
         }),
         fetch(

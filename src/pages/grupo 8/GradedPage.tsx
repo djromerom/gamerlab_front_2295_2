@@ -29,7 +29,7 @@ const GradedPage: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          "${import.meta.env.ENDPOINT_BACKEND}/graded-games",
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/graded-games`,
           {
             method: "GET",
             credentials: "include",

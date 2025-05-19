@@ -22,11 +22,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchProfile = async () => {
-    const res = await fetch(`${import.meta.env.ENDPOINT_BACKEND}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     if (res.ok) {
       const data = (await res.json()) as UserProfile;
@@ -39,12 +42,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
-    const res = await fetch(`${import.meta.env.ENDPOINT_BACKEND}/auth/login`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }
+    );
 
     if (!res.ok) {
       throw new Error("Login fallido");
@@ -56,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAccessToken = async () => {
     try {
-      await fetch(`${import.meta.env.ENDPOINT_BACKEND}/auth/refresh`, {
+      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
@@ -68,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    await fetch(`${import.meta.env.ENDPOINT_BACKEND}/auth/logout`, {
+    await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

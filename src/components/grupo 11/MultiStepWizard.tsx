@@ -39,7 +39,7 @@ export default function MultiStepWizard() {
   });
 
   async function onSubmit(data: CombinedFormValues) {
-    const res = await fetch(`${import.meta.env.ENDPOINT_BACKEND}/teams/videogame/${data.gameName}`);
+    const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName}`);
 const exists = await res.json();
 if (exists === true) {
   toast.error("El nombre del videojuego ya está en uso.");
@@ -93,7 +93,7 @@ if (exists === true) {
       };
 
       const res = await customFetch(
-        `${import.meta.env.ENDPOINT_BACKEND}/teams`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
         {
           method: "POST",
           credentials: "include",

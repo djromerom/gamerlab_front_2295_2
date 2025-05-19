@@ -29,7 +29,7 @@ const PendingGradesPage: React.FC = () => {
     const fetchVideogames = async () => {
       try {
         const response = await fetch(
-          "${import.meta.env.ENDPOINT_BACKEND}/pending-games",
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/pending-games`,
           {
             method: "GET",
             credentials: "include",

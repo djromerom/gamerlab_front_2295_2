@@ -38,7 +38,7 @@ const CriteriaPage = () => {
   });
   const [refreshFlag, setRefreshFlag] = useState(false); // Nueva bandera de refresco
 
-  const API_BASE_URL = `${import.meta.env.ENDPOINT_BACKEND}`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const fetchCriteria = async (page: number, limit: number) => {
     setIsPageLoading(true);

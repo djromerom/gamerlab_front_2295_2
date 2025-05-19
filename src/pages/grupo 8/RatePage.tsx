@@ -153,7 +153,7 @@ export default function RatePage() {
     let evaluationId;
     try {
       const resEval = await fetch(
-        `${import.meta.env.ENDPOINT_BACKEND}/evaluation`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation`,
         {
           method: "POST",
           credentials: "include",
@@ -197,7 +197,7 @@ export default function RatePage() {
 
     try {
       const resDetails = await fetch(
-        `${import.meta.env.ENDPOINT_BACKEND}/evaluation/details`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/details`,
         {
           method: "POST",
           credentials: "include",

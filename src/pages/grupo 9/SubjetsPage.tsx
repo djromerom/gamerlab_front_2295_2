@@ -22,7 +22,7 @@ const SubjetsPage = () => {
   const API_ENDPOINT = `${
     import.meta.env.ENDPOINT_BACKEND
   }/subjects?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
-  const API_BASE_URL = `${import.meta.env.ENDPOINT_BACKEND}`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const TABLE_RESOURCE_NAME = "subjects";
 
   useEffect(() => {
