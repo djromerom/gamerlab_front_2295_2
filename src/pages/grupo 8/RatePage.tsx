@@ -412,7 +412,7 @@ export default function RatePage() {
                   >
                     {isSubmitting ? (
                       <span className="flex justify-center items-center w-full">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <Loader2 className="h-6 w-6 animate-spin text-foreground" />
                       </span>
                     ) : (
                       "Enviar Evaluación"
