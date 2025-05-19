@@ -42,7 +42,8 @@ export default function TeamStep() {
 
       clearErrors("teamName");
       next();
-    } catch (err) {
+    } catch (e) {
+      console.log(e)
       toast("Error de red", {
         description: "No se pudo verificar el nombre del equipo.",
       });

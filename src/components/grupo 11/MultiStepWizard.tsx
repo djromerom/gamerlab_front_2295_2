@@ -1,4 +1,4 @@
-// MultiStepWizard.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +19,7 @@ export default function MultiStepWizard() {
   const customFetch = useFetch();
   const navigate = useNavigate();
   const methods = useForm<CombinedFormValues>({
-    resolver: zodResolver(CombinedSchema),
+    resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
     defaultValues: {
       teamName: "",
       members: [
@@ -33,7 +33,7 @@ export default function MultiStepWizard() {
       ],
       gameName: "",
       description: "",
-      files: undefined,
+      files: [] as File[],
       recaptcha: "",
     },
   });
@@ -94,9 +94,10 @@ export default function MultiStepWizard() {
           description: data.description,
           logoURL: uploadedFileUrls[0] || "",
         },
+        recaptchaToken: data.recaptcha,
       };
 
-      const res = await customFetch(
+      const response = await customFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
         {
           method: "POST",
@@ -105,11 +106,26 @@ export default function MultiStepWizard() {
           body: JSON.stringify(payload),
         }
       );
-      if (res.status === 201) {
+
+      if (response.status === 201) {
+        toast.success("Equipo registrado correctamente");
         navigate("/equipos");
       } else {
-        const err = await res.json();
-        throw new Error(`Error ${res.status}: ${err.message || "desconocido"}`);
+        const errorData = await response.json();
+        let errorMessage = "Error en el registro";
+        
+        if (errorData && errorData.message) {
+          // Manejar diferentes mensajes de error
+          if (typeof errorData.message === 'string') {
+            errorMessage = errorData.message;
+          } else if (Array.isArray(errorData.message)) {
+            errorMessage = errorData.message.join(', ');
+          } else if (typeof errorData.message === 'object') {
+            errorMessage = Object.values(errorData.message).join(', ');
+          }
+        }
+        
+        throw new Error(errorMessage || `Error ${response.status}`);
       }
     } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
@@ -117,6 +133,7 @@ export default function MultiStepWizard() {
         description: (e as Error).message || "Error inesperado",
         duration: 5000,
       });
+    } finally {
       setIsLoading(false);
     }
   }
