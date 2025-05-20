@@ -604,7 +604,7 @@ export default function DevelopersCredits() {
               <div className="relative z-10 p-6 md:p-8">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">Conoce a Nuestro Equipo</h2>
                 <p className="text-gray-300 mb-6">
-                  Detrás de la Arkad hay un equipo apasionado de desarrolladores y diseñadores que han
+                  Detrás de Arkad hay un equipo apasionado de desarrolladores y diseñadores que han
                   trabajado incansablemente para crear esta experiencia digital. Cada miembro ha aportado su experiencia
                   y creatividad para hacer posible este proyecto.
                 </p>
