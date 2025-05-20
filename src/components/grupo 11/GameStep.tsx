@@ -30,6 +30,8 @@ export default function GameStep() {
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const SITE_KEY = `${import.meta.env.VITE_SITE_KEY}`;
 
+  console.log(SITE_KEY, "SITE_KEY");
+
   // Estado para el modal de recorte
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
