@@ -28,7 +28,7 @@ export default function GameStep() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentFiles = watch("files") || [];
   const recaptchaRef = useRef<ReCAPTCHA>(null);
-  const SITE_KEY = `${import.meta.env.SITE_KEY}`;
+  const SITE_KEY = `${import.meta.env.VITE_SITE_KEY}`;
 
   // Estado para el modal de recorte
   const [cropperOpen, setCropperOpen] = useState(false);
