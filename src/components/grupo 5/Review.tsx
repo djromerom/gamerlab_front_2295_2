@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, FileText, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -25,11 +25,19 @@ interface PromptFeedback {
 interface PromptItemProps {
   id: number
   rating: string
-  score: string
+  score: number
   environment: string
   date: string
   onViewFeedback: (id: number) => void
 }
+
+type Prompt = {
+  id: number;
+  rating: "Excellent" | "Bad";
+  score: number;
+  date: string;
+  environment: string;
+};
 
 const getRatingBadgeClasses = (rating: string) => {
   switch (rating) {
@@ -70,7 +78,7 @@ const PromptItem = ({ id, rating, score, environment, date, onViewFeedback }: Pr
             <span className="text-xs text-muted-foreground">{date}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => onViewFeedback(id)} className="flex items-center gap-1 sm:ml-auto">
-            View Feedback
+            Ver Retroalimentación
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
@@ -80,85 +88,73 @@ const PromptItem = ({ id, rating, score, environment, date, onViewFeedback }: Pr
 }
 
 export default function Review() {
+
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [selectedFeedback, setSelectedFeedback] = useState<PromptFeedback | null>(null)
+  const [prompts, setPrompts] = useState<Prompt[]>([])
+  const [feedbackData, setFeedbackData] = useState<PromptFeedback[]>([])
 
-  const prompts = [
-    {
-      id: 1,
-      rating: "Bad",
-      score: "5/5",
-      environment: "Jurado #1",
-      date: "April 17th, 2025",
-    },
-    {
-      id: 2,
-      rating: "Excellent",
-      score: "5/5",
-      environment: "Jurado #2",
-      date: "April 17th, 2025",
-    },
-    {
-      id: 3,
-      rating: "Excellent",
-      score: "5/5",
-      environment: "Jurado #3",
-      date: "April 6th, 2025",
-    },
-  ]
-
-  const feedbackData: PromptFeedback[] = [
-    {
-      id: 1,
-      overallRating: "Excellent",
-      overallScore: "5/5",
-      details: [
-        { componentName: "Clarity", score: 4.5, maxScore: 5 },
-        { componentName: "Relevance", score: 5, maxScore: 5 },
-        { componentName: "Specificity", score: 5, maxScore: 5 },
-        { componentName: "Context", score: 5, maxScore: 5 },
-        { componentName: "Format", score: 5, maxScore: 5 },
-      ],
-      comment:
-        "This prompt is exceptionally well-crafted. It provides clear instructions, relevant context, and specific requirements. The format is easy to follow and the context is comprehensive. Excellent work!",
-    },
-    {
-      id: 2,
-      overallRating: "Excellent",
-      overallScore: "5/5",
-      details: [
-        { componentName: "Clarity", score: 5, maxScore: 5 },
-        { componentName: "Relevance", score: 5, maxScore: 5 },
-        { componentName: "Specificity", score: 4, maxScore: 5 },
-        { componentName: "Context", score: 5, maxScore: 5 },
-        { componentName: "Format", score: 5, maxScore: 5 },
-      ],
-      comment:
-        "Very well structured prompt with clear objectives. The instructions are easy to follow and the context is well defined.",
-    },
-    {
-      id: 3,
-      overallRating: "Excellent",
-      overallScore: "5/5",
-      details: [
-        { componentName: "Clarity", score: 5, maxScore: 5 },
-        { componentName: "Relevance", score: 5, maxScore: 5 },
-        { componentName: "Specificity", score: 5, maxScore: 5 },
-        { componentName: "Context", score: 4, maxScore: 5 },
-        { componentName: "Format", score: 5, maxScore: 5 },
-      ],
-      comment:
-        "Excellent prompt that achieves its purpose effectively. The instructions are clear and the requirements are well specified.",
-    },
-  ]
 
   const handleViewFeedback = (id: number) => {
-    const feedback = feedbackData.find((item) => item.id === id)
-    if (feedback) {
-      setSelectedFeedback(feedback)
-      setIsSheetOpen(true)
+      const feedback = feedbackData.find((item) => item.id === id)
+      if (feedback) {
+        setSelectedFeedback(feedback)
+        setIsSheetOpen(true)
+      }
     }
-  }
+
+  useEffect(() => {
+    const fetchIndividualRatings = async () => {
+      // Simulate fetching individual ratings from an API
+      const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
+          method: "GET",
+          credentials: "include",
+      })
+      if (!res.ok) {
+        alert("Error fetching ratings")
+      }
+      const data = await res.json()
+      
+      const transformedPrompts: Prompt[] = data.data.map((item: {
+          evaluationComment: string;
+          evaluationDate: string;
+          evaluationDetails: object[];
+          evaluationId: number;
+          evaluationScore: number;
+        }, index: number) => ({
+        id: index + 1,
+        rating: item.evaluationScore >= 3 ? "Excellent" : "Bad",
+        score: parseFloat(item.evaluationScore.toFixed(1)),
+        date: item.evaluationDate.slice(0, 10), // solo los primeros 10 caracteres (AAAA-MM-DD)
+        environment: `Jurado #${index + 1}`
+      }));
+      setPrompts(transformedPrompts)
+
+      const feedbackData: PromptFeedback[] = data.data.map((item: {
+          evaluationComment: string;
+          evaluationDate: string;
+          evaluationDetails: object[];
+          evaluationId: number;
+          evaluationScore: number;
+        }, index: number) => {
+        const roundedScore = parseFloat(item.evaluationScore.toFixed(1));
+
+        return {
+          id: index + 1,
+          overallRating: roundedScore >= 3 ? "Excellent" : "Bad",
+          overallScore: `${roundedScore}/5`,
+          details: item.evaluationDetails,
+          comment: item.evaluationComment,
+        };
+      });
+      setFeedbackData(feedbackData)
+
+    }
+    fetchIndividualRatings()
+  }, []);
+  
+
+  
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -186,7 +182,7 @@ export default function Review() {
           {selectedFeedback && (
             <div className="mt-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Overall Rating</h3>
+                <h3 className="text-lg font-medium">Puntuación General</h3>
                 <Badge
                   variant={selectedFeedback.overallRating === "Excellent" ? "outline" : "secondary"}
                   className={getRatingBadgeClasses(selectedFeedback.overallRating)}
@@ -196,13 +192,13 @@ export default function Review() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Component Ratings</h3>
+                <h3 className="text-lg font-medium">Puntuaciones por Criterio</h3>
                 {selectedFeedback.details.map((detail, index) => (
                   <div key={index} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">{detail.componentName}</span>
                       <div className="flex items-center">
-                        {Array.from({ length: detail.maxScore }).map((_, i) => (
+                        {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
                             className={`w-4 h-4 ${i < detail.score ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
@@ -210,12 +206,12 @@ export default function Review() {
                           />
                         ))}
                         <span className="ml-2 text-sm">
-                          {detail.score}/{detail.maxScore}
+                          {detail.score}/{5}
                         </span>
                       </div>
                     </div>
                     <Progress
-                      value={(detail.score / detail.maxScore) * 100}
+                      value={(detail.score / 5) * 100}
                       className="h-2 bg-yellow-100 [&>div]:bg-yellow-500"
                     />
                   </div>
@@ -223,7 +219,7 @@ export default function Review() {
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-lg font-medium">Feedback Comment</h3>
+                <h3 className="text-lg font-medium">Comentarios</h3>
                 <div className="p-4 bg-muted rounded-md text-sm">{selectedFeedback.comment}</div>
               </div>
             </div>
