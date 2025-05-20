@@ -60,7 +60,7 @@ jobs:
             branch: test
             commit_user_name: CamiloDlRM [GITHUB-ACTIONS]
             commit_user_email: zinbak78@gmail.com
-            commit_author: CamiloDlRM
+            commit_author: CamiloDlRM <zinbak78@gmail.com>
             
         - name: Log in to Docker Hub
           run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
