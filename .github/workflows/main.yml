@@ -6,6 +6,10 @@ on:
   push:
     branches: [ test ]
 
+
+permissions:
+  contents: write
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -35,6 +39,8 @@ jobs:
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
+        - name: Git Pull
+          run: git pull
         - name: Read and bump version
           id: versioning
           run: |
@@ -46,6 +52,16 @@ jobs:
             echo "Current version: v$VERSION"
             echo "version=v$VERSION" >> $GITHUB_OUTPUT
             echo $((VERSION + 1)) > $VERSION_FILE
+
+        - name: Git Auto Commit
+          uses: stefanzweifel/git-auto-commit-action@v5.2.0
+          with:
+            commit_message: Update version.txt
+            branch: test
+            commit_user_name: CamiloDlRM [GITHUB-ACTIONS]
+            commit_user_email: zinbak78@gmail.com
+            commit_author: CamiloDlRM
+            
         - name: Log in to Docker Hub
           run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
         - name: build image
