@@ -65,7 +65,7 @@ jobs:
         - name: Log in to Docker Hub
           run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
         - name: build image
-          run: docker build  --build-arg VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_TEST }}  --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL_TEST }} --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY_TEST }}   -f Dockerfile -t arkadfront-image . || { echo "Docker build failed"; exit 1; }
+          run: docker build  --build-arg VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND }}  --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} --build-arg VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEST }} -f Dockerfile -t arkadfront-image . || { echo "Docker build failed"; exit 1; }
         - name: Debug values
           run: |
               echo "Username defined: ${{ secrets.DOCKERHUB_USERNAME != '' }}"
