@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Plus,
   Loader2,
+  Rows,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import {
@@ -53,39 +54,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDate, mapConfirmationStatus } from "./utils"; // Adjust path if needed
-
-export interface RowData extends Record<string, any> {
-  id: number | string;
-}
-
-export interface Data {
-  titulo: string;
-  nombreTabla: string;
-  nombreColumnas: Record<string, string>;
-  filas: RowData[];
-  primaryKey?: string;
-}
-
-interface Props {
-  data: Data | null;
-  apiBaseUrl: string;
-  isDataLoading?: boolean;
-}
+import { RowData, Props, Jurado   } from "./utils"; // Adjust path if needed
 
 export const JuryManagementTable: React.FC<Props> = ({
   data,
+  totalRows,
+  totalPages,
+  page,
+  limit,  
+  isLoading = false,
+  setIsLoading,
+  onPageChange,
+  onLimitChange, 
   apiBaseUrl,
-  isDataLoading = false,
+  onRefresh,
 }) => {
   // console.log("data", data);
-  // <-- Recibe isDataLoading
+  // <-- Recibe isLoading
   const customFetch = useFetch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  // Inicializa allRows con data?.filas o un array vacío si data es null
-  const [allRows, setAllRows] = useState<RowData[]>(data?.filas || []);
-  const [currentRows, setCurrentRows] = useState<RowData[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newRow, setNewRow] = useState<Record<string, any>>({});
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -94,10 +80,9 @@ export const JuryManagementTable: React.FC<Props> = ({
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
   const [error, setError] = useState<string | null>(null);
-
+   
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
-  const showLoader = isDataLoading || internalIsLoading;
-  // console.log("allrows", allRows);
+  const showLoader = isLoading || internalIsLoading;
   // Usa data?.primaryKey o 'id' como fallback de forma segura
   const primaryKeyField = data?.primaryKey || "id";
 
@@ -107,8 +92,6 @@ export const JuryManagementTable: React.FC<Props> = ({
     .filter(([key]) => key !== primaryKeyField)
     .map(([key]) => key);
   const columnNames = data?.nombreColumnas || {};
-
-  const totalPages = Math.ceil(allRows.length / rowsPerPage);
 
   const getApiUrl = (id?: number | string) => {
     // Asegúrate que data y data.nombreTabla existen antes de usarlos
@@ -120,44 +103,11 @@ export const JuryManagementTable: React.FC<Props> = ({
     return url;
   };
 
-  // Effect para actualizar allRows cuando la prop `data` cambie (después de la carga inicial)
-  useEffect(() => {
-    // Solo actualiza si data existe y data.filas es diferente de allRows (evita bucles)
-    // Comprobación simple por referencia o longitud puede ser suficiente aquí
-    if (data?.filas && data.filas !== allRows) {
-      setAllRows(data.filas);
-      // Resetea la página a 1 si los datos cambian completamente (opcional)
-      // setCurrentPage(1);
-    }
-    // Si data se vuelve null (quizás por un error en el padre), limpia las filas
-    if (data === null && allRows.length > 0) {
-      setAllRows([]);
-    }
-  }, [data]); // Depende de la prop data
-
-  // Effect para paginación (sin cambios, ya depende de allRows)
-  useEffect(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    // Asegura que allRows exista antes de rebanar
-    setCurrentRows(allRows ? allRows.slice(start, end) : []);
-
-    // Ajusta la página actual si es necesario (sin cambios)
-    const currentTotalPages = Math.ceil((allRows?.length || 0) / rowsPerPage);
-    if (currentPage > currentTotalPages && currentTotalPages > 0) {
-      setCurrentPage(currentTotalPages);
-    } else if (currentPage < 1 && currentTotalPages > 0) {
-      setCurrentPage(1);
-    } else if (allRows?.length === 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, rowsPerPage, allRows]); // Depende de allRows
-
   // --- Funciones handleAdd, handleOpenEdit, handleSaveEdit, handleOpenDelete, handleConfirmDelete ---
   // Asegúrate de usar setInternalIsLoading(true/false) en lugar de setIsLoading
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInternalIsLoading(true); // Usa el estado interno
+    // setInternalIsLoading(true); // Usa el estado interno
     setError(null);
 
     const apiUrl = getApiUrl();
@@ -188,6 +138,7 @@ export const JuryManagementTable: React.FC<Props> = ({
     }
 
     try {
+      setIsLoading(true);
       const response = await customFetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,18 +149,15 @@ export const JuryManagementTable: React.FC<Props> = ({
         throw new Error("No se pudo agregar el elemento.");
       }
 
-      const addedRow: RowData = await response.json();
-      addedRow.confirmationStatusId = mapConfirmationStatus(addedRow.confirmationStatusId);
-      addedRow.lastSignInAt = formatDate(addedRow.lastSignInAt);
+      const addedRow: Jurado = await response.json();
 
-      setAllRows((prevRows) => [addedRow, ...(prevRows || [])]); // Maneja prevRows null
-      setNewRow({});
+      onRefresh()
       setAddDialogOpen(false);
     } catch (err: any) {
       setError(err.message || "Error al agregar.");
       console.error("Error en handleAdd:", err);
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
+      // setInternalIsLoading(false); // Usa el estado interno
     }
   };
 
@@ -217,7 +165,7 @@ export const JuryManagementTable: React.FC<Props> = ({
     e.preventDefault();
     if (!editingRow) return;
 
-    setInternalIsLoading(true);
+    // setInternalIsLoading(true);
     setError(null);
 
     const idValue = editingRow[primaryKeyField];
@@ -242,6 +190,7 @@ export const JuryManagementTable: React.FC<Props> = ({
     };
 
     try {
+      setIsLoading(true);
       const response = await customFetch(apiUrl, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -252,17 +201,7 @@ export const JuryManagementTable: React.FC<Props> = ({
         throw new Error("Error al actualizar la fila.");
       }
 
-      const updatedRowFromApi: RowData = await response.json();
-      updatedRowFromApi.confirmationStatusId = mapConfirmationStatus(updatedRowFromApi.confirmationStatusId);
-      updatedRowFromApi.lastSignInAt = formatDate(updatedRowFromApi.lastSignInAt);
-
-      setAllRows((prevRows) =>
-        (prevRows || []).map((row) =>
-          row[primaryKeyField] === idValue ? updatedRowFromApi : row
-        )
-      );
-
-      setEditDialogOpen(false);
+      onRefresh()
       setEditingRow(null);
     } catch (err: any) {
       setError(err.message || "Error al guardar cambios.");
@@ -273,15 +212,13 @@ export const JuryManagementTable: React.FC<Props> = ({
   };
 
   const handleConfirmDelete = async () => {
-    if (deletingIndex < 0 || !allRows || deletingIndex >= allRows.length) {
-      /*...*/
+    if (deletingIndex < 0 || deletingIndex >= data.filas.length) {
       setError("Índice inválido para eliminar.");
       setDeleteDialogOpen(false); // Cierra si el índice es malo
       return;
     }
 
-    const idToDelete = allRows[deletingIndex]?.[primaryKeyField];
-    // console.log(idToDelete);
+    const idToDelete = data.filas[deletingIndex]?.[primaryKeyField];
     const apiUrl = getApiUrl(idToDelete);
 
     if (!apiUrl || idToDelete === undefined) {
@@ -291,11 +228,9 @@ export const JuryManagementTable: React.FC<Props> = ({
       return;
     }
 
-    setInternalIsLoading(true); // Usa el estado interno
     setError(null);
-
-    let deleteSuccess = false; // Flag para saber si cerrar el diálogo
     try {
+      setIsLoading(true);
       // console.log("apiUrl:", apiUrl);
       const response = await customFetch(`${apiUrl}/delete`, {
         method: "PATCH",
@@ -304,32 +239,13 @@ export const JuryManagementTable: React.FC<Props> = ({
         /* ... manejo de error ... */ throw new Error("...");
       }
 
-      // Éxito
-      setAllRows((prevRows) =>
-        (prevRows || []).filter((_, i) => i !== deletingIndex)
-      ); // Maneja prevRows null
-      deleteSuccess = true; // Marcar éxito
-      // console.log("Fila eliminada (ID):", idToDelete);
-      // Ajustar paginación si es necesario (sin cambios)
-      const newTotalRows = (allRows?.length || 1) - 1; // Calcula antes de actualizar estado
-      const newTotalPages = Math.ceil(newTotalRows / rowsPerPage);
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages);
-      } else if (newTotalRows === 0) {
-        setCurrentPage(1);
-      }
+      onRefresh()
     } catch (err: any) {
       setError(err.message || "Error al eliminar.");
       console.error("Error en handleConfirmDelete:", err);
       // No cierres el diálogo aquí si hay error, muestra el mensaje
     } finally {
-      setInternalIsLoading(false); // Usa el estado interno
-      if (deleteSuccess) {
-        setDeleteDialogOpen(false); // Cierra SÓLO si fue exitoso
         setDeletingIndex(-1);
-      }
-      // Si hubo error, el diálogo permanece abierto mostrando el error
-      // El botón Cancelar se encargará de cerrarlo y limpiar el error/índice
     }
   };
 
@@ -341,7 +257,7 @@ export const JuryManagementTable: React.FC<Props> = ({
   };
 
   const handleOpenDelete = (index: number) => {
-    const actualIndex = (currentPage - 1) * rowsPerPage + index;
+    const actualIndex = index;
     setDeletingIndex(actualIndex);
     setDeleteDialogOpen(true);
     setError(null);
@@ -353,7 +269,7 @@ export const JuryManagementTable: React.FC<Props> = ({
       setError("Configuración de tabla inválida.");
       return;
     }
-    console.log("apiURL", apiUrl);
+    // console.log("apiURL", apiUrl);
 
     const dataToSend: { email: string } = {
       email: row.email,
@@ -372,9 +288,7 @@ export const JuryManagementTable: React.FC<Props> = ({
       console.error("Error en handleSendEmail:", err);
     }
   };
-  // console.log("DATA", data);
-  // console.log("CR", currentRows);
-
+  // console.log("data", data.filas);
   return (
     // Añade un contenedor div si data es null para mantener la estructura
     <div
@@ -500,7 +414,7 @@ export const JuryManagementTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : allRows && allRows.length === 0 ? ( // <-- Verifica allRows explícitamente
+            ) : data.filas && data.filas.length === 0 ? ( // <-- Verifica allRows explícitamente
               // --- Sin Resultados ---
               <TableRow>
                 <TableCell
@@ -512,8 +426,8 @@ export const JuryManagementTable: React.FC<Props> = ({
               </TableRow>
             ) : (
               // --- Filas de Datos (solo si allRows existe y tiene elementos) ---
-              currentRows.map((row, index) => (
-                <TableRow key={row[primaryKeyField] ?? index}>
+              data.filas.map((row, index) => (
+                <TableRow key={row.id ?? index}>
                   {displayColumnKeys.map((key) => (
                     // <TableCell key={key}>{row[key]}</TableCell>
                     <TableCell key={key}>
@@ -534,7 +448,7 @@ export const JuryManagementTable: React.FC<Props> = ({
                                 {columnNames[key]}
                               </DialogTitle>
                               <DialogDescription>
-                                Jurado {row.name}
+                                Jurado {row.firstname + " " + row.lastname}
                               </DialogDescription>
                             </DialogHeader>
                             <Table>
@@ -561,7 +475,7 @@ export const JuryManagementTable: React.FC<Props> = ({
                           </DialogContent>
                         </Dialog>
                       ) : (
-                        row[key]  
+                        row[key]
                       )}
                     </TableCell>
                   ))}
@@ -604,7 +518,6 @@ export const JuryManagementTable: React.FC<Props> = ({
               ))
             )}
           </TableBody>
-          {/* ============================================================ */}
         </Table>
 
         {/* Controles de Paginación - Deshabilitados si está cargando */}
@@ -612,15 +525,15 @@ export const JuryManagementTable: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
             <Select
-              value={rowsPerPage.toString()}
+              value={limit.toString()}
               onValueChange={(value) => {
-                setRowsPerPage(parseInt(value, 10));
-                setCurrentPage(1);
+                onLimitChange(parseInt(value, 10));
+                onPageChange(1); // Reinicia a la primera página al cambiar el límite
               }}
-              disabled={showLoader || !allRows || allRows.length === 0} // Deshabilitar si carga o no hay filas
+              disabled={showLoader} // Deshabilitar si carga o no hay filas
             >
-              <SelectTrigger className="w-[70px]">
-                <SelectValue placeholder={rowsPerPage} />
+              <SelectTrigger className="w-[80px]">
+                <SelectValue placeholder={limit} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
@@ -631,19 +544,17 @@ export const JuryManagementTable: React.FC<Props> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pr-8">
             {/* Muestra paginación de forma segura */}
             <span>
-              Página {totalPages > 0 ? currentPage : 0} de {totalPages || 0}
+              Página {totalPages > 0 ? page : 0} de {totalPages || 0}
             </span>
             <div className="flex gap-1">
               <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
+                onClick={() => onPageChange(page - 1)}
                 disabled={
-                  currentPage === 1 ||
-                  showLoader ||
-                  !allRows ||
-                  allRows.length === 0
+                  page === 1 ||
+                  showLoader
                 }
                 variant="outline"
                 size="icon"
@@ -651,13 +562,11 @@ export const JuryManagementTable: React.FC<Props> = ({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => onPageChange(page + 1)}
                 disabled={
-                  currentPage === totalPages ||
+                  page === totalPages ||
                   totalPages === 0 ||
-                  showLoader ||
-                  !allRows ||
-                  allRows.length === 0
+                  showLoader
                 }
                 variant="outline"
                 size="icon"
