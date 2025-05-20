@@ -86,7 +86,9 @@ const NrcsPage = () => {
       setNrcsData(dataRespond);
     } catch (err: any) {
       console.error("Error fetching NRCs:", err);
-      setError(err.message || "Ocurrió un error desconocido al cargar los NRCs.");
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar los NRCs."
+      );
       setNrcsData(null);
     } finally {
       setIsPageLoading(false);
@@ -137,11 +139,14 @@ const NrcsPage = () => {
               refreshData={refreshData}
             />
           )}
-          {!isPageLoading && !error && nrcsData && nrcsData.data.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No se encontraron NRC's activos.
-            </div>
-          )}
+          {!isPageLoading &&
+            !error &&
+            nrcsData &&
+            nrcsData.data.length === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                No se encontraron NRC's activos.
+              </div>
+            )}
         </>
       )}
     </LayoutAplication>
