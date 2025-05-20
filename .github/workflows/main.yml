@@ -71,6 +71,7 @@ jobs:
               echo "Username defined: ${{ secrets.DOCKERHUB_USERNAME != '' }}"
               echo "Repository defined: ${{ secrets.DOCKERHUB_REPOSITORY != '' }}"
               echo "Version: ${{ steps.versioning.outputs.version }}"
+              echo "supabase_url ${{ secrets.VITE_SUPABASE_URL }}"
         - name: Tag Docker image
           run: |
             docker tag arkadfront-image ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:arkadfront-${{ steps.versioning.outputs.version }}
