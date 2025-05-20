@@ -1,64 +1,73 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef } from "react"
-import ReCAPTCHA from "react-google-recaptcha"
-import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { CloudUpload } from "lucide-react"
-import { useMultiForm } from "@/contexts/MultiFormContext"
-import { useFormContext } from "react-hook-form"
-import type { CombinedFormValues } from "@/lib/schemas"
-import { ImageCropper } from "./ImageCropper"
+import { useState, useRef } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { CloudUpload } from "lucide-react";
+import { useMultiForm } from "@/contexts/MultiFormContext";
+import { useFormContext } from "react-hook-form";
+import type { CombinedFormValues } from "@/lib/schemas";
+import { ImageCropper } from "./ImageCropper";
 
 export default function GameStep() {
-  const { back } = useMultiForm()
-  const { control, setValue, watch, setError, clearErrors } = useFormContext<CombinedFormValues>()
-  const [fileError, setFileError] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const currentFiles = watch("files") || []
-  const recaptchaRef = useRef<ReCAPTCHA>(null)
+  const { back } = useMultiForm();
+  const { control, setValue, watch, setError, clearErrors } =
+    useFormContext<CombinedFormValues>();
+  const [fileError, setFileError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentFiles = watch("files") || [];
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const SITE_KEY = `${import.meta.env.SITE_KEY}`;
 
   // Estado para el modal de recorte
-  const [cropperOpen, setCropperOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Manejar la selección de archivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     // Abrir el modal de recorte con el archivo seleccionado
-    setSelectedFile(files[0])
-    setCropperOpen(true)
+    setSelectedFile(files[0]);
+    setCropperOpen(true);
 
     // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
-    e.target.value = ""
-  }
+    e.target.value = "";
+  };
 
   // Manejar la imagen recortada
   const handleCroppedImage = (croppedFile: File) => {
-    setValue("files", [croppedFile])
-    setFileError(false)
-  }
+    setValue("files", [croppedFile]);
+    setFileError(false);
+  };
 
   // Eliminar archivo
   const handleDeleteFile = () => {
-    setValue("files", [])
-  }
+    setValue("files", []);
+  };
 
   // Handle reCAPTCHA change - almacena solamente el token para validación en backend
   const handleRecaptchaChange = (token: string | null) => {
     if (!token) {
       setError("recaptcha", {
         type: "manual",
-        message: "Por favor, complete la verificación de reCAPTCHA"
+        message: "Por favor, complete la verificación de reCAPTCHA",
       });
       return;
     }
-    
+
     // Simplemente almacenamos el token para enviarlo al backend
     setValue("recaptcha", token);
     clearErrors("recaptcha");
@@ -73,7 +82,10 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Nombre del videojuego</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Escribe el nombre del videojuego" />
+              <Input
+                {...field}
+                placeholder="Escribe el nombre del videojuego"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -111,7 +123,9 @@ export default function GameStep() {
         render={() => (
           <FormItem>
             <FormLabel>Carga el logo</FormLabel>
-            <FormDescription>Solo una imagen cuadrada de hasta 5 MB.</FormDescription>
+            <FormDescription>
+              Solo una imagen cuadrada de hasta 5 MB.
+            </FormDescription>
             <FormControl>
               <div className="space-y-2">
                 {/* Área para arrastrar o seleccionar archivos */}
@@ -134,25 +148,32 @@ export default function GameStep() {
                 {currentFiles.length > 0 && (
                   <div className="space-y-2">
                     {currentFiles.map((file, i) => (
-                      <div key={i} className="flex items-center gap-2 rounded-md border p-2">
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 rounded-md border p-2"
+                      >
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md">
                           <img
-                            src={URL.createObjectURL(file) || "/placeholder.svg"}
+                            src={
+                              URL.createObjectURL(file) || "/placeholder.svg"
+                            }
                             alt={file.name}
                             className="h-full w-full object-cover"
                           />
                         </div>
                         <div className="flex-1 truncate">
                           <div className="text-sm font-medium">{file.name}</div>
-                          <div className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</div>
+                          <div className="text-xs text-muted-foreground">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </div>
                         </div>
                         <Button
                           variant="home"
                           size="icon"
                           className="cursor-pointer"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteFile()
+                            e.stopPropagation();
+                            handleDeleteFile();
                           }}
                         >
                           ✕
@@ -162,10 +183,16 @@ export default function GameStep() {
                   </div>
                 )}
 
-                {fileError && <p className="text-red-500 text-sm mt-1">La imagen debe ser cuadrada (1:1)</p>}
+                {fileError && (
+                  <p className="text-red-500 text-sm mt-1">
+                    La imagen debe ser cuadrada (1:1)
+                  </p>
+                )}
 
                 {currentFiles.length === 0 && (
-                  <p className="pt-2 text-xs text-muted-foreground">No hay archivos seleccionados.</p>
+                  <p className="pt-2 text-xs text-muted-foreground">
+                    No hay archivos seleccionados.
+                  </p>
                 )}
               </div>
             </FormControl>
@@ -185,7 +212,7 @@ export default function GameStep() {
                 <ReCAPTCHA
                   ref={recaptchaRef}
                   className="cursor-pointer"
-                  sitekey="6LcIWTorAAAAAN8TLmk5vwQfzlo2GI9lmx1Issko"
+                  sitekey={SITE_KEY}
                   onChange={handleRecaptchaChange}
                 />
               </div>
@@ -196,14 +223,16 @@ export default function GameStep() {
       />
 
       <div className="flex justify-between space-x-4 pt-4">
-        <Button type="button" className="cursor-pointer" variant="outline" onClick={back}>
+        <Button
+          type="button"
+          className="cursor-pointer"
+          variant="outline"
+          onClick={back}
+        >
           Atrás
         </Button>
 
-        <Button 
-          variant="home" 
-          type="submit"
-        >
+        <Button variant="home" type="submit">
           Enviar
         </Button>
       </div>
