@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -75,6 +77,7 @@ interface PaginationMetadata {
   currentPage: number;
   itemsPerPage: number;
   totalPages: number;
+  totalWeight: number; // Nuevo campo
 }
 
 interface Props {
@@ -84,7 +87,7 @@ interface Props {
   isDataLoading?: boolean;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
-  refreshData: () => void; // Nueva prop para refrescar datos
+  refreshData: () => void;
 }
 
 export const CriterionTable: React.FC<Props> = ({
@@ -94,10 +97,9 @@ export const CriterionTable: React.FC<Props> = ({
   isDataLoading = false,
   onPageChange,
   onLimitChange,
-  refreshData, // Recibimos la función de refresco
+  refreshData,
 }) => {
   const customFetch = useFetch();
-  const [allCriteria, setAllCriteria] = useState<Criterion[]>(criteria || []);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newCriterion, setNewCriterion] = useState<CriterionFormData>({
     name: "",
@@ -114,42 +116,7 @@ export const CriterionTable: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
 
   const showLoader = isDataLoading || internalIsLoading;
-
-  const calculateTotalWeight = (
-    criteria: Criterion[],
-    excludeId?: number
-  ): number => {
-    return criteria.reduce((total, criterion) => {
-      if (
-        !criterion.isActive ||
-        (excludeId !== undefined && criterion.id === excludeId)
-      ) {
-        return total;
-      }
-      return total + (criterion.weight || 0);
-    }, 0);
-  };
-
-  const getTotalWeight = (): number => {
-    return allCriteria.reduce((total, criterion) => {
-      if (!criterion.isActive) return total;
-      return total + (criterion.weight || 0);
-    }, 0);
-  };
-
-  useEffect(() => {
-    if (criteria && criteria !== allCriteria) {
-      setAllCriteria(criteria);
-    }
-    if (criteria === null && allCriteria.length > 0) {
-      setAllCriteria([]);
-    }
-  }, [criteria]);
-
-  const activeCriteria = allCriteria.filter((c) => c.isActive);
-  const totalWeight = getTotalWeight();
-  const showWarning =
-    activeCriteria.length > 0 && Math.abs(totalWeight - 1) > 0.0001;
+  const showWarning = Math.abs(pagination.totalWeight - 1) > 0.0001;
 
   const columns = [
     { key: "name", label: "Nombre" },
@@ -175,12 +142,11 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error("El peso debe ser mayor a 0 y menor o igual a 1");
       }
 
-      const currentTotalWeight = calculateTotalWeight(allCriteria);
-      if (currentTotalWeight + weightValue > 1) {
+      if (pagination.totalWeight + weightValue > 1) {
         throw new Error(
-          `La suma de los pesos no puede exceder 1. Actual: ${currentTotalWeight.toFixed(
+          `La suma de los pesos no puede exceder 1. Actual: ${pagination.totalWeight.toFixed(
             4
-          )}, nuevo peso: ${weightValue}`
+          )}`
         );
       }
 
@@ -202,6 +168,7 @@ export const CriterionTable: React.FC<Props> = ({
       onPageChange(1);
       setNewCriterion({ name: "", description: "", weight: "" });
       setAddDialogOpen(false);
+      refreshData();
       toast.success("Criterio agregado exitosamente");
     } catch (err: any) {
       setError(err.message || "Error al agregar el criterio");
@@ -228,15 +195,14 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error("El peso debe ser mayor a 0 y menor o igual a 1");
       }
 
-      const currentTotalWeight = calculateTotalWeight(
-        allCriteria,
-        editingCriterion.id
-      );
-      if (currentTotalWeight + weightValue > 1) {
+      const oldWeight = editingCriterion.weight || 0;
+      const newTotal = pagination.totalWeight - oldWeight + weightValue;
+
+      if (newTotal > 1) {
         throw new Error(
-          `La suma de los pesos no puede exceder 1. Actual: ${currentTotalWeight.toFixed(
+          `La suma de los pesos no puede exceder 1. Actual: ${pagination.totalWeight.toFixed(
             4
-          )}, nuevo peso: ${(weightValue + currentTotalWeight).toFixed(4)}`
+          )}`
         );
       }
 
@@ -258,7 +224,7 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al actualizar el criterio");
       }
 
-      refreshData(); // Llamamos a refreshData en lugar de onPageChange
+      refreshData();
       setEditDialogOpen(false);
       setEditingCriterion(null);
       toast.success("Criterio actualizado exitosamente");
@@ -270,6 +236,7 @@ export const CriterionTable: React.FC<Props> = ({
     }
   };
 
+  // [Resto del código permanece igual...]
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
     setInternalIsLoading(true);
@@ -288,10 +255,18 @@ export const CriterionTable: React.FC<Props> = ({
         throw new Error(errorData.message || "Error al desactivar el criterio");
       }
 
-      refreshData(); // Llamamos a refreshData en lugar de onPageChange
+      // Verificar si la página actual quedará vacía después de eliminar
+      const willPageBeEmpty = criteria && criteria.length === 1;
+
+      refreshData();
       setDeleteDialogOpen(false);
       setDeletingId(null);
       toast.success("Criterio eliminado exitosamente");
+
+      // Si la página quedará vacía y no es la primera página, retroceder
+      if (willPageBeEmpty && pagination.currentPage > 1) {
+        onPageChange(pagination.currentPage - 1);
+      }
     } catch (err: any) {
       setError(err.message || "Error al desactivar el criterio");
       toast.error(err.message || "Error al desactivar el criterio");
@@ -401,8 +376,9 @@ export const CriterionTable: React.FC<Props> = ({
             <div>
               <p className="font-medium">Advertencia</p>
               <p>
-                La suma total de los pesos es {totalWeight.toFixed(4)}, debe ser
-                exactamente 1 para que el sistema funcione correctamente.
+                La suma total de los pesos es{" "}
+                {pagination.totalWeight.toFixed(4)}, debe ser exactamente 1 para
+                que el sistema funcione correctamente.
               </p>
             </div>
           </div>
@@ -432,7 +408,7 @@ export const CriterionTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : allCriteria.length === 0 ? (
+            ) : criteria?.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length + 1}
@@ -442,8 +418,8 @@ export const CriterionTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              allCriteria
-                .filter((criterion) => criterion.isActive)
+              criteria
+                ?.filter((criterion) => criterion.isActive)
                 .map((criterion) => (
                   <TableRow key={criterion.id}>
                     <TableCell>{criterion.name}</TableCell>
@@ -499,7 +475,7 @@ export const CriterionTable: React.FC<Props> = ({
               onValueChange={(value) => {
                 onLimitChange(parseInt(value, 10));
               }}
-              disabled={showLoader || allCriteria.length === 0}
+              disabled={showLoader || !criteria?.length}
             >
               <SelectTrigger className="w-[70px] cursor-pointer">
                 <SelectValue placeholder={pagination.itemsPerPage} />
@@ -528,7 +504,7 @@ export const CriterionTable: React.FC<Props> = ({
                 disabled={
                   pagination.currentPage === 1 ||
                   showLoader ||
-                  allCriteria.length === 0
+                  !criteria?.length
                 }
                 variant="outline"
                 size="icon"
@@ -541,7 +517,8 @@ export const CriterionTable: React.FC<Props> = ({
                 disabled={
                   pagination.currentPage === pagination.totalPages ||
                   pagination.totalPages === 0 ||
-                  showLoader
+                  showLoader ||
+                  !criteria?.length
                 }
                 variant="outline"
                 size="icon"

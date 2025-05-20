@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useNavigate } from "react-router-dom";
-import supabase from "@/supabase/client";
-import { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const passwordSchema = z
@@ -34,9 +32,9 @@ const passwordSchema = z
   });
 
 type Status =
-  | "loading"
+  | "loading_token_verification"
   | "awaiting_password"
-  | "submitting"
+  | "submitting_password"
   | "success"
   | "error";
 
@@ -44,117 +42,69 @@ export function VerifyEmailPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [status, setStatus] = useState<Status>("loading");
-  const [message, setMessage] = useState<string>("Verificando cuenta...");
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(
-    null
-  );
+  const [status, setStatus] = useState<Status>("loading_token_verification");
+  const [message, setMessage] = useState<string>("Verificando el enlace...");
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  const [currentToken, setCurrentToken] = useState<string | null>(null);
+
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    let isMounted = true;
-    let processedFragment = false;
+  const verifyToken = useCallback(async (token: string) => {
+    setStatus("loading_token_verification");
+    setMessage("Verificando el enlace...");
+    setCurrentToken(token);
 
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    const errorDescription = params.get("error_description");
-    const errorCode = params.get("error_code");
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/verify-token?token=${encodeURIComponent(token)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    if (errorDescription || errorCode) {
-      processedFragment = true;
+      const data = await response.json();
+
+      if (!response.ok || !data.isValid) {
+        setStatus("error");
+        setMessage("El enlace de verificación es inválido, ha expirado o ya fue utilizado.");
+        toast.error(data.message || "Error en la verificación del enlace.");
+        return;
+      }
+
+      setVerifiedEmail(data.email || "Usuario");
+      setStatus("awaiting_password");
+      setMessage("¡Enlace verificado! Por favor, establece tu contraseña.");
+      toast.success("Enlace verificado correctamente.");
+
+    } catch (error: any) {
       setStatus("error");
       setMessage(
-        `Error: ${decodeURIComponent(
-          errorDescription?.replace(/\+/g, " ") || "Error desconocido"
-        )}` + (errorCode ? ` (Code: ${errorCode})` : "")
+        error.message ||
+        "Ocurrió un error al verificar el enlace. Inténtalo de nuevo o contacta a soporte."
       );
-
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-      return;
+      toast.error("Error al verificar el enlace.");
     }
+  }, []);
 
-    if (accessToken) {
-      processedFragment = true;
 
-      setStatus("loading");
-      setMessage("Procesando verificación...");
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get("token");
+
+    if (tokenFromUrl) {
+      verifyToken(tokenFromUrl);
     } else {
       setStatus("error");
       setMessage(
-        "Enlace de verificación inválido, expirado, ya utilizado o no proporcionado."
+        "Enlace de verificación inválido o no proporcionado. Asegúrate de usar el enlace completo de tu correo electrónico."
       );
-
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-      return;
+      toast.error("Token no encontrado en el enlace.");
     }
+  }, [searchParams, verifyToken]);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
-        if (!isMounted) return;
-
-        console.log("Auth Event:", event, "Session:", !!session);
-
-        if (event === "SIGNED_IN" && session?.user && processedFragment) {
-          window.history.replaceState(
-            null,
-            "",
-            window.location.pathname + window.location.search
-          );
-
-          if (
-            session.user.email_confirmed_at ||
-            session.user.phone_confirmed_at
-          ) {
-            setCurrentUser(session.user);
-            setCurrentSessionToken(session.access_token);
-            setStatus("awaiting_password");
-            setMessage(
-              "¡Cuenta verificada! Por favor, establece tu contraseña."
-            );
-          } else {
-            setStatus("error");
-            setMessage(
-              "Error inesperado: La sesión se inició pero la cuenta no aparece como confirmada."
-            );
-          }
-          processedFragment = false;
-        } else if (
-          event === "INITIAL_SESSION" &&
-          !session &&
-          processedFragment
-        ) {
-          window.history.replaceState(
-            null,
-            "",
-            window.location.pathname + window.location.search
-          );
-          setStatus("error");
-          setMessage(
-            "El token de verificación en el enlace no pudo ser validado o ha expirado."
-          );
-          processedFragment = false;
-        } else if (event === "SIGNED_OUT") {
-          toast.info("Has cerrado sesión.");
-          navigate("/login");
-        }
-      }
-    );
-
-    return () => {
-      isMounted = false;
-      authListener?.subscription.unsubscribe();
-    };
-  }, [navigate]);
 
   const handleSetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,16 +126,16 @@ export function VerifyEmailPage() {
       return;
     }
 
-    if (!currentSessionToken) {
+    if (!currentToken) {
       setMessage(
-        "Error de sesión. Por favor, refresca la página o intenta iniciar sesión."
+        "Error: No se encontró el token de verificación. Por favor, vuelve a usar el enlace de tu correo."
       );
       setStatus("error");
-      toast.error("Error interno: No se pudo obtener el token de sesión.");
+      toast.error("Error interno: Token de verificación no disponible.");
       return;
     }
 
-    setStatus("submitting");
+    setStatus("submitting_password");
     setMessage("Estableciendo tu contraseña...");
 
     try {
@@ -195,25 +145,18 @@ export function VerifyEmailPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentSessionToken}`,
           },
           body: JSON.stringify({
+            token: currentToken,
             password: password,
           }),
         }
       );
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        let errorMessage = `Error del servidor: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (jsonError) {}
-        if (response.status === 401) {
-          errorMessage =
-            "Error de autenticación. Verifica la configuración del servidor.";
-        }
-        throw new Error(errorMessage);
+        throw new Error(responseData.message || `Error del servidor: ${response.status}`);
       }
 
       setStatus("success");
@@ -229,7 +172,7 @@ export function VerifyEmailPage() {
       setStatus("error");
       setMessage(
         error.message ||
-          "Ocurrió un error al establecer la contraseña. Inténtalo de nuevo."
+        "Ocurrió un error al establecer la contraseña. Inténtalo de nuevo."
       );
       toast.error(error.message || "Error al establecer contraseña.");
     }
@@ -237,12 +180,12 @@ export function VerifyEmailPage() {
 
   const renderContent = () => {
     switch (status) {
-      case "loading":
+      case "loading_token_verification":
         return (
           <div className="py-3">
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertTitle>Verificando...</AlertTitle>
+              <AlertTitle>Verificando Enlace...</AlertTitle>
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           </div>
@@ -252,7 +195,7 @@ export function VerifyEmailPage() {
           <div className="py-3">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>Error de Verificación</AlertTitle>
               <AlertDescription>{message}</AlertDescription>
               <div className="mt-4">
                 <Button
@@ -272,13 +215,13 @@ export function VerifyEmailPage() {
           <div className="py-3">
             <Alert className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400">
               <CheckCircle className="h-4 w-4" />
-              <AlertTitle>¡Éxito!</AlertTitle>
+              <AlertTitle>¡Proceso Completado!</AlertTitle>
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           </div>
         );
       case "awaiting_password":
-      case "submitting":
+      case "submitting_password":
         return (
           <form onSubmit={handleSetPasswordSubmit} className="space-y-4 pb-3">
             <Alert
@@ -287,10 +230,10 @@ export function VerifyEmailPage() {
             >
               <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <AlertTitle className="text-blue-800 dark:text-blue-300">
-                Cuenta Verificada
+                Enlace Verificado
               </AlertTitle>
               <AlertDescription className="text-blue-700 dark:text-blue-400">
-                {currentUser?.email}. {message}
+                {verifiedEmail}. {message}
               </AlertDescription>
             </Alert>
 
@@ -308,7 +251,7 @@ export function VerifyEmailPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
                 className={errors.password ? "border-red-500" : ""}
-                disabled={status === "submitting"}
+                disabled={status === "submitting_password"}
                 aria-invalid={!!errors.password}
                 aria-describedby={
                   errors.password ? "password-error" : undefined
@@ -335,7 +278,7 @@ export function VerifyEmailPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirma tu contraseña"
                 className={errors.confirmPassword ? "border-red-500" : ""}
-                disabled={status === "submitting"}
+                disabled={status === "submitting_password"}
                 aria-invalid={!!errors.confirmPassword}
                 aria-describedby={
                   errors.confirmPassword ? "confirmPassword-error" : undefined
@@ -361,9 +304,9 @@ export function VerifyEmailPage() {
             <Button
               type="submit"
               className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff] cursor-pointer"
-              disabled={status === "submitting"}
+              disabled={status === "submitting_password"}
             >
-              {status === "submitting" ? (
+              {status === "submitting_password" ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Estableciendo...
@@ -381,19 +324,19 @@ export function VerifyEmailPage() {
 
   const cardTitle = "Confirmación de Cuenta";
   const cardDescription =
-    status === "awaiting_password" || status === "submitting"
+    status === "awaiting_password" || status === "submitting_password"
       ? "Último paso: establece tu contraseña."
-      : status === "loading"
-      ? "Verificando tu cuenta..."
-      : status === "success"
-      ? "Proceso completado."
-      : status === "error"
-      ? "No se pudo completar la verificación."
-      : "Confirmando tu cuenta...";
+      : status === "loading_token_verification"
+        ? "Verificando tu enlace..."
+        : status === "success"
+          ? "Proceso completado."
+          : status === "error"
+            ? "No se pudo completar la verificación."
+            : "Confirmando tu cuenta...";
+
 
   return (
     <div className="relative min-h-svh flex items-center justify-center overflow-hidden bg-[#060312]">
-      {/* Fondo con opacidad reducida */}
       <div
         className="absolute inset-0 z-0 bg-center bg-no-repeat animate-float"
         style={{
@@ -401,8 +344,6 @@ export function VerifyEmailPage() {
           backgroundSize: "100%",
         }}
       ></div>
-
-      {/* Contenido principal */}
       <Card className="w-full max-w-md relative z-10 bg-white/90 dark:bg-black/50 backdrop-blur-sm mt-12">
         <CardHeader className="space-y-3 pt-8 text-center">
           <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">

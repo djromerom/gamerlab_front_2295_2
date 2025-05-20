@@ -1,98 +1,125 @@
-// ProfessorsPage.tsx
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { ProfessorsTable } from "@/components/grupo 9/professorsTable"; // Adjust the path according to your structure
+import { NrcsTable } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
-export interface ProfessorRowData {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  confirmationStatusId: number;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+interface Nrc {
+  id: number;
+  code: string;
+  professorId: string;
+  subjectId: number;
+  professor: {
+    id: string;
+    name: string;
+    email: string;
+    isActive: boolean;
+  };
+  subject: {
+    id: number;
+    name: string;
+    code: string;
+    isActive: boolean;
+    semester: number;
+  };
+  members: any[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export const ProfessorsPage: React.FC = () => {
-  const [professors, setProfessors] = useState<ProfessorRowData[] | null>(null);
+interface PaginatedNrcs {
+  data: Nrc[];
+  metadata: {
+    totalItems: number;
+    itemsOnCurrentPage: number;
+    currentPage: number;
+    itemsPerPage: number;
+    totalPages: number;
+  };
+}
+
+const NrcsPage = () => {
+  const [nrcsData, setNrcsData] = useState<PaginatedNrcs | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+  });
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
-  // Set a very large limit to fetch all active Professors.
-  const FETCH_ALL_LIMIT = 10000; // Or a more reasonable "max" like 1000
-
-  // Ensure these URLs are correct for your environment
-  // Modify API_ENDPOINT to include the limit and ensure only active items are fetched
-  // Assuming your /professors endpoint also supports 'limit' and 'includeInactive'
-  const API_ENDPOINT = `${
-    import.meta.env.VITE_ENDPOINT_BACKEND
-  }/professors?limit=${FETCH_ALL_LIMIT}&includeInactive=false`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
-  useEffect(() => {
-    const fetchProfessors = async () => {
-      setIsPageLoading(true);
-      setError(null);
-      setProfessors(null); // Clear previous data on new fetch
+  const fetchNrcs = async (page: number, limit: number) => {
+    setIsPageLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch(API_ENDPOINT, {
-          // Use the updated API_ENDPOINT
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/nrcs?page=${page}&limit=${limit}`,
+        {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        });
-
-        if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch professors`;
-          try {
-            const errorBody = await res.json();
-            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {
-            // Ignore if error body is not JSON or empty
-          }
-          throw new Error(errorMsg);
         }
+      );
 
-        const dataRespond = await res.json(); // This should be PaginatedResult<ProfessorRowData>
-
-        // Ensure the response has the expected structure
-        if (!dataRespond || !dataRespond.data) {
-          throw new Error(
-            "Invalid data structure received from API for professors."
-          );
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to fetch NRCs`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) {
+          /* ignore */
         }
-
-        // The ProfessorsTable expects 'professors' to be a direct array of ProfessorRowData
-        setProfessors(dataRespond.data); // Use the 'data' array from the paginated response
-      } catch (err: any) {
-        console.error("Error fetching professors:", err);
-        setError(
-          err.message ||
-            "Ocurrió un error desconocido al cargar los profesores."
-        );
-        setProfessors(null); // Ensure professors is null on error
-      } finally {
-        setIsPageLoading(false);
+        throw new Error(errorMsg);
       }
-    };
 
-    fetchProfessors();
-  }, []); // API_ENDPOINT is static, so no need for it in dependencies
+      const dataRespond: PaginatedNrcs = await res.json();
 
-  const breadcrumbs = [{ label: "Profesores", href: "/professors" }];
+      // Si la página actual está vacía pero no es la primera, retroceder
+      if (dataRespond.data.length === 0 && page > 1) {
+        return fetchNrcs(page - 1, limit);
+      }
+
+      setNrcsData(dataRespond);
+    } catch (err: any) {
+      console.error("Error fetching NRCs:", err);
+      setError(
+        err.message || "Ocurrió un error desconocido al cargar los NRCs."
+      );
+      setNrcsData(null);
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  const refreshData = () => {
+    setRefreshFlag((prev) => !prev);
+  };
+
+  useEffect(() => {
+    fetchNrcs(pagination.page, pagination.limit);
+  }, [pagination.page, pagination.limit, refreshFlag]);
+
+  const handlePageChange = (page: number) => {
+    setPagination((prev) => ({ ...prev, page }));
+  };
+
+  const handleLimitChange = (limit: number) => {
+    setPagination({ page: 1, limit });
+  };
+
+  const breadcrumbs = [{ label: "NRC's", href: "/nrcs" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
-        <LoadingScreen text="Cargando profesores..." />
+        <LoadingScreen text="Cargando NRCs..." />
       ) : (
         <>
-          {error && !professors && (
+          {error && !nrcsData && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -101,18 +128,23 @@ export const ProfessorsPage: React.FC = () => {
             </div>
           )}
 
-          <ProfessorsTable
-            professors={professors}
-            apiBaseUrl={API_BASE_URL}
-            isDataLoading={isPageLoading && professors === null}
-          />
-
-          {!error &&
-            professors &&
-            professors.filter((p) => p.isActive).length === 0 && // This filter is fine if professors array contains all (active+inactive) and table filters
-            !isPageLoading && (
+          {nrcsData && (
+            <NrcsTable
+              nrcs={nrcsData.data}
+              pagination={nrcsData.metadata}
+              apiBaseUrl={API_BASE_URL}
+              isDataLoading={isPageLoading}
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              refreshData={refreshData}
+            />
+          )}
+          {!isPageLoading &&
+            !error &&
+            nrcsData &&
+            nrcsData.data.length === 0 && (
               <div className="p-4 text-center text-gray-500">
-                No se encontraron profesores activos.
+                No se encontraron NRC's activos.
               </div>
             )}
         </>
@@ -121,4 +153,4 @@ export const ProfessorsPage: React.FC = () => {
   );
 };
 
-export default ProfessorsPage;
+export default NrcsPage;
