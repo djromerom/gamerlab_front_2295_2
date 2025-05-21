@@ -373,10 +373,10 @@ export default function DevelopersCredits() {
       description: "Creadores de la identidad visual y experiencia de usuario.",
     },
     {
-      id: "qa",
-      name: "QA & Testing",
+      id: "sa",
+      name: "Software Architecture",
       icon: <Star className="w-5 h-5" />,
-      description: "Garantiza la calidad y el correcto funcionamiento de la plataforma.",
+      description: "Responsable de la arquitectura y diseño del software.",
     },
     {
       id: "devops",
@@ -543,7 +543,7 @@ export default function DevelopersCredits() {
       id: 20,
       name: "Daniel Romero",
       role: "Product manager",
-      department: "qa",
+      department: "sa",
       github: "https://github.com/djromerom",
       email: "djromero@uninorte.edu.co",
     },

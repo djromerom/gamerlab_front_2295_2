@@ -27,9 +27,9 @@ function Landing(): React.ReactElement {
           <div className="absolute inset-0"></div>
         </div>
 
-        <div className="relative z-10 text-white text-center px-4 flex flex-col justify-center items-center min-h-screen">
+        <div className="relative z-10 text-white text-center pt-11 px-4 flex flex-col justify-center items-center min-h-screen">
           <CountdownTimer targetDate={targetDate} />
-          <h1 className="font-inter text-4xl sm:text-7xl font-bold">
+          <h1 className="font-inter text-4xl sm:text-5xl xl:text-7xl font-bold">
             Una muestra de videojuegos sin precedentes en Uninorte
           </h1>
           <h2 className="text-2xl md:text-4xl font-medium tracking-tighter mt-4">
