@@ -75,7 +75,7 @@ const TablaRanking = () => {
       <TabsContent value="ranking">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
+            <p className="text-center text-muted-foreground pb-6">
               No hay videojuegos con datos suficientes para mostrar en el ranking.
             </p>
             {/* Optional: Add a message if the original list had items but they were filtered out
