@@ -163,7 +163,14 @@ export default function MembersStep() {
     <>
       <h2 className="text-xl font-medium">Integrantes</h2>
 
-      <div style={{ maxHeight: 400, overflowY: "auto" }}>
+      <div className=" overflow-y-auto
+  [&::-webkit-scrollbar]:w-2 pr-5
+  [&::-webkit-scrollbar-track]:rounded-full
+  [&::-webkit-scrollbar-track]:bg-gray-100
+  [&::-webkit-scrollbar-thumb]:rounded-full
+  [&::-webkit-scrollbar-thumb]:bg-gray-300
+  dark:[&::-webkit-scrollbar-track]:bg-neutral-700
+  dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500" style={{ maxHeight: 400, overflowY: "auto" }}>
         {fields.map((member, idx) => (
           <div key={member.id} className="border-b border-gray-200 pb-4 mb-4">
             <div className="flex justify-between items-start mb-3">
