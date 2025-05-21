@@ -13,7 +13,7 @@ function Landing(): React.ReactElement {
       document.documentElement.classList.remove("dark");
     };
   }, []);
-  const targetDate = new Date("2025-06-04T08:30:00");
+  const targetDate = new Date("2025-06-05T08:30:00");
   const navigate = useNavigate();
 
   return (
