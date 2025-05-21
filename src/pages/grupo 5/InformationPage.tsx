@@ -435,7 +435,7 @@ export default function CompetitionInfo() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>04 Junio, 2025</span>
+                    <span>05 Junio, 2025</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
