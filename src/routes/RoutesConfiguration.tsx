@@ -25,6 +25,7 @@ import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import MaitenancePage from "@/pages/grupo 5/MaintenancePage";
 
 type Role =
   | "Profesor"
@@ -66,7 +67,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/ranking",
-    element: <RankingPage />,
+    element: <MaitenancePage />,
   },
   {
     path: "/informacion",

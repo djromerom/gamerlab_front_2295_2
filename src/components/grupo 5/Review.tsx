@@ -77,7 +77,7 @@ const PromptItem = ({ id, rating, score, environment, date, onViewFeedback }: Pr
             <span className="text-sm font-medium">{environment}</span>
             <span className="text-xs text-muted-foreground">{date}</span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => onViewFeedback(id)} className="flex items-center gap-1 sm:ml-auto">
+          <Button variant="outline" size="sm" onClick={() => onViewFeedback(id)} className="flex items-center gap-1 sm:ml-auto cursor-pointer">
             Ver Retroalimentación
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>

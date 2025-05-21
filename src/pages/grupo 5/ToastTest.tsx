@@ -7,7 +7,7 @@ export function ToastTest() {
 
   const testToast = () => {
     console.log("Mostrando toast...")
-    toast.success( "message", {
+    toast.loading( "message", {
       description: "Este es un toast de prueba",})
   }
 
@@ -38,7 +38,8 @@ export function ToastTest() {
         classNames: {
           success: 'bg-[var(--toast-success)] border border-green-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
           error: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
-          info: 'bg-blue-600 text-white px-4 py-3 rounded-md shadow-md',
+          info: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+          loading: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex justify-evenly gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
           // ...
         },
       }} />

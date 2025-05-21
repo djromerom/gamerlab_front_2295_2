@@ -26,9 +26,8 @@ const HomeStudentPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="flex flex-col gap-4">
+      <div className="">
         <Scoreboard />
-        <Review />
       </div>
     </LayoutAplication>
   );
