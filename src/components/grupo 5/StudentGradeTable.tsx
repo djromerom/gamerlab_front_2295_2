@@ -42,11 +42,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   // Estados para los datos de estudiantes y carga
   const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<Record<string, any[]>>({});
   const [fetchedStudentsBySubject, setFetchedStudentsBySubject] = useState<Record<string, any[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noStudents, setNoStudents] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // Nuevo estado para la carga inicial
+  const [initialLoading, setInitialLoading] = useState(true); // Estado para la carga inicial
 
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -115,12 +115,12 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setNoStudents(false);
     // Inicialmente, si no hay NRC seleccionado, no intentamos cargar datos
     if (selectedNRC === "-" || !selectedNRC) {
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     if (viewMode === "nrc") {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
       setNoStudents(false);
       
@@ -128,7 +128,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       if (fetchedStudentsByNRC[selectedNRC]) {
         // Si tenemos datos en caché pero están vacíos, mostramos mensaje de "no hay estudiantes"
         
-        setLoading(false);
+        setIsLoading(false);
         return;
       }
       
@@ -153,7 +153,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             }));
             setNoStudents(true);
             toast.info(`No hay videojuegos registrados para el NRC ${selectedNRC}`);
-            setLoading(false);
+            setIsLoading(false);
             return;
           }
           
@@ -188,7 +188,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           }));
         } finally {
           // Siempre establecer loading a false al final
-          setLoading(false);
+          setIsLoading(false);
         }
       };
       
@@ -201,7 +201,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
     setNoStudents(false);
 
@@ -210,7 +210,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       if (fetchedStudentsBySubject[selectedSubject].length === 0) {
         setNoStudents(true);
       }
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
@@ -236,7 +236,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           }));
           setNoStudents(true);
           toast.info(`No hay videojuegos registrados para la materia ${selectedSubject}`);
-          setLoading(false);
+          setIsLoading(false);
           return;
         }
 
@@ -272,7 +272,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           [selectedSubject]: []
         }));
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -287,7 +287,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       setSelectedNRC(defaultNRC);
     } else {
       // Si no hay NRC inicial, simplemente desactivamos el estado de carga
-      setLoading(false);
+      setIsLoading(false);
     }
   }, []);
 
@@ -303,6 +303,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   // Mostrar estado de carga inicial completa (cuando aún se están cargando los NRCs)
   if (initialLoading) {
     return <LoadingScreen text="Cargando información de videojuegos..." />;
+  }
+
+  // Mostrar estado de carga para datos específicos
+  if (isLoading) {
+    return <LoadingScreen text={`Cargando datos para ${viewMode === "nrc" ? `NRC ${selectedNRC}` : `materia ${selectedSubject}`}...`} />;
   }
 
   // Mostrar error si existe

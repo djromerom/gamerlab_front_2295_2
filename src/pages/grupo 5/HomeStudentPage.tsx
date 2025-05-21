@@ -1,5 +1,4 @@
 import type React from "react";
-import Review from "@/components/grupo 5/Review";
 import Scoreboard from "@/components/grupo 5/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { useLocation } from "react-router-dom";
