@@ -35,9 +35,11 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
           toastOptions={{
             unstyled: true,
             classNames: {
+              default: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
               success: 'bg-[var(--toast-success)] border border-[var(--toast-success-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
               error: 'bg-[var(--toast-error)] border border-[var(--toast-error-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
-              info: 'bg-blue-600 text-white px-4 py-3 rounded-md shadow-md',
+              info: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
+              loading: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
               // ...
             },
           }}

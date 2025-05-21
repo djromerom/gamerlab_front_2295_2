@@ -1,5 +1,4 @@
 import type React from "react";
-import Review from "@/components/grupo 5/Review";
 import Scoreboard from "@/components/grupo 5/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { useLocation } from "react-router-dom";
@@ -26,9 +25,8 @@ const HomeStudentPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="flex flex-col gap-4">
+      <div className="">
         <Scoreboard />
-        <Review />
       </div>
     </LayoutAplication>
   );

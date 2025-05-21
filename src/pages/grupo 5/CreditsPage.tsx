@@ -421,7 +421,7 @@ export default function DevelopersCredits() {
     },
     {
       id: 5,
-      name: "Yovani Zhu",
+      name: "Yovany Zhu",
       role: "UX/UI & Frontend developer",
       department: "design",
       github: "https://github.com/yzhuye",

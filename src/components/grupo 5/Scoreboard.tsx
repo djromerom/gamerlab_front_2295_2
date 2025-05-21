@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HelpCircle } from "lucide-react"
+import LoadingScreen from "@/components/grupo 5/LoadingScreen"
+import Review from "@/components/grupo 5/Review"
 
 type Rating = { stars: number, count: number }
 
@@ -114,12 +116,12 @@ export default function Scoreboard() {
   ]
 
   if (loading) {
-    return <div className="text-center p-8 text-gray-500">Cargando calificaciones...</div>
+    return <LoadingScreen text="Cargando información de calificaciones..." />
   }
 
   return (
-    <div className="flex w-full max-w-4xl mx-auto p-4">
-      <Card className="w-full shadow-sm border-purple-800">
+    <div className="flex flex-col gap-4 w-full max-w-4xl mx-auto p-4">
+      <Card className="w-full shadow-sm border">
         <CardHeader className="p-6 pb-2">
           <CardTitle className="text-lg font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
           <CardDescription className="text-sm text-foreground/50">
@@ -188,6 +190,7 @@ export default function Scoreboard() {
           </div>
         </CardContent>
       </Card>
+      <Review />
     </div>
   )
 }

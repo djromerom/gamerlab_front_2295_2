@@ -435,7 +435,7 @@ export default function CompetitionInfo() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>04 Junio, 2025</span>
+                    <span>05 Junio, 2025</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
@@ -480,15 +480,9 @@ export default function CompetitionInfo() {
               <div className="space-y-3 text-gray-300">
                 <div>
                   <h4 className="font-semibold text-white">
-                    Jornada AM - 04 de Junio
+                    Jornada AM - 05 de Junio
                   </h4>
-                  <p>8:00 - 12:00: Exhibiciones y stands</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-white">
-                    Jornada PM - 04 de Junio
-                  </h4>
-                  <p>2:00 - 4:00: Exhibiciones y stands</p>
+                  <p>8:30 - 12:00: Exhibiciones y stands</p>
                 </div>
               </div>
             </div>

@@ -22,7 +22,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle } from "lucide-react"; // Agrega esta línea al inicio con los otros imports
+import { AlertTriangle } from "lucide-react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { toast } from "sonner"; // Importamos toast de sonner
 
 interface Props {
   initialNRC?: string;
@@ -40,10 +42,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   // Estados para los datos de estudiantes y carga
   const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<Record<string, any[]>>({});
   const [fetchedStudentsBySubject, setFetchedStudentsBySubject] = useState<Record<string, any[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noStudents, setNoStudents] = useState(false);
-  const [downloading, setDownloading] = useState(false); // Nuevo estado
+  const [downloading, setDownloading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true); // Estado para la carga inicial
 
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -64,10 +67,17 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         }
         const data = await response.json();
         setAvailableNRCs(data);
-        setSelectedNRC(data[0].code); // Set the first NRC as selected if available
+        if (data.length > 0) {
+          setSelectedNRC(data[0].code); // Set the first NRC as selected if available
+        } else {
+          toast.info("No se encontraron NRCs disponibles");
+        }
       } catch (err) {
         console.log("Error fetching available NRCs:", err);
-      } 
+        toast.error("Error al cargar los NRCs");
+      } finally {
+        setInitialLoading(false); // Finalizamos la carga inicial después de obtener los NRCs
+      }
     };
 
     fetchAvailableNRCs();
@@ -87,9 +97,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         const data = await response.json();
         setAvailableSubjects(data);
         console.log("Available subjects:", data.map((subject: any) => subject.name));
-        if (data.length > 0) setSelectedSubject(data[0].name);
+        if (data.length > 0) {
+          setSelectedSubject(data[0].name);
+        } else {
+          toast.info("No se encontraron materias disponibles");
+        }
       } catch (err) {
         console.log("Error fetching available Subjects:", err);
+        toast.error("Error al cargar las materias");
       }
     };
     fetchAvailableSubjects();
@@ -100,12 +115,12 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setNoStudents(false);
     // Inicialmente, si no hay NRC seleccionado, no intentamos cargar datos
     if (selectedNRC === "-" || !selectedNRC) {
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     if (viewMode === "nrc") {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
       setNoStudents(false);
       
@@ -113,7 +128,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       if (fetchedStudentsByNRC[selectedNRC]) {
         // Si tenemos datos en caché pero están vacíos, mostramos mensaje de "no hay estudiantes"
         
-        setLoading(false);
+        setIsLoading(false);
         return;
       }
       
@@ -128,6 +143,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             }
           );
           
+          toast.dismiss();
+          
           // Manejar caso específico de 404 (sin estudiantes)
           if (response.status === 404) {
             setFetchedStudentsByNRC(prev => ({
@@ -135,7 +152,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               [selectedNRC]: []
             }));
             setNoStudents(true);
-            setLoading(false);
+            toast.info(`No hay videojuegos registrados para el NRC ${selectedNRC}`);
+            setIsLoading(false);
             return;
           }
           
@@ -151,9 +169,18 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             [selectedNRC]: (data.data || [])
           }));
           
+          if (data.data && data.data.length > 0) {
+            toast.success(`${data.data.length} registros cargados para el NRC ${selectedNRC}`);
+          } else {
+            toast.info(`No hay información registrada para el NRC ${selectedNRC}`);
+            setNoStudents(true);
+          }
+          
         } catch (err) {
           console.error("Error fetching students:", err);
-          setError(err instanceof Error ? err.message : "Error al cargar estudiantes");
+          const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos";
+          setError(errorMsg);
+          toast.error(`Error: ${errorMsg}`);
           // Asegurarse de que se establezca un valor predeterminado si hay un error
           setFetchedStudentsByNRC(prev => ({
             ...prev,
@@ -161,7 +188,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           }));
         } finally {
           // Siempre establecer loading a false al final
-          setLoading(false);
+          setIsLoading(false);
         }
       };
       
@@ -174,7 +201,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
     setNoStudents(false);
 
@@ -183,12 +210,13 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       if (fetchedStudentsBySubject[selectedSubject].length === 0) {
         setNoStudents(true);
       }
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     const fetchStudentsBySubject = async () => {
       try {
+        
         const response = await fetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(selectedSubject)}`,
           {
@@ -198,6 +226,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           }
         );
 
+        toast.dismiss();
+        
         // Manejar caso específico de 404 (sin estudiantes)
         if (response.status === 404) {
           setFetchedStudentsBySubject(prev => ({
@@ -205,7 +235,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             [selectedSubject]: []
           }));
           setNoStudents(true);
-          setLoading(false);
+          toast.info(`No hay videojuegos registrados para la materia ${selectedSubject}`);
+          setIsLoading(false);
           return;
         }
 
@@ -226,17 +257,22 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
         if (!studentsArray || studentsArray.length === 0) {
           setNoStudents(true);
+          toast.info(`No hay información registrada para la materia ${selectedSubject}`);
+        } else {
+          toast.success(`${studentsArray.length} registros cargados para la materia ${selectedSubject}`);
         }
 
       } catch (err) {
         console.error("Error fetching students by subject:", err);
-        setError(err instanceof Error ? err.message : "Error al cargar estudiantes por materia");
+        const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos por materia";
+        setError(errorMsg);
+        toast.error(`Error: ${errorMsg}`);
         setFetchedStudentsBySubject(prev => ({
           ...prev,
           [selectedSubject]: []
         }));
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -251,7 +287,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       setSelectedNRC(defaultNRC);
     } else {
       // Si no hay NRC inicial, simplemente desactivamos el estado de carga
-      setLoading(false);
+      setIsLoading(false);
     }
   }, []);
 
@@ -264,14 +300,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     ? (fetchedStudentsByNRC[selectedNRC] || [])
     : (fetchedStudentsBySubject[selectedSubject] || []);
 
-  // Mostrar estado de carga
-  if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center py-10">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
-        <p className="mb-4">Cargando videojuegos...</p>
-      </div>
-    );
+  // Mostrar estado de carga inicial completa (cuando aún se están cargando los NRCs)
+  if (initialLoading) {
+    return <LoadingScreen text="Cargando información de videojuegos..." />;
+  }
+
+  // Mostrar estado de carga para datos específicos
+  if (isLoading) {
+    return <LoadingScreen text={`Cargando datos para ${viewMode === "nrc" ? `NRC ${selectedNRC}` : `materia ${selectedSubject}`}...`} />;
   }
 
   // Mostrar error si existe
@@ -282,16 +318,18 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         <p>{error}</p>
         <Button 
           variant="outline" 
-          className="mt-2" 
+          className="mt-2 cursor-pointer" 
           onClick={() => {
             setError(null);
             setFetchedStudentsByNRC({});
             if (viewMode === "nrc") {
               // Refrescar datos de NRC
               setSelectedNRC(selectedNRC);
+              toast.info("Intentando cargar los datos nuevamente...");
             } else {
               // Refrescar datos de materia
               setSelectedSubject(selectedSubject);
+              toast.info("Intentando cargar los datos nuevamente...");
             }
           }}
         >
@@ -301,19 +339,18 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     );
   }
 
-
   // Componente para mostrar cuando no hay estudiantes
   const NoStudentsMessage = (
-  <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-    <div className="mb-4 p-4 rounded-full bg-blue-50 flex items-center justify-center">
-      <AlertTriangle className="h-12 w-12 text-yellow-500" /> {/* Icono de warning */}
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+      <div className="mb-4 p-4 rounded-full bg-blue-50 flex items-center justify-center">
+        <AlertTriangle className="h-12 w-12 text-yellow-500" />
+      </div>
+      <h2 className="text-xl font-semibold mb-2">No hay videojuegos registrados</h2>
+      <p className="text-gray-600 mb-6">
+        No se han encontrado videojuegos para este {viewMode === "nrc" ? "NRC" : "curso"}.
+      </p>
     </div>
-    <h2 className="text-xl font-semibold mb-2">No hay videojuegos registrados</h2>
-    <p className="text-gray-600 mb-6">
-      No se han encontrado videojuegos para este {viewMode === "nrc" ? "NRC" : "curso"}.
-    </p>
-  </div>
-);
+  );
 
   const viewStudentDetails = (id: string, nrc?: string) => {
     const useNRC = viewMode === "nrc" ? selectedNRC : nrc;
@@ -330,6 +367,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   // Función para exportar a Excel
   const exportToExcel = () => {
     setDownloading(true); // Inicia el loader
+    
+    toast(
+      `Preparando exportación ${viewMode === "nrc" ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
+    );
 
     // Si la vista es por NRC, usa el endpoint actual
     if (viewMode === "nrc") {
@@ -337,6 +378,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         method: 'GET',
       })
         .then((response) => {
+          toast.dismiss();
           if (!response.ok) {
             throw new Error('Error al exportar a Excel');
           }
@@ -350,9 +392,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           document.body.appendChild(a);
           a.click();
           a.remove();
+          toast.success(`Reporte de videojuegos del NRC ${selectedNRC} exportado correctamente`);
         })
         .catch((error) => {
           console.error('Error:', error);
+          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
         })
         .finally(() => {
           setDownloading(false); // Detiene el loader
@@ -367,6 +411,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         credentials: 'include',
       })
         .then((response) => {
+          toast.dismiss();
           if (!response.ok) {
             throw new Error('Error al exportar a Excel');
           }
@@ -380,9 +425,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           document.body.appendChild(a);
           a.click();
           a.remove();
+          toast.success(`Reporte de videojuegos de la materia ${selectedSubject} exportado correctamente`);
         })
         .catch((error) => {
           console.error('Error:', error);
+          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
         })
         .finally(() => {
           setDownloading(false); // Detiene el loader
@@ -392,31 +439,33 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
   // Selector de NRC (para modo de visualización por NRC)
   const NRCSelector = (
-  <div className="mb-4 w-full sm:w-64">
-    <label className="block text-sm font-medium mb-1">Selecciona el NRC:</label>
-    <Select 
-      value={selectedNRC} 
-      onValueChange={setSelectedNRC}
-      disabled={availableNRCs.length === 0}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder={availableNRCs.length === 0 ? "Cargando NRCs..." : "Selecciona NRC"} />
-      </SelectTrigger>
-      <SelectContent>
-        {availableNRCs.length > 0 ? (
-          availableNRCs.map((nrc) => (
-            <SelectItem key={nrc.code} value={nrc.code}>
-              {nrc.code} 
+    <div className="mb-4 w-full sm:w-64 cursor-pointer">
+      <label className="block text-sm font-medium mb-1">Selecciona el NRC:</label>
+      <Select 
+        value={selectedNRC} 
+        onValueChange={(nrc) => {
+          setSelectedNRC(nrc);
+        }}
+        disabled={availableNRCs.length === 0}
+      >
+        <SelectTrigger className="cursor-pointer">
+          <SelectValue placeholder={availableNRCs.length === 0 ? "Cargando NRCs..." : "Selecciona NRC"} />
+        </SelectTrigger>
+        <SelectContent>
+          {availableNRCs.length > 0 ? (
+            availableNRCs.map((nrc) => (
+              <SelectItem className="cursor-pointer" key={nrc.code} value={nrc.code}>
+                {nrc.code} 
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="no-nrcs" disabled>
+              No hay NRCs disponibles
             </SelectItem>
-          ))
-        ) : (
-          <SelectItem value="no-nrcs" disabled>
-            No hay NRCs disponibles
-          </SelectItem>
-        )}
-      </SelectContent>
-    </Select>
-  </div>
+          )}
+        </SelectContent>
+      </Select>
+    </div>
   );
 
   // Selector de Materia (para modo de visualización por materia)
@@ -425,13 +474,18 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       <label className="block text-sm font-medium mb-1">
         Selecciona la Materia:
       </label>
-      <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-        <SelectTrigger>
+      <Select 
+        value={selectedSubject} 
+        onValueChange={(subject) => {
+          setSelectedSubject(subject);
+        }}
+      >
+        <SelectTrigger className="cursor-pointer">
           <SelectValue placeholder="Selecciona Materia" />
         </SelectTrigger>
         <SelectContent>
           {availableSubjects.map((subject) => (
-            <SelectItem key={subject.name} value={subject.name}>
+            <SelectItem key={subject.name} value={subject.name} className="cursor-pointer">
               {subject.name}
             </SelectItem>
           ))}
@@ -444,7 +498,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const ExportButton = (
     <Button 
       variant="outline" 
-      className="ml-auto mb-4" 
+      className="ml-auto mb-4 cursor-pointer" 
       onClick={exportToExcel}
       disabled={students.length === 0 || downloading}
     >
@@ -456,6 +510,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       {downloading ? "Descargando..." : "Exportar a Excel"}
     </Button>
   );
+
 
   // Interfaz móvil
   if (isMobile) {
@@ -469,7 +524,9 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
         <Tabs
           value={viewMode}
-          onValueChange={(value) => setViewMode(value as "nrc" | "subject")}
+          onValueChange={(value) => {
+            setViewMode(value as "nrc" | "subject");
+          }}
           className="mb-4"
         >
           <TabsList className="grid w-full grid-cols-2">
@@ -477,7 +534,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             <TabsTrigger value="subject">Por Materia</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="nrc" className="pt-2">
+          <TabsContent value="nrc" className="pt-2 ">
             {NRCSelector}
           </TabsContent>
 
@@ -519,7 +576,9 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                       variant="outline"
                       size="sm"
                       className="w-full mt-2"
-                      onClick={() => viewStudentDetails(student.id, student.nrc)}
+                      onClick={() => {
+                        viewStudentDetails(student.id, student.nrc);
+                      }}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Ver detalles
@@ -546,12 +605,24 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6">
         <Tabs
           value={viewMode}
-          onValueChange={(value) => setViewMode(value as "nrc" | "subject")}
+          onValueChange={(value) => {
+            setViewMode(value as "nrc" | "subject");
+          }}
           className="w-full sm:w-auto"
         >
           <TabsList className="grid w-full sm:w-[300px] grid-cols-2">
-            <TabsTrigger value="nrc">Por NRC</TabsTrigger>
-            <TabsTrigger value="subject">Por Materia</TabsTrigger>
+            <TabsTrigger
+              className="cursor-pointer hover:bg-[var(--accent)] hover:text-primary transition-colors"
+              value="nrc"
+            >
+              Por NRC
+            </TabsTrigger>
+            <TabsTrigger
+              className="cursor-pointer hover:bg-[var(--accent)] hover:text-primary transition-colors"
+              value="subject"
+            >
+              Por Materia
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="nrc" className="pt-4">
