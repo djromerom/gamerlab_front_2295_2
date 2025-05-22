@@ -2,6 +2,8 @@
 
 import NavBar from "@/components/grupo 5/NavBar";
 import { useState, useEffect } from "react";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 type Team = {
   id: number;
@@ -98,10 +100,18 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
+const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
 
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -317,6 +327,8 @@ export default function PodioGamer() {
               </table>
             </div>
           </div>
+          <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>
