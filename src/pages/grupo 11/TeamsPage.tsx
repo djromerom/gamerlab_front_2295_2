@@ -9,6 +9,7 @@ import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
 import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 export interface Team {
@@ -31,6 +32,7 @@ export default function TeamsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const customFetch = useFetch();
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   useEffect(() => {
     async function fetchTeams() {
@@ -105,6 +107,7 @@ export default function TeamsPage() {
         </div>
       </div>
       <TextSizeControls />
+      <DiscordButton discordUrl={discordSupportUrl} />
     </div>
   );
 }

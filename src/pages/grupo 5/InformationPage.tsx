@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -262,6 +263,7 @@ export default function CompetitionInfo() {
   >("participants");
 
   const totalSlides = 30; // Total number of slides in the carousel
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
@@ -905,6 +907,7 @@ export default function CompetitionInfo() {
             </p>
           </div>
           <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>

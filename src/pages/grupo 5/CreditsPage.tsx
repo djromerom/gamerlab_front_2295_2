@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import NavBar from "@/components/grupo 5/NavBar"
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -321,6 +322,15 @@ export default function DevelopersCredits() {
   const [currentTeamSlide, setCurrentTeamSlide] = useState(0)
   const teamCarouselRef = useRef<HTMLDivElement>(null)
   const totalTeamSlides = 2 // Total number of team slides
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
+
+  useEffect(() => {
+      document.documentElement.classList.remove("light", "high-contrast");
+      document.documentElement.classList.add("dark");
+      return () => {
+        document.documentElement.classList.remove("dark");
+      };
+    }, []);
 
   const nextTeamSlide = () => {
     setCurrentTeamSlide((prev) => (prev === totalTeamSlides - 1 ? 0 : prev + 1))
@@ -839,6 +849,7 @@ export default function DevelopersCredits() {
             <p className="text-gray-400 text-sm">© 2025 Arkad. Todos los derechos reservados.</p>
           </div>
           <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>

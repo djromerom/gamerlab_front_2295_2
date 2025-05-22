@@ -5,6 +5,9 @@ import CountdownTimer from "@/components/grupo 5/CountdownTimer";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
+import {DiscordButton}  from "@/components/grupo 5/DiscordButton";
+
+
 function Landing(): React.ReactElement {
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -15,6 +18,7 @@ function Landing(): React.ReactElement {
   }, []);
   const targetDate = new Date("2025-06-05T08:30:00");
   const navigate = useNavigate();
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   return (
     <>
@@ -49,6 +53,7 @@ function Landing(): React.ReactElement {
             </button>
           </div>
           <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>
