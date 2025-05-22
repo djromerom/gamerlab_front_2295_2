@@ -2,17 +2,20 @@
 
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { JuryManagementTable } from "../../components/grupo 12/JuryManagementTable"; // Adjust path if needed
-import { useState, useEffect,useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import { formatDate, mapConfirmationStatus } from "../../components/grupo 12/utils"; // Adjust path if needed
-import { Jurado, Data } from "../../components/grupo 12/utils"
+import {
+  formatDate,
+  mapConfirmationStatus,
+} from "../../components/grupo 12/utils"; // Adjust path if needed
+import { Jurado, Data } from "../../components/grupo 12/utils";
 
 const JuryManagementPage = () => {
   const [data, setData] = useState<Data | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [limit, setLimit] = useState(10)
-  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -24,7 +27,6 @@ const JuryManagementPage = () => {
     setIsPageLoading(true);
     setError(null);
     setData(null);
-    
 
     try {
       const includeInactive = false;
@@ -48,15 +50,19 @@ const JuryManagementPage = () => {
         throw new Error(errorMsg);
       }
       const response = await res.json(); // Use the more specific type
-      console.log("DATA", response.data)
-      const transformedJurors: Jurado[] = response.data.map((jurado: any): Jurado => ({
-        ...jurado,
-        confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
-        lastSignInAt: formatDate(jurado.lastSignInAt),
-      }));
+      console.log("DATA", response.data);
+      const transformedJurors: Jurado[] = response.data.map(
+        (jurado: any): Jurado => ({
+          ...jurado,
+          confirmationStatusId: mapConfirmationStatus(
+            jurado.confirmationStatusId
+          ),
+          lastSignInAt: formatDate(jurado.lastSignInAt),
+        })
+      );
       setTotalRows(response.metadata.totalItems);
       setTotalPages(response.metadata.totalPages);
-      console.log("Response", response);  
+      console.log("Response", response);
       setData({
         // Optional: Update title to reflect filtering
         titulo: "Jurados",
@@ -85,13 +91,13 @@ const JuryManagementPage = () => {
       setIsPageLoading(false);
     }
   }, [limit, page]);
-  
+
   useEffect(() => {
     fetchJurados();
   }, [fetchJurados]); // Empty dependency array
 
   const refresh = async () => {
-    await fetchJurados();          // devuelve la promesa para que el hijo haga await
+    await fetchJurados(); // devuelve la promesa para que el hijo haga await
   };
 
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
@@ -114,20 +120,21 @@ const JuryManagementPage = () => {
             </div>
           )}
 
-          {/* Tabla component receives already filtered data */}
-          <JuryManagementTable
-            data={data}
-            totalRows={totalRows}
-            totalPages={totalPages}
-            page={page}
-            limit={limit}
-            isLoading={isPageLoading}
-            setIsLoading={setIsPageLoading}
-            onPageChange={setPage}
-            onLimitChange={setLimit}
-            apiBaseUrl={API_BASE_URL}
-            onRefresh={refresh}
-          />
+          {data && (
+            <JuryManagementTable
+              data={data}
+              totalRows={totalRows}
+              totalPages={totalPages}
+              page={page}
+              limit={limit}
+              isLoading={isPageLoading}
+              setIsLoading={setIsPageLoading}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+              apiBaseUrl={API_BASE_URL}
+              onRefresh={refresh}
+            />
+          )}
 
           {/* No results message (will show if activeRows is empty) */}
           {!isPageLoading && !error && data && data.filas.length === 0 && (

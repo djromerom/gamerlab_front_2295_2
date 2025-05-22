@@ -53,18 +53,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RowData, Props, Jurado   } from "./utils"; // Adjust path if needed
+import { RowData, Props, Jurado } from "./utils"; // Adjust path if needed
 
 export const JuryManagementTable: React.FC<Props> = ({
   data,
-  totalRows,
+
   totalPages,
   page,
-  limit,  
+  limit,
   isLoading = false,
   setIsLoading,
   onPageChange,
-  onLimitChange, 
+  onLimitChange,
   apiBaseUrl,
   onRefresh,
 }) => {
@@ -79,7 +79,7 @@ export const JuryManagementTable: React.FC<Props> = ({
   const [deletingIndex, setDeletingIndex] = useState<number>(-1);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // <-- Renombrado para claridad
   const [error, setError] = useState<string | null>(null);
-   
+
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isLoading || internalIsLoading;
   // Usa data?.primaryKey o 'id' como fallback de forma segura
@@ -133,7 +133,7 @@ export const JuryManagementTable: React.FC<Props> = ({
     if (!email.endsWith("@uninorte.edu.co")) {
       setError("El correo debe ser de la Universidad del Norte.");
       setInternalIsLoading(false);
-      return
+      return;
     }
 
     try {
@@ -148,9 +148,7 @@ export const JuryManagementTable: React.FC<Props> = ({
         throw new Error("No se pudo agregar el elemento.");
       }
 
-      const addedRow: Jurado = await response.json();
-
-      onRefresh()
+      onRefresh();
       setAddDialogOpen(false);
     } catch (err: any) {
       setError(err.message || "Error al agregar.");
@@ -200,7 +198,7 @@ export const JuryManagementTable: React.FC<Props> = ({
         throw new Error("Error al actualizar la fila.");
       }
 
-      onRefresh()
+      onRefresh();
       setEditingRow(null);
     } catch (err: any) {
       setError(err.message || "Error al guardar cambios.");
@@ -218,7 +216,11 @@ export const JuryManagementTable: React.FC<Props> = ({
     }
 
     const idToDelete = data.filas[deletingIndex]?.[primaryKeyField];
-    const apiUrl = getApiUrl(idToDelete);
+    const apiUrl = getApiUrl(
+      typeof idToDelete === "string" || typeof idToDelete === "number"
+        ? idToDelete
+        : undefined
+    );
 
     if (!apiUrl || idToDelete === undefined) {
       setError("No se puede eliminar la fila (falta ID o configuración).");
@@ -238,13 +240,13 @@ export const JuryManagementTable: React.FC<Props> = ({
         /* ... manejo de error ... */ throw new Error("...");
       }
 
-      onRefresh()
+      onRefresh();
     } catch (err: any) {
       setError(err.message || "Error al eliminar.");
       console.error("Error en handleConfirmDelete:", err);
       // No cierres el diálogo aquí si hay error, muestra el mensaje
     } finally {
-        setDeletingIndex(-1);
+      setDeletingIndex(-1);
     }
   };
 
@@ -319,9 +321,7 @@ export const JuryManagementTable: React.FC<Props> = ({
               <form onSubmit={handleAdd}>
                 <DialogHeader>
                   {/* Usa data?.nombreTabla de forma segura */}
-                  <DialogTitle>
-                    Agregar Jurado
-                  </DialogTitle>
+                  <DialogTitle>Agregar Jurado</DialogTitle>
                   <DialogDescription>
                     Ingrese los datos del nuevo jurado.
                   </DialogDescription>
@@ -338,7 +338,12 @@ export const JuryManagementTable: React.FC<Props> = ({
                 <div className="grid gap-4 py-4 px-6">
                   {/* Genera campos de forma segura */}
                   {columnEntries
-                    .filter(([key]) => key === "firstName" || key === "lastName" || key === "email")
+                    .filter(
+                      ([key]) =>
+                        key === "firstName" ||
+                        key === "lastName" ||
+                        key === "email"
+                    )
                     .map(([key, label]) => (
                       <div
                         key={key}
@@ -430,7 +435,8 @@ export const JuryManagementTable: React.FC<Props> = ({
                   {displayColumnKeys.map((key) => (
                     // <TableCell key={key}>{row[key]}</TableCell>
                     <TableCell key={key}>
-                      {key === "evaluatedCount" || key === "unevaluatedCount" ? (
+                      {key === "evaluatedCount" ||
+                      key === "unevaluatedCount" ? (
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -441,40 +447,36 @@ export const JuryManagementTable: React.FC<Props> = ({
                               {row[key]}
                             </Button>
                           </DialogTrigger>
-                          <DialogContent  className="w-[400px]">
+                          <DialogContent className="w-[400px]">
                             <DialogHeader>
-                              <DialogTitle>
-                                {columnNames[key]}
-                              </DialogTitle>
+                              <DialogTitle>{columnNames[key]}</DialogTitle>
                               <DialogDescription>
                                 {`Jurado ${row.firstName} ${row.lastName}`}
                               </DialogDescription>
                             </DialogHeader>
                             <Table>
                               <TableBody>
-                              {key === "evaluatedCount" ? (
-                                row.evaluatedGameNames.map((game, index) => (    
-                                    <TableRow key={index}>
-                                      <TableCell>
-                                        {game}
-                                      </TableCell>
-                                    </TableRow>
-                                ))
-                              ) : (
-                                row.unevaluatedGameNames.map((game, index) => (
-                                    <TableRow key={index}>
-                                      <TableCell>
-                                        {game}
-                                      </TableCell>
-                                    </TableRow>
-                                ))
-                              )}
+                                {key === "evaluatedCount"
+                                  ? row.evaluatedGameNames.map(
+                                      (game, index) => (
+                                        <TableRow key={index}>
+                                          <TableCell>{game}</TableCell>
+                                        </TableRow>
+                                      )
+                                    )
+                                  : row.unevaluatedGameNames.map(
+                                      (game, index) => (
+                                        <TableRow key={index}>
+                                          <TableCell>{game}</TableCell>
+                                        </TableRow>
+                                      )
+                                    )}
                               </TableBody>
                             </Table>
                           </DialogContent>
                         </Dialog>
                       ) : (
-                        row[key]
+                        row[key as keyof Jurado]
                       )}
                     </TableCell>
                   ))}
@@ -551,10 +553,7 @@ export const JuryManagementTable: React.FC<Props> = ({
             <div className="flex gap-1">
               <Button
                 onClick={() => onPageChange(page - 1)}
-                disabled={
-                  page === 1 ||
-                  showLoader
-                }
+                disabled={page === 1 || showLoader}
                 variant="outline"
                 size="icon"
               >
@@ -562,11 +561,7 @@ export const JuryManagementTable: React.FC<Props> = ({
               </Button>
               <Button
                 onClick={() => onPageChange(page + 1)}
-                disabled={
-                  page === totalPages ||
-                  totalPages === 0 ||
-                  showLoader
-                }
+                disabled={page === totalPages || totalPages === 0 || showLoader}
                 variant="outline"
                 size="icon"
               >
@@ -599,7 +594,9 @@ export const JuryManagementTable: React.FC<Props> = ({
                 )}
                 <div className="grid gap-4 py-4 px-6">
                   {columnEntries
-                    .filter(([key]) => key === "firstName" || key === "lastName")
+                    .filter(
+                      ([key]) => key === "firstName" || key === "lastName"
+                    )
                     .map(([key, label]) => (
                       <div
                         key={key}
