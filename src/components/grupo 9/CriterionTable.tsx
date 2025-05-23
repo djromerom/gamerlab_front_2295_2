@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreVertical,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { MoreVertical, Plus, Loader2 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { toast } from "sonner";
 import {
@@ -19,13 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,7 +83,6 @@ export const CriterionTable: React.FC<Props> = ({
   apiBaseUrl,
   isDataLoading = false,
   onPageChange,
-  onLimitChange,
   refreshData,
 }) => {
   const customFetch = useFetch();
