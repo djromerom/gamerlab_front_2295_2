@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Plus, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Plus,
+  Loader2,
+} from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { toast } from "sonner";
 import {
@@ -13,6 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +96,7 @@ export const CriterionTable: React.FC<Props> = ({
   apiBaseUrl,
   isDataLoading = false,
   onPageChange,
+  onLimitChange,
   refreshData,
 }) => {
   const customFetch = useFetch();
@@ -456,7 +470,68 @@ export const CriterionTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        {/* ... (Pagination and other dialogs) */}
+        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+          <div className="flex items-center gap-2">
+            <span>Filas por página</span>
+            <Select
+              value={pagination.itemsPerPage.toString()}
+              onValueChange={(value) => {
+                onLimitChange(parseInt(value, 10));
+              }}
+              disabled={showLoader || !criteria?.length}
+            >
+              <SelectTrigger className="w-[70px] cursor-pointer">
+                <SelectValue placeholder={pagination.itemsPerPage} />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20].map((n) => (
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={n}
+                    value={n.toString()}
+                  >
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-4">
+            <span>
+              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de{" "}
+              {pagination.totalPages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                onClick={() => onPageChange(pagination.currentPage - 1)}
+                disabled={
+                  pagination.currentPage === 1 ||
+                  showLoader ||
+                  !criteria?.length
+                }
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => onPageChange(pagination.currentPage + 1)}
+                disabled={
+                  pagination.currentPage === pagination.totalPages ||
+                  pagination.totalPages === 0 ||
+                  showLoader ||
+                  !criteria?.length
+                }
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
