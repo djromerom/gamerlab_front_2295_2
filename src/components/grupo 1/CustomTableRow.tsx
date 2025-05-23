@@ -94,6 +94,7 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
             aria-label={`Descargar ${title} en Excel`}
             onClick={handleDownloadExcel}
             disabled={isDownloading}
+            className="cursor-pointer"
           >
             {isDownloading ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -108,6 +109,7 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
             aria-label={`Descargar ${title} en PDF`}
             onClick={handleDownloadPdf}
             disabled={true} // Deshabilitar hasta que esté implementado
+            className="cursor-pointer"
           >
             <Download className="h-4 w-4 mr-1" /> PDF
           </Button>
