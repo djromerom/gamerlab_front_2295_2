@@ -96,6 +96,18 @@ const glowStyles = `
   .gradient-border-bronze::after, .gradient-border-bronze::before {
     background-image: conic-gradient(from var(--angle), #cd7f32, #b87333, #a57164, #b87333, #cd7f32);
   }
+
+    .gradient-border-purple::after, .gradient-border-purple::before {
+    background-image: conic-gradient(
+      from var(--angle),
+      #6A0DAD,
+      #8E2DE2,
+      #A55EEA,
+      #C084FC,
+      #3C1361,
+      #6A0DAD
+    );
+  }
 `;
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
@@ -104,6 +116,16 @@ const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
+  const [fairStarted, setFairStarted] = useState(false)
+
+  useEffect(() => {
+    const ahora = new Date();
+    const fechaLimite = new Date(ahora.getFullYear(), 5, 5);
+
+    if (ahora >= fechaLimite) {
+      setFairStarted(true);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -179,154 +201,171 @@ export default function PodioGamer() {
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
             Ranking en vivo
           </h1>
-
-          <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
-            {/* Segundo lugar */}
-            {sortedTeams[1] && (
-              <div className="flex w-full flex-col items-center">
-                <div className="mb-4 flex flex-col items-center">
-                  <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
-                    <div
-                      className={`absolute inset-0 ${sortedTeams[1].color} flex items-center justify-center`}
-                    >
-                      <span className="text-2xl font-bold text-white">
-                        {sortedTeams[1].name.substring(0, 1)}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-center text-lg font-semibold">
-                    {sortedTeams[1].name}
+          {!fairStarted ? (
+            <div className="w-full max-w-4xl mb-12">
+              <div className="relative gradient-border gradient-border-purple p-0">
+                <div className="gradient-border-inner"></div>
+                <div className="relative z-10 text-center p-6 md:p-8">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
+                    El ranking aún no está activo debido a que la feria no ha iniciado
+                  </h2>
+                  <p className="text-gray-300 mb-6">
+                    Los datos serán actualizados cuando comience el evento
                   </p>
-                  <p className="text-center text-xl font-bold text-[#c0c0c0]">
-                    {sortedTeams[1].score}
-                  </p>
-                </div>
-                <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
-                  <div className="gradient-border-inner"></div>
-                  <div className="flex h-full items-center justify-center relative z-10">
-                    <span className="text-6xl font-bold text-white">2</span>
-                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Primer lugar */}
-            {sortedTeams[0] && (
-              <div className="flex w-full flex-col items-center">
-                <div className="mb-4 flex flex-col items-center">
-                  <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF]">
-                    <div
-                      className={`absolute inset-0 ${sortedTeams[0].color} flex items-center justify-center`}
-                    >
-                      <span className="text-3xl font-bold text-white">
-                        {sortedTeams[0].name.substring(0, 1)}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-center text-xl font-semibold">
-                    {sortedTeams[0].name}
-                  </p>
-                  <p className="text-center text-2xl font-bold text-[#AC7CFF]">
-                    {sortedTeams[0].score}
-                  </p>
-                </div>
-                <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
-                  <div className="gradient-border-inner"></div>
-                  <div className="flex h-full items-center justify-center relative z-10">
-                    <span className="text-7xl font-bold text-white">1</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tercer lugar */}
-            {sortedTeams[2] && (
-              <div className="flex w-full flex-col items-center">
-                <div className="mb-4 flex flex-col items-center">
-                  <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
-                    <div
-                      className={`absolute inset-0 ${sortedTeams[2].color} flex items-center justify-center`}
-                    >
-                      <span className="text-xl font-bold text-white">
-                        {sortedTeams[2].name.substring(0, 1)}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-center text-base font-semibold">
-                    {sortedTeams[2].name}
-                  </p>
-                  <p className="text-center text-lg font-bold text-[#c0c0c0]">
-                    {sortedTeams[2].score}
-                  </p>
-                </div>
-                <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
-                  <div className="gradient-border-inner"></div>
-                  <div className="flex h-full items-center justify-center relative z-10">
-                    <span className="text-5xl font-bold text-white">3</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          {/* Lista de equipos en otras posiciones */}
-          <div className="mt-8 w-full max-w-4xl">
-            <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
-              Otras Posiciones
-            </h2>
-            <div className="w-16 h-1 bg-purple-500 mx-auto mb-4 rounded-full"></div>
-            <div className="bg-[#060312] border-1 border-gray-700 rounded-lg shadow-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-[#110D20]">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
-                      Posición
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
-                      Equipo
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
-                      Calificación
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedTeams.slice(3).map((team, index) => (
-                    <tr key={team.id} className="border-t border-gray-700">
-                      <td className="px-4 py-3 text-sm text-gray-300">
-                        {index + 4}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex items-center">
-                          {/* Imagen del grupo, aquí deben renderizar la imagen (logo) de cada grupo */}
-                          <div
-                            className={`w-6 h-6 rounded-full mr-3 ${team.color} flex items-center justify-center`}
-                          >
-                            <span className="text-xs font-bold text-white">
-                              {team.name.substring(0, 1)}
-                            </span>
-                          </div>
-                          <span className="text-gray-200">{team.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                        {team.score}
-                      </td>
-                    </tr>
-                  ))}
-                  {sortedTeams.slice(3).length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="px-4 py-3 text-sm text-center text-gray-400"
-                      >
-                        No hay más equipos para mostrar
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
+                {/* Segundo lugar */}
+                {sortedTeams[1] && (
+                  <div className="flex w-full flex-col items-center">
+                    <div className="mb-4 flex flex-col items-center">
+                      <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
+                        <div
+                          className={`absolute inset-0 ${sortedTeams[1].color} flex items-center justify-center`}
+                        >
+                          <span className="text-2xl font-bold text-white">
+                            {sortedTeams[1].name.substring(0, 1)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-center text-lg font-semibold">
+                        {sortedTeams[1].name}
+                      </p>
+                      <p className="text-center text-xl font-bold text-[#c0c0c0]">
+                        {sortedTeams[1].score}
+                      </p>
+                    </div>
+                    <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
+                      <div className="gradient-border-inner"></div>
+                      <div className="flex h-full items-center justify-center relative z-10">
+                        <span className="text-6xl font-bold text-white">2</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Primer lugar */}
+                {sortedTeams[0] && (
+                  <div className="flex w-full flex-col items-center">
+                    <div className="mb-4 flex flex-col items-center">
+                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF]">
+                        <div
+                          className={`absolute inset-0 ${sortedTeams[0].color} flex items-center justify-center`}
+                        >
+                          <span className="text-3xl font-bold text-white">
+                            {sortedTeams[0].name.substring(0, 1)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-center text-xl font-semibold">
+                        {sortedTeams[0].name}
+                      </p>
+                      <p className="text-center text-2xl font-bold text-[#AC7CFF]">
+                        {sortedTeams[0].score}
+                      </p>
+                    </div>
+                    <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
+                      <div className="gradient-border-inner"></div>
+                      <div className="flex h-full items-center justify-center relative z-10">
+                        <span className="text-7xl font-bold text-white">1</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tercer lugar */}
+                {sortedTeams[2] && (
+                  <div className="flex w-full flex-col items-center">
+                    <div className="mb-4 flex flex-col items-center">
+                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
+                        <div
+                          className={`absolute inset-0 ${sortedTeams[2].color} flex items-center justify-center`}
+                        >
+                          <span className="text-xl font-bold text-white">
+                            {sortedTeams[2].name.substring(0, 1)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-center text-base font-semibold">
+                        {sortedTeams[2].name}
+                      </p>
+                      <p className="text-center text-lg font-bold text-[#c0c0c0]">
+                        {sortedTeams[2].score}
+                      </p>
+                    </div>
+                    <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
+                      <div className="gradient-border-inner"></div>
+                      <div className="flex h-full items-center justify-center relative z-10">
+                        <span className="text-5xl font-bold text-white">3</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Lista de equipos en otras posiciones */}
+              <div className="mt-8 w-full max-w-4xl">
+                <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
+                  Otras Posiciones
+                </h2>
+                <div className="w-16 h-1 bg-purple-500 mx-auto mb-4 rounded-full"></div>
+                <div className="bg-[#060312] border-1 border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-[#110D20]">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
+                          Posición
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
+                          Equipo
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-200">
+                          Calificación
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedTeams.slice(3).map((team, index) => (
+                        <tr key={team.id} className="border-t border-gray-700">
+                          <td className="px-4 py-3 text-sm text-gray-300">
+                            {index + 4}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex items-center">
+                              {/* Imagen del grupo, aquí deben renderizar la imagen (logo) de cada grupo */}
+                              <div
+                                className={`w-6 h-6 rounded-full mr-3 ${team.color} flex items-center justify-center`}
+                              >
+                                <span className="text-xs font-bold text-white">
+                                  {team.name.substring(0, 1)}
+                                </span>
+                              </div>
+                              <span className="text-gray-200">{team.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
+                            {team.score}
+                          </td>
+                        </tr>
+                      ))}
+                      {sortedTeams.slice(3).length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-4 py-3 text-sm text-center text-gray-400"
+                          >
+                            No hay más equipos para mostrar
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
           <TextSizeControls />
           <DiscordButton discordUrl={discordSupportUrl} />
         </div>
