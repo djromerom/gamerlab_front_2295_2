@@ -595,14 +595,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
   // Interfaz de escritorio
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6">
-      <h1 className="text-2xl font-bold mb-6">
+    <div className="container mx-auto py-10 px-2 sm:px-6">
+      <h1 className="text-2xl font-bold mb-6 text-center">
         {viewMode === "nrc"
           ? `Lista de Videojuegos - NRC ${selectedNRC}`
           : `Lista de Videojuegos - Materia: ${selectedSubject}`}
       </h1>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 gap-4">
         <Tabs
           value={viewMode}
           onValueChange={(value) => {
@@ -640,8 +640,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       {noStudents ? (
         NoStudentsMessage
       ) : students.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="w-full overflow-x-auto rounded-lg border">
+          <Table className="min-w-[600px]">
             <TableCaption>
               {viewMode === "nrc"
                 ? `Lista de videojuegos y calificaciones - NRC ${selectedNRC}`
@@ -664,7 +664,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                   <TableCell>{student.student}</TableCell>
                   <TableCell>
                     {viewMode === "nrc"
-                      ? (student.subject  || "") // Muestra la materia en vista NRC
+                      ? (student.subject || "")
                       : (student.nrc || student.NRC || "")}
                   </TableCell>
                   <TableCell className={`text-center ${getGradeStatus(student.grade)}`}>
