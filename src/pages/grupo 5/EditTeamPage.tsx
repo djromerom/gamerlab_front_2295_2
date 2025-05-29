@@ -1,10 +1,8 @@
 import type React from "react";
-import Scoreboard from "@/components/grupo 5/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Edit } from "lucide-react";
 import EditBoard from "@/components/grupo 5/EditBoard";
 
 const EditTeamPage: React.FC = () => {
@@ -17,10 +15,18 @@ const EditTeamPage: React.FC = () => {
 
   const breadcrumbs =
     isProfesor && isMobile
-      ? [{ label: "Lista", href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor" }]
+      ? [
+          {
+            label: "Lista",
+            href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor",
+          },
+        ]
       : isProfesor
       ? [
-          { label: "Lista", href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor" },
+          {
+            label: "Lista",
+            href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor",
+          },
           { label: "Editar", href: location.pathname + location.search },
         ]
       : [{ label: "Editar", href: location.pathname + location.search }];
