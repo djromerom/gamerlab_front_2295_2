@@ -23,7 +23,6 @@ const JuryManagementPage = () => {
 
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
-  const TABLE_RESOURCE_NAME = "juror";
 
   const fetchJurors = async (page: number, limit: number) => {
     setIsPageLoading(true);
@@ -74,7 +73,7 @@ const JuryManagementPage = () => {
           lastSignInAt: formatDate(jurado.lastSignInAt),
         })
       );
-      
+
       setJurorsData(dataRespond);
 
     } catch (err: any) {
@@ -109,12 +108,12 @@ const JuryManagementPage = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {isPageLoading  && !jurorsData ? (
+      {isPageLoading && !jurorsData ? (
         <LoadingScreen text="Cargando jurados..." />
       ) : (
         <>
           {/* Error display */}
-          {error && !jurorsData  && (
+          {error && !jurorsData && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -123,7 +122,7 @@ const JuryManagementPage = () => {
             </div>
           )}
 
-          {jurorsData  && (
+          {jurorsData && (
             <JuryManagementTable
               jurors={jurorsData.data} // Pass only the data array for the current page
               paginationMeta={jurorsData.metadata} // Pass pagination metadata
@@ -136,7 +135,7 @@ const JuryManagementPage = () => {
           )}
 
           {/* No results message (will show if activeRows is empty) */}
-          {!isPageLoading && !error && jurorsData  && jurorsData.metadata.totalItems === 0 && (
+          {!isPageLoading && !error && jurorsData && jurorsData.metadata.totalItems === 0 && (
             <div className="p-4 text-center text-gray-500">
               No se encontraron jurados. {/* Optional: Update message */}
             </div>
