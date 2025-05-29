@@ -140,42 +140,7 @@ export default function RatePage() {
       return acc + curr.score * porcentaje;
     }, 0);
 
-    // 2. Preparar datos para evaluacion
-    const fecha_creacion = new Date().toISOString();
-    const evaluationPayload = {
-      date: fecha_creacion,
-      videogameId: game.id,
-      totalScore: puntajeFinal,
-      comments: comments,
-    };
-
-    // 3. Enviar a tabla evaluacion y obtener id_evaluacion
-    let evaluationId;
-    try {
-      const resEval = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(evaluationPayload),
-        }
-      );
-
-      if (!resEval.ok) {
-        const errorData = await resEval.json();
-        throw new Error(errorData.message || "Error al guardar la evaluación");
-      }
-
-      const evalData = await resEval.json();
-      evaluationId = evalData.evaluationId;
-    } catch (err: any) {
-      showError(err.message || "Error guardando la evaluación");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // 4. Mapear criterios a sus ids
+    // 2. Mapear criterios a sus ids
     const criterioMap: Record<string, number> = {
       interfaz: 1,
       interaccion: 2,
@@ -185,9 +150,9 @@ export default function RatePage() {
       presentacion_grupo: 6,
     };
 
-    // 5. Preparar y enviar detalles_evaluacion
+    // 3. Preparar detalles
+    const fecha_creacion = new Date().toISOString();
     const details = criteria.map((c) => ({
-      evaluationId: evaluationId,
       criterionId: criterioMap[c.id],
       score: c.score,
       createdAt: fecha_creacion,
@@ -195,22 +160,29 @@ export default function RatePage() {
       isActive: true,
     }));
 
+    // 4. Preparar el payload completo
+    const evaluationPayload = {
+      date: fecha_creacion,
+      videogameId: game.id,
+      totalScore: puntajeFinal,
+      comments: comments,
+      details, // <-- aquí van los detalles
+    };
+
     try {
-      const resDetails = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/details`,
+      const res = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/with-details`,
         {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ details }),
+          body: JSON.stringify(evaluationPayload),
         }
       );
 
-      if (!resDetails.ok) {
-        const errorData = await resDetails.json();
-        throw new Error(
-          errorData.message || "Error al guardar los detalles de la evaluación"
-        );
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al guardar la evaluación");
       }
 
       // Primero cerrar el diálogo de confirmación
@@ -219,7 +191,7 @@ export default function RatePage() {
       showSuccess(`Evaluación del juego "${game.nombre}" enviada exitosamente`);
       // No se navega aquí - la navegación ocurrirá en la función showSuccess después del toast
     } catch (err: any) {
-      showError(err.message || "Error guardando los detalles de la evaluación");
+      showError(err.message || "Error guardando la evaluación");
       setIsSubmitting(false);
       setConfirmDialogOpen(false);
     }
@@ -400,11 +372,9 @@ export default function RatePage() {
                               }
                               className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
                               style={{
-                                background: `linear-gradient(to right, var(--selected) ${
-                                  ((criterion.score - 1) / 4) * 100
-                                }%, #e5e7eb ${
-                                  ((criterion.score - 1) / 4) * 100
-                                }%)`,
+                                background: `linear-gradient(to right, var(--selected) ${((criterion.score - 1) / 4) * 100
+                                  }%, #e5e7eb ${((criterion.score - 1) / 4) * 100
+                                  }%)`,
                                 accentColor: "var(--selected)", // morado (tailwind purple-500)
                               }}
                             />
