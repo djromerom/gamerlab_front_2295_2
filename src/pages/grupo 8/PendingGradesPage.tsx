@@ -27,6 +27,23 @@ interface PaginatedGames {
   };
 }
 
+// Interfaz para los resultados de búsqueda (estructura diferente del backend)
+interface SearchResultItem {
+  id: number;
+  nombre: string;
+  equipo: string;
+  materia: string;
+  nrc: string;
+  participantes: string[];
+  imagen?: string;
+  descripcion: string;
+  isEvaluated: boolean;
+}
+
+interface SearchResults {
+  data: SearchResultItem[];
+}
+
 const PendingGradesPage: React.FC = () => {
   const breadcrumbs = [
     { label: "Pendientes por calificar", href: "/pendientes-calificar" },
@@ -39,6 +56,11 @@ const PendingGradesPage: React.FC = () => {
     limit: 10,
   });
   const [refreshFlag] = useState(false);
+
+  // Para búsqueda
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null);
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -85,17 +107,86 @@ const PendingGradesPage: React.FC = () => {
     }
   };
 
- 
+  // Búsqueda remota - URL CORREGIDA
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim() === "") {
+      setSearchResults(null);
+      fetchGames(pagination.page, pagination.limit);
+      return;
+    }
+    
+    setIsSearching(true);
+    setError(null);
+    
+    try {
+      // URL CORREGIDA: usar pending-games/search en lugar de search-games
+      const res = await fetch(
+        `${API_BASE_URL}/pending-games/search?q=${encodeURIComponent(query)}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to search games`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) {
+          /* ignore */
+        }
+        throw new Error(errorMsg);
+      }
+      
+      const data: SearchResults = await res.json();
+      setSearchResults(data.data || []);
+    } catch (err: any) {
+      console.error('Search error:', err);
+      setError(err.message || "Error al buscar juegos");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
-    fetchGames(pagination.page, pagination.limit);
+    if (!searchQuery.trim()) {
+      fetchGames(pagination.page, pagination.limit);
+    }
+    // eslint-disable-next-line
   }, [pagination.page, pagination.limit, refreshFlag]);
 
   const handlePageChange = (page: number) => {
     setPagination((prev) => ({ ...prev, page }));
   };
 
-
+  // Mapeo para el grid - SIMPLIFICADO
+  const gamesToShow = searchResults !== null
+    ? searchResults.map((game) => ({
+        id: game.id,
+        nombre: game.nombre,
+        equipo: game.equipo,
+        materia: game.materia,
+        nrc: game.nrc,
+        participantes: game.participantes,
+        imagen: game.imagen,
+        descripcion: game.descripcion,
+        isEvaluated: game.isEvaluated,
+      }))
+    : gamesData?.data.map((videogame) => ({
+        id: videogame.videogameId,
+        nombre: videogame.videogameName,
+        equipo: videogame.teamName,
+        materia: videogame.subject || "Sin materia",
+        nrc: videogame.nrc || "Sin NRC",
+        participantes: videogame.members.map((member) => member.fullName),
+        imagen: videogame.logoUrl,
+        descripcion: videogame.description || "Sin descripción",
+        isEvaluated: videogame.isEvaluated,
+      })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -112,57 +203,49 @@ const PendingGradesPage: React.FC = () => {
             </div>
           )}
 
-          {gamesData && (
-            <>
-              <PendingGamesGrid
-                games={gamesData.data.map((videogame) => ({
-                  id: videogame.videogameId,
-                  nombre: videogame.videogameName,
-                  equipo: videogame.teamName,
-                  materia: videogame.subject || "Sin materia",
-                  nrc: videogame.nrc || "Sin NRC",
-                  participantes: videogame.members.map((member) => member.fullName),
-                  imagen: videogame.logoUrl,
-                  descripcion: videogame.description || "Sin descripción",
-                  isEvaluated: videogame.isEvaluated,
-                }))}
-                showComments={false}
-                showTotalScore={false}
-                key={`page-${gamesData.metadata.currentPage}`}
-              />
+          <PendingGamesGrid
+            games={gamesToShow}
+            showComments={false}
+            showTotalScore={false}
+            onSearch={handleSearch}
+            isSearching={isSearching}
+            searchQuery={searchQuery}
+            key={`page-${gamesData?.metadata.currentPage || 1}`}
+          />
 
-              {/* Controles de paginación */}
-              {gamesData.metadata.totalPages > 1 && (
-                <div className="flex justify-center items-center gap-4 mt-6 py-6">
-                  <button
-                    className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
-                    onClick={() => handlePageChange(gamesData.metadata.currentPage - 1)}
-                    disabled={gamesData.metadata.currentPage === 1}
-                  >
-                    Anterior
-                  </button>
-                  <span className="font-medium">
-                    Página {gamesData.metadata.currentPage} de {gamesData.metadata.totalPages}
-                  </span>
-                  <button
-                    className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
-                    onClick={() => handlePageChange(gamesData.metadata.currentPage + 1)}
-                    disabled={gamesData.metadata.currentPage === gamesData.metadata.totalPages}
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              )}
-            </>
+  
+          {/* Solo muestra paginación si NO estás en búsqueda */}
+          {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6 py-6">
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
+                onClick={() => handlePageChange(gamesData!.metadata!.currentPage - 1)}
+                disabled={gamesData?.metadata?.currentPage === 1}
+              >
+                Anterior
+              </button>
+              <span className="font-medium">
+                Página {gamesData?.metadata?.currentPage} de {gamesData?.metadata?.totalPages}
+              </span>
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
+                onClick={() => handlePageChange(gamesData!.metadata!.currentPage + 1)}
+                disabled={gamesData?.metadata?.currentPage === gamesData?.metadata?.totalPages}
+              >
+                Siguiente
+              </button>
+            </div>
           )}
           {!isPageLoading &&
             !error &&
-            gamesData &&
-            gamesData.data.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
-                No se encontraron juegos pendientes por calificar.
-              </div>
-            )}
+            gamesToShow.length === 0 && (
+            <div className="p-4 text-center text-gray-500">
+              {searchQuery.trim() 
+                ? `No se encontraron resultados para "${searchQuery}"`
+                : "No se encontraron juegos pendientes por calificar."
+              }
+            </div>
+          )}
         </>
       )}
     </LayoutAplication>
