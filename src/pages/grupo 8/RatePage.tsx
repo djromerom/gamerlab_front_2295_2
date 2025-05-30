@@ -54,26 +54,56 @@ export default function RatePage() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
+  const StarRating: React.FC<{
+    value: number;
+    max: number;
+    onChange: (value: number) => void;
+  }> = ({ value, max, onChange }) => (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: max }, (_, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i + 1)}
+          className="focus:outline-none"
+          aria-label={`Puntuar con ${i + 1} estrellas`}
+        >
+          <svg
+            className={`w-5 h-5 ${i < value ? "text-yellow-400" : "text-gray-300"}`}
+            fill={i < value ? "currentColor" : "none"}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <polygon
+              strokeWidth="1"
+              points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21 12 17.27"
+            />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+
   // Función para mostrar errores como toast
 
   const [criteria, setCriteria] = useState<EvaluationCriteria[]>([
     {
       id: "interfaz",
-      name: "Interfaz de usuario (10%)",
+      name: "Interfaz de usuario (18%)",
       score: 1,
       maxScore: 5,
     },
-    { id: "interaccion", name: "Interacción (20%)", score: 1, maxScore: 5 },
-    { id: "resultados", name: "Resultados (40%)", score: 1, maxScore: 5 },
+    { id: "interaccion", name: "Interacción (18%)", score: 1, maxScore: 5 },
+    { id: "resultados", name: "Resultados (18%)", score: 1, maxScore: 5 },
     {
       id: "presentacion",
-      name: "Presentación del proyecto (10%)",
+      name: "Presentación del proyecto (18%)",
       score: 1,
       maxScore: 5,
     },
     {
       id: "funcionamiento",
-      name: "Funcionamiento del programa (10%)",
+      name: "Funcionamiento del programa (18%)",
       score: 1,
       maxScore: 5,
     },
@@ -127,11 +157,11 @@ export default function RatePage() {
 
     // 1. Calcular el puntaje final basado en los porcentajes
     const porcentajeMap: Record<string, number> = {
-      interfaz: 0.1, // 10%
-      interaccion: 0.2, // 20%
-      resultados: 0.4, // 40%
-      presentacion: 0.1, // 10%
-      funcionamiento: 0.1, // 10%
+      interfaz: 0.18, // 10%
+      interaccion: 0.18, // 20%
+      resultados: 0.18, // 40%
+      presentacion: 0.18, // 10%
+      funcionamiento: 0.18, // 10%
       presentacion_grupo: 0.1, // 10%
     };
 
@@ -349,41 +379,24 @@ export default function RatePage() {
                   <TableBody>
                     {criteria.map((criterion) => (
                       <TableRow key={criterion.id}>
-                        <TableCell
-                          colSpan={2}
-                          className="font-medium text-base px-0"
-                        >
+                        <TableCell colSpan={2} className="font-medium text-base px-0">
                           {criterion.name}
                           <div className="mt-2 flex items-center gap-4">
                             <p className="text-xs font-medium text-muted-foreground">
                               Puntuación:
                             </p>
-                            <input
-                              type="range"
-                              min="1"
-                              max="5"
-                              step="1"
+                            <StarRating
                               value={criterion.score}
-                              onChange={(e) =>
-                                handleScoreChange(
-                                  criterion.id,
-                                  parseFloat(e.target.value)
-                                )
-                              }
-                              className="w-full h-2 rounded-lg appearance-none cursor-pointer px-0"
-                              style={{
-                                background: `linear-gradient(to right, var(--selected) ${((criterion.score - 1) / 4) * 100
-                                  }%, #e5e7eb ${((criterion.score - 1) / 4) * 100
-                                  }%)`,
-                                accentColor: "var(--selected)", // morado (tailwind purple-500)
-                              }}
+                              max={criterion.maxScore}
+                              onChange={(val) => handleScoreChange(criterion.id, val)}
                             />
                             <span className="text-sm font-medium px-0">
                               {criterion.score}
                             </span>
-                            <Criteriabutton
-                              description={getDescription(criterion.id)}
-                            />
+                            {/* Botón de detalles completamente a la derecha */}
+                            <div className="ml-auto">
+                              <Criteriabutton description={getDescription(criterion.id)} />
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>

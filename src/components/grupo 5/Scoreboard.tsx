@@ -26,11 +26,23 @@ export default function Scoreboard() {
 
         if (!res.ok) {
           alert("Error fetching ratings")
+          setRawRatings([])
+          setRatings([])
           setLoading(false)
+          return
         }
         const data = await res.json()
 
-        const raw: number[] = data.data.map((item: { evaluationScore: number }) => item.evaluationScore);
+        if (!data || !data.data || !Array.isArray(data.data)) {
+          setRawRatings([])
+          setRatings([])
+          setLoading(false)
+          return
+        }
+
+        const raw: number[] = data.data.map((item: { evaluationScore: number }) => 
+          typeof item.evaluationScore === 'number' ? item.evaluationScore : 0
+        );
 
         setRawRatings(raw)
 
@@ -62,9 +74,10 @@ export default function Scoreboard() {
   }, [])
 
   const totalRatings = rawRatings.length
+  // Fixed NaN issue: ensure we always have valid numbers
   const averageRating = totalRatings === 0 ? "0.0" : (
-    rawRatings.reduce((sum, r) => sum + r, 0) / totalRatings
-  ).toFixed(1)
+    rawRatings.reduce((sum, r) => sum + (typeof r === 'number' && !isNaN(r) ? r : 0), 0) / totalRatings
+  ).toFixed(2)
 
   const renderStars = (rating: number, size: "sm" | "md" = "sm") => {
     const starSize = size === "sm" ? "w-3 h-3" : "w-4 h-4"
@@ -142,14 +155,14 @@ export default function Scoreboard() {
                   stroke="#facc15"
                   strokeWidth="8"
                   strokeDasharray="289.026"
-                  strokeDashoffset={289.026 - (289.026 * Number.parseFloat(averageRating)) / 5}
+                  strokeDashoffset={289.026 - (289.026 * (isNaN(Number.parseFloat(averageRating)) ? 0 : Number.parseFloat(averageRating))) / 5}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold">{averageRating}</span>
-                <div className="flex mt-1">{renderStars(Number.parseFloat(averageRating))}</div>
+                <div className="flex mt-1">{renderStars(isNaN(Number.parseFloat(averageRating)) ? 0 : Number.parseFloat(averageRating))}</div>
                 <span className="text-xs text-foreground mt-1">de 5.0</span>
               </div>
             </div>
@@ -178,12 +191,12 @@ export default function Scoreboard() {
                 <div className="flex-1 relative h-2 bg-gray-400 rounded-full overflow-hidden ">
                   <div
                     className="absolute top-0 left-0 h-full bg-yellow-400 rounded-full"
-                    style={{ width: `${(group.count / totalRatings) * 100}%` }}
+                    style={{ width: `${totalRatings === 0 ? 0 : (group.count / totalRatings) * 100}%` }}
                   ></div>
                 </div>
                 <div className="w-14 text-xs text-gray-500 flex justify-between">
                   <span>{group.count}</span>
-                  <span>{((group.count / totalRatings) * 100).toFixed(1)}%</span>
+                  <span>{totalRatings === 0 ? "0.0" : ((group.count / totalRatings) * 100).toFixed(1)}%</span>
                 </div>
               </div>
             ))}

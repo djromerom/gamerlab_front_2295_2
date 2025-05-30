@@ -82,7 +82,7 @@ const PendingGradesPage: React.FC = () => {
         let errorMsg = `Error ${res.status}: Failed to fetch pending games`;
         try {
           const errorBody = await res.json();
-          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          errorMsg = errorBody.message || errorMsg;
         } catch (e) {
           /* ignore */
         }
@@ -115,10 +115,10 @@ const PendingGradesPage: React.FC = () => {
       fetchGames(pagination.page, pagination.limit);
       return;
     }
-    
+
     setIsSearching(true);
     setError(null);
-    
+
     try {
       // URL CORREGIDA: usar pending-games/search en lugar de search-games
       const res = await fetch(
@@ -129,7 +129,7 @@ const PendingGradesPage: React.FC = () => {
           headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       if (!res.ok) {
         let errorMsg = `Error ${res.status}: Failed to search games`;
         try {
@@ -140,7 +140,7 @@ const PendingGradesPage: React.FC = () => {
         }
         throw new Error(errorMsg);
       }
-      
+
       const data: SearchResults = await res.json();
       setSearchResults(data.data || []);
     } catch (err: any) {
@@ -166,27 +166,27 @@ const PendingGradesPage: React.FC = () => {
   // Mapeo para el grid - SIMPLIFICADO
   const gamesToShow = searchResults !== null
     ? searchResults.map((game) => ({
-        id: game.id,
-        nombre: game.nombre,
-        equipo: game.equipo,
-        materia: game.materia,
-        nrc: game.nrc,
-        participantes: game.participantes,
-        imagen: game.imagen,
-        descripcion: game.descripcion,
-        isEvaluated: game.isEvaluated,
-      }))
+      id: game.id,
+      nombre: game.nombre,
+      equipo: game.equipo,
+      materia: game.materia,
+      nrc: game.nrc,
+      participantes: game.participantes,
+      imagen: game.imagen,
+      descripcion: game.descripcion,
+      isEvaluated: game.isEvaluated,
+    }))
     : gamesData?.data.map((videogame) => ({
-        id: videogame.videogameId,
-        nombre: videogame.videogameName,
-        equipo: videogame.teamName,
-        materia: videogame.subject || "Sin materia",
-        nrc: videogame.nrc || "Sin NRC",
-        participantes: videogame.members.map((member) => member.fullName),
-        imagen: videogame.logoUrl,
-        descripcion: videogame.description || "Sin descripción",
-        isEvaluated: videogame.isEvaluated,
-      })) || [];
+      id: videogame.videogameId,
+      nombre: videogame.videogameName,
+      equipo: videogame.teamName,
+      materia: videogame.subject || "Sin materia",
+      nrc: videogame.nrc || "Sin NRC",
+      participantes: videogame.members.map((member) => member.fullName),
+      imagen: videogame.logoUrl,
+      descripcion: videogame.description || "Sin descripción",
+      isEvaluated: videogame.isEvaluated,
+    })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -194,7 +194,7 @@ const PendingGradesPage: React.FC = () => {
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (
         <>
-          {error && !gamesData && (
+          {error && !gamesData && error !== "Las evaluaciones no están habilitadas en este momento." && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -202,7 +202,6 @@ const PendingGradesPage: React.FC = () => {
               <span className="font-medium">Error:</span> {error}
             </div>
           )}
-
           <PendingGamesGrid
             games={gamesToShow}
             showComments={false}
@@ -213,7 +212,7 @@ const PendingGradesPage: React.FC = () => {
             key={`page-${gamesData?.metadata.currentPage || 1}`}
           />
 
-  
+
           {/* Solo muestra paginación si NO estás en búsqueda */}
           {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 mt-6 py-6">
@@ -239,11 +238,28 @@ const PendingGradesPage: React.FC = () => {
           {!isPageLoading &&
             !error &&
             gamesToShow.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              {searchQuery.trim() 
-                ? `No se encontraron resultados para "${searchQuery}"`
-                : "No se encontraron juegos pendientes por calificar."
-              }
+              <div className="p-4 text-center text-gray-500">
+                {searchQuery.trim()
+                  ? `No se encontraron resultados para "${searchQuery}"`
+                  : "No se encontraron juegos pendientes por calificar."
+                }
+              </div>
+            )}
+          {error && !gamesData && (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
+                <svg
+                  className="mx-auto mb-2 w-8 h-8 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+                </svg>
+                <span className="font-semibold block mb-1">¡Atención!</span>
+                <span>{error}</span>
+              </div>
             </div>
           )}
         </>

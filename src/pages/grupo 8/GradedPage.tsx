@@ -68,7 +68,7 @@ const GradedPage: React.FC = () => {
         let errorMsg = `Error ${res.status}: Failed to fetch graded games`;
         try {
           const errorBody = await res.json();
-          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          errorMsg = errorBody.message || errorMsg;
         } catch (e) {
           /* ignore */
         }
@@ -170,7 +170,7 @@ const GradedPage: React.FC = () => {
         <LoadingScreen text="Cargando juegos calificados..." />
       ) : (
         <>
-          {error && !gamesData && (
+          {error && !gamesData && error !== "Las evaluaciones no están habilitadas en este momento." && (
             <div
               className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
               role="alert"
@@ -188,7 +188,7 @@ const GradedPage: React.FC = () => {
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata?.currentPage || 1}`}
           />
-        
+
 
           {/* Solo muestra paginación si NO estás en búsqueda */}
           {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
@@ -215,13 +215,30 @@ const GradedPage: React.FC = () => {
           {!isPageLoading &&
             !error &&
             gamesToShow.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              {searchQuery.trim() 
-                ? `No se encontraron resultados para "${searchQuery}"`
-                : "No se encontraron juegos calificados."
-              }
+              <div className="p-4 text-center text-gray-500">
+                {searchQuery.trim()
+                  ? `No se encontraron resultados para "${searchQuery}"`
+                  : "No se encontraron juegos calificados."
+                }
               </div>
             )}
+          {error && !gamesData && (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
+                <svg
+                  className="mx-auto mb-2 w-8 h-8 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+                </svg>
+                <span className="font-semibold block mb-1">¡Atención!</span>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
         </>
       )}
     </LayoutAplication>
