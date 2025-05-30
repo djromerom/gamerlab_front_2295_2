@@ -65,7 +65,7 @@ const MENU: Record<Role, MenuItem[]> = {
   Profesor: [
     {
       title: "Proyectos",
-      items: [{ name: "Calificación", url: "/home-profesor", icon: Binary }],
+      items: [{ name: "Calificaciones", url: "/home-profesor", icon: Binary }],
     },
   ],
   Estudiante: [
@@ -73,7 +73,7 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Información",
       items: [
         {
-          name: "Mi equipo",
+          name: "Mis calificaciones",
           url: "/mi-equipo",
           icon: LibraryBig,
         },
