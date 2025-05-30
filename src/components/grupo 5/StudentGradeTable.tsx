@@ -66,8 +66,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const [noStudents, setNoStudents] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const navigate = useNavigate();
-
   // Initialize available NRCs
   useEffect(() => {
     const fetchAvailableNRCs = async () => {
@@ -180,7 +178,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       const data = await response.json();
       const studentsData = data.data || [];
       const metadata = data.metadata;
-
       setFetchedStudentsByNRC(prev => ({
         ...prev,
         [cacheKey]: studentsData
@@ -329,15 +326,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const students = getCurrentStudents();
 
   // Handle view mode change
-  const handleViewModeChange = (newMode: "nrc" | "subject") => {
+  const handleViewModeChange = (newMode: string) => {
     // Clear current states
     setError(null);
     setNoStudents(false);
     setIsLoading(false);
     setCurrentPage(1);
     setPaginationMetadata(null);
-
-    setViewMode(newMode);
+    setViewMode(newMode as "nrc" | "subject");
   };
 
   // Pagination handlers
