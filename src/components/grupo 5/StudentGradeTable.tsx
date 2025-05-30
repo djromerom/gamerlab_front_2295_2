@@ -178,7 +178,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       const data = await response.json();
       const studentsData = data.data || [];
       const metadata = data.metadata;
-
       setFetchedStudentsByNRC(prev => ({
         ...prev,
         [cacheKey]: studentsData
@@ -334,7 +333,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setIsLoading(false);
     setCurrentPage(1);
     setPaginationMetadata(null);
-
     setViewMode(newMode as "nrc" | "subject");
   };
 
