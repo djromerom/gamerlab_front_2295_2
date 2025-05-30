@@ -256,7 +256,7 @@ export default function Review() {
         evaluationDetails: FeedbackDetail[];
         evaluationId: number;
         evaluationScore: number;
-      }, index: number) => ({
+      }) => ({
         id: item.evaluationId,
         rating: item.evaluationScore >= 3 ? "Excellent" : "Bad",
         score: parseFloat(item.evaluationScore.toFixed(1)),
