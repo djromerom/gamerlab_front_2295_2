@@ -15,9 +15,9 @@ export interface AuthContextType {
   accessToken: string | null;
   userRole: Role | null;
   user: UserProfile | null;
-  login: (credentials: LoginCredentials) => Promise<string>;
-  refreshAccessToken: () => Promise<string>;
-  logout: () => void;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
+  logout: () => Promise<void>;
 }
 export interface UserProfile {
   /** UUID único del usuario */
