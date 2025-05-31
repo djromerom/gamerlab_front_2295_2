@@ -22,8 +22,8 @@ function Landing(): React.ReactElement {
     document.documentElement.classList.add("dark")
 
     // Check event status when component mounts
-    const startDate = new Date("2025-05-31T12:58:00")
-    const endDate = new Date("2025-05-31T12:58:59") // 11:59 PM del día del evento
+    const startDate = new Date("2025-06-05T08:30:00")
+    const endDate = new Date("2025-06-05T12:30:00") 
     const now = new Date()
 
     if (now >= endDate) {
@@ -67,7 +67,7 @@ function Landing(): React.ReactElement {
     }
   }, [])
 
-  const targetDate = new Date("2025-05-31T12:58:00")
+  const targetDate = new Date("2025-06-05T08:30:00")
   const navigate = useNavigate()
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT"
 
