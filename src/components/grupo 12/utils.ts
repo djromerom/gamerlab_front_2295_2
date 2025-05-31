@@ -15,7 +15,7 @@ export const formatDate = (dateString: string): string =>
     minute: "2-digit",
   });
 
-export interface JurorRowData {
+export interface Jurado {
   id: string;
   firstName: string;
   lastName: string;
@@ -28,37 +28,32 @@ export interface JurorRowData {
   unevaluatedGameNames: string[];
 }
 
-export interface JurorFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export interface PaginationMetadata {
-  totalItems: number;
-  itemsOnCurrentPage: number;
-  currentPage: number;
-  itemsPerPage: number;
-  totalPages: number;
-}
-
-export interface PaginatedJurors {
-  data: JurorRowData[];
-  metadata: {
-    totalItems: number;
-    itemsOnCurrentPage: number;
-    currentPage: number;
-    itemsPerPage: number;
-    totalPages: number;
-  };
-}
-
 export interface Props {
-  jurors: JurorRowData[] | null; // Solo datos de la página actual
-  paginationMeta: PaginationMetadata; // Metadatos de paginación
+  data:       Data;   // filas de la página ACTUAL
+  totalRows:  number;     // registros en BD
+  totalPages: number;     // total de páginas
+  page:       number;     // página (1-based)
+  limit:      number;     // tamaño de página
+  isLoading?: boolean;
+  setIsLoading: (loading: boolean) => void;
+  onPageChange:  (n: number) => void;
+  onLimitChange: (n: number) => void;
   apiBaseUrl: string;
-  isDataLoading?: boolean; // Estado de carga del padre
-  onPageChange: (page: number) => void;
-  onLimitChange: (limit: number) => void;
-  refreshData: () => void; // Simplificado
+  onRefresh: () => void;
+}
+
+export interface Data {
+  titulo: string;
+  nombreTabla: string;
+  nombreColumnas: NombreColumnas;
+  filas: Jurado[];
+  primaryKey: keyof Jurado;
+}
+
+export interface NombreColumnas {
+  [key: string]: string;
+}
+
+export interface RowData extends Record<string, any> {
+  id: number | string;
 }

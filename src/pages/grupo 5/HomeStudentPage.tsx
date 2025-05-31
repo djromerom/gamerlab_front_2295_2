@@ -19,9 +19,9 @@ const HomeStudentPage: React.FC = () => {
       : isProfesor
       ? [
           { label: "Lista", href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor" },
-          { label: "Notas", href: location.pathname + location.search },
+          { label: "Nota", href: location.pathname + location.search },
         ]
-      : [{ label: "Notas", href: location.pathname + location.search }];
+      : [{ label: "Nota", href: location.pathname + location.search }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>

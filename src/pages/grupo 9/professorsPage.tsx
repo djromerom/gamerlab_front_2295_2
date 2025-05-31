@@ -36,7 +36,7 @@ export const ProfessorsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20, // Default items per page
+    limit: 5, // Default items per page
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
 

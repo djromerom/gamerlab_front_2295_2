@@ -34,7 +34,7 @@ const SubjectsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 5,
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
 

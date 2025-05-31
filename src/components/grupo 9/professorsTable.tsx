@@ -265,30 +265,6 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   };
 
-  const handleResendEmail = async (professorId: string) => {
-    setInternalIsLoading(true);
-    try {
-      const response = await customFetch(
-        `${apiBaseUrl}/auth/reset-token-expiration`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: professorId }),
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al reenviar el correo");
-      }
-      toast.success("Correo reenviado exitosamente");
-      refreshData(); // Actualizar los datos si es necesario
-    } catch (err: any) {
-      showError(err.message || "Error al reenviar el correo de confirmación");
-    } finally {
-      setInternalIsLoading(false);
-    }
-  };
-
   return (
     <div
       className={`bg-background text-foreground min-h-screen p-4 ${
@@ -465,15 +441,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                           >
                             Editar
                           </DropdownMenuItem>
-                          {professor.confirmationStatusId === 2 && ( // Solo mostrar si el estado es PENDIENTE
-                            <DropdownMenuItem
-                              onClick={() => handleResendEmail(professor.id)}
-                              disabled={internalIsLoading}
-                              className="cursor-pointer text-blue-600 focus:text-blue-700 focus:bg-blue-50"
-                            >
-                              Reenviar correo
-                            </DropdownMenuItem>
-                          )}
+                          {/* Assuming DELETE actually deactivates or hard deletes */}
                           <DropdownMenuItem
                             onClick={() => {
                               setDeletingId(professor.id);

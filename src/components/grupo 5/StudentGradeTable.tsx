@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,7 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileSpreadsheet, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { useMediaQuery } from "@/hooks/use-media-querry";
 import {
   Select,
   SelectTrigger,
@@ -21,51 +24,36 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import { toast } from "sonner";
+import { toast } from "sonner"; // Importamos toast de sonner
 
 interface Props {
   initialNRC?: string;
 }
 
-interface PaginationMetadata {
-  totalItems: number;
-  itemsOnCurrentPage: number;
-  currentPage: number;
-  itemsPerPage: number;
-  totalPages: number;
-}
-
 export default function StudentGradeTable({ initialNRC }: Props) {
-  const defaultNRC = initialNRC || "-";
-
-  // View mode state
+  const defaultNRC = initialNRC || "-"; 
+  // Modos de visualización: 'nrc' o 'subject'
   const [viewMode, setViewMode] = useState<"nrc" | "subject">("nrc");
 
-  // Selection states
-  const [selectedNRC, setSelectedNRC] = useState<string>("");
+  // Estados para selección de NRC y materia
+  
   const [selectedSubject, setSelectedSubject] = useState<string>("");
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
-  const [paginationMetadata, setPaginationMetadata] = useState<PaginationMetadata | null>(null);
-
-  // Available options
-  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
-
-  // Data cache - keeps fetched data to avoid re-fetching
+  // Estados para los datos de estudiantes y carga
   const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<Record<string, any[]>>({});
   const [fetchedStudentsBySubject, setFetchedStudentsBySubject] = useState<Record<string, any[]>>({});
-
-  // Loading and error states
-  const [isLoading, setIsLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noStudents, setNoStudents] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true); // Estado para la carga inicial
 
-  // Initialize available NRCs
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
+  const [selectedNRC, setSelectedNRC] = useState<string>("");
+  
+  
   useEffect(() => {
     const fetchAvailableNRCs = async () => {
       try {
@@ -74,34 +62,27 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-
         if (!response.ok) {
           throw new Error("Error fetching available NRCs");
         }
-
         const data = await response.json();
         setAvailableNRCs(data);
-
-        // Set initial NRC selection
-        if (defaultNRC && defaultNRC !== "-") {
-          setSelectedNRC(defaultNRC);
-        } else if (data.length > 0) {
-          setSelectedNRC(data[0].code);
+        if (data.length > 0) {
+          setSelectedNRC(data[0].code); // Set the first NRC as selected if available
         } else {
           toast.info("No se encontraron NRCs disponibles");
         }
       } catch (err) {
-        console.error("Error fetching available NRCs:", err);
+        console.log("Error fetching available NRCs:", err);
         toast.error("Error al cargar los NRCs");
       } finally {
-        setInitialLoading(false);
+        setInitialLoading(false); // Finalizamos la carga inicial después de obtener los NRCs
       }
     };
 
     fetchAvailableNRCs();
-  }, [defaultNRC]);
+  }, []);
 
-  // Initialize available subjects
   useEffect(() => {
     const fetchAvailableSubjects = async () => {
       try {
@@ -110,111 +91,113 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-
         if (!response.ok) {
           throw new Error("Error fetching available subjects");
         }
-
         const data = await response.json();
         setAvailableSubjects(data);
-
+        console.log("Available subjects:", data.map((subject: any) => subject.name));
         if (data.length > 0) {
           setSelectedSubject(data[0].name);
         } else {
           toast.info("No se encontraron materias disponibles");
         }
       } catch (err) {
-        console.error("Error fetching available Subjects:", err);
+        console.log("Error fetching available Subjects:", err);
         toast.error("Error al cargar las materias");
       }
     };
-
     fetchAvailableSubjects();
   }, []);
 
-  // Fetch students by NRC
-  const fetchStudentsByNRC = useCallback(async (nrc: string, page: number = 1) => {
-    if (!nrc || nrc === "-") return;
 
-    const cacheKey = `${nrc}-${page}`;
-    
-    // Check cache first
-    if (fetchedStudentsByNRC[cacheKey]) {
+  useEffect(() => {
+    setNoStudents(false);
+    // Inicialmente, si no hay NRC seleccionado, no intentamos cargar datos
+    if (selectedNRC === "-" || !selectedNRC) {
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    setNoStudents(false);
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${nrc}?page=${page}&limit=${itemsPerPage}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      toast.dismiss();
-
-      if (response.status === 404) {
-        setFetchedStudentsByNRC(prev => ({
-          ...prev,
-          [cacheKey]: []
-        }));
-        setNoStudents(true);
-        setPaginationMetadata(null);
-        toast.info(`No hay videojuegos registrados para el NRC ${nrc}`);
+    if (viewMode === "nrc") {
+      setIsLoading(true);
+      setError(null);
+      setNoStudents(false);
+      
+      // Verificar si ya tenemos estos datos en caché
+      if (fetchedStudentsByNRC[selectedNRC]) {
+        // Si tenemos datos en caché pero están vacíos, mostramos mensaje de "no hay estudiantes"
+        
+        setIsLoading(false);
         return;
       }
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const studentsData = data.data || [];
-      const metadata = data.metadata;
-      setFetchedStudentsByNRC(prev => ({
-        ...prev,
-        [cacheKey]: studentsData
-      }));
-
-      setPaginationMetadata(metadata);
-
-      if (studentsData.length > 0) {
-        toast.success(`${studentsData.length} registros cargados para el NRC ${nrc}`);
-      } else {
-        setNoStudents(true);
-        toast.info(`No hay información registrada para el NRC ${nrc}`);
-      }
-
-    } catch (err) {
-      console.error("Error fetching students:", err);
-      const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos";
-      setError(errorMsg);
-      toast.error(`Error: ${errorMsg}`);
-
-      setFetchedStudentsByNRC(prev => ({
-        ...prev,
-        [cacheKey]: []
-      }));
-      setPaginationMetadata(null);
-    } finally {
-      setIsLoading(false);
+      
+      const fetchStudentsByNRC = async () => {
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${selectedNRC}`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          
+          toast.dismiss();
+          
+          // Manejar caso específico de 404 (sin estudiantes)
+          if (response.status === 404) {
+            setFetchedStudentsByNRC(prev => ({
+              ...prev,
+              [selectedNRC]: []
+            }));
+            setNoStudents(true);
+            toast.info(`No hay videojuegos registrados para el NRC ${selectedNRC}`);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          // Actualizar el estado con los datos obtenidos
+          setFetchedStudentsByNRC(prev => ({
+            ...prev,
+            [selectedNRC]: (data.data || [])
+          }));
+          
+          if (data.data && data.data.length > 0) {
+            toast.success(`${data.data.length} registros cargados para el NRC ${selectedNRC}`);
+          } else {
+            toast.info(`No hay información registrada para el NRC ${selectedNRC}`);
+            setNoStudents(true);
+          }
+          
+        } catch (err) {
+          console.error("Error fetching students:", err);
+          const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos";
+          setError(errorMsg);
+          toast.error(`Error: ${errorMsg}`);
+          // Asegurarse de que se establezca un valor predeterminado si hay un error
+          setFetchedStudentsByNRC(prev => ({
+            ...prev,
+            [selectedNRC]: []
+          }));
+        } finally {
+          // Siempre establecer loading a false al final
+          setIsLoading(false);
+        }
+      };
+      
+      fetchStudentsByNRC();
     }
-  }, [itemsPerPage]);
+  }, [selectedNRC, viewMode]);
 
-  // Fetch students by subject
-  const fetchStudentsBySubject = useCallback(async (subject: string, page: number = 1) => {
-    if (!subject) return;
-
-    const cacheKey = `${subject}-${page}`;
-    
-    // Check cache first
-    if (fetchedStudentsBySubject[cacheKey]) {
+  useEffect(() => {
+    if (viewMode !== "subject" || !selectedSubject) {
       return;
     }
 
@@ -222,174 +205,132 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setError(null);
     setNoStudents(false);
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
+    // Verificar si ya tenemos estos datos en caché
+    if (fetchedStudentsBySubject[selectedSubject]) {
+      if (fetchedStudentsBySubject[selectedSubject].length === 0) {
+        setNoStudents(true);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchStudentsBySubject = async () => {
+      try {
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(selectedSubject)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        toast.dismiss();
+        
+        // Manejar caso específico de 404 (sin estudiantes)
+        if (response.status === 404) {
+          setFetchedStudentsBySubject(prev => ({
+            ...prev,
+            [selectedSubject]: []
+          }));
+          setNoStudents(true);
+          toast.info(`No hay videojuegos registrados para la materia ${selectedSubject}`);
+          setIsLoading(false);
+          return;
         }
-      );
 
-      toast.dismiss();
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
 
-      if (response.status === 404) {
+        const data = await response.json();
+        // Si la respuesta es { data: [...] }
+        const studentsArray = Array.isArray(data) ? data : data.data || [];
+        
+        console.log("Fetched students by subject:", studentsArray);
+
         setFetchedStudentsBySubject(prev => ({
           ...prev,
-          [cacheKey]: []
+          [selectedSubject]: studentsArray
         }));
-        setNoStudents(true);
-        setPaginationMetadata(null);
-        toast.info(`No hay videojuegos registrados para la materia ${subject}`);
-        return;
+
+        if (!studentsArray || studentsArray.length === 0) {
+          setNoStudents(true);
+          toast.info(`No hay información registrada para la materia ${selectedSubject}`);
+        } else {
+          toast.success(`${studentsArray.length} registros cargados para la materia ${selectedSubject}`);
+        }
+
+      } catch (err) {
+        console.error("Error fetching students by subject:", err);
+        const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos por materia";
+        setError(errorMsg);
+        toast.error(`Error: ${errorMsg}`);
+        setFetchedStudentsBySubject(prev => ({
+          ...prev,
+          [selectedSubject]: []
+        }));
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+    fetchStudentsBySubject();
+  }, [selectedSubject, viewMode]);
 
-      const data = await response.json();
-      const studentsArray = data.data || [];
-      const metadata = data.metadata;
-
-      setFetchedStudentsBySubject(prev => ({
-        ...prev,
-        [cacheKey]: studentsArray
-      }));
-
-      setPaginationMetadata(metadata);
-
-      if (!studentsArray || studentsArray.length === 0) {
-        setNoStudents(true);
-        toast.info(`No hay información registrada para la materia ${subject}`);
-      } else {
-        toast.success(`${studentsArray.length} registros cargados para la materia ${subject}`);
-      }
-
-    } catch (err) {
-      console.error("Error fetching students by subject:", err);
-      const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos por materia";
-      setError(errorMsg);
-      toast.error(`Error: ${errorMsg}`);
-
-      setFetchedStudentsBySubject(prev => ({
-        ...prev,
-        [cacheKey]: []
-      }));
-      setPaginationMetadata(null);
-    } finally {
+  useEffect(() => {
+    // Inicialización cuando el componente se monta
+    if (defaultNRC && defaultNRC !== "-") {
+      // Si tenemos un NRC inicial válido, iniciamos el proceso de carga
+      // El efecto dependiente de selectedNRC se encargará de la carga real
+      setSelectedNRC(defaultNRC);
+    } else {
+      // Si no hay NRC inicial, simplemente desactivamos el estado de carga
       setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, []);
 
-  // Handle data fetching when selection changes
   useEffect(() => {
-    // Reset states when switching modes or selections
-    setError(null);
     setNoStudents(false);
-    setCurrentPage(1); // Reset to first page
-    setPaginationMetadata(null);
+  }, [selectedNRC, selectedSubject, viewMode]);
 
-    if (viewMode === "nrc" && selectedNRC) {
-      fetchStudentsByNRC(selectedNRC, 1);
-    } else if (viewMode === "subject" && selectedSubject) {
-      fetchStudentsBySubject(selectedSubject, 1);
-    }
-  }, [viewMode, selectedNRC, selectedSubject, fetchStudentsByNRC, fetchStudentsBySubject]);
+  // Obtener los estudiantes según el modo de visualización (usar datos fetcheados o de respaldo)
+  const students = viewMode === "nrc"
+    ? (fetchedStudentsByNRC[selectedNRC] || [])
+    : (fetchedStudentsBySubject[selectedSubject] || []);
 
-  // Handle page changes
-  useEffect(() => {
-    if (currentPage > 1) {
-      if (viewMode === "nrc" && selectedNRC) {
-        fetchStudentsByNRC(selectedNRC, currentPage);
-      } else if (viewMode === "subject" && selectedSubject) {
-        fetchStudentsBySubject(selectedSubject, currentPage);
-      }
-    }
-  }, [currentPage, viewMode, selectedNRC, selectedSubject, fetchStudentsByNRC, fetchStudentsBySubject]);
-
-  // Get current students data
-  const getCurrentStudents = () => {
-    const cacheKey = viewMode === "nrc" 
-      ? `${selectedNRC}-${currentPage}` 
-      : `${selectedSubject}-${currentPage}`;
-    
-    if (viewMode === "nrc") {
-      return fetchedStudentsByNRC[cacheKey] || [];
-    } else {
-      return fetchedStudentsBySubject[cacheKey] || [];
-    }
-  };
-
-  const students = getCurrentStudents();
-
-  // Handle view mode change
-  const handleViewModeChange = (newMode: string) => {
-    // Clear current states
-    setError(null);
-    setNoStudents(false);
-    setIsLoading(false);
-    setCurrentPage(1);
-    setPaginationMetadata(null);
-    setViewMode(newMode as "nrc" | "subject");
-  };
-
-  // Pagination handlers
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (paginationMetadata && currentPage < paginationMetadata.totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  // Show initial loading screen
+  // Mostrar estado de carga inicial completa (cuando aún se están cargando los NRCs)
   if (initialLoading) {
     return <LoadingScreen text="Cargando información de videojuegos..." />;
   }
 
-  // Show loading for data fetching
+  // Mostrar estado de carga para datos específicos
   if (isLoading) {
     return <LoadingScreen text={`Cargando datos para ${viewMode === "nrc" ? `NRC ${selectedNRC}` : `materia ${selectedSubject}`}...`} />;
   }
 
-  // Show error state
+  // Mostrar error si existe
   if (error) {
     return (
       <div className="bg-red-50 text-red-800 p-4 rounded-md">
         <h3 className="text-lg font-semibold">Error al cargar datos</h3>
         <p>{error}</p>
-        <Button
-          variant="outline"
-          className="mt-2 cursor-pointer"
+        <Button 
+          variant="outline" 
+          className="mt-2 cursor-pointer" 
           onClick={() => {
             setError(null);
-            // Clear cache to force refresh
-            const cacheKey = viewMode === "nrc" 
-              ? `${selectedNRC}-${currentPage}` 
-              : `${selectedSubject}-${currentPage}`;
-              
+            setFetchedStudentsByNRC({});
             if (viewMode === "nrc") {
-              setFetchedStudentsByNRC(prev => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsByNRC(selectedNRC, currentPage);
+              // Refrescar datos de NRC
+              setSelectedNRC(selectedNRC);
+              toast.info("Intentando cargar los datos nuevamente...");
             } else {
-              setFetchedStudentsBySubject(prev => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsBySubject(selectedSubject, currentPage);
+              // Refrescar datos de materia
+              setSelectedSubject(selectedSubject);
+              toast.info("Intentando cargar los datos nuevamente...");
             }
-            toast.info("Intentando cargar los datos nuevamente...");
           }}
         >
           Reintentar
@@ -398,57 +339,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     );
   }
 
-  const getGradeStatus = (grade: number) => {
-    if (grade >= 4.5) return "text-green-600 font-medium";
-    if (grade >= 4.0) return "text-blue-600 font-medium";
-    if (grade >= 3.0) return "text-yellow-600 font-medium";
-    return "text-red-600 font-medium";
-  };
-
-  // Export to Excel function
-  const exportToExcel = () => {
-    setDownloading(true);
-
-    toast(
-      `Preparando exportación ${viewMode === "nrc" ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
-    );
-
-    const endpoint = viewMode === "nrc"
-      ? `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportNRC/${selectedNRC}`
-      : `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportSubject/${encodeURIComponent(selectedSubject)}`;
-
-    fetch(endpoint, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error('Error al exportar a Excel');
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = viewMode === "nrc" ? `reporte_nrc_${selectedNRC || 'desconocido'}.xlsx` : `reporte_materia_${selectedSubject || 'desconocido'}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success(`Reporte de videojuegos ${viewMode === "nrc" ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`} exportado correctamente`);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
-      })
-      .finally(() => {
-        setDownloading(false);
-      });
-  };
-
-  // No students message component
+  // Componente para mostrar cuando no hay estudiantes
   const NoStudentsMessage = (
     <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
       <div className="mb-4 p-4 rounded-full bg-blue-50 flex items-center justify-center">
@@ -461,13 +352,100 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </div>
   );
 
-  // NRC Selector
+  const viewStudentDetails = (id: string, nrc?: string) => {
+    const useNRC = viewMode === "nrc" ? selectedNRC : nrc;
+    navigate(`/home-estudiante?nrc=${useNRC}&studentId=${id}`);
+  };
+
+  const getGradeStatus = (grade: number) => {
+    if (grade >= 4.5) return "text-green-600 font-medium";
+    if (grade >= 4.0) return "text-blue-600 font-medium";
+    if (grade >= 3.0) return "text-yellow-600 font-medium";
+    return "text-red-600 font-medium";
+  };
+
+  // Función para exportar a Excel
+  const exportToExcel = () => {
+    setDownloading(true); // Inicia el loader
+    
+    toast(
+      `Preparando exportación ${viewMode === "nrc" ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
+    );
+
+    // Si la vista es por NRC, usa el endpoint actual
+    if (viewMode === "nrc") {
+      fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportNRC/${selectedNRC}`, {
+        method: 'GET',
+      })
+        .then((response) => {
+          toast.dismiss();
+          if (!response.ok) {
+            throw new Error('Error al exportar a Excel');
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'videojuegos.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          toast.success(`Reporte de videojuegos del NRC ${selectedNRC} exportado correctamente`);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
+        })
+        .finally(() => {
+          setDownloading(false); // Detiene el loader
+        });
+    } else {
+      // Si la vista es por materia, usa el endpoint para exportar por materia
+      fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportSubject/${encodeURIComponent(selectedSubject)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      })
+        .then((response) => {
+          toast.dismiss();
+          if (!response.ok) {
+            throw new Error('Error al exportar a Excel');
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'videojuegos_materia.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          toast.success(`Reporte de videojuegos de la materia ${selectedSubject} exportado correctamente`);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
+        })
+        .finally(() => {
+          setDownloading(false); // Detiene el loader
+        });
+    }
+  };
+
+  // Selector de NRC (para modo de visualización por NRC)
   const NRCSelector = (
     <div className="mb-4 w-full sm:w-64 cursor-pointer">
       <label className="block text-sm font-medium mb-1">Selecciona el NRC:</label>
-      <Select
-        value={selectedNRC}
-        onValueChange={setSelectedNRC}
+      <Select 
+        value={selectedNRC} 
+        onValueChange={(nrc) => {
+          setSelectedNRC(nrc);
+        }}
         disabled={availableNRCs.length === 0}
       >
         <SelectTrigger className="cursor-pointer">
@@ -477,7 +455,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           {availableNRCs.length > 0 ? (
             availableNRCs.map((nrc) => (
               <SelectItem className="cursor-pointer" key={nrc.code} value={nrc.code}>
-                {nrc.code}
+                {nrc.code} 
               </SelectItem>
             ))
           ) : (
@@ -490,15 +468,17 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </div>
   );
 
-  // Subject Selector
+  // Selector de Materia (para modo de visualización por materia)
   const SubjectSelector = (
     <div className="mb-4 w-full sm:w-64">
       <label className="block text-sm font-medium mb-1">
         Selecciona la Materia:
       </label>
-      <Select
-        value={selectedSubject}
-        onValueChange={setSelectedSubject}
+      <Select 
+        value={selectedSubject} 
+        onValueChange={(subject) => {
+          setSelectedSubject(subject);
+        }}
       >
         <SelectTrigger className="cursor-pointer">
           <SelectValue placeholder="Selecciona Materia" />
@@ -514,11 +494,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </div>
   );
 
-  // Export Button
+  // Botón de exportación a Excel
   const ExportButton = (
-    <Button
-      variant="outline"
-      className="ml-auto mb-4 cursor-pointer"
+    <Button 
+      variant="outline" 
+      className="ml-auto mb-4 cursor-pointer" 
       onClick={exportToExcel}
       disabled={students.length === 0 || downloading}
     >
@@ -531,55 +511,103 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </Button>
   );
 
-  // Pagination Component
-  const PaginationComponent = () => {
-    if (!paginationMetadata || paginationMetadata.totalPages <= 1) return null;
 
+  // Interfaz móvil
+  if (isMobile) {
     return (
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-gray-600">
-          Página {paginationMetadata.currentPage} de {paginationMetadata.totalPages} 
-          ({paginationMetadata.totalItems} registros totales)
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviousPage}
-            disabled={currentPage <= 1}
-            className="cursor-pointer"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextPage}
-            disabled={currentPage >= paginationMetadata.totalPages}
-            className="cursor-pointer"
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      <div className="container mx-auto py-6 px-4">
+        <h1 className="text-xl font-bold mb-4">
+          {viewMode === "nrc"
+            ? `Lista de Videojuegos - NRC ${selectedNRC}`
+            : `Lista de Videojuegos - Materia: ${selectedSubject}`}
+        </h1>
+
+        <Tabs
+          value={viewMode}
+          onValueChange={(value) => {
+            setViewMode(value as "nrc" | "subject");
+          }}
+          className="mb-4"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="nrc">Por NRC</TabsTrigger>
+            <TabsTrigger value="subject">Por Materia</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="nrc" className="pt-2 ">
+            {NRCSelector}
+          </TabsContent>
+
+          <TabsContent value="subject" className="pt-2">
+            {SubjectSelector}
+          </TabsContent>
+        </Tabs>
+
+        {noStudents ? (
+          NoStudentsMessage
+        ) : students.length > 0 ? (
+          <>
+            {ExportButton}
+            <div className="space-y-3">
+              {students.map((student: any) => (
+                <Card key={student.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <p className="font-medium text-sm text-muted-foreground">
+                          ID: {student.id}
+                        </p>
+                        <p className="font-semibold">{student.name}</p>
+                        {student.additionalInfo && (
+                          <p className="text-xs text-muted-foreground">
+                            {student.additionalInfo}
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        className={`text-center px-3 py-1 rounded-full text-sm ${getGradeStatus(
+                          student.grade
+                        )} bg-muted`}
+                      >
+                        {student.grade}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        viewStudentDetails(student.id, student.nrc);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver detalles
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     );
-  };
+  }
 
-  // Unified table view (used for both mobile and desktop)
+  // Interfaz de escritorio
   return (
-    <div className="container mx-auto py-6 sm:py-10 px-2 sm:px-6">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">
+    <div className="container mx-auto py-10 px-4 sm:px-6">
+      <h1 className="text-2xl font-bold mb-6">
         {viewMode === "nrc"
           ? `Lista de Videojuegos - NRC ${selectedNRC}`
           : `Lista de Videojuegos - Materia: ${selectedSubject}`}
       </h1>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6">
         <Tabs
           value={viewMode}
-          onValueChange={handleViewModeChange}
+          onValueChange={(value) => {
+            setViewMode(value as "nrc" | "subject");
+          }}
           className="w-full sm:w-auto"
         >
           <TabsList className="grid w-full sm:w-[300px] grid-cols-2">
@@ -612,48 +640,41 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       {noStudents ? (
         NoStudentsMessage
       ) : students.length > 0 ? (
-        <>
-          <div className="w-full overflow-x-auto rounded-lg border">
-            <Table className="min-w-[800px]">
-              <TableCaption>
-                {viewMode === "nrc"
-                  ? `Lista de videojuegos y calificaciones - NRC ${selectedNRC}`
-                  : `Lista de videojuegos y calificaciones - Materia: ${selectedSubject}`}
-              </TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">ID</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>
-                    {viewMode === "nrc" ? "Materia" : "NRC"}
-                  </TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Videojuego</TableHead>
-                  <TableHead className="text-center">Calificación</TableHead>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableCaption>
+              {viewMode === "nrc"
+                ? `Lista de videojuegos y calificaciones - NRC ${selectedNRC}`
+                : `Lista de videojuegos y calificaciones - Materia: ${selectedSubject}`}
+            </TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">ID</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>
+                  {viewMode === "nrc" ? "Materia" : "NRC"}
+                </TableHead>
+                <TableHead className="text-center">Calificación</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {students.map((student: any) => (
+                <TableRow key={`${student.studentCode}-${student.nrc || ""}`}>
+                  <TableCell className="font-medium">{student.studentCode}</TableCell>
+                  <TableCell>{student.student}</TableCell>
+                  <TableCell>
+                    {viewMode === "nrc"
+                      ? (student.subject  || "") // Muestra la materia en vista NRC
+                      : (student.nrc || student.NRC || "")}
+                  </TableCell>
+                  <TableCell className={`text-center ${getGradeStatus(student.grade)}`}>
+                    {student.grade === null || student.grade === undefined ? "No calificado" : student.grade}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((student: any) => (
-                  <TableRow key={`${student.studentCode}-${student.NRC || student.nrc || ""}`}>
-                    <TableCell className="font-medium">{student.studentCode}</TableCell>
-                    <TableCell>{student.student}</TableCell>
-                    <TableCell>
-                      {viewMode === "nrc"
-                        ? (student.subject || "")
-                        : (student.NRC || student.nrc || "")}
-                    </TableCell>
-                    <TableCell>{student.team || "Sin equipo"}</TableCell>
-                    <TableCell>{student.videogame || "Sin videojuego"}</TableCell>
-                    <TableCell className={`text-center ${getGradeStatus(student.grade)}`}>
-                      {student.grade === null || student.grade === undefined ? "No calificado" : parseFloat(student.grade.toFixed(2))}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <PaginationComponent />
-        </>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : null}
     </div>
   );
