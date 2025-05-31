@@ -298,7 +298,7 @@ export default function CompetitionInfo() {
   };
 
   const imagePaths = Array.from(
-    { length: 29 },
+    { length: 30 },
     (_, i) => `/assets/carousel/${i + 2}.JPG`
   );
 
