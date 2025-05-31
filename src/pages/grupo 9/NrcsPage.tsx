@@ -4,6 +4,7 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { NrcsTable } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { useFetch } from "@/hooks/useFetch";
 
 interface Nrc {
   id: number;
@@ -48,6 +49,7 @@ const NrcsPage = () => {
     limit: 20,
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
+  const customFecth = useFetch();
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -56,7 +58,7 @@ const NrcsPage = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await customFecth(
         `${API_BASE_URL}/nrcs?page=${page}&limit=${limit}`,
         {
           method: "GET",
