@@ -25,6 +25,7 @@ import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 
 type Role =
   | "Profesor"
@@ -128,6 +129,11 @@ const routes: RouteConfig[] = [
     path: "/home-profesor",
     element: <HomeTeacherPage />,
     roles: ["Profesor"],
+  },
+  {
+    path: "/editar-equipo",
+    element: <EditTeamPage />,
+    roles: ["Estudiante"],
   },
 ];
 
