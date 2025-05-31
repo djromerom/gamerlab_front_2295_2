@@ -203,7 +203,7 @@ const GraphicDisplay = () => {
                     <AlertDescription>
                         No se pudieron cargar los datos para los gráficos. ({error.message})
                     </AlertDescription>
-                    <Button className="cursor-pointer mt-4" onClick={fetchGlobalData} variant="secondary" size="sm">
+                    <Button onClick={fetchGlobalData} variant="secondary" size="sm" className="mt-4">
                         Reintentar
                     </Button>
                 </Alert>

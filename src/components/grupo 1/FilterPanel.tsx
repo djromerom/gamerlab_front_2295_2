@@ -99,13 +99,13 @@ const FiltrosPanel = () => {
               onValueChange={handleMateriaChange}
               disabled={isLoading || opcionesFiltroMateria.length === 0}
             >
-              <SelectTrigger className="cursor-pointer" id="filtro-materia">
+              <SelectTrigger id="filtro-materia">
                 <SelectValue placeholder="Seleccionar materia" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todas">Todas las Materias</SelectItem>
                 {opcionesFiltroMateria.map((materia) => (
-                  <SelectItem className="cursor-pointer" key={materia.id} value={materia.name}>
+                  <SelectItem key={materia.id} value={materia.name}>
                     {materia.name}
                   </SelectItem>
                 ))}
@@ -121,13 +121,13 @@ const FiltrosPanel = () => {
               onValueChange={handleNrcChange}
               disabled={isLoading || !nrcsFiltrados || nrcsFiltrados.length === 0}
             >
-              <SelectTrigger className="cursor-pointer" id="filtro-nrc">
+              <SelectTrigger id="filtro-nrc">
                 <SelectValue placeholder="Seleccionar NRC" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todos los NRCs</SelectItem>
                 {nrcsFiltrados?.map((nrc) => (
-                  <SelectItem className="cursor-pointer" key={nrc.id} value={nrc.codigo.toString()}>
+                  <SelectItem key={nrc.id} value={nrc.codigo.toString()}>
                     {nrc.codigo}
                   </SelectItem>
                 ))}
@@ -144,7 +144,7 @@ const FiltrosPanel = () => {
               // Deshabilitar si isLoading o si la lista de videojuegos filtrados (que es la fuente de opciones) está vacía
               disabled={isLoading || !listaVideojuegosFiltrados || listaVideojuegosFiltrados.length === 0}
             >
-              <SelectTrigger className="cursor-pointer" id="select-videojuego">
+              <SelectTrigger id="select-videojuego">
                 <SelectValue placeholder="Seleccionar videojuego" />
               </SelectTrigger>
               <SelectContent>
@@ -166,7 +166,7 @@ const FiltrosPanel = () => {
                     return null; // Omitir este SelectItem
                   }
                   return (
-                    <SelectItem className="cursor-pointer" key={videojuego.id} value={videojuegoIdString}>
+                    <SelectItem key={videojuego.id} value={videojuegoIdString}>
                       {videojuego.nombre}
                     </SelectItem>
                   );
