@@ -207,9 +207,6 @@ export const JuryManagementTable: React.FC<Props> = ({
       if (!newJuror.email.includes("@")) {
         throw new Error("El email debe ser válido.");
       }
-      if (!newJuror.email.endsWith("@uninorte.edu.co")) {
-        throw new Error("El correo debe ser de la Universidad del Norte.");
-      }
       if (!newJuror.firstName.trim()) {
         throw new Error("El campo Nombres es requerido.");
       }
