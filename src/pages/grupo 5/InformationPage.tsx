@@ -498,7 +498,7 @@ export default function CompetitionInfo() {
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
               <p className="text-gray-300 mb-4">
-                Disfruta de múltiples actividades durante los tres días del
+                Disfruta de múltiples actividades durante el día del
                 evento:
               </p>
               <ul className="space-y-2 text-gray-300">
@@ -508,11 +508,11 @@ export default function CompetitionInfo() {
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Zona retro gaming</span>
+                  <span>Stands de Videojuegos</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Talleres de desarrollo de videojuegos</span>
+                  <span>Y mucho más...</span>
                 </li>
               </ul>
             </div>
