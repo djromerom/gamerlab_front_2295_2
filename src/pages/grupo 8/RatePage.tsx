@@ -255,7 +255,7 @@ export default function RatePage() {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="container mx-auto py-6 p-10">
+      <div className="container mx-auto py-6 p-5">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight py-1">
@@ -324,7 +324,7 @@ export default function RatePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-lg font-bold">
+                      <TableHead className="text-lg font-bold px-0">
                         Criterio
                       </TableHead>
                       <TableHead className="text-right"></TableHead>
@@ -333,7 +333,7 @@ export default function RatePage() {
                   <TableBody>
                     {uiCriteria.map((criterion) => (
                       <TableRow key={criterion.id}>
-                        <TableCell colSpan={2} className="font-medium text-base px-0">
+                        <TableCell colSpan={2} className="font-medium text-base px-0 whitespace-normal break-words">
                           {criterion.name} ({ (criterion.weight * 100).toFixed(0) }%)
                           <div className="mt-2 flex items-center gap-4">
                             <p className="text-xs font-medium text-muted-foreground">

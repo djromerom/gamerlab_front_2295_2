@@ -121,7 +121,7 @@ function Landing(): React.ReactElement {
           <div className="absolute inset-0"></div>
         </div>
 
-        <div className="relative z-10 text-white text-center pt-11 px-4 flex flex-col justify-center items-center min-h-screen">
+        <div className="relative z-10 text-white text-center sm:pt-11 px-4 flex flex-col justify-center items-center min-h-screen">
           {eventStarted ? (
             <FairStartedAnnouncement
               showConfetti={showConfetti}
