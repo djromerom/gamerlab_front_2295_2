@@ -262,6 +262,12 @@ export default function EditBoard() {
                   toast.error("Debes asignar al menos un NRC", { style: { background: "#ef4444", color: "#fff" } });
                   return;
                 }
+
+                if (editNrcs.length > 2) {
+                  toast.error("No puedes asignar más de 2 NRCs", { style: { background: "#ef4444", color: "#fff" } });
+                  return;
+                }
+
                 handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
               }}
             >
