@@ -867,7 +867,7 @@ export default function CompetitionInfo() {
           </div>
 
           {/* Registration Section */}
-          <div className="w-full max-w-4xl mt-16">
+          {/* <div className="w-full max-w-4xl mt-16">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -889,7 +889,7 @@ export default function CompetitionInfo() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">

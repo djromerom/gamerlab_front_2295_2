@@ -90,14 +90,12 @@ function Landing(): React.ReactElement {
 
   const getButtonText = () => {
     if (eventEnded) return "Ver ranking"
-    if (eventStarted) return "Ver ranking"
-    return "Registra tu equipo aquí"
+    return "Conoce más"
   }
 
   const getButtonRoute = () => {
     if (eventEnded) return "/ranking"
-    if (eventStarted) return "/ranking"
-    return "/registro-equipo"
+    return "/informacion"
   }
 
   const getDescriptionText = () => {

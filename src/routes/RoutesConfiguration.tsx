@@ -53,10 +53,10 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  {
-    path: "/registro-equipo",
-    element: <TeamRegisterPage />,
-  },
+  // { // Disabled temporarily
+  //   path: "/registro-equipo",
+  //   element: <TeamRegisterPage />,
+  // },
   {
     path: "/equipos",
     element: <TeamsPage />,
