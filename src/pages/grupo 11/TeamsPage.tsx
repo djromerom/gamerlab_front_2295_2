@@ -137,7 +137,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
         className="cursor-pointer"
         onClick={() => onFilter(filterText)}
       >
-        Filtrar
+        Buscar
       </Button>
     </div>
   );
