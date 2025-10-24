@@ -12,7 +12,7 @@ import supabase from "@/supabase/client";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 
-const BUCKET_NAME = "imagenes";
+const BUCKET_NAME = "image";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -59,25 +59,46 @@ export default function MultiStepWizard() {
     try {
       const uploadedFileUrls: string[] = [];
       if (data.files && data.files.length > 0) {
+
         const uploads = Array.from(data.files).map(async (file) => {
-          const path = `uploads/${Date.now()}-${file.name.replace(
-            /\s+/g,
-            "_"
-          )}`;
-          const { error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file, { cacheControl: "3600", upsert: false });
-          if (uploadError) throw new Error(`Error al subir ${file.name}`);
-          const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-          return urlData?.publicUrl ?? null;
+
+          const formData = new FormData();
+          formData.append(BUCKET_NAME, file);
+
+          const response = await fetch('http://localhost:3000/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await response.json();
+          if (!response.ok){
+            throw new Error(`Error al subir ${file.name}`);
+          }
+          return data
+
         });
-        (await Promise.all(uploads))
-          .filter((u): u is string => !!u)
-          .forEach((u) => uploadedFileUrls.push(u));
-        if (uploadToastId)
-          toast.success("Archivos subidos", { id: uploadToastId });
+        (await Promise.all(uploads)).filter((u): u is string => !!u)
+        .forEach((u) => uploadedFileUrls.push(u));
+        
+      //   const uploads = Array.from(data.files).map(async (file) => {
+      //     const path = `uploads/${Date.now()}-${file.name.replace(
+      //       /\s+/g,
+      //       "_"
+      //     )}`;
+      //     const { error: uploadError } = await supabase.storage
+      //       .from(BUCKET_NAME)
+      //       .upload(path, file, { cacheControl: "3600", upsert: false });
+      //     if (uploadError) throw new Error(`Error al subir ${file.name}`);
+      //     const { data: urlData } = supabase.storage
+      //       .from(BUCKET_NAME)
+      //       .getPublicUrl(path);
+      //     return urlData?.publicUrl ?? null;
+      //   });
+      //   (await Promise.all(uploads))
+      //     .filter((u): u is string => !!u)
+      //     .forEach((u) => uploadedFileUrls.push(u));
+      //   if (uploadToastId)
+      //     toast.success("Archivos subidos", { id: uploadToastId });
       }
 
       const payload = {
