@@ -299,9 +299,11 @@ export default function CompetitionInfo() {
     setCurrentSlide(index);
   };
 
-  // Reset carousel position when selected edition changes
+
+  // Reset carousel and testimonial position when selected edition changes
   useEffect(() => {
     setCurrentSlide(0);
+    setCurrentTestimonialSlide(0);
   }, [edicionSeleccionada]);
 
   const nextTestimonialSlide = () => {
