@@ -1,0 +1,31 @@
+[
+  {
+    "id": "2025-10",
+    "año": 2025,
+    "semestre": "Primer semestre",
+    "nombre": "Feria Gamer 2025 - S1",
+    "fecha": "Marzo - Abril 2025",
+    "descripcion": "Innovacion y aprendizaje se fusionaron en la II Feria Gamer del Programa de Ingeniería de Software y Computacion de la Universidad Del Norte, evento donde los videojuegos se transformaron en Herramientas para educar sobre los peligros del mundo digital",
+    "descripcion2":"Estudiantes de primero a tercer semestre presentaron el jueves, 24 de abril de 2025, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
+    "Juegos Destacados": "Dulce y Burbujas;Leyendas de Papel, Páginas de Aventura;Carrot Mania;Musical Bubble Coffee"
+
+  },
+  {
+    "id": "2025-30",
+    "año": 2025,
+    "semestre": "Segundo semestre",
+    "nombre": "Feria Gamer 2025 - S2",
+    "fecha": "Octubre - Noviembre 2025",
+    "descripcion": "Segunda edición del año, enfocada en eSports, VR y torneos nacionales.",
+    "Juegos Destacados": "Destacado 1, Destacado 2, Destacado 3"
+  },
+  {
+    "id": "2024-10",
+    "año": 2024,
+    "semestre": "Primer semestre",
+    "nombre": "Feria Gamer 2024 - S1",
+    "fecha": "Marzo 2024",
+    "descripcion": "Edición destacada por la integración de estudios indie y universidades locales.",
+    "Juegos Destacados": "Destacado 1, Destacado 2, Destacado 3"
+  }
+]

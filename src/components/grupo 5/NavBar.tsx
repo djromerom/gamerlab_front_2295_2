@@ -44,6 +44,12 @@ export default function navBar(): React.ReactElement {
             >
               Información
             </Link>
+             <Link
+              to="/ediciones-pasadas"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Ediciones Pasadas
+            </Link>
           </nav>
 
           {/* CTA Button + Mobile Menu Toggle */}

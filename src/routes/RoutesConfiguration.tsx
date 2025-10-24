@@ -25,6 +25,8 @@ import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
+
 
 type Role =
   | "Profesor"
@@ -71,6 +73,10 @@ const routes: RouteConfig[] = [
   {
     path: "/informacion",
     element: <InformationPage />,
+  },
+  {
+    path: "/ediciones-pasadas",
+    element: <FeriasPasadas />,
   },
   {
     path: "/login",
