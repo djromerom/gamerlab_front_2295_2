@@ -406,6 +406,8 @@ export default function CompetitionInfo() {
         </div>
 
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
+          
+          {/* ComboBox Previous Editions (CHECK BRITO)*/}
           <select
             value={edicionSeleccionada.id}
             onChange={(e) => {
@@ -421,47 +423,47 @@ export default function CompetitionInfo() {
             ))}
           </select>
 
-          {/* Previous Edition Section */}
+          {/* Previous Edition Section (CHECK BRITO)*/}
           <div className="w-full max-w-4xl mt-16">
             <div className="flex items-center gap-3 mb-6 justify-center">
               <History className="w-6 h-6 text-[#AC7CFF]" />
               <h2 className="text-2xl font-bold text-center">
-                Edicion 2024-30 (Segundo Semestre)
+                Edicion {edicionSeleccionada.id}, {edicionSeleccionada.semestre}
               </h2>
             </div>
 
-            {/* Main info about previous edition */}
+            {/* Main info about previous edition (CHECK BRITO)*/}
             <div className="relative gradient-border gradient-border-purple p-0 mb-8">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
                 <div className="flex flex-col md:flex-row gap-8 items-center">
                   <div className="md:w-1/2">
                     <img
-                      src={"/assets/carousel/MainPhoto.JPG"}
-                      alt="Feria Gamer 2024"
+                      src={edicionSeleccionada.fotoDestacada}
+                      alt={edicionSeleccionada.alt}
                       className="rounded-lg shadow-lg object-cover w-full"
                     />
                   </div>
                   <div className="md:w-1/2">
                     <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
-                      Educación a través del Gaming
+                      {edicionSeleccionada.titulo}
                     </h3>
                     <p className="text-gray-300 mb-4">
-                      {edicion?.descripcion}
+                      {edicionSeleccionada.descripcion}
                     </p>
                     <p className="text-gray-300 mb-4">
-                      {edicion?.descripcion2}
+                      {edicionSeleccionada.descripcion2}
                     </p>
                     <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full inline-flex">
                       <Calendar className="w-4 h-4 text-[#AC7CFF]" />
-                      <span className="text-sm">28 de noviembre, 2024</span>
+                      <span className="text-sm">{edicionSeleccionada.fecha}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Features of previous edition */}
+            {/* Features of previous edition (CHECK BRITO)*/}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="feature-card">
                 <div className="feature-icon">
@@ -493,6 +495,7 @@ export default function CompetitionInfo() {
               </div>
             </div>
 
+
             {/* Educational focus */}
             <div className="relative gradient-border gradient-border-purple p-0 mb-8">
               <div className="gradient-border-inner"></div>
@@ -500,38 +503,32 @@ export default function CompetitionInfo() {
                 <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
                   Enfoque Educativo
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-[#110D20] p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                      <h4 className="font-semibold">Anti-Grooming</h4>
-                    </div>
-                    <p className="text-gray-300 text-sm">
-                      Videojuegos que enseñan a identificar y prevenir el acoso
-                      en línea por parte de adultos hacia menores.
-                    </p>
+
+                {edicionSeleccionada?.enfoquesEducativos?.length ? (
+                  <div
+                    className={`grid gap-6 ${edicionSeleccionada.enfoquesEducativos.length === 1
+                      ? "grid-cols-1 justify-items-center"
+                      : "grid-cols-1 md:grid-cols-3"
+                      }`}
+                  >
+                    {edicionSeleccionada.enfoquesEducativos.map((enfoque, index) => (
+                      <div
+                        key={index}
+                        className="bg-[#110D20] p-4 rounded-lg max-w-sm w-full"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <Shield className="w-5 h-5 text-[#AC7CFF]" />
+                          <h4 className="font-semibold">{enfoque.titulo}</h4>
+                        </div>
+                        <p className="text-gray-300 text-sm">{enfoque.descripcion}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-[#110D20] p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                      <h4 className="font-semibold">Anti-Phishing</h4>
-                    </div>
-                    <p className="text-gray-300 text-sm">
-                      Experiencias interactivas para reconocer intentos de
-                      suplantación de identidad y estafas en línea.
-                    </p>
-                  </div>
-                  <div className="bg-[#110D20] p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                      <h4 className="font-semibold">Anti-Ciberacoso</h4>
-                    </div>
-                    <p className="text-gray-300 text-sm">
-                      Juegos que concientizan sobre el impacto del acoso en
-                      línea y cómo combatirlo efectivamente.
-                    </p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-gray-400 text-center">
+                    No hay enfoques educativos disponibles.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -545,16 +542,8 @@ export default function CompetitionInfo() {
                   <div className="flex items-center gap-3">
                     <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
                     <div>
-                      <h4 className="font-semibold">Dulces y Burbujas</h4>
-                    </div>
-                  </div>
-                </div>
-                <div className="game-card">
-                  <div className="flex items-center gap-3">
-                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                    <div>
-                      <h4 className="font-semibold">
-                        Leyendas de Papel, Páginas de Aventura
+                      <h4 className="font-semibold">{
+                        edicionSeleccionada?.["Juegos Destacados"]?.split(";")[0]}
                       </h4>
                     </div>
                   </div>
@@ -563,7 +552,9 @@ export default function CompetitionInfo() {
                   <div className="flex items-center gap-3">
                     <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
                     <div>
-                      <h4 className="font-semibold">Carrot Mania</h4>
+                      <h4 className="font-semibold">
+                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[1]}
+                      </h4>
                     </div>
                   </div>
                 </div>
@@ -571,7 +562,19 @@ export default function CompetitionInfo() {
                   <div className="flex items-center gap-3">
                     <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
                     <div>
-                      <h4 className="font-semibold">Musical Bubble Coffe</h4>
+                      <h4 className="font-semibold">
+                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[2]}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+                <div className="game-card">
+                  <div className="flex items-center gap-3">
+                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                    <div>
+                      <h4 className="font-semibold">
+                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[3]}
+                      </h4>
                     </div>
                   </div>
                 </div>
@@ -633,8 +636,8 @@ export default function CompetitionInfo() {
               <div className="bg-[#110D20] p-1 rounded-full flex">
                 <button
                   className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants"
-                      ? "bg-[#AC7CFF] text-[#060312]"
-                      : "text-gray-300"
+                    ? "bg-[#AC7CFF] text-[#060312]"
+                    : "text-gray-300"
                     }`}
                   onClick={() => {
                     if (testimonialType !== "participants") {
@@ -656,8 +659,8 @@ export default function CompetitionInfo() {
                 </button>
                 <button
                   className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees"
-                      ? "bg-[#AC7CFF] text-[#060312]"
-                      : "text-gray-300"
+                    ? "bg-[#AC7CFF] text-[#060312]"
+                    : "text-gray-300"
                     }`}
                   onClick={() => {
                     if (testimonialType !== "attendees") {
@@ -686,8 +689,8 @@ export default function CompetitionInfo() {
               <div className="relative z-10 p-6 md:p-8">
                 <div
                   className={`carousel h-auto ${isTestimonialChanging
-                      ? "testimonial-fade-out"
-                      : "testimonial-fade-in"
+                    ? "testimonial-fade-out"
+                    : "testimonial-fade-in"
                     }`}
                 >
                   <div
