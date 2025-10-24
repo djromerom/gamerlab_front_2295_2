@@ -26,6 +26,8 @@ import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
+import ResetPassword from "@/pages/grupo 9/ResetPassword";
 
 type Role =
   | "Profesor"
@@ -80,6 +82,14 @@ const routes: RouteConfig[] = [
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/OlvidastePassword",
+    element: <ForgetPassword />
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
   {
     path: "/inicio",
