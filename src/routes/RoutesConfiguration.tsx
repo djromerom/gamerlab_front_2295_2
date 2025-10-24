@@ -25,6 +25,7 @@ import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import AzureProof from "@/components/grupo 11/azureProof";
 
 type Role =
   | "Profesor"
@@ -126,9 +127,13 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />,
+    element: <HomeTeacherPage />, 
     roles: ["Profesor"],
   },
+  {
+    path: "/imagesProof",
+    element: <AzureProof />,
+  }
 ];
 
 const RoutesConfiguration: React.FC = () => {

@@ -8,7 +8,6 @@ import { MultiFormProvider } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
-import supabase from "@/supabase/client";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 
@@ -65,7 +64,7 @@ export default function MultiStepWizard() {
           const formData = new FormData();
           formData.append(BUCKET_NAME, file);
 
-          const response = await fetch('http://localhost:3000/api/upload', {
+          const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/upload`, {
             method: 'POST',
             body: formData,
           });

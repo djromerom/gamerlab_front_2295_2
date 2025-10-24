@@ -135,7 +135,7 @@ export default function GameStep() {
                 >
                   <CloudUpload className="h-8 w-8 mb-2" />
                   <p>Arrastra o haz clic para seleccionar una imagen</p>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
