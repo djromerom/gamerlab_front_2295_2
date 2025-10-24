@@ -37,7 +37,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   return uploadResult;
 }
 
-export async function getImageUrl(uploadId: string, ttlSeconds = 900): Promise<string> {
+export async function getImageUrl(uploadId: string, ttlSeconds = 900): Promise<UrlResult> {
   if (!uploadId) throw new Error('getImageUrl: uploadId is required');
 
   const res = await fetch(
@@ -57,5 +57,5 @@ export async function getImageUrl(uploadId: string, ttlSeconds = 900): Promise<s
 
   const urlResult = (await res.json()) as UrlResult;
   console.debug('[azureFile] getImageUrl result:', urlResult);
-  return urlResult.url;
+  return urlResult;
 }

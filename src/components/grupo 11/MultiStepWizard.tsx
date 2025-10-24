@@ -10,6 +10,8 @@ import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
+import { getImageUrl, uploadImage } from "./azureFile";
+
 
 const BUCKET_NAME = "image";
 
@@ -50,34 +52,26 @@ export default function MultiStepWizard() {
     }
 
     setIsLoading(true);
-    const uploadToastId =
-      data.files && data.files.length > 0
-        ? toast.loading("Subiendo archivos...")
-        : undefined;
+    const preUploadedUrls = (data as any).uploadedFileUrls as string[] | undefined;
+    const willUploadFiles = !preUploadedUrls || preUploadedUrls.length === 0;
+
+    const uploadToastId = willUploadFiles && data.files && data.files.length > 0
+      ? toast.loading("Subiendo archivos...")
+      : undefined;
 
     try {
       const uploadedFileUrls: string[] = [];
-      if (data.files && data.files.length > 0) {
 
-        const uploads = Array.from(data.files).map(async (file) => {
+      // If the step already uploaded files and stored their URLs in the form
+      // (e.g. MembersStep executed uploads), prefer those and skip uploading again.
+      if (preUploadedUrls && preUploadedUrls.length > 0) {
+        uploadedFileUrls.push(...preUploadedUrls);
+      } else if (data.files && data.files.length > 0) {
 
-          const formData = new FormData();
-          formData.append(BUCKET_NAME, file);
-
-          const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/upload`, {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-          if (!response.ok){
-            throw new Error(`Error al subir ${file.name}`);
-          }
-          return data
-
-        });
-        (await Promise.all(uploads)).filter((u): u is string => !!u)
-        .forEach((u) => uploadedFileUrls.push(u));
+        console.log("Uploading file to Azure...");
+        console.log('TAMAÑO DEL FILE:', data.files.length);
+        let FileUrl = await uploadImage(data.files[0]);
+        
         
       //   const uploads = Array.from(data.files).map(async (file) => {
       //     const path = `uploads/${Date.now()}-${file.name.replace(
@@ -97,7 +91,7 @@ export default function MultiStepWizard() {
       //     .filter((u): u is string => !!u)
       //     .forEach((u) => uploadedFileUrls.push(u));
       //   if (uploadToastId)
-      //     toast.success("Archivos subidos", { id: uploadToastId });
+          // console.log"Archivos subidos", { id: uploadToastId });
       }
 
       const payload = {
