@@ -299,9 +299,8 @@ export default function CompetitionInfo() {
   // Update carousel position when currentSlide changes
   useEffect(() => {
     if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${
-        currentSlide * 100
-      }%)`;
+      carouselRef.current.style.transform = `translateX(-${currentSlide * 100
+        }%)`;
     }
   }, [currentSlide]);
 
@@ -399,7 +398,7 @@ export default function CompetitionInfo() {
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            Edicion 202X-X0
+            Edición 2025-30
           </h1>
 
           {/* Hero Section */}
@@ -408,7 +407,7 @@ export default function CompetitionInfo() {
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                  ¡Bienvenidos a la Feria Gamer Uninorte 2025!
+                  ¡Bienvenidos a la Feria Gamer Uninorte 2025-30!
                 </h2>
                 <p className="text-gray-300 mb-6">
                   Este es un evento académico y experiencial donde los
@@ -425,7 +424,7 @@ export default function CompetitionInfo() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>04 Junio, 2025</span>
+                    <span>Por Definir</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
@@ -452,10 +451,11 @@ export default function CompetitionInfo() {
               </div>
               <p className="text-gray-300 mb-4">
                 Este año, la feria gamer se enfoca en el poder de los
-                videojuegos para crear conciencia ambiental. Bajo el lema “Juega
-                Verde, Piensa Verde”, los videojuegos estarán inspirados en el
-                cuidado del planeta, la sostenibilidad y el impacto positivo de
-                la tecnología.
+                videojuegos para promover la ciberseguridad y la protección digital.
+                Bajo el lema “Juega Seguro, Navega Seguro”, los videojuegos estarán 
+                inspirados en la concientización sobre la seguridad en línea, el uso 
+                responsable de la tecnología y la importancia de proteger la información
+                 en el mundo digital.
               </p>
             </div>
 
@@ -470,15 +470,15 @@ export default function CompetitionInfo() {
               <div className="space-y-3 text-gray-300">
                 <div>
                   <h4 className="font-semibold text-white">
-                    Jornada AM - 04 de Junio
+                    Jornada AM - Por Definir
                   </h4>
-                  <p>8:00 - 12:00: Exhibiciones y stands</p>
+                  <p>Por Definir</p>
                 </div>
                 <div>
                   <h4 className="font-semibold text-white">
-                    Jornada PM - 04 de Junio
+                    Jornada PM - Por Definir
                   </h4>
-                  <p>2:00 - 4:00: Exhibiciones y stands</p>
+                  <p>Por Definir</p>
                 </div>
               </div>
             </div>
@@ -512,7 +512,7 @@ export default function CompetitionInfo() {
             </div>
           </div>
 
-          
+
 
           {/* Registration Section */}
           <div className="w-full max-w-4xl mt-16">

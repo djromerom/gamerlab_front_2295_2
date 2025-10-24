@@ -9,7 +9,6 @@
         "descripcion": "Descripcion 1",
         "descripcion2": "Descripcion 2",
         "Juegos Destacados": "Destacado 1;Destacado 2;Destacado 3;Destacado 4",
-        "fotoDestacada": "/assets/carousel/FOTO.png",
         "alt": "Feria Gamer 202X-X0",
         "enfoquesEducativos": [
             {
@@ -23,29 +22,24 @@
         ]
     },
     {
-        "titulo": "Ediciones Pasadas",
+        "titulo": "Titulo",
         "id": "2025-10",
-        "año": 2024,
+        "año": 2025,
         "semestre": "Primer semestre",
         "nombre": "Feria Gamer 2024 - S1",
         "fecha": "Marzo 2024",
         "descripcion": "Edición destacada por la integración de estudios indie y universidades locales.",
-        "Juegos Destacados": "Destacado 1, Destacado 2, Destacado 3",
-        "fotoDestacada": "/assets/carousel/24.JPG",
+        "Juegos Destacados": "Destacado 1;Destacado 2;Destacado 3;Destacado 4",
         "alt": "Feria Gamer 2025-10",
          "enfoquesEducativos": [
             {
-                "titulo": "Titulo",
-                "descripcion": "Descripcion"
-            },
-            {
-                "titulo": "Titulo",
+                "titulo": "Medio Ambiental",
                 "descripcion": "Descripcion"
             }
         ]
     },
     {
-        "titulo": "Ediciones Pasadas",
+        "titulo": "Titulo",
         "id": "2024-30",
         "año": 2024,
         "semestre": "Segundo semestre",
@@ -54,7 +48,6 @@
         "descripcion": "Innovacion y aprendizaje se fusionaron en la II Feria Gamer del Programa de Ingeniería de Software y Computacion de la Universidad Del Norte, evento donde los videojuegos se transformaron en Herramientas para educar sobre los peligros del mundo digital",
         "descripcion2": "Estudiantes de primero a tercer semestre presentaron el jueves, 24 de abril de 2025, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
         "Juegos Destacados": "Dulce y Burbujas;Leyendas de Papel, Páginas de Aventura;Carrot Mania;Musical Bubble Coffee",
-        "fotoDestacada": "/assets/carousel/MainPhoto.JPG",
         "alt": "Feria Gamer 2024-30",
         "enfoquesEducativos": [
             {
