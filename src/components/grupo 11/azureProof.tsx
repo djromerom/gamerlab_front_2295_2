@@ -51,8 +51,8 @@ export const AzureProof: React.FC = () => {
       setUploadResult(result)
 
       // immediately request a temporary URL to display the image
-      const url = await getImageUrl(result.id)
-      setImageUrl(url)
+      const data = await getImageUrl(result.id)
+      setImageUrl(data.url)
       retryRef.current = 0
     } catch (err: any) {
       setError(err?.message ?? String(err))
@@ -66,8 +66,8 @@ export const AzureProof: React.FC = () => {
     if (!uploadResult) return
     setError(null)
     try {
-      const url = await getImageUrl(uploadResult.id)
-      setImageUrl(url)
+      const data = await getImageUrl(uploadResult.id)
+      setImageUrl(data.url)
     } catch (err: any) {
       setError(err?.message ?? String(err))
     }

@@ -37,12 +37,11 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   return uploadResult;
 }
 
-export async function getImageUrl(uploadId: string, ttlSeconds = 900): Promise<UrlResult> {
+export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   if (!uploadId) throw new Error('getImageUrl: uploadId is required');
 
   const res = await fetch(
-    `${BACKEND_BASE.replace(/\/$/, '')}/upload/${encodeURIComponent(uploadId)}/url?ttl=${encodeURIComponent(
-      String(ttlSeconds)
+    `${BACKEND_BASE.replace(/\/$/, '')}/upload/${encodeURIComponent(uploadId)}/url?
     )}`,
     {
       method: 'GET',
