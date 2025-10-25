@@ -10,10 +10,6 @@ import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
-import { getImageUrl, uploadImage } from "./azureFile";
-
-
-const BUCKET_NAME = "image";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +66,6 @@ export default function MultiStepWizard() {
 
         console.log("Uploading file to Azure...");
         console.log('TAMAÑO DEL FILE:', data.files.length);
-        let FileUrl = await uploadImage(data.files[0]);
         
         
       //   const uploads = Array.from(data.files).map(async (file) => {
