@@ -8,11 +8,9 @@ import { MultiFormProvider } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
-import supabase from "@/supabase/client";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
-
-const BUCKET_NAME = "imagenes";
+import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -51,33 +49,36 @@ export default function MultiStepWizard() {
     }
 
     setIsLoading(true);
-    const uploadToastId =
-      data.files && data.files.length > 0
-        ? toast.loading("Subiendo archivos...")
-        : undefined;
+    const preUploadedUrls = (data as any).uploadedFileUrls as string[] | undefined;
+    const willUploadFiles = !preUploadedUrls || preUploadedUrls.length === 0;
+
+    const uploadToastId = willUploadFiles && data.files && data.files.length > 0
+      ? toast.loading("Subiendo archivos...")
+      : undefined;
 
     try {
       const uploadedFileUrls: string[] = [];
-      if (data.files && data.files.length > 0) {
-        const uploads = Array.from(data.files).map(async (file) => {
-          const path = `uploads/${Date.now()}-${file.name.replace(
-            /\s+/g,
-            "_"
-          )}`;
-          const { error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file, { cacheControl: "3600", upsert: false });
-          if (uploadError) throw new Error(`Error al subir ${file.name}`);
-          const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-          return urlData?.publicUrl ?? null;
-        });
-        (await Promise.all(uploads))
-          .filter((u): u is string => !!u)
-          .forEach((u) => uploadedFileUrls.push(u));
-        if (uploadToastId)
-          toast.success("Archivos subidos", { id: uploadToastId });
+
+      // If the step already uploaded files and stored their URLs in the form
+      // (e.g. MembersStep executed uploads), prefer those and skip uploading again.
+      if (preUploadedUrls && preUploadedUrls.length > 0) {
+        uploadedFileUrls.push(...preUploadedUrls);
+      } else if (data.files && data.files.length > 0) {
+
+        console.log("Uploading file to Azure...");
+        console.log('TAMAÑO DEL FILE:', data.files.length);
+        
+        for (const file of data.files) {
+          const uploadResult = await uploadImage(file);
+          const urlResult = await getImageUrl(uploadResult.id);
+          uploadedFileUrls.push(urlResult.url);
+        }
+
+        if (uploadToastId) {
+          toast.success("Archivos subidos correctamente", {
+            id: uploadToastId,
+          });
+        }
       }
 
       const payload = {

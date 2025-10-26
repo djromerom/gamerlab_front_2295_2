@@ -131,7 +131,7 @@ export function ImageCropper({
                 src={imgSrc || "/placeholder.svg"}
                 alt="Imagen para recortar"
                 onLoad={onImageLoad}
-                style={{ maxHeight: "400px", maxWidth: "100%" }}
+                className="max-h-[400px] max-w-full"
                 crossOrigin="anonymous"
               />
             </ReactCrop>
