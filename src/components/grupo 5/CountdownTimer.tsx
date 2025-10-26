@@ -1,44 +1,63 @@
-import React, { useEffect, useState } from "react";
+"use client"
+
+import type React from "react"
+import { useEffect, useState } from "react"
 
 interface CountdownTimerProps {
-  targetDate: string | number | Date;
+  targetDate: string | number | Date
+  onCountdownEnd?: () => void
 }
 
 interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+  isExpired: boolean
 }
 
-export default function CountdownTimer({
-  targetDate,
-}: CountdownTimerProps): React.ReactElement {
+export default function CountdownTimer({ targetDate, onCountdownEnd }: CountdownTimerProps): React.ReactElement | null {
   const calculateTimeLeft = (): TimeLeft => {
-    const difference = +new Date(targetDate) - +new Date();
-    const totalSeconds = Math.floor(difference / 1000);
+    const difference = +new Date(targetDate) - +new Date()
 
-    const days = Math.floor(totalSeconds / (3600 * 24));
-    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+    if (difference <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true }
+    }
 
-    return { days, hours, minutes, seconds };
-  };
+    const totalSeconds = Math.floor(difference / 1000)
 
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft());
+    const days = Math.floor(totalSeconds / (3600 * 24))
+    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+
+    return { days, hours, minutes, seconds, isExpired: false }
+  }
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft())
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
+      const newTimeLeft = calculateTimeLeft()
+      setTimeLeft(newTimeLeft)
 
-    return () => clearInterval(timer);
-  }, [targetDate]);
+      // Call onCountdownEnd when countdown reaches 0
+      if (newTimeLeft.isExpired && onCountdownEnd) {
+        onCountdownEnd()
+      }
+    }, 1000)
 
-  const { days, hours, minutes, seconds } = timeLeft;
+    return () => clearInterval(timer)
+  }, [targetDate, onCountdownEnd])
 
-  const pad = (n: number): string => String(n).padStart(2, "0");
+  // Don't render anything if countdown has expired
+  if (timeLeft.isExpired) {
+    return null
+  }
+
+  const { days, hours, minutes, seconds } = timeLeft
+
+  const pad = (n: number): string => String(n).padStart(2, "0")
 
   return (
     <div className="text-center mb-8 sm:mt-8">
@@ -56,5 +75,5 @@ export default function CountdownTimer({
       </div>
       <div className="mt-6 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent w-full max-w-3xl mx-auto"></div>
     </div>
-  );
+  )
 }

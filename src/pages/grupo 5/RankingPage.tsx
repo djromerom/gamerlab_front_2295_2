@@ -9,21 +9,8 @@ type Team = {
   id: number;
   name: string;
   score: number;
-  color: string;
+  logo?: string; // Changed: color property removed, logo is optional string
 };
-
-const colors = [
-  "bg-red-500",
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-yellow-500",
-  "bg-purple-500",
-  "bg-pink-500",
-  "bg-indigo-500",
-  "bg-teal-500",
-];
-
-const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -112,19 +99,15 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
+const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [fairStarted, setFairStarted] = useState(false)
+  const [fairEnded, setFairEnded] = useState(false);
 
-  useEffect(() => {
-    const ahora = new Date();
-    const fechaLimite = new Date(ahora.getFullYear(), 5, 5);
-
-    if (ahora >= fechaLimite) {
-      setFairStarted(true);
-    }
+  useEffect(() => { //
+      setFairEnded(FAIR_ENDED);
   }, []);
 
   useEffect(() => {
@@ -144,7 +127,7 @@ export default function PodioGamer() {
           id: team.id,
           name: team.nombre,
           score: team.promedio,
-          color: getRandomColor(),
+          logo: team.logoUrl, // Use logoUrl for the logo
         }));
 
         setTeams(formattedTeams);
@@ -156,25 +139,8 @@ export default function PodioGamer() {
     fetchData();
   }, []);
 
-  /*const [teamId, setTeamId] = useState<string>("1");
-  const [newScore, setNewScore] = useState<string>("");*/
-
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
 
-  /*const updateScore = () => {
-    if (!newScore) return;
-
-    const id = Number.parseInt(teamId);
-    const score = Number.parseInt(newScore);
-
-    if (isNaN(id) || isNaN(score)) return;
-
-    setTeams(teams.map((team) => (team.id === id ? { ...team, score } : team)));
-
-    setNewScore("");
-  };*/
-
-  // Inyectar los estilos CSS en el documento
   useEffect(() => {
     const styleElement = document.createElement("style");
     styleElement.innerHTML = glowStyles;
@@ -199,18 +165,18 @@ export default function PodioGamer() {
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            Ranking en vivo
+            Ranking de videojuegos
           </h1>
-          {!fairStarted ? (
+          {!fairEnded ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
                 <div className="gradient-border-inner"></div>
                 <div className="relative z-10 text-center p-6 md:p-8">
                   <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                    El ranking aún no está activo debido a que la feria no ha iniciado
+                    El ranking aún no está disponible debido a que la feria no ha finalizado
                   </h2>
                   <p className="text-gray-300 mb-6">
-                    Los datos serán actualizados cuando comience el evento
+                    Los datos aparecerán una vez finalice el evento
                   </p>
                 </div>
               </div>
@@ -222,20 +188,24 @@ export default function PodioGamer() {
                 {sortedTeams[1] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
-                        <div
-                          className={`absolute inset-0 ${sortedTeams[1].color} flex items-center justify-center`}
-                        >
+                      <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center">
+                        {sortedTeams[1].logo ? (
+                          <img
+                            src={sortedTeams[1].logo}
+                            alt={sortedTeams[1].name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
                           <span className="text-2xl font-bold text-white">
                             {sortedTeams[1].name.substring(0, 1)}
                           </span>
-                        </div>
+                        )}
                       </div>
                       <p className="text-center text-lg font-semibold">
                         {sortedTeams[1].name}
                       </p>
                       <p className="text-center text-xl font-bold text-[#c0c0c0]">
-                        {sortedTeams[1].score}
+                        {sortedTeams[1].score.toFixed(3)}
                       </p>
                     </div>
                     <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
@@ -251,20 +221,24 @@ export default function PodioGamer() {
                 {sortedTeams[0] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF]">
-                        <div
-                          className={`absolute inset-0 ${sortedTeams[0].color} flex items-center justify-center`}
-                        >
+                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF] bg-gray-800 flex items-center justify-center">
+                        {sortedTeams[0].logo ? (
+                          <img
+                            src={sortedTeams[0].logo}
+                            alt={sortedTeams[0].name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
                           <span className="text-3xl font-bold text-white">
                             {sortedTeams[0].name.substring(0, 1)}
                           </span>
-                        </div>
+                        )}
                       </div>
                       <p className="text-center text-xl font-semibold">
                         {sortedTeams[0].name}
                       </p>
                       <p className="text-center text-2xl font-bold text-[#AC7CFF]">
-                        {sortedTeams[0].score}
+                        {sortedTeams[0].score.toFixed(3)}
                       </p>
                     </div>
                     <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
@@ -280,20 +254,24 @@ export default function PodioGamer() {
                 {sortedTeams[2] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0]">
-                        <div
-                          className={`absolute inset-0 ${sortedTeams[2].color} flex items-center justify-center`}
-                        >
+                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center"> 
+                        {sortedTeams[2].logo ? (
+                          <img
+                            src={sortedTeams[2].logo}
+                            alt={sortedTeams[2].name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
                           <span className="text-xl font-bold text-white">
                             {sortedTeams[2].name.substring(0, 1)}
                           </span>
-                        </div>
+                        )}
                       </div>
                       <p className="text-center text-base font-semibold">
                         {sortedTeams[2].name}
                       </p>
                       <p className="text-center text-lg font-bold text-[#c0c0c0]">
-                        {sortedTeams[2].score}
+                        {sortedTeams[2].score.toFixed(3)}
                       </p>
                     </div>
                     <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
@@ -334,13 +312,18 @@ export default function PodioGamer() {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center">
-                              {/* Imagen del grupo, aquí deben renderizar la imagen (logo) de cada grupo */}
-                              <div
-                                className={`w-6 h-6 rounded-full mr-3 ${team.color} flex items-center justify-center`}
-                              >
-                                <span className="text-xs font-bold text-white">
-                                  {team.name.substring(0, 1)}
-                                </span>
+                              <div className="w-6 h-6 rounded-full mr-3 overflow-hidden bg-gray-700 flex items-center justify-center">
+                                {team.logo ? (
+                                  <img
+                                    src={team.logo}
+                                    alt={team.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-bold text-white">
+                                    {team.name.substring(0, 1)}
+                                  </span>
+                                )}
                               </div>
                               <span className="text-gray-200">{team.name}</span>
                             </div>

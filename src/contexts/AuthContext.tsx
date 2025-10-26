@@ -19,85 +19,142 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchProfile = async () => {
-    const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
-      {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    if (res.ok) {
-      const data = (await res.json()) as UserProfile;
-      setUser(data);
-    } else {
+      if (res.ok) {
+        const data = (await res.json()) as UserProfile;
+        setUser(data);
+      } else {
+        setUser(null);
+        setAccessToken(null);
+      }
+    } catch (error) {
+      console.error("AuthContext: Failed to fetch profile:", error);
       setUser(null);
+      setAccessToken(null);
     }
     setLoading(false);
+  };
+
+  const contextRefreshAccessToken = async (): Promise<string | null> => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        setUser(null);
+        setAccessToken(null);
+        setLoading(false);
+        throw new Error(`Refresh API request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("AuthContext: Respuesta de /auth/refresh:", res);
+      console.log("AuthContext: Datos de /auth/refresh:", data);
+
+      if (data.accessToken && typeof data.accessToken === "string") {
+        setAccessToken(data.accessToken);
+        await fetchProfile();
+        return data.accessToken;
+      } else {
+        setUser(null);
+        setAccessToken(null);
+        setLoading(false);
+        throw new Error(
+          "Access token not found or invalid in refresh response"
+        );
+      }
+    } catch (error) {
+      console.error("AuthContext: Failed to refresh access token:", error);
+      setUser(null);
+      setAccessToken(null);
+      setLoading(false);
+      throw error;
+    }
   };
 
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
-    const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error("Login fallido");
-    }
-
-    await fetchProfile();
-    setLoading(false);
-  };
-
-  const refreshAccessToken = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
-      await fetchProfile();
-    } catch {
-      setUser(null);
-      setLoading(false);
+      const res = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      if (!res.ok) {
+        setLoading(false);
+        throw new Error("Login fallido");
+      }
+      await contextRefreshAccessToken();
+    } catch (error) {
+      if (
+        !(
+          error instanceof Error &&
+          (error.message.includes("Refresh API request failed") ||
+            error.message.includes("Access token not found"))
+        )
+      ) {
+        setUser(null);
+        setAccessToken(null);
+        setLoading(false);
+      }
+      throw error;
     }
   };
 
   const logout = async () => {
-    await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    try {
+      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("AuthContext: Logout API call failed:", error);
+    }
     setUser(null);
+    setAccessToken(null);
+    setLoading(false);
   };
 
   useEffect(() => {
-    refreshAccessToken();
+    contextRefreshAccessToken().catch(() => {});
   }, []);
 
   const userRole: Role | null = user?.role.name ?? null;
 
-  const value: any = useMemo(
+  const value = useMemo(
     () => ({
-      accessToken: null,
+      accessToken: accessToken,
       user,
       userRole,
       loading,
       login,
-      refreshAccessToken,
+      refreshAccessToken: contextRefreshAccessToken,
       logout,
     }),
-    [user, userRole, loading]
+    [user, userRole, loading, accessToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

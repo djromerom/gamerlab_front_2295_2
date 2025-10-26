@@ -1,5 +1,4 @@
 "use client";
-import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import {
   Calendar,
@@ -298,7 +297,7 @@ export default function CompetitionInfo() {
   };
 
   const imagePaths = Array.from(
-    { length: 29 },
+    { length: 30 },
     (_, i) => `/assets/carousel/${i + 2}.JPG`
   );
 
@@ -498,7 +497,7 @@ export default function CompetitionInfo() {
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
               <p className="text-gray-300 mb-4">
-                Disfruta de múltiples actividades durante los tres días del
+                Disfruta de múltiples actividades durante el día del
                 evento:
               </p>
               <ul className="space-y-2 text-gray-300">
@@ -508,11 +507,11 @@ export default function CompetitionInfo() {
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Zona retro gaming</span>
+                  <span>Stands de Videojuegos</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Talleres de desarrollo de videojuegos</span>
+                  <span>Y mucho más...</span>
                 </li>
               </ul>
             </div>
@@ -867,7 +866,7 @@ export default function CompetitionInfo() {
           </div>
 
           {/* Registration Section */}
-          <div className="w-full max-w-4xl mt-16">
+          {/* <div className="w-full max-w-4xl mt-16">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -889,7 +888,7 @@ export default function CompetitionInfo() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">

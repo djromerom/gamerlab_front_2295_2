@@ -6,7 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
+// import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
@@ -25,7 +25,7 @@ import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
-import AzureProof from "@/components/grupo 11/azureProof";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 
 type Role =
   | "Profesor"
@@ -53,10 +53,10 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  {
-    path: "/registro-equipo",
-    element: <TeamRegisterPage />,
-  },
+  // { // Disabled temporarily
+  //   path: "/registro-equipo",
+  //   element: <TeamRegisterPage />,
+  // },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -131,9 +131,10 @@ const routes: RouteConfig[] = [
     roles: ["Profesor"],
   },
   {
-    path: "/imagesProof",
-    element: <AzureProof />,
-  }
+    path: "/editar-equipo",
+    element: <EditTeamPage />,
+    roles: ["Estudiante"],
+  },
 ];
 
 const RoutesConfiguration: React.FC = () => {
