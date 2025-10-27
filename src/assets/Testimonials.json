@@ -27,6 +27,12 @@
                 "quote": "Participar en la feria gamer fue para mí un verdadero reto. Pensar en haber hecho un programa completamente funcional con los conocimientos aprendidos en clase me hizo darme cuenta de las grandes capacidades que uno puede llegar a tener y el excelente trabajo de los profesores al enseñarnos las bases necesarias para afrontar esos grandes retos. Me gustó mucho tener un equipo de trabajo del cuál podía apoyarme y entenderme bastante bien, lo que facilitó las fechas de entrega y la presentación de un excelente trabajo. Y por último, me motivó a hacer trabajos similares para adquirir experiencias y probar mis conocimientos."
             },
             {
+                "id": 5,
+                "name": "María Alejandra Lobo León",
+                "role": "Participante - Hidden Deck",
+                "quote": "Me pareció una experiencia muy enriquecedora, ya que tuve la oportunidad de recibir feedback acerca de mi proyecto, y conocer las opiniones de los asistentes y jurados fue algo emocionante. Además, el hecho de poder compartir mi trabajo con otros estudiantes y profesionales del área me permitió aprender y crecer en mi desarrollo como programadora."
+            },
+            {
                 "id": 1,
                 "name": "Jefferson Jose Torres Lora",
                 "role": "Monitor Programación Orientada a Objetos",
@@ -45,27 +51,21 @@
         "testimonios": [
             {
                 "id": 1,
-                "name": "nombre",
-                "role": "Participante 1",
-                "quote": "texto de prueba"
+                "name": "Laura Vanessa Acuña Ordóñez",
+                "role": "Participante",
+                "quote": "Realmente fue una experiencia muy gratificante y retadora, porque nos permitió desarrollar habilidades que tal vez antes no habíamos experimentado, podría mejorar la organización del evento, porque como expositor es un poco difícil estar al frente del proyecto y pendiente a las necesidades de los invitados que a veces no saben a quien recurrir. Y por lo general ellos están en busca de personas que los puedan orientar y ayudar."
             },
             {
                 "id": 2,
-                "name": "Nombre",
-                "role": "Participante 2",
-                "quote": "texto de prueba"
+                "name": "María Del Mar Yusti Prins",
+                "role": "Participante",
+                "quote": "La feria gamer fue una gran experiencia como estudiante de primer semestre de Ingeniería de Sistemas. Nunca imaginé que, desde mis primeros meses en la universidad, tendría la oportunidad de presentar mi proyecto final frente a estudiantes y jurados. Sentí mucha  emoción al ver cómo el proyecto  que había creado junto a mis compañeros podía interesar e inspirar a estudiantes.Esa experiencia me ayudó a fortalecer mi confianza, fortalecer el trabajo en equipo y mis habilidades comunicativas."
             },
             {
                 "id": 3,
-                "name": "Nombre",
-                "role": "Participante 3",
-                "quote": "texto de prueba"
-            },
-            {
-                "id": 4,
-                "name": "Nombre",
-                "role": "Participante 4",
-                "quote": "texto de prueba"
+                "name": "Marianna Contreras Zapata",
+                "role": "Participante",
+                "quote": "Fue una buena experiencia y oportunidad de presentar con mi grupo el proyecto que veníamos preparando, todo el proceso de ir avanzando y hacer el juego fue muy enriquecedora, luego explicarlo y exponerlo ante los demás y así mostrar nuestra capacidad de aprendizaje de las clases y aplicarlo fue única"
             },
             {
                 "id": 1,

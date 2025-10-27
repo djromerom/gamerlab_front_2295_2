@@ -371,7 +371,8 @@ export default function CompetitionInfo() {
       document.head.removeChild(styleElement);
     };
   }, []);
-
+//podio , top 1 top 2 y top 3 separados por;
+const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
 
 
   return (
@@ -394,7 +395,7 @@ export default function CompetitionInfo() {
           <div className="w-full max-w-4xl mt-0">
             <div className="flex items-center gap-4 mb-6 justify-center">
               {/* ComboBox alineado con el título */}
-              <div className="relative gradient-border gradient-border-purple w-fit" style={{padding: '8px', marginBottom: 0}}>
+              <div className="relative gradient-border gradient-border-purple w-fit" style={{ padding: '8px', marginBottom: 0 }}>
                 <div className="gradient-border-inner"></div>
                 <select
                   value={edicionSeleccionada.id}
@@ -522,250 +523,388 @@ export default function CompetitionInfo() {
                 )}
               </div>
             </div>
+            {/* Establecer colores estáticos para los avatares del podio mediante CSS que sobrescribe el inline style */}
+            <style>
+              {`
+              /* Podio: left = segundo, center = primero, right = tercero */
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(1) .relative.mb-3,
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(1) .rounded-full {
+                background-color: #9CA3AF !important; /* gris/plata */
+                border-color: #9CA3AF !important;
+              }
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(2) .relative.mb-4,
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(2) .rounded-full {
+                background-color: #6A0DAD !important; /* morado principal */
+                border-color: #AC7CFF !important;
+              }
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(3) .relative.mb-2,
+              .grid.grid-cols-3.gap-6.items-end > div:nth-child(3) .rounded-full {
+                background-color: #CD7F32 !important; /* bronce */
+                border-color: #CD7F32 !important;
+              }
 
-            {/* Featured Games (CHECK BRITO)*/}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
-                Juegos Destacados
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="game-card">
-                  <div className="flex items-center gap-3">
-                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                    <div>
-                      <h4 className="font-semibold">{
-                        edicionSeleccionada?.["Juegos Destacados"]?.split(";")[0]}
-                      </h4>
-                    </div>
-                  </div>
+              /* Asegurar que el texto dentro del avatar sea legible */
+              .grid.grid-cols-3.gap-6.items-end > div > .relative span,
+              .grid.grid-cols-3.gap-6.items-end > div > .relative strong {
+                color: #ffffff !important;
+              }
+              `}
+            </style>
+
+            <div className="w-full mb-8">
+              <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">Podio</h3>
+
+              <div className="grid grid-cols-3 gap-6 items-end">
+                {/* Segundo lugar (left) */}
+                <div className="flex flex-col items-center">
+                  {podio[1] ? (
+                    <>
+                      <div
+                        className="relative mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] flex items-center justify-center"
+                        style={{
+                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
+                            .toString(16)
+                            .padStart(6, "0")}`,
+                        }}
+                      >
+                        <span className="text-2xl font-bold text-white">
+                          {podio[1].equipo?.substring(0, 1)}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold">{podio[1].equipo}</p>
+                        <p className="text-xl font-bold text-[#c0c0c0]">{podio[1].puntuacion}</p>
+                      </div>
+
+                      <div className="w-full mt-4 h-28 rounded-t-lg relative gradient-border gradient-border-silver">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-6xl font-bold text-white">2</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-48" />
+                  )}
                 </div>
-                <div className="game-card">
-                  <div className="flex items-center gap-3">
-                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                    <div>
-                      <h4 className="font-semibold">
-                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[1]}
-                      </h4>
-                    </div>
-                  </div>
+
+                {/* Primer lugar (center) */}
+                <div className="flex flex-col items-center">
+                  {podio[0] ? (
+                    <>
+                      <div
+                        className="relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF] flex items-center justify-center"
+                        style={{
+                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
+                            .toString(16)
+                            .padStart(6, "0")}`,
+                        }}
+                      >
+                        <span className="text-3xl font-bold text-white">
+                          {podio[0].equipo?.substring(0, 1)}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xl font-semibold">{podio[0].equipo}</p>
+                        <p className="text-2xl font-bold text-[#AC7CFF]">{podio[0].puntuacion}</p>
+                      </div>
+
+                      <div className="w-full mt-4 h-40 rounded-t-lg relative gradient-border gradient-border-gold">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-7xl font-bold text-white">1</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-56" />
+                  )}
                 </div>
-                <div className="game-card">
-                  <div className="flex items-center gap-3">
-                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                    <div>
-                      <h4 className="font-semibold">
-                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[2]}
-                      </h4>
-                    </div>
-                  </div>
-                </div>
-                <div className="game-card">
-                  <div className="flex items-center gap-3">
-                    <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                    <div>
-                      <h4 className="font-semibold">
-                        {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[3]}
-                      </h4>
-                    </div>
-                  </div>
+
+                {/* Tercer lugar (right) */}
+                <div className="flex flex-col items-center">
+                  {podio[2] ? (
+                    <>
+                      <div
+                        className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0] flex items-center justify-center"
+                        style={{
+                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
+                            .toString(16)
+                            .padStart(6, "0")}`,
+                        }}
+                      >
+                        <span className="text-xl font-bold text-white">
+                          {podio[2].equipo?.substring(0, 1)}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold">{podio[2].equipo}</p>
+                        <p className="text-lg font-bold text-[#c0c0c0]">{podio[2].puntuacion}</p>
+                      </div>
+
+                      <div className="w-full mt-4 h-24 rounded-t-lg relative gradient-border gradient-border-silver">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-5xl font-bold text-white">3</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-40" />
+                  )}
                 </div>
               </div>
             </div>
+           
+          
 
-            {/* Photo Carousel (CHECK BRITO)*/}
-            {/* Hacemos el cuadro un poco más alto y aseguramos que mantenga su anchura */}
-            <div className="carousel w-full h-[360px] md:h-[480px] mb-8">
-              <div className="carousel-inner h-full" ref={carouselRef}>
-                {imagePaths.map((src, index) => (
-                  <div key={index} className="carousel-item h-full relative">
-                    <img
-                      src={src}
-                      alt={`Imagen ${index + 2}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {index === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <h3 className="text-white font-bold">
-                          Feria Gamer {edicionSeleccionada.id}
-                        </h3>
-                      </div>
-                    )}
+
+
+
+
+          {/* Featured Games (CHECK BRITO)*/}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
+              Mencion Honorifica
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="game-card">
+                <div className="flex items-center gap-3">
+                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                  <div>
+                    <h4 className="font-semibold">{
+                      edicionSeleccionada?.["Juegos Destacados"]?.split(";")[0]}
+                    </h4>
                   </div>
-                ))}
+                </div>
               </div>
-
-              <div
-                className="carousel-control carousel-control-prev"
-                onClick={prevSlide}
-              >
-                <ChevronLeft className="w-6 h-6 text-white" />
+              <div className="game-card">
+                <div className="flex items-center gap-3">
+                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                  <div>
+                    <h4 className="font-semibold">
+                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[1]}
+                    </h4>
+                  </div>
+                </div>
               </div>
-              <div
-                className="carousel-control carousel-control-next"
-                onClick={nextSlide}
-              >
-                <ChevronRight className="w-6 h-6 text-white" />
+              <div className="game-card">
+                <div className="flex items-center gap-3">
+                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                  <div>
+                    <h4 className="font-semibold">
+                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[2]}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+              <div className="game-card">
+                <div className="flex items-center gap-3">
+                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
+                  <div>
+                    <h4 className="font-semibold">
+                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[3]}
+                    </h4>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Testimonials Section - Carousel */}
-          <div className="w-full max-w-4xl mt-16">
-            <div className="flex items-center gap-3 mb-6 justify-center">
-              <Quote className="w-6 h-6 text-[#AC7CFF]" />
-              <h2
-                className={`text-2xl font-bold text-center ${isTitleChanging ? "title-fade-out" : "title-fade-in"
+          {/* Photo Carousel (CHECK BRITO)*/}
+          {/* Hacemos el cuadro un poco más alto y aseguramos que mantenga su anchura */}
+          <div className="carousel w-full h-[360px] md:h-[480px] mb-8">
+            <div className="carousel-inner h-full" ref={carouselRef}>
+              {imagePaths.map((src, index) => (
+                <div key={index} className="carousel-item h-full relative">
+                  <img
+                    src={src}
+                    alt={`Imagen ${index + 2}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {index === 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <h3 className="text-white font-bold">
+                        Feria Gamer {edicionSeleccionada.id}
+                      </h3>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div
+              className="carousel-control carousel-control-prev"
+              onClick={prevSlide}
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </div>
+            <div
+              className="carousel-control carousel-control-next"
+              onClick={nextSlide}
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Testimonials Section - Carousel */}
+        <div className="w-full max-w-4xl mt-16">
+          <div className="flex items-center gap-3 mb-6 justify-center">
+            <Quote className="w-6 h-6 text-[#AC7CFF]" />
+            <h2
+              className={`text-2xl font-bold text-center ${isTitleChanging ? "title-fade-out" : "title-fade-in"
+                }`}
+            >
+              Lo Que Dicen Nuestros{" "}
+              {testimonialType === "participants"
+                ? "Participantes"
+                : "Asistentes"}
+            </h2>
+          </div>
+
+          <div className="flex justify-center mb-8">
+            <div className="bg-[#110D20] p-1 rounded-full flex">
+              <button
+                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants"
+                  ? "bg-[#AC7CFF] text-[#060312]"
+                  : "text-gray-300"
+                  }`}
+                onClick={() => {
+                  if (testimonialType !== "participants") {
+                    setIsTestimonialChanging(true);
+                    setIsTitleChanging(true);
+                    setTimeout(() => {
+                      setTestimonialType("participants");
+                      setTimeout(() => {
+                        setIsTestimonialChanging(false);
+                      }, 50);
+                      setTimeout(() => {
+                        setIsTitleChanging(false);
+                      }, 100);
+                    }, 500);
+                  }
+                }}
+              >
+                Participantes
+              </button>
+              <button
+                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees"
+                  ? "bg-[#AC7CFF] text-[#060312]"
+                  : "text-gray-300"
+                  }`}
+                onClick={() => {
+                  if (testimonialType !== "attendees") {
+                    setIsTestimonialChanging(true);
+                    setIsTitleChanging(true);
+                    setTimeout(() => {
+                      setTestimonialType("attendees");
+                      setTimeout(() => {
+                        setIsTestimonialChanging(false);
+                      }, 50);
+                      setTimeout(() => {
+                        setIsTitleChanging(false);
+                      }, 100);
+                    }, 500);
+                  }
+                }}
+              >
+                Asistentes
+              </button>
+            </div>
+          </div>
+
+          {/* Testimonial Carousel */}
+          <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+            <div className="gradient-border-inner"></div>
+            <div className="relative z-10 p-6 md:p-8">
+              <div
+                className={`carousel h-auto ${isTestimonialChanging
+                  ? "testimonial-fade-out"
+                  : "testimonial-fade-in"
                   }`}
               >
-                Lo Que Dicen Nuestros{" "}
-                {testimonialType === "participants"
-                  ? "Participantes"
-                  : "Asistentes"}
-              </h2>
-            </div>
-
-            <div className="flex justify-center mb-8">
-              <div className="bg-[#110D20] p-1 rounded-full flex">
-                <button
-                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants"
-                    ? "bg-[#AC7CFF] text-[#060312]"
-                    : "text-gray-300"
-                    }`}
-                  onClick={() => {
-                    if (testimonialType !== "participants") {
-                      setIsTestimonialChanging(true);
-                      setIsTitleChanging(true);
-                      setTimeout(() => {
-                        setTestimonialType("participants");
-                        setTimeout(() => {
-                          setIsTestimonialChanging(false);
-                        }, 50);
-                        setTimeout(() => {
-                          setIsTitleChanging(false);
-                        }, 100);
-                      }, 500);
-                    }
-                  }}
-                >
-                  Participantes
-                </button>
-                <button
-                  className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees"
-                    ? "bg-[#AC7CFF] text-[#060312]"
-                    : "text-gray-300"
-                    }`}
-                  onClick={() => {
-                    if (testimonialType !== "attendees") {
-                      setIsTestimonialChanging(true);
-                      setIsTitleChanging(true);
-                      setTimeout(() => {
-                        setTestimonialType("attendees");
-                        setTimeout(() => {
-                          setIsTestimonialChanging(false);
-                        }, 50);
-                        setTimeout(() => {
-                          setIsTitleChanging(false);
-                        }, 100);
-                      }, 500);
-                    }
-                  }}
-                >
-                  Asistentes
-                </button>
-              </div>
-            </div>
-
-            {/* Testimonial Carousel */}
-            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-              <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8">
                 <div
-                  className={`carousel h-auto ${isTestimonialChanging
-                    ? "testimonial-fade-out"
-                    : "testimonial-fade-in"
-                    }`}
+                  className="carousel-inner h-full"
+                  style={{
+                    transform: `translateX(-${currentTestimonialSlide * 100
+                      }%)`,
+                  }}
                 >
-                  <div
-                    className="carousel-inner h-full"
-                    style={{
-                      transform: `translateX(-${currentTestimonialSlide * 100
-                        }%)`,
-                    }}
-                  >
-                    {(testimonialType === "participants"
-                      ? participantTestimonials
-                      : attendeeTestimonials
-                    ).map((t) => (
-                      <div key={t.id} className="carousel-item h-full">
-                        <div className="testimonial-card border-none bg-transparent">
-                          <div className="flex flex-col h-full">
-                            <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
-                              "{t.quote}"
-                            </p>
-                            <div className="flex items-center justify-center gap-4 mt-auto">
-                              <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
-                                <User className="w-6 h-6 text-[#AC7CFF]" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold">{t.name}</h4>
-                                <p className="text-sm text-[#AC7CFF]">{t.role}</p>
-                              </div>
+                  {(testimonialType === "participants"
+                    ? participantTestimonials
+                    : attendeeTestimonials
+                  ).map((t) => (
+                    <div key={t.id} className="carousel-item h-full">
+                      <div className="testimonial-card border-none bg-transparent">
+                        <div className="flex flex-col h-full">
+                          <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
+                            "{t.quote}"
+                          </p>
+                          <div className="flex items-center justify-center gap-4 mt-auto">
+                            <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
+                              <User className="w-6 h-6 text-[#AC7CFF]" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">{t.name}</h4>
+                              <p className="text-sm text-[#AC7CFF]">{t.role}</p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
+                </div>
 
-                  <div
-                    className="carousel-control carousel-control-prev"
-                    onClick={prevTestimonialSlide}
-                  >
-                    <ChevronLeft className="w-6 h-6 text-white" />
-                  </div>
-                  <div
-                    className="carousel-control carousel-control-next"
-                    onClick={nextTestimonialSlide}
-                  >
-                    <ChevronRight className="w-6 h-6 text-white" />
-                  </div>
+                <div
+                  className="carousel-control carousel-control-prev"
+                  onClick={prevTestimonialSlide}
+                >
+                  <ChevronLeft className="w-6 h-6 text-white" />
+                </div>
+                <div
+                  className="carousel-control carousel-control-next"
+                  onClick={nextTestimonialSlide}
+                >
+                  <ChevronRight className="w-6 h-6 text-white" />
+                </div>
 
-                  <div className="carousel-indicators">
-                    {(testimonialType === "participants"
-                      ? participantTestimonials
-                      : attendeeTestimonials
-                    ).map((_, index) => (
-                      <div
-                        key={index}
-                        className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
-                          }`}
-                        onClick={() => goToTestimonialSlide(index)}
-                      ></div>
-                    ))}
-                  </div>
+                <div className="carousel-indicators">
+                  {(testimonialType === "participants"
+                    ? participantTestimonials
+                    : attendeeTestimonials
+                  ).map((_, index) => (
+                    <div
+                      key={index}
+                      className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
+                        }`}
+                      onClick={() => goToTestimonialSlide(index)}
+                    ></div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
 
-          {/* Footer (CHECK BRITO)*/}
-          <div className="w-full max-w-4xl mt-12 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Info className="w-5 h-5 text-[#AC7CFF]" />
-              <p className="text-gray-300">
-                Para más información contacta a:{" "}
-                <span className="text-[#AC7CFF]">
-                  feriagamer@uninorte.edu.co
-                </span>
-              </p>
-            </div>
-            <p className="text-gray-400 text-sm">
-              © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
+        {/* Footer (CHECK BRITO)*/}
+        <div className="w-full max-w-4xl mt-12 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Info className="w-5 h-5 text-[#AC7CFF]" />
+            <p className="text-gray-300">
+              Para más información contacta a:{" "}
+              <span className="text-[#AC7CFF]">
+                feriagamer@uninorte.edu.co
+              </span>
             </p>
           </div>
+          <p className="text-gray-400 text-sm">
+            © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
+          </p>
         </div>
       </div>
+    </div>
     </>
   );
 }

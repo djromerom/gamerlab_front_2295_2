@@ -1,28 +1,6 @@
 [
     {
         "titulo": "Titulo",
-        "id": "202X-X0",
-        "año": 202,
-        "semestre": "X semestre",
-        "nombre": "Feria Gamer 202X - S1",
-        "fecha": "Mes, 202X",
-        "descripcion": "Descripcion 1",
-        "descripcion2": "Descripcion 2",
-        "Juegos Destacados": "Destacado 1;Destacado 2;Destacado 3;Destacado 4",
-        "alt": "Feria Gamer 202X-X0",
-        "enfoquesEducativos": [
-            {
-                "titulo": "Titulo",
-                "descripcion": "Descripcion"
-            },
-            {
-                "titulo": "Titulo",
-                "descripcion": "Descripcion"
-            }
-        ]
-    },
-    {
-        "titulo": "Titulo",
         "id": "2025-10",
         "año": 2025,
         "semestre": "Primer semestre",
@@ -31,7 +9,27 @@
         "descripcion": "Edición destacada por la integración de estudios indie y universidades locales.",
         "Juegos Destacados": "Destacado 1;Destacado 2;Destacado 3;Destacado 4",
         "alt": "Feria Gamer 2025-10",
-         "enfoquesEducativos": [
+        "podio": [
+            {
+                "puesto": 1,
+                "equipo": "Equipo Alpha",
+                "juego": "Aventura Espacial",
+                "puntuacion": 4.8
+            },
+            {
+                "puesto": 2,
+                "equipo": "Equipo Beta",
+                "juego": "Mundo Submarino",
+                "puntuacion": 4.5
+            },
+            {
+                "puesto": 3,
+                "equipo": "Equipo Gamma",
+                "juego": "Ciudad Futurista",
+                "puntuacion": 4.2
+            }
+        ],
+        "enfoquesEducativos": [
             {
                 "titulo": "Medio Ambiental",
                 "descripcion": "Descripcion"
@@ -49,11 +47,30 @@
         "descripcion2": "Estudiantes de primero a tercer semestre presentaron el jueves, 24 de abril de 2025, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
         "Juegos Destacados": "Dulce y Burbujas;Leyendas de Papel, Páginas de Aventura;Carrot Mania;Musical Bubble Coffee",
         "alt": "Feria Gamer 2024-30",
+        "podio": [
+            {
+                "puesto": 1,
+                "equipo": "Equipo Delta",
+                "juego": "Dulce y Burbujas",
+                "puntuacion": 4.9
+            },
+            {
+                "puesto": 2,
+                "equipo": "Equipo Epsilon",
+                "juego": "Leyendas de Papel, Páginas de Aventura",
+                "puntuacion": 4.6
+            },
+            {
+                "puesto": 3,
+                "equipo": "Equipo Zeta",
+                "juego": "Carrot Mania",
+                "puntuacion": 4.3
+            }
+        ],
         "enfoquesEducativos": [
             {
                 "titulo": "Anti-Ciberacoso",
                 "descripcion": "Juegos que concientizan sobre el impacto del acoso en línea y cómo combatirlo efectivamente."
-                  
             },
             {
                 "titulo": "Anti-Grooming",
@@ -63,15 +80,6 @@
                 "titulo": "Anti-Phishing",
                 "descripcion": "Experiencias interactivas para reconocer intentos de suplantación de identidad y estafas en línea."
             }
-            
-                    
-                    
-                     
-                      
-                      
-                    
-                     
-           
         ]
     }
 ]
