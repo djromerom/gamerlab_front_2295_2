@@ -1,5 +1,4 @@
 "use client";
-import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import {
   Calendar,
@@ -19,6 +18,8 @@ import {
   User,
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -244,6 +245,13 @@ const glowStyles = `
 `;
 
 export default function CompetitionInfo() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
   const [isTestimonialChanging, setIsTestimonialChanging] = useState(false);
@@ -254,6 +262,7 @@ export default function CompetitionInfo() {
   >("participants");
 
   const totalSlides = 30; // Total number of slides in the carousel
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
@@ -261,10 +270,6 @@ export default function CompetitionInfo() {
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
   };
 
   const nextTestimonialSlide = () => {
@@ -292,7 +297,7 @@ export default function CompetitionInfo() {
   };
 
   const imagePaths = Array.from(
-    { length: 29 },
+    { length: 30 },
     (_, i) => `/assets/carousel/${i + 2}.JPG`
   );
 
@@ -383,12 +388,19 @@ export default function CompetitionInfo() {
       quote:
         "Desde mi experiencia como monitora y jurado en la feria gamer, considero que este espacio, si bien aún presenta muchas oportunidades para mejorar y crecer, también representa una gran oportunidad para mostrar a las demás carreras los proyectos desarrollados por los alumnos. Además, permite que tanto participantes como visitantes observen, reflexionen y aprecien de primera mano cómo se evidencian los avances en resultados a medida que se progresa de semestre.",
     },
+    {
+      id: 2,
+      name: "Margarita Gamarra Acosta",
+      role: "Profesora Departamento de Ingeniería de Sistemas y Computación",
+      quote:
+        "Para mi la feria gamer es una muestra del trabajo, esfuerzo y pasión de todos los estudiantes participantes. El trabajo en equipo se ve reflejado en los excelentes resultados que muestran en cada uno de sus videojuegos, esta es ya la tercera versión de la feria y cada vez quedo mas sorprendida con las presentaciones y la creatividad de los trabajos que presentan, cada semestre agregan nuevas y mejores herramientas a los videojuegos y este semestre se unen mas estudiantes interesados en participar, este semestre queremos brindarle un espacio habierto para toda la comunidad uninorteña, para que los proyectos sean visibles ante toda la comunidad académica.",
+    },
   ];
 
   return (
     <>
       <NavBar />
-      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
+      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden dark">
         <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
           style={{ backgroundImage: "url('/background.webp')" }}
@@ -492,7 +504,7 @@ export default function CompetitionInfo() {
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
               <p className="text-gray-300 mb-4">
-                Disfruta de múltiples actividades durante los tres días del
+                Disfruta de múltiples actividades durante el día del
                 evento:
               </p>
               <ul className="space-y-2 text-gray-300">
@@ -502,11 +514,11 @@ export default function CompetitionInfo() {
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Zona retro gaming</span>
+                  <span>Stands de Videojuegos</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
-                  <span>Talleres de desarrollo de videojuegos</span>
+                  <span>Y mucho más...</span>
                 </li>
               </ul>
             </div>
@@ -515,7 +527,7 @@ export default function CompetitionInfo() {
 
 
           {/* Registration Section */}
-          <div className="w-full max-w-4xl mt-16">
+          {/* <div className="w-full max-w-4xl mt-16">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -534,15 +546,10 @@ export default function CompetitionInfo() {
                       Registrarse
                     </button>
                   </Link>
-                  <Link to="/informacion">
-                    <button className="px-6 py-3 border border-[#AC7CFF] text-[#AC7CFF] hover:bg-[#110D20] font-medium rounded-lg transition-colors cursor-pointer">
-                      Más información
-                    </button>
-                  </Link>
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">
@@ -551,14 +558,16 @@ export default function CompetitionInfo() {
               <p className="text-gray-300">
                 Para más información contacta a:{" "}
                 <span className="text-[#AC7CFF]">
-                  feriagamer@uninorte.edu.co
+                  djromero@uninorte.edu.co
                 </span>
               </p>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
+              © 2025 Arkad. Todos los derechos reservados.
             </p>
           </div>
+          <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>

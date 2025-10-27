@@ -1,129 +1,146 @@
 "use client";
 
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { JuryManagementTable, Data } from "../../components/grupo 12/JuryManagementTable"; // Adjust path if needed
+import { JuryManagementTable } from "../../components/grupo 12/JuryManagementTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import {
+  formatDate,
+  mapConfirmationStatus,
+} from "../../components/grupo 12/utils"; // Adjust path if needed
+import { JurorRowData, PaginatedJurors } from "../../components/grupo 12/utils";
 
 const JuryManagementPage = () => {
-  const [data, setData] = useState<Data | null>(null);
+  // const [data, setData] = useState<Data | null>(null);
+  const [jurorsData, setJurorsData] = useState<PaginatedJurors | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10, // Default items per page
+  });
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
-  const API_ENDPOINT = "http://localhost:3000/juror";
-  const API_BASE_URL = "http://localhost:3000";
-  const TABLE_RESOURCE_NAME = "juror";
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
+  const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+
+  const fetchJurors = async (page: number, limit: number) => {
+    setIsPageLoading(true);
+    setError(null);
+    const includeInactive = false;
+
+    try {
+      const res = await fetch(
+        `${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!res.ok) {
+        let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
+        try {
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+        } catch (e) {
+          /* ignore */
+        }
+        throw new Error(errorMsg);
+      }
+
+      const dataRespond: PaginatedJurors = await res.json();
+      console.log("dataRespond", dataRespond);
+
+      // If the current page is empty (e.g., after deleting the last item)
+      // and it's not the first page, fetch the previous page.
+      if (
+        dataRespond.data.length === 0 &&
+        page > 1 &&
+        dataRespond.metadata.totalItems > 0
+      ) {
+        // Check totalItems to prevent infinite loop if backend returns 0 items always
+        return fetchJurors(page - 1, limit);
+      }
+
+      dataRespond.data = dataRespond.data.map(
+        (jurado: any): JurorRowData => ({
+          ...jurado,
+          confirmationStatusId: mapConfirmationStatus(
+            jurado.confirmationStatusId
+          ),
+          lastSignInAt: formatDate(jurado.lastSignInAt),
+        })
+      );
+
+      setJurorsData(dataRespond);
+
+    } catch (err: any) {
+      console.error("Error fetching jurors:", err);
+      setError(
+        err.message || "An unknown error occurred while loading the jurors."
+      );
+      setJurorsData(null);
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
+  const refreshData = () => {
+    setRefreshFlag((prev) => !prev); // Toggle flag to re-trigger useEffect
+  };
 
   useEffect(() => {
-    const fetchJurados = async () => {
-      setIsPageLoading(true);
-      setError(null);
-      setData(null);
+    fetchJurors(pagination.page, pagination.limit);
+  }, [pagination.page, pagination.limit, refreshFlag]);
 
-      try {
-        const includeInactive = false;
-        const res = await fetch(
-          `${API_ENDPOINT}?includeInactive=${includeInactive}&limit=50&page=1`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
 
-        if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
-          try {
-            const errorBody = await res.json();
-            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          } catch (e) {
-            /* ignore */
-          }
-          throw new Error(errorMsg);
-        }
-
-        // Expecting an array where each object has an 'active' boolean property
-        const dataRespond = await res.json(); // Use the more specific type
-        for (const jurado of dataRespond.data) {
-          jurado._count = jurado._count.evaluationsSubmitted;
-
-          switch (jurado.confirmationStatusId) {
-            case 1:
-              jurado.confirmationStatusId = "Aceptado";
-              break;
-            case 2:
-              jurado.confirmationStatusId = "Pendiente";
-              break;
-            default:
-              jurado.confirmationStatusId = "Expirado";
-          }
-
-          jurado.lastSignInAt = new Date(jurado.lastSignInAt).toLocaleString(
-            "es-ES",
-            {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          );
-        }
-        setData({
-          // Optional: Update title to reflect filtering
-          titulo: "Jurados",
-          nombreTabla: TABLE_RESOURCE_NAME,
-          nombreColumnas: {
-            id: "ID",
-            name: "Nombre",
-            email: "Correo",
-            confirmationStatusId: "Estado",
-            lastSignInAt: "Última actualización",
-            _count: "Juegos revisados",
-          },
-          // Pass the FILTERED array to the table
-          filas: dataRespond.data,
-          primaryKey: "id", // Ensure 'id' exists in your RowData
-        });
-      } catch (err: any) {
-        console.error("Error fetching jurors:", err);
-        setError(
-          err.message || "An unknown error occurred while loading the jurors."
-        );
-        setData(null);
-      } finally {
-        setIsPageLoading(false);
-      }
-    };
-
-    fetchJurados();
-  }, []); // Empty dependency array
+  const handleLimitChange = (newLimit: number) => {
+    // Reset to page 1 when limit changes to avoid being on an invalid page
+    setPagination({ page: 1, limit: newLimit });
+  };
 
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      {/* Error display */}
-      {error && !data && (
-        <div
-          className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-          role="alert"
-        >
-          <span className="font-medium">Error:</span> {error}
-        </div>
-      )}
+      {isPageLoading && !jurorsData ? (
+        <LoadingScreen text="Cargando jurados..." />
+      ) : (
+        <>
+          {/* Error display */}
+          {error && !jurorsData && (
+            <div
+              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+              role="alert"
+            >
+              <span className="font-medium">Error:</span> {error}
+            </div>
+          )}
 
-      {/* Tabla component receives already filtered data */}
-      <JuryManagementTable
-        data={data}
-        apiBaseUrl={API_BASE_URL}
-        isDataLoading={isPageLoading}
-      />
+          {jurorsData && (
+            <JuryManagementTable
+              jurors={jurorsData.data} // Pass only the data array for the current page
+              paginationMeta={jurorsData.metadata} // Pass pagination metadata
+              apiBaseUrl={API_BASE_URL}
+              isDataLoading={isPageLoading} // To show loader in table while fetching new page data
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              refreshData={refreshData} // Pass the refresh function
+            />
+          )}
 
-      {/* No results message (will show if activeRows is empty) */}
-      {!isPageLoading && !error && data && data.filas.length === 0 && (
-        <div className="p-4 text-center text-gray-500">
-          No se encontraron jurados. {/* Optional: Update message */}
-        </div>
+          {/* No results message (will show if activeRows is empty) */}
+          {!isPageLoading && !error && jurorsData && jurorsData.metadata.totalItems === 0 && (
+            <div className="p-4 text-center text-gray-500">
+              No se encontraron jurados. {/* Optional: Update message */}
+            </div>
+          )}
+        </>
       )}
     </LayoutAplication>
   );

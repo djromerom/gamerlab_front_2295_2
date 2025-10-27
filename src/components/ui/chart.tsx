@@ -1,31 +1,35 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import type { LegendProps } from "recharts"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 // Definición de tipos
 export interface ChartConfig {
   [key: string]: {
-    label: string
-    color?: string
-  }
+    label: string;
+    color?: string;
+  };
 }
 
 // ChartContainer
 interface ChartContainerProps extends React.HTMLAttributes<HTMLDivElement> {
-  config: ChartConfig
+  config: ChartConfig;
 }
 
-export function ChartContainer({ config, className, children, ...props }: ChartContainerProps) {
+export function ChartContainer({
+  config,
+  className,
+  children,
+  ...props
+}: ChartContainerProps) {
   // Crear variables CSS para los colores
   const style = React.useMemo(() => {
     return Object.entries(config).reduce(
       (acc, [key, value]) => {
         if (value.color) {
-          acc[`--color-${key}`] = value.color
+          acc[`--color-${key}`] = value.color;
         }
-        return acc
+        return acc;
       },
       {
         // Añadir colores por defecto para las variables de chart
@@ -34,53 +38,48 @@ export function ChartContainer({ config, className, children, ...props }: ChartC
         "--chart-3": "197 37% 24%",
         "--chart-4": "43 74% 66%",
         "--chart-5": "27 87% 67%",
-      } as Record<string, string>,
-    )
-  }, [config])
+      } as Record<string, string>
+    );
+  }, [config]);
 
   return (
     <div className={cn("w-full h-full", className)} style={style} {...props}>
       {children}
     </div>
-  )
+  );
 }
 
 // ChartTooltip
 interface ChartTooltipProps {
-  className?: string
-  content?: React.ReactNode
-  cursor?: boolean | React.ReactNode
-  defaultIndex?: number
-  offset?: number
-  wrapperClassName?: string
-  [key: string]: any
+  className?: string;
+  content?: React.ReactNode;
+  cursor?: boolean | React.ReactNode;
+  defaultIndex?: number;
+  offset?: number;
+  wrapperClassName?: string;
+  [key: string]: any;
 }
 
 export function ChartTooltip({
-  className,
   content = <ChartTooltipContent />,
-  cursor = true,
-  defaultIndex,
-  offset = 10,
-  wrapperClassName,
-  ...props
 }: ChartTooltipProps) {
-  return content
+  return content;
 }
 
 // ChartTooltipContent
 interface ChartTooltipContentProps {
-  active?: boolean
+  active?: boolean;
   payload?: Array<{
-    name: string
-    value: number
+    name: string;
+    value: number;
     payload: {
-      [key: string]: any
-    }
-  }>
-  label?: string
-  className?: string
-  hideLabel?: boolean
+      [key: string]: any;
+    };
+    color?: string;
+  }>;
+  label?: string;
+  className?: string;
+  hideLabel?: boolean;
 }
 
 export function ChartTooltipContent({
@@ -91,12 +90,16 @@ export function ChartTooltipContent({
   hideLabel = false,
 }: ChartTooltipContentProps) {
   if (!active || !payload?.length) {
-    return null
+    return null;
   }
 
   return (
-    <div className={cn("rounded-lg border bg-background p-2 shadow-sm", className)}>
-      {!hideLabel && label ? <div className="text-xs font-medium">{label}</div> : null}
+    <div
+      className={cn("rounded-lg border bg-background p-2 shadow-sm", className)}
+    >
+      {!hideLabel && label ? (
+        <div className="text-xs font-medium">{label}</div>
+      ) : null}
       <div className="flex flex-col gap-0.5">
         {payload.map((item, index) => (
           <div key={index} className="flex items-center gap-2 text-xs">
@@ -113,43 +116,47 @@ export function ChartTooltipContent({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-// ChartLegend
-interface ChartLegendProps extends LegendProps {
-  className?: string
-}
-
-export function ChartLegend({ className, ...props }: ChartLegendProps) {
-  return <div className={cn("flex items-center justify-center gap-4", className)} {...props} />
+export function ChartLegend({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex items-center justify-center gap-4", className)} />
+  );
 }
 
 // ChartLegendContent
 interface ChartLegendContentProps {
   payload?: Array<{
-    value: string
-    type: string
-    id: string
-    color: string
-  }>
-  className?: string
-  nameKey?: string
+    value: string;
+    type: string;
+    id: string;
+    color: string;
+  }>;
+  className?: string;
+  nameKey?: string;
 }
 
-export function ChartLegendContent({ payload, className, nameKey = "value" }: ChartLegendContentProps) {
+export function ChartLegendContent({
+  payload,
+  className,
+  nameKey = "value",
+}: ChartLegendContentProps) {
   if (!payload?.length) {
-    return null
+    return null;
   }
 
   return (
     <div className={cn("flex flex-wrap items-center gap-4", className)}>
       {payload.map((entry, index) => (
         <div key={`item-${index}`} className="flex items-center gap-1 text-sm">
-          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <div
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: entry.color }}
+          />
           <span>{entry[nameKey as keyof typeof entry] || entry.value}</span>
         </div>
       ))}
     </div>
-  )
+  );
 }

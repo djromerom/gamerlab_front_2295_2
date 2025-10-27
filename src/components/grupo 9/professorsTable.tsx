@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -53,44 +54,46 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProfessorRowData } from "@/pages/grupo 9/professorsPage";
+import { ProfessorRowData } from "@/pages/grupo 9/professorsPage"; // Adjust path as needed
 
 interface ProfessorFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
 }
 
-interface Props {
-  professors: ProfessorRowData[] | null;
-  apiBaseUrl: string;
-  isDataLoading?: boolean;
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
-  rowsPerPage: number;
-  setRowsPerPage: (rows: number) => void;
-  totalPages: number;
+interface PaginationMetadata {
   totalItems: number;
-  onDataChange: () => void;
-  onProfessorUpdate: (professor: ProfessorRowData) => void;
+  itemsOnCurrentPage: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+}
+
+interface Props {
+  professors: ProfessorRowData[] | null; // Now receives only the current page's data
+  paginationMeta: PaginationMetadata; // Receives pagination metadata from parent
+  apiBaseUrl: string;
+  isDataLoading?: boolean; // For the table to show a loader when parent is fetching
+  onPageChange: (page: number) => void; // Callback to parent
+  onLimitChange: (limit: number) => void; // Callback to parent
+  refreshData: () => void; // Callback to parent
 }
 
 export const ProfessorsTable: React.FC<Props> = ({
   professors,
+  paginationMeta,
   apiBaseUrl,
   isDataLoading = false,
-  currentPage,
-  setCurrentPage,
-  rowsPerPage,
-  setRowsPerPage,
-  totalPages,
-  totalItems,
-  onDataChange,
-  onProfessorUpdate,
+  onPageChange,
+  onLimitChange,
+  refreshData,
 }) => {
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newProfessor, setNewProfessor] = useState<ProfessorFormData>({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -98,19 +101,33 @@ export const ProfessorsTable: React.FC<Props> = ({
     useState<ProfessorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
 
+  // isDataLoading from props indicates parent is fetching (e.g., new page)
+  // internalIsLoading is for this component's own async operations (add, edit, delete)
   const showLoader = isDataLoading || internalIsLoading;
 
-  const columns = [
-    { key: "name", label: "Nombre" },
-    { key: "email", label: "Email" },
+  const showError = (errorMessage: string) => {
+    toast.error(errorMessage);
+  };
+
+  const columnsToDisplay = [
+    {
+      key: "fullName",
+      label: "Nombre",
+      renderCell: (professor: ProfessorRowData) =>
+        `${professor.firstName} ${professor.lastName}`,
+    },
+    {
+      key: "email",
+      label: "Email",
+      renderCell: (professor: ProfessorRowData) => professor.email,
+    },
     {
       key: "confirmationStatusId",
       label: "Estado de Confirmación",
-      render: (value: number) => {
-        switch (value) {
+      renderCell: (professor: ProfessorRowData) => {
+        switch (professor.confirmationStatusId) {
           case 1:
             return "CONFIRMADO";
           case 2:
@@ -118,7 +135,7 @@ export const ProfessorsTable: React.FC<Props> = ({
           case 3:
             return "EXPIRADO";
           default:
-            return "DESCONOCIDO";
+            return professor.confirmationStatusId?.toString() || "DESCONOCIDO";
         }
       },
     },
@@ -127,33 +144,43 @@ export const ProfessorsTable: React.FC<Props> = ({
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
-    setError(null);
 
     try {
       if (!newProfessor.email.includes("@")) {
-        throw new Error("El email debe ser válido");
+        throw new Error("El email debe ser válido.");
+      }
+      if (!newProfessor.firstName.trim()) {
+        throw new Error("El campo Nombres es requerido.");
+      }
+      if (!newProfessor.lastName.trim()) {
+        throw new Error("El campo Apellidos es requerido.");
       }
 
       const response = await customFetch(`${apiBaseUrl}/professors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newProfessor.name,
+          firstName: newProfessor.firstName,
+          lastName: newProfessor.lastName,
           email: newProfessor.email,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al crear el profesor");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al crear el profesor." }));
+        throw new Error(errorData.message || "Error al crear el profesor.");
       }
 
-      await response.json();
-      setNewProfessor({ name: "", email: "" });
+      // const createdProfessor: ProfessorRowData = await response.json(); // Not strictly needed to update local state here
+      setNewProfessor({ firstName: "", lastName: "", email: "" });
       setAddDialogOpen(false);
-      onDataChange();
+      toast.success("Profesor agregado exitosamente.");
+      onPageChange(1); // Go to first page to see the new professor, or just refresh
+      refreshData(); // Tell parent to refetch data
     } catch (err: any) {
-      setError(err.message || "Error al agregar el profesor");
+      showError(err.message || "Error al agregar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -164,12 +191,16 @@ export const ProfessorsTable: React.FC<Props> = ({
     if (!editingProfessor) return;
 
     setInternalIsLoading(true);
-    setError(null);
 
     try {
-      if (!editingProfessor.email.includes("@")) {
-        throw new Error("El email debe ser válido");
+      if (!editingProfessor.firstName.trim()) {
+        throw new Error("El campo Nombres es requerido.");
       }
+      if (!editingProfessor.lastName.trim()) {
+        throw new Error("El campo Apellidos es requerido.");
+      }
+      // Email is typically not editable after creation or handled differently
+      // For now, only first and last name are editable as per your original code.
 
       const response = await customFetch(
         `${apiBaseUrl}/professors/${editingProfessor.id}`,
@@ -177,23 +208,29 @@ export const ProfessorsTable: React.FC<Props> = ({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: editingProfessor.name,
-            email: editingProfessor.email,
+            firstName: editingProfessor.firstName,
+            lastName: editingProfessor.lastName,
+            // email: editingProfessor.email, // If email is editable
           }),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al actualizar el profesor");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al actualizar el profesor." }));
+        throw new Error(
+          errorData.message || "Error al actualizar el profesor."
+        );
       }
 
-      const updatedProfessor: ProfessorRowData = await response.json();
-      onProfessorUpdate(updatedProfessor);
+      // const updatedProfessor: ProfessorRowData = await response.json(); // Not strictly needed here
       setEditDialogOpen(false);
       setEditingProfessor(null);
+      toast.success("Profesor actualizado exitosamente.");
+      refreshData(); // Tell parent to refetch data
     } catch (err: any) {
-      setError(err.message || "Error al actualizar el profesor");
+      showError(err.message || "Error al actualizar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -201,51 +238,73 @@ export const ProfessorsTable: React.FC<Props> = ({
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
-
     setInternalIsLoading(true);
-    setError(null);
-
     try {
       const response = await customFetch(
-        `${apiBaseUrl}/professors/${deletingId}`,
+        `${apiBaseUrl}/professors/${deletingId}`, // This should be a DELETE or a PATCH to an /inactive endpoint
         {
-          method: "DELETE",
+          method: "DELETE", // Assuming hard delete, or PATCH for soft delete
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al desactivar el profesor");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error al eliminar el profesor." }));
+        throw new Error(errorData.message || "Error al eliminar el profesor.");
       }
 
-      onDataChange();
       setDeleteDialogOpen(false);
       setDeletingId(null);
+      toast.success("Profesor eliminado exitosamente.");
+      refreshData(); // Tell parent to refetch, which handles page adjustment if needed
     } catch (err: any) {
-      setError(err.message || "Error al desactivar el profesor");
+      showError(err.message || "Error al eliminar el profesor.");
     } finally {
       setInternalIsLoading(false);
     }
   };
 
-  const displayProfessors = professors || [];
+  const handleResendEmail = async (professorId: string) => {
+    setInternalIsLoading(true);
+    try {
+      const response = await customFetch(
+        `${apiBaseUrl}/auth/reset-token-expiration`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: professorId }),
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al reenviar el correo");
+      }
+      toast.success("Correo reenviado exitosamente");
+      refreshData(); // Actualizar los datos si es necesario
+    } catch (err: any) {
+      showError(err.message || "Error al reenviar el correo de confirmación");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader && !internalIsLoading ? "opacity-75" : ""
-        }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${
+        showLoader ? "opacity-75 pointer-events-none" : "" // Added pointer-events-none
+      }`}
     >
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Profesores</h1>
-
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
-              disabled={showLoader}
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
+              disabled={showLoader} // Disable if any loading is happening
             >
-              <Plus className="mr-2 h-4 w-4" /> Agregar Profesor
+              <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -256,56 +315,84 @@ export const ProfessorsTable: React.FC<Props> = ({
                   Complete los datos del nuevo profesor.
                 </DialogDescription>
               </DialogHeader>
-              {error && !internalIsLoading && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
-                {columns
-                  .filter((c) => c.key !== "confirmationStatusId")
-                  .map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-4 items-center gap-4"
-                    >
-                      <Label htmlFor={`add-${key}`} className="text-right">
-                        {label}
-                      </Label>
-                      <Input
-                        id={`add-${key}`}
-                        value={
-                          newProfessor[key as keyof ProfessorFormData] || ""
-                        }
-                        onChange={(e) =>
-                          setNewProfessor((prev) => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        className="col-span-3"
-                        required
-                        type={key === "email" ? "email" : "text"}
-                      />
-                    </div>
-                  ))}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-firstName" className="text-right">
+                    Nombres
+                  </Label>
+                  <Input
+                    id="add-firstName"
+                    value={newProfessor.firstName}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                    disabled={internalIsLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-lastName" className="text-right">
+                    Apellidos
+                  </Label>
+                  <Input
+                    id="add-lastName"
+                    value={newProfessor.lastName}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                    disabled={internalIsLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="add-email"
+                    type="email"
+                    value={newProfessor.email}
+                    onChange={(e) =>
+                      setNewProfessor((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="col-span-3"
+                    required
+                    disabled={internalIsLoading}
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button
                   type="button"
+                  className="cursor-pointer"
                   variant="outline"
                   onClick={() => {
                     setAddDialogOpen(false);
-                    setError(null);
-                    setNewProfessor({ name: "", email: "" });
+                    setNewProfessor({ firstName: "", lastName: "", email: "" });
                   }}
                   disabled={internalIsLoading}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
+                  {internalIsLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {internalIsLoading ? "Guardando..." : "Guardar"}
                 </Button>
               </DialogFooter>
@@ -318,17 +405,17 @@ export const ProfessorsTable: React.FC<Props> = ({
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {columns.map(({ key, label }) => (
+              {columnsToDisplay.map(({ key, label }) => (
                 <TableHead key={key}>{label}</TableHead>
               ))}
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[50px] text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isDataLoading && !internalIsLoading ? (
+            {showLoader && (!professors || professors.length === 0) ? ( // Show loader if loading and no rows yet for current page
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + 1}
+                  colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
                   <div className="flex justify-center items-center gap-2">
@@ -337,124 +424,143 @@ export const ProfessorsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : displayProfessors.length === 0 ? (
+            ) : !showLoader && (!professors || professors.length === 0) ? ( // No data and not loading
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + 1}
+                  colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay profesores disponibles.
+                  No hay profesores para mostrar en esta página.
                 </TableCell>
               </TableRow>
             ) : (
-              displayProfessors.map((professor) => (
-                <TableRow key={professor.id}>
-                  {columns.map(({ key, render }) => (
-                    <TableCell key={key}>
-                      {render
-                        ? render(
-                          professor[key as keyof ProfessorRowData] as number
-                        )
-                        : professor[
-                          key as keyof ProfessorRowData
-                        ]?.toString()}
+              professors?.map(
+                (
+                  professor // Render rows if professors array is not null/empty
+                ) => (
+                  <TableRow key={professor.id}>
+                    {columnsToDisplay.map(({ key, renderCell }) => (
+                      <TableCell key={key}>{renderCell(professor)}</TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingProfessor(professor);
+                              setEditDialogOpen(true);
+                            }}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          {professor.confirmationStatusId === 2 && ( // Solo mostrar si el estado es PENDIENTE
+                            <DropdownMenuItem
+                              onClick={() => handleResendEmail(professor.id)}
+                              disabled={internalIsLoading}
+                              className="cursor-pointer text-blue-600 focus:text-blue-700 focus:bg-blue-50"
+                            >
+                              Reenviar correo
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingId(professor.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            {professor.isActive
+                              ? "Desactivar"
+                              : "Eliminar Def."}{" "}
+                            {/* Or just "Eliminar" */}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
-                  ))}
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingProfessor(professor);
-                            setEditDialogOpen(true);
-                            setError(null);
-                          }}
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setDeletingId(professor.id);
-                            setDeleteDialogOpen(true);
-                            setError(null);
-                          }}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100"
-                          disabled={internalIsLoading || isDataLoading}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                  </TableRow>
+                )
+              )
             )}
           </TableBody>
         </Table>
 
-        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-          <div className="flex items-center gap-2">
-            <span>Filas por página</span>
-            <Select
-              value={rowsPerPage.toString()}
-              onValueChange={(value) => {
-                setRowsPerPage(parseInt(value, 10));
-              }}
-              disabled={showLoader || totalItems === 0}
-            >
-              <SelectTrigger className="w-[70px]">
-                <SelectValue placeholder={rowsPerPage} />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>
-              Página {totalPages > 0 ? currentPage : 0} de {totalPages}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={
-                  currentPage === 1 || showLoader || totalItems === 0
-                }
-                variant="outline"
-                size="icon"
+        {/* Pagination Controls - Driven by paginationMeta from props */}
+        {paginationMeta && paginationMeta.totalItems > 0 && (
+          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+            <div className="flex items-center gap-2">
+              <span>Filas por página</span>
+              <Select
+                value={paginationMeta.itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  onLimitChange(parseInt(value, 10));
+                }}
+                disabled={showLoader}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={
-                  currentPage === totalPages || totalPages === 0 || showLoader
-                }
-                variant="outline"
-                size="icon"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <SelectTrigger className="w-[70px] cursor-pointer">
+                  <SelectValue placeholder={paginationMeta.itemsPerPage} />
+                </SelectTrigger>
+                <SelectContent>
+                  {[5, 10, 15, 20].map((n) => (
+                    <SelectItem
+                      className="cursor-pointer"
+                      key={n}
+                      value={n.toString()}
+                    >
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>
+                Página{" "}
+                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
+                de {paginationMeta.totalPages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  onClick={() => onPageChange(paginationMeta.currentPage - 1)}
+                  disabled={paginationMeta.currentPage === 1 || showLoader}
+                  variant="outline"
+                  size="icon"
+                  className="cursor-pointer"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => onPageChange(paginationMeta.currentPage + 1)}
+                  disabled={
+                    paginationMeta.currentPage === paginationMeta.totalPages ||
+                    paginationMeta.totalPages === 0 ||
+                    showLoader
+                  }
+                  variant="outline"
+                  size="icon"
+                  className="cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           {editingProfessor && (
@@ -462,61 +568,55 @@ export const ProfessorsTable: React.FC<Props> = ({
               <DialogHeader>
                 <DialogTitle>Editar Profesor</DialogTitle>
                 <DialogDescription>
-                  Modifique los campos del profesor según sea necesario.
+                  Modifique los datos del profesor. El email no se puede editar.
                 </DialogDescription>
               </DialogHeader>
-              {error && !internalIsLoading && (
-                <div className="px-6 py-2">
-                  <p className="text-sm text-red-600 dark:text-red-500">
-                    {error}
-                  </p>
-                </div>
-              )}
               <div className="grid gap-4 py-4 px-6">
-                {columns
-                  .filter((c) => c.key === "name")
-                  .map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-4 items-center gap-4"
-                    >
-                      <Label htmlFor={`edit-${key}`} className="text-right">
-                        {label}
-                      </Label>
-                      <Input
-                        id={`edit-${key}`}
-                        value={
-                          editingProfessor[
-                            key as keyof ProfessorRowData
-                          ]?.toString() || ""
-                        }
-                        onChange={(e) =>
-                          setEditingProfessor((prev) =>
-                            prev ? { ...prev, [key]: e.target.value } : null
-                          )
-                        }
-                        className="col-span-3"
-                        required
-                        type={key === "email" ? "email" : "text"}
-                      />
-                    </div>
-                  ))}
-                {/* Email field for editing, assuming it's also editable */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-firstName" className="text-right">
+                    Nombres
+                  </Label>
+                  <Input
+                    id="edit-firstName"
+                    value={editingProfessor.firstName || ""}
+                    onChange={(e) =>
+                      setEditingProfessor((prev) =>
+                        prev ? { ...prev, firstName: e.target.value } : null
+                      )
+                    }
+                    className="col-span-3"
+                    required
+                    disabled={internalIsLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-lastName" className="text-right">
+                    Apellidos
+                  </Label>
+                  <Input
+                    id="edit-lastName"
+                    value={editingProfessor.lastName || ""}
+                    onChange={(e) =>
+                      setEditingProfessor((prev) =>
+                        prev ? { ...prev, lastName: e.target.value } : null
+                      )
+                    }
+                    className="col-span-3"
+                    required
+                    disabled={internalIsLoading}
+                  />
+                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-email" className="text-right">
                     Email
                   </Label>
                   <Input
                     id="edit-email"
-                    value={editingProfessor.email || ""}
-                    onChange={(e) =>
-                      setEditingProfessor((prev) =>
-                        prev ? { ...prev, email: e.target.value } : null
-                      )
-                    }
-                    className="col-span-3"
-                    required
                     type="email"
+                    value={editingProfessor.email || ""}
+                    className="col-span-3"
+                    disabled // Email is typically not editable
+                    readOnly
                   />
                 </div>
               </div>
@@ -526,14 +626,21 @@ export const ProfessorsTable: React.FC<Props> = ({
                   variant="outline"
                   onClick={() => {
                     setEditDialogOpen(false);
-                    setError(null);
                     setEditingProfessor(null);
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
+                  {internalIsLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -542,36 +649,36 @@ export const ProfessorsTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Delete/Deactivate Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción desactivará al profesor. No podrá deshacer esta acción directamente aquí.
+              Esta acción eliminará (o desactivará) al profesor. Confirme para
+              proceder.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !internalIsLoading && (
-            <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
-              {error}
-            </p>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setDeleteDialogOpen(false);
-                setError(null);
                 setDeletingId(null);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
-              {internalIsLoading ? "Eliminando..." : "Confirmar"}
+              {internalIsLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {internalIsLoading ? "Procesando..." : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading";
@@ -13,11 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
-export default function LoginPage({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export default function LoginPage() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -44,9 +49,9 @@ export default function LoginPage({
   };
 
   return (
-    <div className="relative min-h-screen dark">
+    <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
       <div
-        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float bg-black"
+        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat  animate-float"
         style={{
           backgroundImage: "url('/background.webp')",
         }}
@@ -70,7 +75,7 @@ export default function LoginPage({
               Introduce tu correo electrónico para acceder a tu cuenta
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="w-full p-0">
             <form onSubmit={handleLogIn}>
               <div className="flex flex-col gap-4 sm:gap-6 items-center w-full">
@@ -100,14 +105,18 @@ export default function LoginPage({
                     className="w-full"
                   />
                 </div>
-                {error && <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">{error}</p>}
+                {error && (
+                  <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">
+                    {error}
+                  </p>
+                )}
                 <div className="w-full mt-2 sm:mt-4">
                   {isSubmitting ? (
                     <ButtonLoading className="w-full" />
                   ) : (
                     <Button
                       type="submit"
-                      className="w-full bg-[#B3C7FF] text-base sm:text-[20px] hover:bg-[#8a70ff]"
+                      className="w-full bg-[#B3C7FF] text-base sm:text-[20px] hover:bg-[#8a70ff] cursor-pointer"
                       disabled={isSubmitting}
                     >
                       Ingresar
@@ -118,6 +127,7 @@ export default function LoginPage({
             </form>
           </CardContent>
         </Card>
+        <TextSizeControls />
       </div>
     </div>
   );

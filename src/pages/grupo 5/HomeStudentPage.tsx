@@ -1,5 +1,4 @@
 import type React from "react";
-import Review from "@/components/grupo 5/Review";
 import Scoreboard from "@/components/grupo 5/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { useLocation } from "react-router-dom";
@@ -20,15 +19,14 @@ const HomeStudentPage: React.FC = () => {
       : isProfesor
       ? [
           { label: "Lista", href: nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor" },
-          { label: "Nota", href: location.pathname + location.search },
+          { label: "Notas", href: location.pathname + location.search },
         ]
-      : [{ label: "Nota", href: location.pathname + location.search }];
+      : [{ label: "Notas", href: location.pathname + location.search }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="flex flex-col gap-4">
+      <div className="">
         <Scoreboard />
-        <Review />
       </div>
     </LayoutAplication>
   );

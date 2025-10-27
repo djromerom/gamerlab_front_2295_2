@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import PurpleButton from "./PurpleButton";
 
 export default function navBar(): React.ReactElement {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const navigate = useNavigate(); // If you want to use it manually (not mandatory here, but I'll leave it in case you want to use navigate())
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">
@@ -30,7 +29,7 @@ export default function navBar(): React.ReactElement {
               to="/equipos"
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
-              Equipos
+              Videojuegos
             </Link>
             <Link
               to="/ranking"
@@ -49,6 +48,12 @@ export default function navBar(): React.ReactElement {
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
               Ediciones Pasadas
+            </Link>
+            <Link
+              to="/contribuidores"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
             </Link>
           </nav>
 
@@ -76,11 +81,11 @@ export default function navBar(): React.ReactElement {
         >
           <nav className="flex flex-col space-y-4 pb-4 pt-6">
             <Link
-              to="/features"
+              to="/equipos"
               onClick={() => setIsMenuOpen(false)}
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
-              Equipos
+              Videojuegos
             </Link>
             <Link
               to="/ranking"
@@ -95,6 +100,14 @@ export default function navBar(): React.ReactElement {
               className="text-sm text-gray-300 hover:text-white transition-colors"
             >
               Información
+            </Link>
+            <Link
+              to="/contribuidores"
+
+              onClick={() => setIsMenuOpen(false)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Contribuidores
             </Link>
           </nav>
         </div>

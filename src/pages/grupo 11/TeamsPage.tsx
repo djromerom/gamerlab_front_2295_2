@@ -1,4 +1,3 @@
-// ViewTeams.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
@@ -8,6 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
+import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 export interface Team {
@@ -19,22 +21,41 @@ export interface Team {
 }
 
 export default function TeamsPage() {
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const customFetch = useFetch();
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   useEffect(() => {
     async function fetchTeams() {
       setLoading(true);
-      const res = await customFetch("http://localhost:3000/videogames", {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       const rawData = await res.json();
-      const data: Team[] = rawData.map((team) => ({
+      interface RawTeam {
+        id: number;
+        name: string;
+        teamName: string;
+        status: string;
+        logoUrl: string;
+      }
+
+      const data: Team[] = rawData.map((team: RawTeam) => ({
         id: team.id,
         gameName: team.name,
         teamName: team.teamName,
@@ -58,29 +79,24 @@ export default function TeamsPage() {
   };
 
   return (
-    <main
-      className="min-h-screen py-23 px-4 md:px-8 bg-black dark"
-      style={{
-        backgroundImage: "url('/background.webp')",
-        backgroundSize: "150%",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
+        style={{ backgroundImage: "url('/background.webp')" }}
+      >
+        <div className="absolute inset-0"></div>
+      </div>
       <NavBar />
-      <div className="max-w-7xl mx-auto">
-        <h1
-          className="text-4xl md:text-5xl font-bold text-center mb-16 text-[#AC7CFF]"
-        >
-          ¡Echa un vistazo a los equipos participantes!
+      <div className=" max-w-7xl mx-auto relative z-10 items-center p-4 pb-12 pt-30 text-white">
+        <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
+          ¡Echa un vistazo a los videojuegos participantes!
         </h1>
 
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
 
         <div className="relative">
           {loading ? (
-            <div className="text-center py-20 text-xl text-white animate-pulse">
-              Cargando equipos...
-            </div>
+            <TeamSkeletonGrid />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
@@ -90,7 +106,9 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
-    </main>
+      <TextSizeControls />
+      <DiscordButton discordUrl={discordSupportUrl} />
+    </div>
   );
 }
 
@@ -110,12 +128,16 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
           type="text"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          placeholder="Busca por ID o nombre de equipo"
+          placeholder="Busca por nombre de equipo o videojuego"
           className="w-64 md:w-96 pl-10"
         />
       </div>
-      <Button variant="outline" onClick={() => onFilter(filterText)}>
-        Filtrar
+      <Button
+        variant="outline"
+        className="cursor-pointer"
+        onClick={() => onFilter(filterText)}
+      >
+        Buscar
       </Button>
     </div>
   );
@@ -142,7 +164,10 @@ function TeamCard({ team }: TeamCardProps) {
     <Card>
       <CardContent className="flex space-x-5 py-5 px-7">
         <Avatar className="w-20 h-20">
-          <AvatarImage src={team.image} alt={team.teamName} />
+          <AvatarImage
+            src={team.image || "/placeholder.svg"}
+            alt={team.teamName}
+          />
           <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="space-y-1">

@@ -1,4 +1,4 @@
-// MultiStepWizard.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,55 +8,77 @@ import { MultiFormProvider } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
 import { useState } from "react";
-import supabase from "@/supabase/client";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
-
-const BUCKET_NAME = "imagenes";
+import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const customFetch = useFetch();
   const navigate = useNavigate();
   const methods = useForm<CombinedFormValues>({
-    resolver: zodResolver(CombinedSchema),
+    resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
     defaultValues: {
       teamName: "",
       members: [
-        { nombre: "", apellido: "", correo: "", codigoEstudiantil: "", nrc: [] },
+        {
+          nombre: "",
+          apellido: "",
+          correo: "",
+          codigoEstudiantil: "",
+          nrc: [],
+        },
       ],
       gameName: "",
       description: "",
-      files: undefined,
+      files: [] as File[],
       recaptcha: "",
     },
   });
 
   async function onSubmit(data: CombinedFormValues) {
+    const res = await fetch(
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${
+        data.gameName
+      }`
+    );
+    const exists = await res.json();
+    if (exists === true) {
+      toast.error("El nombre del videojuego ya está en uso.");
+      return;
+    }
+
     setIsLoading(true);
-    const uploadToastId =
-      data.files && data.files.length > 0
-        ? toast.loading("Subiendo archivos...")
-        : undefined;
+    const preUploadedUrls = (data as any).uploadedFileUrls as string[] | undefined;
+    const willUploadFiles = !preUploadedUrls || preUploadedUrls.length === 0;
+
+    const uploadToastId = willUploadFiles && data.files && data.files.length > 0
+      ? toast.loading("Subiendo archivos...")
+      : undefined;
 
     try {
       const uploadedFileUrls: string[] = [];
-      if (data.files && data.files.length > 0) {
-        const uploads = Array.from(data.files).map(async (file) => {
-          const path = `uploads/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-          const { error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file, { cacheControl: "3600", upsert: false });
-          if (uploadError) throw new Error(`Error al subir ${file.name}`);
-          const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-          return urlData?.publicUrl ?? null;
-        });
-        (await Promise.all(uploads))
-          .filter((u): u is string => !!u)
-          .forEach((u) => uploadedFileUrls.push(u));
-        if (uploadToastId) toast.success("Archivos subidos", { id: uploadToastId });
+
+      // If the step already uploaded files and stored their URLs in the form
+      // (e.g. MembersStep executed uploads), prefer those and skip uploading again.
+      if (preUploadedUrls && preUploadedUrls.length > 0) {
+        uploadedFileUrls.push(...preUploadedUrls);
+      } else if (data.files && data.files.length > 0) {
+
+        console.log("Uploading file to Azure...");
+        console.log('TAMAÑO DEL FILE:', data.files.length);
+        
+        for (const file of data.files) {
+          const uploadResult = await uploadImage(file);
+          const urlResult = await getImageUrl(uploadResult.id);
+          uploadedFileUrls.push(urlResult.url);
+        }
+
+        if (uploadToastId) {
+          toast.success("Archivos subidos correctamente", {
+            id: uploadToastId,
+          });
+        }
       }
 
       const payload = {
@@ -73,26 +95,46 @@ export default function MultiStepWizard() {
           description: data.description,
           logoURL: uploadedFileUrls[0] || "",
         },
+        recaptchaToken: data.recaptcha,
       };
 
-      const res = await customFetch("http://localhost:3000/teams", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.status === 201) {
+      const response = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (response.status === 201) {
+        toast.success("Equipo registrado correctamente");
         navigate("/equipos");
       } else {
-        const err = await res.json();
-        throw new Error(`Error ${res.status}: ${err.message || "desconocido"}`);
+        const errorData = await response.json();
+        let errorMessage = "Error en el registro";
+        
+        if (errorData && errorData.message) {
+          // Manejar diferentes mensajes de error
+          if (typeof errorData.message === 'string') {
+            errorMessage = errorData.message;
+          } else if (Array.isArray(errorData.message)) {
+            errorMessage = errorData.message.join(', ');
+          } else if (typeof errorData.message === 'object') {
+            errorMessage = Object.values(errorData.message).join(', ');
+          }
+        }
+        
+        throw new Error(errorMessage || `Error ${response.status}`);
       }
     } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
       toast.error("Error en el registro", {
-        description: e.message || "Error inesperado",
+        description: (e as Error).message || "Error inesperado",
         duration: 5000,
       });
+    } finally {
       setIsLoading(false);
     }
   }
@@ -106,7 +148,11 @@ export default function MultiStepWizard() {
               Procesando registro...
             </div>
           ) : (
-            <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6" noValidate>
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              className="space-y-6"
+              noValidate
+            >
               <StepRenderer />
             </form>
           )}

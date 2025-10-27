@@ -6,7 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
+// import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
@@ -19,14 +19,14 @@ import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
 import GradedPage from "@/pages/grupo 8/GradedPage";
-import RatedPage from "@/pages/grupo 11/RatedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
-
+import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 
 type Role =
   | "Profesor"
@@ -54,10 +54,10 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  {
-    path: "/registro-equipo",
-    element: <TeamRegisterPage />,
-  },
+  // { // Disabled temporarily
+  //   path: "/registro-equipo",
+  //   element: <TeamRegisterPage />,
+  // },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -77,6 +77,10 @@ const routes: RouteConfig[] = [
   {
     path: "/ediciones-pasadas",
     element: <FeriasPasadas />,
+  },
+  {
+    path: "/contribuidores",
+    element: <CreditsPage />,
   },
   {
     path: "/login",
@@ -105,16 +109,10 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/pendientes-calificar/:id",
-    element: <RatePage params={{ id: "" }} />,
+    element: <RatePage />,
     roles: ["Jurado"],
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
-
-  {
-    path: "/mi-equipo",
-    element: <RatedPage params={{ id: "" }} />,
-    roles: ["Consultor"],
-  },
 
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
@@ -128,14 +126,19 @@ const routes: RouteConfig[] = [
     element: <VerifyEmailPage />,
   },
   {
-    path: "/home-estudiante",
+    path: "/mi-equipo",
     element: <HomeStudentPage />,
     roles: ["Estudiante", "Profesor"],
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />,
+    element: <HomeTeacherPage />, 
     roles: ["Profesor"],
+  },
+  {
+    path: "/editar-equipo",
+    element: <EditTeamPage />,
+    roles: ["Estudiante"],
   },
 ];
 

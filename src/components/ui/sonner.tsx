@@ -10,11 +10,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
+          "--normal-bg": "var(--background)",
+          "--normal-text": "var(--foreground)",
           "--normal-border": "var(--border)",
         } as React.CSSProperties
       }
+      toastOptions={{
+        classNames: {
+          success: "bg-[var(--toast-success)] text-[var(--foreground)]",
+          error: "bg-[var(--toast-error)] text-[var(--foreground)]",
+          info: "bg-blue-600 text-white",
+          warning: "bg-yellow-400 text-black",
+        },
+        ...props.toastOptions, // para no sobrescribir props externos
+      }}
       {...props}
     />
   )

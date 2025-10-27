@@ -11,20 +11,21 @@ export interface LoginCredentials {
 }
 
 export interface AuthContextType {
+  loading: Boolean;
   accessToken: string | null;
   userRole: Role | null;
   user: UserProfile | null;
-  login: (credentials: LoginCredentials) => Promise<string>;
-  refreshAccessToken: () => Promise<string>;
-  logout: () => void;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
+  logout: () => Promise<void>;
 }
 export interface UserProfile {
   /** UUID único del usuario */
   id: string;
-  /** Nombre completo */
-  name: string;
-  /** Nombre de usuario (username) */
-  username: string;
+  /** Primer nombre */
+  firstName: string;
+  /** Apellidos */
+  lastName: string;
   /** Correo electrónico */
   email: string;
   /** Indica si la cuenta está activa */

@@ -1,24 +1,24 @@
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
-import Breadcrumbs from "@/components/grupo 9/BreadCrums";
-import { Separator } from "@/components/ui/separator";
+"use client"
 
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/grupo 9/app-sidebar"
+import Breadcrumbs from "@/components/grupo 9/BreadCrums"
+import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { Toaster } from "@/components/ui/sonner"
+import { DiscordButton } from "@/components/grupo 5/DiscordButton"
 
-import type React from "react";
+import type React from "react"
 
 interface Props {
-  children: React.ReactNode;
+  children: React.ReactNode
   breadcrumbs: {
-    label: string;
-    href: string;
-  }[];
+    label: string
+    href: string
+  }[]
 }
 
 const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
+  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -28,8 +28,25 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
             <SidebarTrigger className="-ml-1 z-20" />
             <Breadcrumbs items={breadcrumbs} />
           </div>
+          <TextSizeControls />
+          <DiscordButton discordUrl={discordSupportUrl} />
         </header>
         {children}
+        
+        <Toaster
+          richColors={false}
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              default: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
+              success: 'bg-[var(--toast-success)] border border-[var(--toast-success-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+              error: 'bg-[var(--toast-error)] border border-[var(--toast-error-border)] w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+              info: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
+              loading: 'bg-[var(--background)] border border-[var(--border)] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md w-[356px]',
+              // ...
+            },
+          }}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

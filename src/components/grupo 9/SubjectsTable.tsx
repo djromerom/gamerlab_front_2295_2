@@ -1,7 +1,6 @@
-// TablaGenerica.tsx (imported as SubjectsTable)
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -11,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -55,334 +55,304 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// This RowData is specific to this table's needs, primarily for the 'id'
-export interface RowData extends Record<string, any> {
-  id: number | string;
-}
-
-interface UpdateMateriaPayload {
-  name?: string;
-  code?: string;
-  semester?: number;
-}
-
-interface CreateMateriaPayload {
+interface Subject {
+  id: number;
   name: string;
   code: string;
   semester: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// This is the structure of the 'data' prop passed to THIS table component
-export interface Data {
-  titulo: string;
-  nombreTabla: string;
-  nombreColumnas: Record<string, string>;
-  filas: RowData[]; // These are the rows for the current page
-  primaryKey?: string;
+interface SubjectFormData {
+  name: string;
+  code: string;
+  semester: string;
+}
+
+interface PaginationMetadata {
+  totalItems: number;
+  itemsOnCurrentPage: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
 }
 
 interface Props {
-  data: Data | null;
+  subjects: Subject[] | null;
+  pagination: PaginationMetadata;
   apiBaseUrl: string;
-  isDataLoading?: boolean; // From parent, for initial load or page change
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
-  rowsPerPage: number;
-  setRowsPerPage: (size: number) => void;
-  totalPages: number;
-  totalItems: number;
-  onDataChange: () => void; // Callback to parent to refetch data (for C/D)
-  onRowUpdate: (updatedRow: RowData) => void; // Callback to parent for optimistic update (for U)
+  isDataLoading?: boolean;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+  refreshData: () => void;
 }
 
 export const SubjectsTable: React.FC<Props> = ({
-  data,
+  subjects,
+  pagination,
   apiBaseUrl,
   isDataLoading = false,
-  currentPage,
-  setCurrentPage,
-  rowsPerPage,
-  setRowsPerPage,
-  totalPages,
-  totalItems,
-  onDataChange,
-  onRowUpdate,
+  onPageChange,
+  onLimitChange,
+  refreshData,
 }) => {
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newRow, setNewRow] = useState<Record<string, any>>({}); // For add form
+  const [newSubject, setNewSubject] = useState<SubjectFormData>({
+    name: "",
+    code: "",
+    semester: "",
+  });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState<RowData | null>(null); // For pre-filling edit form
-  const [editFormData, setEditFormData] = useState<Partial<UpdateMateriaPayload>>({}); // For edit form changes
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingRowId, setDeletingRowId] = useState<number | string | null>(null);
-  const [internalIsLoading, setInternalIsLoading] = useState(false); // For C/U/D operations within this component
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [internalIsLoading, setInternalIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const showLoader = isDataLoading || internalIsLoading; // Combined loader state
+  const showLoader = isDataLoading || internalIsLoading;
 
-  const primaryKeyField = data?.primaryKey || "id";
-  const columnEntries = data ? Object.entries(data.nombreColumnas) : [];
-  const displayColumnKeys = columnEntries
-    .filter(([key]) => key !== primaryKeyField) // Exclude primary key from display columns
-    .map(([key]) => key);
-  const columnNames = data?.nombreColumnas || {};
+  const columns = [
+    { key: "name", label: "Nombre" },
+    { key: "code", label: "Código" },
+    { key: "semester", label: "Semestre" },
+  ];
 
-  const getApiUrl = (id?: number | string) => {
-    if (!data?.nombreTabla) return "";
-    let url = `${apiBaseUrl}/${data.nombreTabla}`;
-    if (id !== undefined) {
-      url += `/${id}`;
-    }
-    return url;
+  // Función para validar el formato del código (3 letras mayúsculas + 4 números)
+  const validateCodeFormat = (code: string): boolean => {
+    const codeRegex = /^[A-Z]{3}\d{4}$/;
+    return codeRegex.test(code);
   };
-
-  // No local 'allRows' or 'currentRows' state needed as 'data.filas' comes paginated from parent.
-  // No useEffect for client-side pagination needed.
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
     setError(null);
-    const apiUrl = getApiUrl();
-    if (!apiUrl || !data?.nombreTabla) {
-      setError("Configuración de tabla inválida.");
-      setInternalIsLoading(false);
-      return;
-    }
-
-    const { name, code, semester: semesterStr } = newRow;
-    if (!name || !code || !semesterStr) {
-      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
-      setInternalIsLoading(false);
-      return;
-    }
-    const semesterAsNumber = parseInt(semesterStr, 10);
-    if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
-      setError("El semestre debe ser un número válido mayor o igual a 1.");
-      setInternalIsLoading(false);
-      return;
-    }
-    const dataToSend: CreateMateriaPayload = {
-      name,
-      code,
-      semester: semesterAsNumber,
-    };
 
     try {
-      const response = await customFetch(apiUrl, {
-        body: JSON.stringify(dataToSend),
+      // Validaciones de campos requeridos
+      if (!newSubject.name || !newSubject.code || !newSubject.semester) {
+        throw new Error("Todos los campos (Nombre, Código, Semestre) son requeridos.");
+      }
+
+      // Validación de formato del código
+      if (!validateCodeFormat(newSubject.code)) {
+        throw new Error("El código debe tener 3 letras mayúsculas seguidas de 4 números");
+      }
+
+      // Validación del semestre
+      const semesterValue = parseInt(newSubject.semester, 10);
+      if (isNaN(semesterValue)) {
+        throw new Error("El semestre debe ser un número válido.");
+      }
+      if (semesterValue < 1 || semesterValue > 12) {
+        throw new Error("El semestre debe ser un número entre 1 y 12");
+      }
+
+      const response = await customFetch(`${apiBaseUrl}/subjects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newSubject.name,
+          code: newSubject.code,
+          semester: semesterValue,
+        }),
       });
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
-        throw new Error(errorData.message || "Error al agregar la materia.");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al crear la materia");
       }
-      // await response.json(); // Consume if needed, but we refetch
-      setNewRow({});
+
+      onPageChange(1);
+      setNewSubject({ name: "", code: "", semester: "" });
       setAddDialogOpen(false);
-      onDataChange(); // Notify parent to refetch data
+      refreshData();
+      toast.success("Materia agregada exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al agregar.");
-      console.error("Error en handleAdd:", err);
+      setError(err.message);
+      toast.error(err.message);
     } finally {
       setInternalIsLoading(false);
     }
-  };
-
-  const handleOpenEdit = (row: RowData) => {
-    setEditingRow(row); // Store the original row for its ID
-    setEditFormData({ // Set form data for editing
-      name: row.name,
-      code: row.code,
-      semester: row.semester,
-    });
-    setEditDialogOpen(true);
-    setError(null);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingRow || !editFormData) return;
+    if (!editingSubject) return;
     setInternalIsLoading(true);
     setError(null);
 
-    const idValue = editingRow[primaryKeyField];
-    const apiUrl = getApiUrl(idValue);
-    if (!apiUrl || idValue === undefined) {
-      setError("No se puede actualizar la fila (falta ID o configuración).");
-      setInternalIsLoading(false);
-      return;
-    }
-
-    const { name, code, semester: semesterStr } = editFormData;
-    if (!name || !code || semesterStr === undefined || semesterStr === null || String(semesterStr).trim() === "") {
-      setError("Todos los campos (Nombre, Código, Semestre) son requeridos.");
-      setInternalIsLoading(false);
-      return;
-    }
-    const semesterAsNumber = parseInt(String(semesterStr), 10);
-    if (isNaN(semesterAsNumber) || semesterAsNumber < 1) {
-      setError("El semestre debe ser un número válido mayor o igual a 1.");
-      setInternalIsLoading(false);
-      return;
-    }
-    const dataToSend: UpdateMateriaPayload = {
-      name,
-      code,
-      semester: semesterAsNumber,
-    };
-
     try {
-      const response = await customFetch(apiUrl, {
-        body: JSON.stringify(dataToSend),
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
-        throw new Error(errorData.message || "Error al guardar los cambios.");
+      // Validaciones de campos requeridos
+      if (!editingSubject.name || !editingSubject.code || !editingSubject.semester) {
+        throw new Error("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       }
-      const updatedRowFromApi: RowData = await response.json();
-      onRowUpdate(updatedRowFromApi); // Notify parent for optimistic update
+
+      // Validación de formato del código
+      if (!validateCodeFormat(editingSubject.code)) {
+        throw new Error("El código debe tener 3 letras mayúsculas seguidas de 4 números");
+      }
+
+      // Validación del semestre
+      const semesterValue = parseInt(editingSubject.semester.toString(), 10);
+      if (isNaN(semesterValue)) {
+        throw new Error("El semestre debe ser un número válido.");
+      }
+      if (semesterValue < 1 || semesterValue > 12) {
+        throw new Error("El semestre debe ser un número entre 1 y 12");
+      }
+
+      const response = await customFetch(
+        `${apiBaseUrl}/subjects/${editingSubject.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editingSubject.name,
+            code: editingSubject.code,
+            semester: semesterValue,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al actualizar la materia");
+      }
+
+      refreshData();
       setEditDialogOpen(false);
-      setEditingRow(null);
-      setEditFormData({});
+      setEditingSubject(null);
+      toast.success("Materia actualizada exitosamente");
     } catch (err: any) {
-      setError(err.message || "Error al guardar cambios.");
-      console.error("Error en handleSaveEdit:", err);
+      setError(err.message);
+      toast.error(err.message);
     } finally {
       setInternalIsLoading(false);
     }
-  };
-
-  const handleOpenDelete = (row: RowData) => {
-    setDeletingRowId(row[primaryKeyField]);
-    setDeleteDialogOpen(true);
-    setError(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (deletingRowId === null) return;
+    if (!deletingId) return;
     setInternalIsLoading(true);
     setError(null);
 
-    const apiUrl = getApiUrl(deletingRowId);
-    if (!apiUrl) {
-      setError("Configuración inválida para eliminar.");
-      setInternalIsLoading(false);
-      setDeleteDialogOpen(false);
-      return;
-    }
-    let deleteSuccess = false;
     try {
-      const response = await customFetch(apiUrl, { method: "DELETE" });
+      const response = await customFetch(
+        `${apiBaseUrl}/subjects/${deletingId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
-        throw new Error(errorData.message || "Error al eliminar la materia.");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al desactivar la materia");
       }
-      deleteSuccess = true;
-      onDataChange(); // Notify parent to refetch data
+
+      // Verificar si la página actual quedará vacía después de eliminar
+      const willPageBeEmpty = subjects && subjects.length === 1;
+
+      refreshData();
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
+      toast.success("Materia eliminada exitosamente");
+
+      // Si la página quedará vacía y no es la primera página, retroceder
+      if (willPageBeEmpty && pagination.currentPage > 1) {
+        onPageChange(pagination.currentPage - 1);
+      }
     } catch (err: any) {
-      setError(err.message || "Error al eliminar.");
-      console.error("Error en handleConfirmDelete:", err);
+      setError(err.message);
+      toast.error(err.message);
     } finally {
       setInternalIsLoading(false);
-      if (deleteSuccess) {
-        setDeleteDialogOpen(false);
-        setDeletingRowId(null);
-      }
     }
   };
 
-  const displayRows = data?.filas || [];
-
-
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader && !internalIsLoading ? "opacity-75" : "" // Opacity for parent loading
-        }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${
+        showLoader ? "opacity-75" : ""
+      }`}
     >
       <div className="flex justify-between items-center mb-6 px-4">
-        <h1 className="text-xl font-medium">
-          {data?.titulo || (isDataLoading ? "Cargando Título..." : "Tabla")}
-        </h1>
-        <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) setError(null); }}>
+        <h1 className="text-xl font-medium">Materias</h1>
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
-              disabled={showLoader || !data}
+              className="bg-card hover:bg-accent text-foreground cursor-pointer"
+              disabled={!subjects || showLoader}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </DialogTrigger>
           <DialogContent>
-            {data && (
-              <form onSubmit={handleAdd}>
-                <DialogHeader>
-                  <DialogTitle>
-                    Agregar {data?.nombreTabla || "Item"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Ingrese los datos de la nueva fila.
-                  </DialogDescription>
-                </DialogHeader>
-                {error && !internalIsLoading && (addDialogOpen) && (
-                  <div className="px-6 py-2">
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      {error}
-                    </p>
-                  </div>
-                )}
-                <div className="grid gap-4 py-4 px-6">
-                  {columnEntries
-                    .filter(([key]) => key !== primaryKeyField) // Don't create input for primary key
-                    .map(([key, label]) => (
-                      <div
-                        key={key}
-                        className="grid grid-cols-4 items-center gap-4"
-                      >
-                        <Label htmlFor={`add-${key}`} className="text-right">
-                          {label}
-                        </Label>
-                        <Input
-                          id={`add-${key}`}
-                          value={newRow[key] || ""}
-                          onChange={(e) =>
-                            setNewRow((prev) => ({
-                              ...prev,
-                              [key]: e.target.value,
-                            }))
-                          }
-                          className="col-span-3"
-                          required
-                          type={key === "semester" ? "number" : "text"}
-                          disabled={internalIsLoading}
-                        />
-                      </div>
-                    ))}
+            <form onSubmit={handleAdd}>
+              <DialogHeader>
+                <DialogTitle>Agregar Nueva Materia</DialogTitle>
+                <DialogDescription>
+                  Complete los datos de la nueva materia.
+                </DialogDescription>
+              </DialogHeader>
+              {error && !showLoader && (
+                <div className="px-6 py-2">
+                  <p className="text-sm text-red-600 dark:text-red-500">
+                    {error}
+                  </p>
                 </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setAddDialogOpen(false);
-                      setError(null);
-                      setNewRow({});
-                    }}
-                    disabled={internalIsLoading}
+              )}
+              <div className="grid gap-4 py-4 px-6">
+                {columns.map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className="grid grid-cols-4 items-center gap-4"
                   >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={internalIsLoading}>
-                    {internalIsLoading ? "Guardando..." : "Guardar"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
+                    <Label htmlFor={`add-${key}`} className="text-right">
+                      {label}
+                    </Label>
+                    <Input
+                      id={`add-${key}`}
+                      value={newSubject[key as keyof SubjectFormData] || ""}
+                      onChange={(e) =>
+                        setNewSubject((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }))
+                      }
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  className="cursor-pointer"
+                  variant="outline"
+                  onClick={() => {
+                    setAddDialogOpen(false);
+                    setError(null);
+                    setNewSubject({ name: "", code: "", semester: "" });
+                  }}
+                  disabled={internalIsLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
+                  {internalIsLoading ? "Guardando..." : "Guardar"}
+                </Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -391,17 +361,17 @@ export const SubjectsTable: React.FC<Props> = ({
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {displayColumnKeys.map((key) => (
-                <TableHead key={key}>{columnNames[key] || key}</TableHead>
+              {columns.map(({ key, label }) => (
+                <TableHead key={key}>{label}</TableHead>
               ))}
-              <TableHead className="w-[50px]" /> {/* Actions */}
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isDataLoading && !internalIsLoading ? ( // Show main loader from parent
+            {showLoader ? (
               <TableRow>
                 <TableCell
-                  colSpan={displayColumnKeys.length + 1}
+                  colSpan={columns.length + 1}
                   className="h-24 text-center"
                 >
                   <div className="flex justify-center items-center gap-2">
@@ -410,52 +380,61 @@ export const SubjectsTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : displayRows.length === 0 ? (
+            ) : subjects?.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={displayColumnKeys.length + 1}
+                  colSpan={columns.length + 1}
                   className="h-24 text-center"
                 >
-                  {totalItems > 0 ? "No hay resultados en esta página." : "No hay resultados."}
+                  No hay materias disponibles.
                 </TableCell>
               </TableRow>
             ) : (
-              displayRows.map((row) => ( // data.filas are the current page's rows
-                <TableRow key={row[primaryKeyField] ?? Math.random()}> {/* Fallback key if id is somehow missing */}
-                  {displayColumnKeys.map((key) => (
-                    <TableCell key={key}>{row[key]}</TableCell>
-                  ))}
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          disabled={showLoader} // Disable if parent is loading OR internal CUD is happening
-                        >
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleOpenEdit(row)}
-                          disabled={showLoader}
-                        >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleOpenDelete(row)}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100"
-                          disabled={showLoader}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+              subjects
+                ?.filter((subject) => subject.isActive)
+                .map((subject) => (
+                  <TableRow key={subject.id}>
+                    <TableCell>{subject.name}</TableCell>
+                    <TableCell>{subject.code}</TableCell>
+                    <TableCell>{subject.semester}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingSubject(subject);
+                              setEditDialogOpen(true);
+                            }}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingId(subject.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
             )}
           </TableBody>
         </Table>
@@ -464,16 +443,22 @@ export const SubjectsTable: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <span>Filas por página</span>
             <Select
-              value={rowsPerPage.toString()}
-              onValueChange={(value) => setRowsPerPage(parseInt(value, 10))}
-              disabled={showLoader || totalItems === 0}
+              value={pagination.itemsPerPage.toString()}
+              onValueChange={(value) => {
+                onLimitChange(parseInt(value, 10));
+              }}
+              disabled={showLoader || !subjects?.length}
             >
-              <SelectTrigger className="w-[70px]">
-                <SelectValue placeholder={rowsPerPage} />
+              <SelectTrigger className="w-[70px] cursor-pointer">
+                <SelectValue placeholder={pagination.itemsPerPage} />
               </SelectTrigger>
               <SelectContent>
                 {[5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={n}
+                    value={n.toString()}
+                  >
                     {n}
                   </SelectItem>
                 ))}
@@ -482,22 +467,34 @@ export const SubjectsTable: React.FC<Props> = ({
           </div>
           <div className="flex items-center gap-4">
             <span>
-              Página {totalPages > 0 ? currentPage : 0} de {totalPages || 0}
+              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de{" "}
+              {pagination.totalPages}
             </span>
             <div className="flex gap-1">
               <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1 || showLoader || totalItems === 0}
+                onClick={() => onPageChange(pagination.currentPage - 1)}
+                disabled={
+                  pagination.currentPage === 1 ||
+                  showLoader ||
+                  !subjects?.length
+                }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0 || showLoader || totalItems === 0}
+                onClick={() => onPageChange(pagination.currentPage + 1)}
+                disabled={
+                  pagination.currentPage === pagination.totalPages ||
+                  pagination.totalPages === 0 ||
+                  showLoader ||
+                  !subjects?.length
+                }
                 variant="outline"
                 size="icon"
+                className="cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -506,17 +503,17 @@ export const SubjectsTable: React.FC<Props> = ({
         </div>
       </Card>
 
-      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setError(null); }}>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
-          {editingRow && data && (
+          {editingSubject && (
             <form onSubmit={handleSaveEdit}>
               <DialogHeader>
-                <DialogTitle>Editar {data.nombreTabla || "Item"}</DialogTitle>
+                <DialogTitle>Editar Materia</DialogTitle>
                 <DialogDescription>
-                  Modifique los campos según sea necesario.
+                  Modifique los campos de la materia según sea necesario.
                 </DialogDescription>
               </DialogHeader>
-              {error && !internalIsLoading && (editDialogOpen) && (
+              {error && !showLoader && (
                 <div className="px-6 py-2">
                   <p className="text-sm text-red-600 dark:text-red-500">
                     {error}
@@ -524,32 +521,29 @@ export const SubjectsTable: React.FC<Props> = ({
                 </div>
               )}
               <div className="grid gap-4 py-4 px-6">
-                {columnEntries
-                  .filter(([key]) => key !== primaryKeyField)
-                  .map(([key, label]) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-4 items-center gap-4"
-                    >
-                      <Label htmlFor={`edit-${key}`} className="text-right">
-                        {label}
-                      </Label>
-                      <Input
-                        id={`edit-${key}`}
-                        value={editFormData[key as keyof UpdateMateriaPayload] || ""}
-                        onChange={(e) =>
-                          setEditFormData((prev) => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        className="col-span-3"
-                        required
-                        type={key === "semester" ? "number" : "text"}
-                        disabled={internalIsLoading}
-                      />
-                    </div>
-                  ))}
+                {columns.map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className="grid grid-cols-4 items-center gap-4"
+                  >
+                    <Label htmlFor={`edit-${key}`} className="text-right">
+                      {label}
+                    </Label>
+                    <Input
+                      id={`edit-${key}`}
+                      value={
+                        editingSubject[key as keyof Subject]?.toString() || ""
+                      }
+                      onChange={(e) =>
+                        setEditingSubject((prev) =>
+                          prev ? { ...prev, [key]: e.target.value } : null
+                        )
+                      }
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                ))}
               </div>
               <DialogFooter>
                 <Button
@@ -558,14 +552,18 @@ export const SubjectsTable: React.FC<Props> = ({
                   onClick={() => {
                     setEditDialogOpen(false);
                     setError(null);
-                    setEditingRow(null);
-                    setEditFormData({});
+                    setEditingSubject(null);
                   }}
                   disabled={internalIsLoading}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={internalIsLoading}>
+                <Button
+                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                  type="submit"
+                  disabled={internalIsLoading}
+                >
                   {internalIsLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
@@ -574,16 +572,16 @@ export const SubjectsTable: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setError(null); }}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente
-              la fila seleccionada.
+              Esta acción marcará la materia como inactiva. Podrá reactivarla
+              más tarde si es necesario.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && !internalIsLoading && (
+          {error && !showLoader && (
             <p className="text-sm text-red-600 dark:text-red-500 p-4 -mt-2 -mb-2">
               {error}
             </p>
@@ -593,18 +591,19 @@ export const SubjectsTable: React.FC<Props> = ({
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setError(null);
-                setDeletingRowId(null);
+                setDeletingId(null);
               }}
               disabled={internalIsLoading}
+              className="cursor-pointer"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-destructive-foreground"
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               disabled={internalIsLoading}
             >
-              {internalIsLoading ? "Eliminando..." : "Eliminar"}
+              {internalIsLoading ? "Eliminando..." : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
