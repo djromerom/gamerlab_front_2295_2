@@ -242,7 +242,7 @@ export function VerifyEmailPage() {
                 htmlFor="password"
                 className="text-gray-800 dark:text-gray-200"
               >
-                Crea tu Contraseña
+                Crea tu Contraseñaa
               </Label>
               <Input
                 id="password"

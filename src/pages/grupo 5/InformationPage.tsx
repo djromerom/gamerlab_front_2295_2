@@ -1,25 +1,16 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect} from "react";
 import {
   Calendar,
-  Trophy,
   Palette,
   Users,
   MapPin,
   Clock,
   Info,
   Gamepad2,
-  ChevronLeft,
-  ChevronRight,
-  Quote,
-  History,
-  Shield,
-  Monitor,
-  User,
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -252,83 +243,7 @@ export default function CompetitionInfo() {
       document.documentElement.classList.remove("dark");
     };
   }, []);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
-  const [isTestimonialChanging, setIsTestimonialChanging] = useState(false);
-  const [isTitleChanging, setIsTitleChanging] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [testimonialType, setTestimonialType] = useState<
-    "participants" | "attendees"
-  >("participants");
 
-  const totalSlides = 30; // Total number of slides in the carousel
-  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  };
-
-  const nextTestimonialSlide = () => {
-    const testimonialCount =
-      testimonialType === "participants"
-        ? testimonials.length
-        : attendeeTestimonials.length;
-    setCurrentTestimonialSlide((prev) =>
-      prev === testimonialCount - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevTestimonialSlide = () => {
-    const testimonialCount =
-      testimonialType === "participants"
-        ? testimonials.length
-        : attendeeTestimonials.length;
-    setCurrentTestimonialSlide((prev) =>
-      prev === 0 ? testimonialCount - 1 : prev - 1
-    );
-  };
-
-  const goToTestimonialSlide = (index: number) => {
-    setCurrentTestimonialSlide(index);
-  };
-
-  const imagePaths = Array.from(
-    { length: 30 },
-    (_, i) => `/assets/carousel/${i + 2}.JPG`
-  );
-
-  // Update carousel position when currentSlide changes
-  useEffect(() => {
-    if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${currentSlide * 100
-        }%)`;
-    }
-  }, [currentSlide]);
-
-  // Auto-advance carousel every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Reset testimonial slide when testimonial type changes
-  useEffect(() => {
-    setCurrentTestimonialSlide(0);
-  }, [testimonialType]);
-
-  // Auto-advance testimonial carousel every 8 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      nextTestimonialSlide();
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [testimonialType]);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
@@ -341,62 +256,7 @@ export default function CompetitionInfo() {
     };
   }, []);
 
-  // Testimonios de participantes
-  const testimonials = [
-    {
-      id: 1,
-      name: "Fabian de Jesús Miranda Varelo",
-      role: "Participante - Carrot Mania",
-      quote:
-        "El año pasado fui expositor en la feria gamer con Carrot Mania, un juego diseñado para comparar la eficiencia de la iteratividad con la recursividad. La dinámica consistía en ayudar a un conejo a recuperar sus zanahorias atrapadas en burbujas. Fue una experiencia enriquecedora, donde pude interactuar con estudiantes de bachillerato, asistentes y jurados, recibiendo valiosa retroalimentación que me ayudó a mejorar mi propuesta y reforzar mis habilidades en el desarrollo de videojuegos.",
-    },
-    {
-      id: 2,
-      name: "Laura González Valdeblanquez",
-      role: "Participante - Musical Bubble Coffe",
-      quote:
-        "La participación en la FeriaGamer fue una experiencia muy enriquecedora y gratificante, ya que brindó el espacio para poder mostrar el proyecto, que se logró con tanto fuerzo y trabajo en equipo, a personas interesadas, lo cual , en particular, me hacía mucha ilusión. Además, la dinámica de presentar el proyecto para diferentes jurados y demás público, nos ayuda a prepararnos para saber como actuar de acuerdo a la persona.",
-    },
-    {
-      id: 3,
-      name: "Marian Andrea Pacheco Charris ",
-      role: "Participante",
-      quote:
-        "Puedo describir mi experiencia participando en la feria gamer como muy enriquecedora, fue un excelente espacio para profundizar mis habilidades de comunicación, y exponer acerca del proceso que fue realizar un proyecto que relacionaba dos materias de programación. Además, me brindó la oportunidad de escuchar diferentes opiniones y críticas constructivas para tener en cuenta en mis próximos proyectos.",
-    },
-    {
-      id: 4,
-      name: "Arturo José González Barros",
-      role: "Participante",
-      quote:
-        "Participar en la feria gamer fue para mí un verdadero reto. Pensar en haber hecho un programa completamente funcional con los conocimientos aprendidos en clase me hizo darme cuenta de las grandes capacidades que uno puede llegar a tener y el excelente trabajo de los profesores al enseñarnos las bases necesarias para afrontar esos grandes retos. Me gustó mucho tener un equipo de trabajo del cuál podía apoyarme y entenderme bastante bien, lo que facilitó las fechas de entrega y la presentación de un excelente trabajo. Y por último, me motivó a hacer trabajos similares para adquirir experiencias y probar mis conocimientos.",
-    },
-  ];
-
-  const attendeeTestimonials = [
-    {
-      id: 1,
-      name: "Jefferson Jose Torres Lora",
-      role: "Monitor Programación Orientada a Objetos",
-      quote:
-        "La dinámica de los jóvenes en la feria gamer es excelente, ya que no solo aprenden sobre programación y desarrollo, sino que también adquieren conciencia sobre la temática central del evento. Esto permite que los estudiantes se diviertan y se entretengan mientras aprenden de forma progresiva y significativa.",
-    },
-    {
-      id: 2,
-      name: "Elvira Elena Florez Carbonell",
-      role: "Monitora Estructura de Datos I y Algoritmia y Programación I",
-      quote:
-        "Desde mi experiencia como monitora y jurado en la feria gamer, considero que este espacio, si bien aún presenta muchas oportunidades para mejorar y crecer, también representa una gran oportunidad para mostrar a las demás carreras los proyectos desarrollados por los alumnos. Además, permite que tanto participantes como visitantes observen, reflexionen y aprecien de primera mano cómo se evidencian los avances en resultados a medida que se progresa de semestre.",
-    },
-    {
-      id: 2,
-      name: "Margarita Gamarra Acosta",
-      role: "Profesora Departamento de Ingeniería de Sistemas y Computación",
-      quote:
-        "Para mi la feria gamer es una muestra del trabajo, esfuerzo y pasión de todos los estudiantes participantes. El trabajo en equipo se ve reflejado en los excelentes resultados que muestran en cada uno de sus videojuegos, esta es ya la tercera versión de la feria y cada vez quedo mas sorprendida con las presentaciones y la creatividad de los trabajos que presentan, cada semestre agregan nuevas y mejores herramientas a los videojuegos y este semestre se unen mas estudiantes interesados en participar, este semestre queremos brindarle un espacio habierto para toda la comunidad uninorteña, para que los proyectos sean visibles ante toda la comunidad académica.",
-    },
-  ];
-
+ 
   return (
     <>
       <NavBar />
@@ -567,7 +427,7 @@ export default function CompetitionInfo() {
             </p>
           </div>
           <TextSizeControls />
-          <DiscordButton discordUrl={discordSupportUrl} />
+          
         </div>
       </div>
     </>

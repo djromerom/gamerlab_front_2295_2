@@ -1,5 +1,5 @@
 "use client";
-import { Link, useNavigate } from "react-router-dom";
+
 import { useEffect, useState, useRef } from "react";
 import ediciones from "@/assets/Ediciones.json";
 import testimonials from "@/assets/Testimonials.json";
@@ -8,10 +8,7 @@ import testimonials from "@/assets/Testimonials.json";
 import {
   Calendar,
   Trophy,
-  Palette,
   Users,
-  MapPin,
-  Clock,
   Info,
   Gamepad2,
   ChevronLeft,
@@ -23,7 +20,6 @@ import {
   User,
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
-import ComboBoxEdiciones from "@/components/ComboBox";
 
 
 
@@ -249,7 +245,6 @@ const glowStyles = `
     background-color: rgba(26, 20, 48, 0.7);
   }
 `;
-const edicion = ediciones.find((e) => e.id === "2025-10");
 const testimonios = testimonials;
 export default function CompetitionInfo() {
 
@@ -295,9 +290,7 @@ export default function CompetitionInfo() {
     setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
   };
 
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-  };
+  
 
 
   // Reset carousel and testimonial position when selected edition changes
