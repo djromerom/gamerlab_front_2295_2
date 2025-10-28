@@ -26,6 +26,7 @@ import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 
 type Role =
   | "Profesor"
@@ -96,7 +97,11 @@ const routes: RouteConfig[] = [
     element: <JuryManagementPage />,
     roles: ["Administrador"],
   },
-  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
+  {
+    path: "/equipos-inscritos",
+    element: <TeamsManagementPage />,
+    roles: ["Administrador"],
+  },
   {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
