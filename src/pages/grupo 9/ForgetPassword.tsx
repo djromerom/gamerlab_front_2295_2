@@ -18,19 +18,19 @@ export default function ForgetPassword() {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
+
         try {
             const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(email),
+                body: JSON.stringify({email: email}),
             });
             if (!response.ok) {
                 setError('No se pudo enviar el correo de restablecimiento de contraseña. Por favor, verifica el correo ingresado.');
                 throw new Error('Error al enviar el correo de restablecimiento de contraseña.');
             }
-          
         } catch (err: unknown) {
           if (err instanceof Error) {
             setError(err.message);
@@ -41,7 +41,6 @@ export default function ForgetPassword() {
           setIsSubmitting(false);
         }
     };
-
 
     return(
         <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">

@@ -88,7 +88,7 @@ const routes: RouteConfig[] = [
     element: <ForgetPassword />
   },
   {
-    path: "/reset-password",
+    path: "/establecer-contrasena",
     element: <ResetPassword />,
   },
   {
