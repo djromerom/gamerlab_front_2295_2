@@ -27,6 +27,8 @@ import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import SchoolRate from "@/pages/grupo 8/SchoolRate";
+import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 
 type Role =
   | "Profesor"
@@ -111,6 +113,16 @@ const routes: RouteConfig[] = [
     path: "/pendientes-calificar/:id",
     element: <RatePage />,
     roles: ["Jurado"],
+  },
+  {
+    path: "/colegios-calificar",
+    element: <PendingSchoolGradesPage />,
+    roles: ["Profesor"],
+  },
+  {
+    path: "/colegios-calificar/:id",
+    element: <SchoolRate />,
+    roles: ["Profesor"],
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 

@@ -11,6 +11,7 @@ import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
+
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 export interface Team {
   id: number;
@@ -148,6 +149,8 @@ interface TeamCardProps {
 }
 
 function TeamCard({ team }: TeamCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const getStatusInfo = (status: TeamStatus) => {
     switch (status) {
       case "pendiente":
@@ -158,24 +161,165 @@ function TeamCard({ team }: TeamCardProps) {
         return { text: "Rechazada", color: "text-red-400" };
     }
   };
+
   const { text, color } = getStatusInfo(team.status);
 
   return (
-    <Card>
-      <CardContent className="flex space-x-5 py-5 px-7">
-        <Avatar className="w-20 h-20">
-          <AvatarImage
-            src={team.image || "/placeholder.svg"}
-            alt={team.teamName}
-          />
-          <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="space-y-1">
-          <h4 className="text-xl font-medium">{team.gameName}</h4>
-          <p>Equipo: {team.teamName}</p>
-          <p className={`${color} font-semibold`}>{text}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={() => setIsOpen(true)}
+        className="cursor-pointer"
+      >
+        <Card className="transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50">
+          <CardContent className="flex space-x-5 py-5 px-7">
+            <Avatar className="w-20 h-20">
+              <AvatarImage
+                src={team.image || "/placeholder.svg"}
+                alt={team.teamName}
+              />
+              <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <h4 className="text-xl font-medium">{team.gameName}</h4>
+              <p>Equipo: {team.teamName}</p>
+              <p className={`${color} font-semibold`}>{text}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Panel estilo Steam */}
+      {isOpen && (
+        <GameDetailModal team={team} onClose={() => setIsOpen(false)} />
+      )}
+    </>
+  );
+}
+import { X, ExternalLink, Users } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+
+interface GameDetailModalProps {
+  team: {
+    gameName: string;
+    teamName: string;
+    status: string;
+    video?: string;
+    logo?: string;
+    repo?: string;
+    members?: string[]; // Lista de integrantes
+    description?: string;
+  };
+  onClose: () => void;
+}
+
+export function GameDetailModal({ team, onClose }: GameDetailModalProps) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 12 }}
+        >
+          {/* Botón de cerrar */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Columna izquierda: Video */}
+          <div className="md:w-2/3 bg-black relative flex items-center justify-center">
+            <video
+              controls
+              autoPlay
+              loop
+              muted
+              className="w-full h-[380px] object-cover rounded-l-2xl"
+            >
+              <source src={team.video || "/videos/demo.mp4"} type="video/mp4" />
+              Tu navegador no soporta video HTML5.
+            </video>
+          </div>
+
+          {/* Columna derecha: Información */}
+          <div className="md:w-1/3 p-6 flex flex-col justify-between bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+            <div>
+              {/* Logo */}
+              {team.logo && (
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={team.logo}
+                    alt={`${team.gameName} logo`}
+                    className="w-28 h-28 object-contain"
+                  />
+                </div>
+              )}
+
+              <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
+                {team.gameName}
+              </h2>
+              <p className="text-sm text-gray-400 mb-2">
+                Equipo: <span className="text-white font-semibold">{team.teamName}</span>
+              </p>
+              <p className="text-sm text-gray-400 mb-4">
+                Estado: <span className="capitalize text-gray-200">{team.status}</span>
+              </p>
+
+              <p className="text-gray-300 text-sm leading-relaxed mb-5">
+                 Descripcion: <span className="capitalize text-gray-200">{team.description}</span>
+              </p>
+
+              {/* Integrantes */}
+              {team.members && team.members.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-5 h-5 text-[#AC7CFF]" />
+                    <h4 className="text-lg font-semibold">Integrantes</h4>
+                  </div>
+                  <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                    {team.members.map((member, index) => (
+                      <li key={index}>{member}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Botones */}
+            <div className="flex flex-col gap-3 mt-6">
+              {team.repo && (
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(team.repo, "_blank")}
+                  className="flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Ver repositorio en GitHub
+                </Button>
+              )}
+              <Button
+                variant="default"
+                onClick={onClose}
+                className="bg-[#AC7CFF] hover:bg-[#945EFF]"
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
