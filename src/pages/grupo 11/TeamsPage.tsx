@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, X, ExternalLink, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,15 +10,23 @@ import { useFetch } from "@/hooks/useFetch";
 import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { motion, AnimatePresence } from "framer-motion";
+import ReactPlayer from "react-player";
 
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
+`${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`
 export interface Team {
   id: number;
   gameName: string;
   teamName: string;
   image?: string;
   status: TeamStatus;
+  video?: string;
+  repo?: string;
+  members?: string[];
+  description?: string;
+  logo?: string;
 }
 
 export default function TeamsPage() {
@@ -54,6 +62,10 @@ export default function TeamsPage() {
         teamName: string;
         status: string;
         logoUrl: string;
+        videoUrl?: string;
+        repoUrl?: string;
+        members?: string[];
+        description?: string;
       }
 
       const data: Team[] = rawData.map((team: RawTeam) => ({
@@ -62,6 +74,11 @@ export default function TeamsPage() {
         teamName: team.teamName,
         status: team.status.toLowerCase() as TeamStatus,
         image: team.logoUrl,
+        video: team.videoUrl,
+        repo: team.repoUrl,
+        members: team.members || [],
+        description: team.description || "Sin descripción",
+        logo: team.logoUrl || "C:/Users/sxbrp/OneDrive/Desktop/Proyectos/Arkad/gamerlab_front_2295_2/public/Arkad.svg",
       }));
       setTeams(data);
       setLoading(false);
@@ -190,32 +207,19 @@ function TeamCard({ team }: TeamCardProps) {
         </Card>
       </motion.div>
 
-      {/* Panel estilo Steam */}
       {isOpen && (
         <GameDetailModal team={team} onClose={() => setIsOpen(false)} />
       )}
     </>
   );
 }
-import { X, ExternalLink, Users } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-
 
 interface GameDetailModalProps {
-  team: {
-    gameName: string;
-    teamName: string;
-    status: string;
-    video?: string;
-    logo?: string;
-    repo?: string;
-    members?: string[]; // Lista de integrantes
-    description?: string;
-  };
+  team: Team;
   onClose: () => void;
 }
 
-export function GameDetailModal({ team, onClose }: GameDetailModalProps) {
+function GameDetailModal({ team, onClose }: GameDetailModalProps) {
   return (
     <AnimatePresence>
       <motion.div
@@ -229,7 +233,7 @@ export function GameDetailModal({ team, onClose }: GameDetailModalProps) {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 120, damping: 12 }}
+          transition={{ type: "spring", stiffness: 120, damping: 12 }}
         >
           {/* Botón de cerrar */}
           <button
@@ -239,49 +243,48 @@ export function GameDetailModal({ team, onClose }: GameDetailModalProps) {
             <X className="w-6 h-6" />
           </button>
 
-          {/* Columna izquierda: Video */}
-          <div className="md:w-2/3 bg-black relative flex items-center justify-center">
-            <video
-              controls
-              autoPlay
-              loop
-              muted
-              className="w-full h-[380px] object-cover rounded-l-2xl"
-            >
-              <source src={team.video || "/videos/demo.mp4"} type="video/mp4" />
-              Tu navegador no soporta video HTML5.
-            </video>
+          {/* 🎬 Video de YouTube (ReactPlayer) */}
+          <div className="md:w-2/3 bg-black flex items-center justify-center p-3">
+            <div className="w-full aspect-video rounded-xl overflow-hidden">
+              <ReactPlayer
+                src={team.video || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
+                width="100%"
+                height="100%"
+                controls
+                light={team.image || undefined}
+              />
+            </div>
           </div>
 
-          {/* Columna derecha: Información */}
+          {/* 🧾 Información del equipo */}
           <div className="md:w-1/3 p-6 flex flex-col justify-between bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
             <div>
-              {/* Logo */}
               {team.logo && (
                 <div className="flex justify-center mb-4">
                   <img
-                    src={team.logo}
+                    src={team.logo || "/Arkad.svg"}
                     alt={`${team.gameName} logo`}
                     className="w-28 h-28 object-contain"
                   />
                 </div>
               )}
-
               <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
                 {team.gameName}
               </h2>
               <p className="text-sm text-gray-400 mb-2">
-                Equipo: <span className="text-white font-semibold">{team.teamName}</span>
+                Equipo:{" "}
+                <span className="text-white font-semibold">
+                  {team.teamName}
+                </span>
               </p>
               <p className="text-sm text-gray-400 mb-4">
-                Estado: <span className="capitalize text-gray-200">{team.status}</span>
+                Estado:{" "}
+                <span className="capitalize text-gray-200">{team.status}</span>
               </p>
-
               <p className="text-gray-300 text-sm leading-relaxed mb-5">
-                 Descripcion: <span className="capitalize text-gray-200">{team.description}</span>
+                {team.description || "Sin descripción disponible."}
               </p>
 
-              {/* Integrantes */}
               {team.members && team.members.length > 0 && (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -297,7 +300,8 @@ export function GameDetailModal({ team, onClose }: GameDetailModalProps) {
               )}
             </div>
 
-            {/* Botones */}
+            {/* 🔗 Botones */}
+            
             <div className="flex flex-col gap-3 mt-6">
               {team.repo && (
                 <Button

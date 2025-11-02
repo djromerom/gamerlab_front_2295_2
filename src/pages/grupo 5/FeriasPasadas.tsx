@@ -86,6 +86,38 @@ const glowStyles = `
     );
   }
 
+  /* Podium specific gradient borders */
+  .gradient-border-gold::after, .gradient-border-gold::before {
+    background-image: conic-gradient(
+      from var(--angle),
+      #B8860B,
+      #FFD700,
+      #FFE680,
+      #FFD700,
+      #B8860B
+    );
+  }
+  .gradient-border-silver::after, .gradient-border-silver::before {
+    background-image: conic-gradient(
+      from var(--angle),
+      #8A8A8A,
+      #C0C0C0,
+      #E0E0E0,
+      #C0C0C0,
+      #8A8A8A
+    );
+  }
+  .gradient-border-bronze::after, .gradient-border-bronze::before {
+    background-image: conic-gradient(
+      from var(--angle),
+      #7C4A21,
+      #CD7F32,
+      #E7A56B,
+      #CD7F32,
+      #7C4A21
+    );
+  }
+
   .info-card {
     backdrop-filter: blur(8px);
     background-color: rgba(6, 3, 18, 0.7);
@@ -527,8 +559,8 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
               }
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(2) .relative.mb-4,
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(2) .rounded-full {
-                background-color: #6A0DAD !important; /* morado principal */
-                border-color: #AC7CFF !important;
+                background-color: #D4AF37 !important; /* dorado */
+                border-color: #FFD700 !important;
               }
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(3) .relative.mb-2,
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(3) .rounded-full {
@@ -554,11 +586,6 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
                     <>
                       <div
                         className="relative mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] flex items-center justify-center"
-                        style={{
-                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
-                            .toString(16)
-                            .padStart(6, "0")}`,
-                        }}
                       >
                         <span className="text-2xl font-bold text-white">
                           {podio[1].equipo?.substring(0, 1)}
@@ -586,12 +613,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
                   {podio[0] ? (
                     <>
                       <div
-                        className="relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF] flex items-center justify-center"
-                        style={{
-                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
-                            .toString(16)
-                            .padStart(6, "0")}`,
-                        }}
+                        className="relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 border-[#D4AF37] flex items-center justify-center"
                       >
                         <span className="text-3xl font-bold text-white">
                           {podio[0].equipo?.substring(0, 1)}
@@ -619,12 +641,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
                   {podio[2] ? (
                     <>
                       <div
-                        className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0] flex items-center justify-center"
-                        style={{
-                          backgroundColor: `#${Math.floor(Math.random() * 16777215)
-                            .toString(16)
-                            .padStart(6, "0")}`,
-                        }}
+                        className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#CD7F32] flex items-center justify-center"
                       >
                         <span className="text-xl font-bold text-white">
                           {podio[2].equipo?.substring(0, 1)}
@@ -635,7 +652,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
                         <p className="text-lg font-bold text-[#c0c0c0]">{podio[2].puntuacion}</p>
                       </div>
 
-                      <div className="w-full mt-4 h-24 rounded-t-lg relative gradient-border gradient-border-silver">
+                      <div className="w-full mt-4 h-24 rounded-t-lg relative gradient-border gradient-border-bronze">
                         <div className="gradient-border-inner"></div>
                         <div className="flex h-full items-center justify-center relative z-10">
                           <span className="text-5xl font-bold text-white">3</span>
