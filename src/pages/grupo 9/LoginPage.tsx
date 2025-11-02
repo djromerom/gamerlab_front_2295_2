@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -126,6 +127,14 @@ export default function LoginPage() {
               </div>
             </form>
           </CardContent>
+          <CardFooter className="w-full justify-center p-0 mt-2 sm:mt-4 text-center">
+              <Link
+                to="/OlvidastePassword"
+                className="text-[#B3C7FF] hover:text-[#8a70ff] text-sm sm:text-[15px]"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+          </CardFooter>
         </Card>
         <TextSizeControls />
       </div>

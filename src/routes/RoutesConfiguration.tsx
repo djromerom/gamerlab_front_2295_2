@@ -27,6 +27,8 @@ import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
+import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 
@@ -87,6 +89,14 @@ const routes: RouteConfig[] = [
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/OlvidastePassword",
+    element: <ForgetPassword />
+  },
+  {
+    path: "/establecer-contrasena",
+    element: <ResetPassword />,
   },
   {
     path: "/inicio",
