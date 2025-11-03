@@ -6,7 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-// import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
+import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
@@ -54,10 +54,11 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  // { // Disabled temporarily
-  //   path: "/registro-equipo",
-  //   element: <TeamRegisterPage />,
-  // },
+  {
+    //Disabled temporarily
+    path: "/registro-equipo",
+    element: <TeamRegisterPage />,
+  },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -97,7 +98,7 @@ const routes: RouteConfig[] = [
     element: <JuryManagementPage />,
     roles: ["Administrador"],
   },
-  {path:"/materias", element:<SubjetsPage />, roles:["Administrador"]},
+  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
     path: "/equipos-inscritos",
     element: <TeamsManagementPage />,
@@ -133,7 +134,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />, 
+    element: <HomeTeacherPage />,
     roles: ["Profesor"],
   },
   {

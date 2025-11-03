@@ -50,7 +50,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   TeamRowData,
   Props,
-  EstadoConfirmacion,
+  EstadoVideojuego,
   NrcInfo,
   MateriaInfo,
 } from "./teams-utils";
@@ -85,8 +85,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
     new Set()
   );
 
-  const [estadosConfirmacion, setEstadosConfirmacion] = useState<
-    EstadoConfirmacion[]
+  const [estadosVideojuego, setEstadosVideojuego] = useState<
+    EstadoVideojuego[]
   >([]);
   const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
@@ -101,11 +101,10 @@ export const TeamsManagementTable: React.FC<Props> = ({
       try {
         // TODO: reemplazar por fetch reales a tu API
         await new Promise((r) => setTimeout(r, 300));
-        setEstadosConfirmacion([
-          { id_estado: 1, estado: "pendiente", activo: true },
-          { id_estado: 2, estado: "confirmado", activo: true },
-          { id_estado: 3, estado: "expirado", activo: true },
-          { id_estado: 4, estado: "rechazado", activo: true },
+        setEstadosVideojuego([
+          { id_estado: 1, estado: "confirmado", activo: true },
+          { id_estado: 2, estado: "pendiente", activo: true },
+          { id_estado: 3, estado: "rechazado", activo: true }
         ]);
         setNrcOptions([
           { id_nrc: 1, codigo: 12345, id_materia: 1, id_profesor: "prof_001" },
@@ -141,9 +140,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const getStatusBadge = (status: string) => {
     const map = {
-      pendiente: { variant: "secondary" as const, text: "Pendiente" },
       confirmado: { variant: "default" as const, text: "Confirmado" },
-      expirado: { variant: "destructive" as const, text: "Expirado" },
+      pendiente: { variant: "secondary" as const, text: "Pendiente" },
       rechazado: { variant: "destructive" as const, text: "Rechazado" },
     };
     const c = (map as any)[status] || map.pendiente;
@@ -331,7 +329,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {estadosConfirmacion.map((estado) => (
+              {estadosVideojuego.map((estado) => (
                 <SelectItem key={estado.id_estado} value={estado.estado}>
                   {estado.estado}
                 </SelectItem>
@@ -392,8 +390,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
     if (!deletingId) return;
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/teams/${deletingId}/delete`, {
-        method: "PATCH",
+      const res = await fetch(`${apiBaseUrl}/teams/${deletingId}`, {
+        method: "DELETE",
         credentials: "include",
       });
       if (!res.ok) {

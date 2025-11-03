@@ -22,8 +22,8 @@ function Landing(): React.ReactElement {
     document.documentElement.classList.add("dark")
 
     // Check event status when component mounts
-    const startDate = new Date("2025-06-05T08:30:00")
-    const endDate = new Date("2025-06-05T12:30:00") 
+    const startDate = new Date("2026-06-05T08:30:00")
+    const endDate = new Date("2026-06-05T12:30:00") 
     const now = new Date()
 
     if (now >= endDate) {
@@ -67,7 +67,7 @@ function Landing(): React.ReactElement {
     }
   }, [])
 
-  const targetDate = new Date("2025-06-05T08:30:00")
+  const targetDate = new Date("2025-11-28T08:30:00")
   const navigate = useNavigate()
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT"
 
@@ -90,12 +90,13 @@ function Landing(): React.ReactElement {
 
   const getButtonText = () => {
     if (eventEnded) return "Ver ranking"
-    return "Conoce más"
+    return "Registrar Equipo"
   }
 
   const getButtonRoute = () => {
     if (eventEnded) return "/ranking"
-    return "/informacion"
+    //return "/informacion"
+    return "/registro-equipo"
   }
 
   const getDescriptionText = () => {

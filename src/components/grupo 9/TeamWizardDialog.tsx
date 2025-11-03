@@ -48,7 +48,7 @@ const MemberSchemaAllRequired = z.object({
 });
 
 const WizardSchema = z.object({
-  mode: z.enum(["add", "edit"]).default("add"),
+  mode: z.enum(["add", "edit"]).optional().default("add"),
   isExternal: z.boolean().default(false),
   team_nrc_global_id: z.number().optional(),
   nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
@@ -414,7 +414,7 @@ export default function TeamWizardDialog({
       WizardSchema.parse(data);
 
       if (!data.isExternal && data.integrantes.length > 0) {
-        const emails = data.integrantes.map((m) => m.correo);
+        const emails = data.integrantes.map((m: { correo: any; }) => m.correo);
         // ✅ En modo edición, excluir el email original del primer miembro
         const excludeEmails = data.mode === "edit" && primaryEmailLocked ? [primaryEmailLocked] : [];
         const dup = await findUsedEmails(apiBaseUrl, emails, excludeEmails);
