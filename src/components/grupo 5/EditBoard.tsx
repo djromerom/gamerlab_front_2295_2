@@ -7,12 +7,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Pencil } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
+import { Label } from "recharts"
+import { Input } from "../ui/input"
 
 type Student = {
-  id: string
-  name: string
-  nrcs: string[]
-}
+  id: string;
+  name: string;
+  nrcs: string[];
+  firstName: string;
+  lastName: string;
+  email: string;
+  studentCode: string;
+};
 
 type RawStudent = {
   id: number;
@@ -40,18 +46,25 @@ export default function EditBoard() {
   const [students, setStudents] = useState<Student[]>([])
   const [nrcOptions, setNrcOptions] = useState<NRCOption[]>([])
 
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editStudentCode, setEditStudentCode] = useState("");
+
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [editNrcs, setEditNrcs] = useState<string[]>([])
   const [searchNrc, setSearchNrc] = useState("")
   const [loading, setLoading] = useState(false)
-  
+
+
+
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
         method: 'PATCH',
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify( {nrcCodes} ),
+        body: JSON.stringify({ nrcCodes }),
       });
 
       if (!response.ok) {
@@ -65,6 +78,32 @@ export default function EditBoard() {
       console.error('Error en PATCH:', error);
     }
   };
+
+  const updateStudentBasics = async ({
+    id,
+    firstName,
+    lastName,
+    email,
+    studentCode,
+  }: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    studentCode: string;
+  }) => {
+    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firstName, lastName, email, studentCode }),
+    });
+    if (!response.ok) {
+      throw new Error("Error al actualizar los datos del estudiante");
+    }
+    return response.json();
+  };
+
 
   useEffect(() => {
 
@@ -95,10 +134,14 @@ export default function EditBoard() {
         );
 
         setStudents(
-          studentsData.map((s: RawStudent ) => ({
+          studentsData.map((s: RawStudent) => ({
             id: s.id.toString(),
             name: `${s.firstName} ${s.lastName}`,
             nrcs: s.nrcs.map((nrc) => nrc.code),
+            firstName: s.firstName,
+            lastName: s.lastName,
+            email: s.email,
+            studentCode: s.studentCode,
           }))
         )
 
@@ -112,7 +155,7 @@ export default function EditBoard() {
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
-  } 
+  }
 
   function handleSaveNrcs(
     editStudent: Student | null,
@@ -131,6 +174,8 @@ export default function EditBoard() {
       setEditStudent(null);
     }
   }
+
+
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
@@ -176,10 +221,16 @@ export default function EditBoard() {
                         onClick={() => {
                           setEditStudent(student)
                           setEditNrcs(student.nrcs)
+                          setEditStudent(student);
+                          setEditNrcs(student.nrcs);
+                          setEditFirstName(student.firstName || "");
+                          setEditLastName(student.lastName || "");
+                          setEditEmail(student.email || "");
+                          setEditStudentCode(student.studentCode || "");
                         }}
                       >
                         <Pencil className="w-4 h-4 mr-1" />
-                        Editar NRCs
+                        Editar información
                       </Button>
                     </td>
                   </tr>
@@ -194,11 +245,56 @@ export default function EditBoard() {
       <Dialog open={!!editStudent} onOpenChange={open => !open && setEditStudent(null)}>
         <DialogContent className="max-w-md w-full">
           <DialogHeader>
-            <DialogTitle>Editar NRCs de {editStudent?.name}</DialogTitle>
+            <DialogTitle>Editar datos de {editStudent?.name}</DialogTitle>
             <DialogDescription>
-              Aquí puedes eliminar o agregar NRCs para este estudiante.
+              Edita los datos del estudiante y sus NRCs asignados.
             </DialogDescription>
           </DialogHeader>
+
+          {/* NUEVOS CAMPOS: ENCIMA DE LOS NRCs */}
+          <div className="space-y-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <Label>Nombre</Label>
+                <Input
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="Nombre"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label>Apellido</Label>
+                <Input
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Apellido"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label>Correo</Label>
+              <Input
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="usuario@uninorte.edu.co"
+              // Si este estudiante es el principal y debe bloquearse:
+              // disabled={editStudent?.isLeader === true}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label>Código estudiantil</Label>
+              <Input
+                value={editStudentCode}
+                onChange={(e) => setEditStudentCode(e.target.value.replace(/\D/g, ""))}
+                inputMode="numeric"
+                placeholder="1234567890"
+              />
+            </div>
+          </div>
+
+          {/* TUS CAMPOS EXISTENTES DE NRCs */}
           <div className="space-y-4">
             <label className="block text-sm font-medium">NRCs asignados</label>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -224,6 +320,7 @@ export default function EditBoard() {
                 );
               })}
             </div>
+
             <label className="block text-sm font-medium">Agregar NRC</label>
             <div>
               <input
@@ -241,7 +338,9 @@ export default function EditBoard() {
                       key={nrc.code}
                       variant="ghost"
                       className="justify-start"
-                      onClick={() => setEditNrcs(prev => [...prev, nrc.code])}
+                      onClick={() => setEditNrcs(prev => prev.length >= 2 ? prev : [...prev, nrc.code])}
+                      disabled={editNrcs.length >= 2}
+                      title={editNrcs.length >= 2 ? "Máximo 2 NRCs" : undefined}
                     >
                       {nrc.code}
                     </Button>
@@ -249,6 +348,7 @@ export default function EditBoard() {
               </div>
             </div>
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -257,18 +357,67 @@ export default function EditBoard() {
               Cancelar
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
+                // Validaciones mínimas
+                if (!editFirstName.trim() || !editLastName.trim()) {
+                  toast.error("Nombre y apellido son obligatorios");
+                  return;
+                }
+                if (!editEmail.trim()) {
+                  toast.error("El correo es obligatorio");
+                  return;
+                }
+                if (!/^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(editEmail)) {
+                  toast.error("El correo debe ser @uninorte.edu.co");
+                  return;
+                }
+                if (!editStudentCode.trim()) {
+                  toast.error("Código estudiantil obligatorio");
+                  return;
+                }
                 if (editNrcs.length === 0) {
                   toast.error("Debes asignar al menos un NRC", { style: { background: "#ef4444", color: "#fff" } });
                   return;
                 }
-
                 if (editNrcs.length > 2) {
                   toast.error("No puedes asignar más de 2 NRCs", { style: { background: "#ef4444", color: "#fff" } });
                   return;
                 }
 
-                handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
+                try {
+                  // 1) Actualiza datos básicos
+                  if (editStudent) {
+                    await updateStudentBasics({
+                      id: editStudent.id,
+                      firstName: editFirstName.trim(),
+                      lastName: editLastName.trim(),
+                      email: editEmail.trim(),
+                      studentCode: editStudentCode.trim(),
+                    });
+
+                    // refresca en memoria local
+                    setStudents(prev =>
+                      prev.map(s =>
+                        s.id === editStudent.id
+                          ? {
+                            ...s,
+                            name: `${editFirstName.trim()} ${editLastName.trim()}`,
+                            firstName: editFirstName.trim(),
+                            lastName: editLastName.trim(),
+                            email: editEmail.trim(),
+                            studentCode: editStudentCode.trim(),
+                          }
+                          : s
+                      )
+                    );
+                  }
+
+                  // 2) Actualiza NRCs
+                  handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
+                } catch (err: any) {
+                  console.error(err);
+                  toast.error(err?.message || "No se pudo actualizar el estudiante");
+                }
               }}
             >
               Guardar
