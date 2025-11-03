@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ButtonLoading } from "@/pages/grupo 9/ButtonLoading";
@@ -12,8 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 
 export default function LoginPage() {
@@ -30,6 +32,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [ show, setShow ] = useState(false);
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,16 +98,24 @@ export default function LoginPage() {
                 </div>
                 <div className="flex flex-col w-full items-start gap-2">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="*****"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isSubmitting}
-                    className="w-full"
-                  />
+                  <div className="relative flex w-full">
+                    <Input
+                      id="password"
+                      type={show ? "text" : "password"}
+                      placeholder="miContraseña123!"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={isSubmitting}
+                      className="w-full"
+                    />
+                    <button type="button"
+                          onClick={() => setShow(!show)}
+                          className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                            {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+
                 </div>
                 {error && (
                   <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">
