@@ -466,7 +466,6 @@ export default function TeamWizardDialog({
           <form onSubmit={onSubmit} className="space-y-4">
             <DialogHeader>
               <DialogTitle>{methods.watch("mode") === "add" ? "Registrar equipo" : "Editar equipo"}</DialogTitle>
-              <DialogDescription>Completa los pasos.</DialogDescription>
             </DialogHeader>
 
             {/* indicador 2 pasos */}

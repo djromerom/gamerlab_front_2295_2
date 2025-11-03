@@ -25,7 +25,7 @@ const TeamsManagementPage = () => {
 
     try {
       const res = await fetch(
-        `${API_ENDPOINT}?includeExternal=true&limit=${limit}&page=${page}`,
+        `${API_ENDPOINT}?page=${page}&limit=${limit}`,
         {
           method: "GET",
           credentials: "include",
