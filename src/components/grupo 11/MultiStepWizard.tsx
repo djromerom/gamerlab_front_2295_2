@@ -7,7 +7,7 @@ import { Form } from "@/components/ui/form";
 import { MultiFormProvider } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
@@ -16,6 +16,7 @@ export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const customFetch = useFetch();
   const navigate = useNavigate();
+  
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
     defaultValues: {
@@ -30,16 +31,41 @@ export default function MultiStepWizard() {
         },
       ],
       gameName: "",
+      YoutubeUrl: "",
+      RepoUrl: "",
       description: "",
+      
       files: [] as File[],
       recaptcha: "",
     },
   });
-
+  
+  // Set default values only once on mount
+  useEffect(() => {
+    methods.reset({
+      teamName: "",
+      members: [
+        {
+          nombre: "",
+          apellido: "",
+          correo: "",
+          codigoEstudiantil: "",
+          nrc: [],
+        },
+      ],
+      gameName: "",
+       YoutubeUrl: "",
+      RepoUrl: "",
+      description: "",
+     
+      files: [] as File[],
+      recaptcha: "",
+    });
+  }, []); // Empty dependency array = runs only once on mount
+  
   async function onSubmit(data: CombinedFormValues) {
     const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${
-        data.gameName
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
     );
     const exists = await res.json();
@@ -67,7 +93,7 @@ export default function MultiStepWizard() {
 
         console.log("Uploading file to Azure...");
         console.log('TAMAÑO DEL FILE:', data.files.length);
-        
+
         for (const file of data.files) {
           const uploadResult = await uploadImage(file);
           const urlResult = await getImageUrl(uploadResult.id);
@@ -94,6 +120,8 @@ export default function MultiStepWizard() {
           vgName: data.gameName,
           description: data.description,
           logoURL: uploadedFileUrls[0] || "",
+          videoUrl: data.YoutubeUrl || "",
+          repoUrl: data.RepoUrl || "",
         },
         recaptchaToken: data.recaptcha,
       };
@@ -114,7 +142,7 @@ export default function MultiStepWizard() {
       } else {
         const errorData = await response.json();
         let errorMessage = "Error en el registro";
-        
+
         if (errorData && errorData.message) {
           // Manejar diferentes mensajes de error
           if (typeof errorData.message === 'string') {
@@ -125,7 +153,7 @@ export default function MultiStepWizard() {
             errorMessage = Object.values(errorData.message).join(', ');
           }
         }
-        
+
         throw new Error(errorMessage || `Error ${response.status}`);
       }
     } catch (e) {

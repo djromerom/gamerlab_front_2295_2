@@ -15,7 +15,7 @@ import ReactPlayer from "react-player";
 
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
-`${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`
+
 export interface Team {
   id: number;
   gameName: string;
@@ -56,6 +56,8 @@ export default function TeamsPage() {
       );
 
       const rawData = await res.json();
+      console.log("🔍 Datos crudos del backend:", rawData);
+      
       interface RawTeam {
         id: number;
         name: string;
@@ -65,21 +67,22 @@ export default function TeamsPage() {
         videoUrl?: string;
         repoUrl?: string;
         members?: string[];
-        description?: string;
+        descripcion?: string;
       }
 
       const data: Team[] = rawData.map((team: RawTeam) => ({
         id: team.id,
-        gameName: team.name,
-        teamName: team.teamName,
-        status: team.status.toLowerCase() as TeamStatus,
-        image: team.logoUrl,
+        gameName: team.name || "Sin nombre",
+        teamName: team.teamName || "Sin equipo",
+        status: team.status?.toLowerCase() as TeamStatus || "pendiente",
+        image: team.logoUrl || "/Arkad.svg",
         video: team.videoUrl,
         repo: team.repoUrl,
         members: team.members || [],
-        description: team.description || "Sin descripción",
-        logo: team.logoUrl || "C:/Users/sxbrp/OneDrive/Desktop/Proyectos/Arkad/gamerlab_front_2295_2/public/Arkad.svg",
+        description: team.descripcion || "Sin descripción disponible.",
+        logo: team.logoUrl || "/Arkad.svg",
       }));
+      console.log("✅ Datos procesados:", data);
       setTeams(data);
       setLoading(false);
     }
@@ -327,3 +330,4 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
     </AnimatePresence>
   );
 }
+

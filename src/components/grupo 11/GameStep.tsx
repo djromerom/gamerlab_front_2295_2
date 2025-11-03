@@ -94,6 +94,48 @@ export default function GameStep() {
 
       <FormField
         control={control}
+        name="YoutubeUrl"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>URL de YouTube (opcional)</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="https://www.youtube.com/watch?v=..."
+                type="url"
+              />
+            </FormControl>
+            <FormDescription>
+              Video promocional o gameplay de tu videojuego
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="RepoUrl"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>URL del Repositorio (opcional)</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="https://github.com/usuario/proyecto"
+                type="url"
+              />
+            </FormControl>
+            <FormDescription>
+              Enlace al repositorio de GitHub, GitLab, etc.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
         name="description"
         render={({ field }) => (
           <FormItem>
