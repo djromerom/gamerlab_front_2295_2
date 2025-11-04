@@ -653,8 +653,8 @@ export default function DevelopersCredits() {
       role: "FullStack Developer",
       department: "fullstacks",
       version: "2.0",
-      github: "https://github.com/djromerom",
-      email: "djromero@uninorte.edu.co",
+      github: "https://github.com/IsaAJ05",
+      email: "isabellajuliao@uninorte.edu.co",
     },
     {
       id: 28,
