@@ -33,7 +33,7 @@ export default function ForgetPassword() {
                 setError('No se pudo enviar el correo de restablecimiento de contraseña. Por favor, verifica el correo ingresado.');
                 throw new Error('Error al enviar el correo de restablecimiento de contraseña.');
             }
-            setSuccess('Correo de restablecimiento de contraseña enviado exitosamente. Por favor, revisa tu bandeja de entrada.');
+            setSuccess('Correo de restablecimiento de contraseña enviado exitosamente. Por favor, revisa tu bandeja de entrada. Redireccionando al login... 😎');
 
             setTimeout(() => {
                 navigate("/login")
