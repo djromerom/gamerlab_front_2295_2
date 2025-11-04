@@ -75,7 +75,8 @@ export default function TeamsPage() {
         gameName: team.name || "Sin nombre",
         teamName: team.teamName || "Sin equipo",
         status: team.status?.toLowerCase() as TeamStatus || "pendiente",
-        image: team.logoUrl || "/Arkad.svg",
+        //cambiar por vector de imagenes de carrusel
+        image: team.logoUrl ,
         video: team.videoUrl,
         repo: team.repoUrl,
         members: team.members || [],

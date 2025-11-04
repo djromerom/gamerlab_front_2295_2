@@ -11,7 +11,7 @@ export default function StepRenderer() {
         <>
         
         <div className="flex text-2xl font-bold justify-between">
-              <span>Inscripción del equipo</span>
+              <span>Inscripción de Miembros</span>
               <div className="flex  max-w-50 w-full items-center">
                 <div className="flex items-center justify-center rounded-full border-3 border-violet-500 w-8 h-8 ">
                   <span className="text-sm text-violet-500">1</span>
@@ -34,7 +34,7 @@ export default function StepRenderer() {
           <>
           
           <div className="flex text-2xl font-bold justify-between">
-            <span>Inscripción de miembros</span>
+            <span>Inscripción del Videojuego</span>
             <div className="flex  max-w-50 w-full items-center">
               <div className="flex items-center justify-center rounded-full border-3 border-violet-500 w-8 h-8 ">
                 <span className="text-sm text-violet-500">1</span>
@@ -54,7 +54,7 @@ export default function StepRenderer() {
         return (
         <>
         <div className="flex text-2xl font-bold justify-between">
-          <span>Inscripción del videojuego</span>
+          <span>Inscripción del Equipo</span>
           <div className="flex  max-w-50 w-full items-center">
             <div className="flex items-center justify-center rounded-full border-3 border-violet-500 w-8 h-8 ">
               <span className="text-sm text-violet-500">1</span>
