@@ -6,7 +6,7 @@ export interface TeamRowData {
   id_usuario: string;
   id_edicion: number;
   activo: boolean;
-  id_estado_confirmacion: number;
+  id_estado_confirmacion: number; // Estado del equipo, 1:confirmado, 2:pendiente, 3:expirado
   estado_nombre: string; // Desde estados_confirmacion
   integrantes: IntegranteData[];
   videojuego: VideojuegoData;
@@ -32,7 +32,7 @@ export interface VideojuegoData {
   descripcion: string;
   logo_url: string;
   fecha_registro: string;
-  id_estado_videojuego: number;
+  id_estado_videojuego: number; // estado del videojuego -> 1:Confirmado, 2:pendiente, 3:rechazado
   id_equipo: number;
   activo: boolean;
 }

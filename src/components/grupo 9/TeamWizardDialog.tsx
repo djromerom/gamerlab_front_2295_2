@@ -48,8 +48,8 @@ const MemberSchemaAllRequired = z.object({
 });
 
 const WizardSchema = z.object({
-  mode: z.enum(["add", "edit"]).optional().default("add"),
-  isExternal: z.boolean().default(false),
+  mode: z.enum(["add", "edit"]).optional(),
+  isExternal: z.boolean(),
   team_nrc_global_id: z.number().optional(),
   nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
   videojuego: z.object({

@@ -59,6 +59,14 @@ import TeamWizardDialog, {
   WizardValues,
   toInitialValuesFromTeam,
 } from "./TeamWizardDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../ui/dialog";
 
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
@@ -91,6 +99,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
+
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -138,20 +148,20 @@ export const TeamsManagementTable: React.FC<Props> = ({
     setExpandedMembers(s);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (statusId: number) => {
     const map = {
-      confirmado: { variant: "default" as const, text: "Confirmado" },
-      pendiente: { variant: "secondary" as const, text: "Pendiente" },
-      rechazado: { variant: "destructive" as const, text: "Rechazado" },
+      1: { variant: "default" as const, text: "Confirmado" },
+      2: { variant: "secondary" as const, text: "Pendiente" },
+      3: { variant: "destructive" as const, text: "Rechazado" },
     };
-    const c = (map as any)[status] || map.pendiente;
+    const c = (map as any)[statusId] || map[2];
     return <Badge variant={c.variant}>{c.text}</Badge>;
   };
 
   async function resendInvite(email: string) {
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/auth/resend-invite`, {
+      const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -188,157 +198,198 @@ export const TeamsManagementTable: React.FC<Props> = ({
         </div>
       ),
     },
+    // Reemplaza las columnas "members" y "academicInfo" por esta columna:
     {
-      key: "members",
-      label: "Miembros",
+      key: "memberInfo",
+      label: "Información miembros",
       renderCell: (team: TeamRowData) => {
-        const isExpanded = expandedMembers.has(team.id_equipo);
+        const isOpen = openInfoTeamId === team.id_equipo;
+
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleMembersExpansion(team.id_equipo)}
-                className="h-6 px-2 text-xs"
-              >
-                <Users className="w-3 h-3 mr-1" />
-                {team.integrantes.length} miembro
-                {team.integrantes.length !== 1 ? "s" : ""}
-                <ChevronDown
-                  className={`w-3 h-3 ml-1 ${isExpanded ? "rotate-180" : ""}`}
-                />
-              </Button>
-            </div>
-            {isExpanded && (
-              <div className="ml-4 space-y-1 max-h-32 overflow-y-auto">
-                {team.integrantes.map((integrante) => (
-                  <div
-                    key={integrante.id_integrante}
-                    className="text-xs bg-muted/50 p-2 rounded"
-                  >
-                    <div className="font-medium">
-                      {integrante.nombre} {integrante.apellido}
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setOpenInfoTeamId(team.id_equipo)}
+            >
+              <Users className="w-3 h-3 mr-1" />
+              Ver {team.integrantes.length} miembro
+              {team.integrantes.length !== 1 ? "s" : ""} y datos académicos
+            </Button>
+
+            <Dialog open={isOpen} onOpenChange={(open) => !open && setOpenInfoTeamId(null)}>
+              <DialogContent className="max-w-lg w-full">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <Avatar className="w-9 h-9">
+                      <AvatarImage src={team.videojuego.logo_url} alt={team.nombre_equipo} />
+                      <AvatarFallback>{team.nombre_equipo.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{team.nombre_equipo}</span>
+                      <span className="text-xs text-muted-foreground">{team.videojuego.nombre}</span>
                     </div>
-                    <div className="text-muted-foreground">
-                      {integrante.correo}
-                    </div>
-                    <div className="text-muted-foreground">
-                      Código: {integrante.codigo_estudiantil}
+                  </DialogTitle>
+                  <DialogDescription>Detalles de miembros y datos académicos</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Información académica */}
+                  <div className="rounded-lg border p-3">
+                    <div className="text-sm space-y-1">
+                      {team.nrc_info && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">NRC:</span>
+                          <Badge variant="default">{team.nrc_info.codigo}</Badge>
+                        </div>
+                      )}
+                      {team.materia_info && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Materia:</span>
+                          <span>{team.materia_info.nombre}</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Edición: {team.id_edicion}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+
+                  {/* Miembros */}
+                  <div className="rounded-lg border">
+                    <div className="px-3 py-2 text-sm font-medium border-b">
+                      Miembros ({team.integrantes.length})
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-3 space-y-2">
+                      {team.integrantes.map((integrante) => (
+                        <div
+                          key={integrante.id_integrante}
+                          className="text-xs bg-muted/50 p-2 rounded"
+                        >
+                          <div className="font-medium">
+                            {integrante.nombre} {integrante.apellido}
+                          </div>
+                          <div className="text-muted-foreground">{integrante.correo}</div>
+                          {integrante.codigo_estudiantil && (
+                            <div className="text-muted-foreground">
+                              Código: {integrante.codigo_estudiantil}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenInfoTeamId(null)}>
+                    Cerrar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
         );
       },
     },
-    {
-      key: "academicInfo",
-      label: "Información Académica",
-      renderCell: (team: TeamRowData) => (
-        <div className="text-sm space-y-1">
-          {team.nrc_info && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium">NRC:</span>
-              <Badge variant="default">{team.nrc_info.codigo}</Badge>
-            </div>
-          )}
-          {team.materia_info && (
-            <div>
-              <span className="font-medium">Materia:</span>{" "}
-              {team.materia_info.nombre}
-            </div>
-          )}
-          <div className="text-xs text-muted-foreground">
-            Edición: {team.id_edicion}
-          </div>
-        </div>
-      ),
-    },
+
     {
       key: "emailConfirm",
-      label: "Confirmación",
+      label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
         const primaryEmail = team.integrantes?.[0]?.correo;
-        const confirmed =
-          (team as any).owner_email_confirmed ??
-          (team as any).email_confirmed ??
-          false;
+        const confirmed = (team as any).id_estado_confirmacion;
+
+        const confirmationLabel =
+          confirmed === 1 ? "Confirmado" :
+            confirmed === 2 ? "Pendiente" :
+              confirmed === 3 ? "Expirado" :
+                "Desconocido";
+
         return (
           <div className="flex items-center gap-2">
-            {confirmed ? (
-              <Badge variant="default" className="gap-1">
-                <MailCheck className="w-3 h-3" /> Confirmado
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <MailWarning className="w-3 h-3" /> Pendiente
-              </Badge>
-            )}
-            {!confirmed && primaryEmail && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7"
-                onClick={() => resendInvite(primaryEmail)}
-                disabled={internalIsLoading}
-              >
-                Reenviar correo
-              </Button>
-            )}
+            <Badge variant={confirmed === 1 ? "default" : "secondary"}>
+              {confirmationLabel}
+            </Badge>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => resendInvite(primaryEmail)}
+              disabled={internalIsLoading}
+            >
+              Reenviar correo
+            </Button>
+
           </div>
         );
       },
     },
+    // ...existing code...
     {
       key: "status",
-      label: "Estado",
-      renderCell: (team: TeamRowData) => (
-        <div className="space-y-2">
-          <div>{getStatusBadge(team.estado_nombre)}</div>
-          <Select
-            value={team.estado_nombre}
-            onValueChange={async (newStatus) => {
-              setInternalIsLoading(true);
-              try {
-                const res = await fetch(
-                  `${apiBaseUrl}/teams/${team.id_equipo}/status`,
-                  {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ estado: newStatus }),
+      label: "Estado Videojuego",
+      renderCell: (team: TeamRowData) => {
+        const idEstadoVideojuego = team.videojuego.id_estado_videojuego;
+
+        // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
+        const estadoOptions = [
+          { id_estado: 1, estado: "Confirmado" },
+          { id_estado: 2, estado: "Pendiente" },
+          { id_estado: 3, estado: "Rechazado" },
+        ];
+
+        return (
+          <div className="space-y-2">
+            {/* Mostrar badge basado en el id real del videojuego */}
+            <div>{getStatusBadge(idEstadoVideojuego)}</div>
+
+            <Select
+              value={String(idEstadoVideojuego)}
+              onValueChange={async (newStatus) => {
+                const numericStatus = parseInt(newStatus, 10);
+                setInternalIsLoading(true);
+                try {
+                  const res = await fetch(
+                    `${apiBaseUrl}/teams/${team.id_equipo}/status`,
+                    {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ estado: numericStatus }),
+                    }
+                  );
+                  if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err?.message || "Error al cambiar el estado.");
                   }
-                );
-                if (!res.ok) {
-                  const err = await res.json().catch(() => ({}));
-                  throw new Error(err?.message || "Error al cambiar el estado.");
+                  toast.success(`Estado cambiado a ${estadoOptions.find(o => o.id_estado === numericStatus)?.estado || numericStatus}.`);
+                  refreshData();
+                } catch (err: any) {
+                  showError(err.message || "Error al cambiar el estado.");
+                } finally {
+                  setInternalIsLoading(false);
                 }
-                toast.success(`Estado cambiado a ${newStatus}.`);
-                refreshData();
-              } catch (err: any) {
-                showError(err.message || "Error al cambiar el estado.");
-              } finally {
-                setInternalIsLoading(false);
-              }
-            }}
-            disabled={internalIsLoading}
-          >
-            <SelectTrigger className="w-full h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {estadosVideojuego.map((estado) => (
-                <SelectItem key={estado.id_estado} value={estado.estado}>
-                  {estado.estado}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ),
+              }}
+              disabled={internalIsLoading}
+            >
+              <SelectTrigger className="w-full h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {estadoOptions.map((estado) => (
+                  <SelectItem key={estado.id_estado} value={String(estado.id_estado)}>
+                    {estado.estado}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      },
     },
+// ...existing code...,
     {
       key: "createdAt",
       label: "Fecha de Registro",
@@ -411,9 +462,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${
-        showLoader ? "opacity-75" : ""
-      }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
+        }`}
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-6 px-4">
