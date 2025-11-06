@@ -7,8 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Pencil } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
-import { Label } from "recharts"
+import { Label } from "../ui/label"
 import { Input } from "../ui/input"
+import { FaGithubAlt, FaYoutube } from "react-icons/fa"
+import { Textarea } from "../ui/textarea"
 
 type Student = {
   id: string;
@@ -38,6 +40,15 @@ type UpdateStudentNrcsDto = {
   nrcCodes: string[];
 };
 
+type Team = {
+  id: string;
+  nameTeam: string;
+  nameGame: string;
+  description: string;
+  logo: string;
+  url: string;
+  github: string;
+}
 
 export default function EditBoard() {
   // Simulación de datos (reemplaza por fetch si lo necesitas)
@@ -55,6 +66,20 @@ export default function EditBoard() {
   const [editNrcs, setEditNrcs] = useState<string[]>([])
   const [searchNrc, setSearchNrc] = useState("")
   const [loading, setLoading] = useState(false)
+
+  const [edit, setEdit] = useState < boolean | null >(false)
+  const [infoEquipo, setInfoEquipo] = useState< Team >({
+    id: '1', 
+    nameTeam: 'Arcade',
+    nameGame: 'Piloto', 
+    description: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cupiditate iusto aliquid non qui doloribus magni! Assumenda at excepturi culpa dicta quod illum cupiditate amet, accusantium rerum doloribus ipsa, officia a!',
+    logo: 'https://gamerlab.blob.core.windows.net/gamer-storage-container/1762351036115-Imagenes%20Para%20Pc.jpg?sv=2025-11-05&se=2029-01-05T23%3A43%3A56Z&sr=b&sp=r&sig=UjJWzgbfrj84yk8m68M9T%2B5pZ%2BTubLDn720SMR%2FTveQ%3D',
+    url: 'https://www.youtube.com/watch?v=Geq5b0BHjE0',
+    github: 'https://github.com/settings/admin'
+
+  })
+
+  const [infoEditEquipo, setInfoEditEquipo] = useState(infoEquipo)
 
 
 
@@ -178,7 +203,7 @@ export default function EditBoard() {
 
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4">
+    <div className="w-full min-w-[400px] max-w-3xl mx-auto p-4 space-y-[40px]">
       <Card className="w-full shadow-sm border pb-4">
         <CardHeader className="pt-6">
           <CardTitle className="text-lg font-medium text-foreground mb-6 w-full">
@@ -221,8 +246,6 @@ export default function EditBoard() {
                         onClick={() => {
                           setEditStudent(student)
                           setEditNrcs(student.nrcs)
-                          setEditStudent(student);
-                          setEditNrcs(student.nrcs);
                           setEditFirstName(student.firstName || "");
                           setEditLastName(student.lastName || "");
                           setEditEmail(student.email || "");
@@ -278,6 +301,7 @@ export default function EditBoard() {
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 placeholder="usuario@uninorte.edu.co"
+                disabled={true}
               // Si este estudiante es el principal y debe bloquearse:
               // disabled={editStudent?.isLeader === true}
               />
@@ -420,6 +444,118 @@ export default function EditBoard() {
                 }
               }}
             >
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      <Card className="w-full shadow-sm border pb-4 bg-transparent py-5 md:p-10">
+        <CardContent>
+          <div className="flex flex-col justify-center space-x-5 space-y-5">
+            <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">
+              <img src={infoEquipo.logo} alt="Logo del equipo" className="w-[60px] rounded-[20px]"/>
+              <div>
+                <h2 className="font-bold text-[20px]">
+                  {infoEquipo.nameGame.toUpperCase()}
+                </h2>
+                <h3 className="font-medium">{infoEquipo.nameTeam}</h3>
+              </div>
+            </div>
+            <div className="w-full">
+              <p className="text-[12px] mt-3 text-center">
+                {infoEquipo.description}
+              </p>
+            </div>
+            <div className="flex justify-center items-center w-full space-x-5 border-t-1 p-5">
+              <a href={infoEquipo.github} target="_blank">
+                <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
+              </a>
+              <a href={infoEquipo.url} target="_blank">
+                <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
+              </a>
+            </div>
+          </div>
+          <Button className="w-full cursor-pointer" onClick={()=>setEdit(true)}>
+            Editar
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!edit} onOpenChange={() => {!open; setEdit(null)}}>
+        <DialogContent  className="max-w-md w-full">
+          
+          <DialogHeader>
+            <DialogTitle>Editar equipo {infoEquipo?.nameTeam}</DialogTitle>
+            <DialogDescription>
+              Edita los datos del equipo y el juego.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-8 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label>Nombre del equipo</Label>
+                <Input
+                  value={infoEditEquipo?.nameTeam}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameTeam: e.target.value}))}
+                  placeholder="Nombre del equipo"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Nombre del juego</Label>
+                <Input
+                  value={infoEditEquipo.nameGame}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameGame: e.target.value}))}
+                  placeholder="Mi juego"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>Description</Label>
+              <Textarea className={"flex resize-none"} value={infoEditEquipo.description} onChange={(e) => setInfoEditEquipo((prev) => ({...prev, description: e.target.value}))} placeholder={"Escribe una descripción del juego"} style={{height:80}}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>Logo</Label>
+              <Input
+                value={infoEditEquipo.logo}
+                onChange={(e) => setInfoEditEquipo((prev) => ({...prev, logo: e.target.value}))}
+                inputMode="numeric"
+                placeholder="http://..."
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label>Vídeo de youtube</Label>
+                <Input
+                  value={infoEditEquipo?.url}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, url: e.target.value}))}
+                  placeholder="https://youtube..."
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Repositorio Github</Label>
+                <Input
+                  value={infoEditEquipo.github}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameGame: e.target.value}))}
+                  placeholder="https://github..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={async () => { setInfoEditEquipo(infoEquipo); setEdit(false) }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={async () => {await setInfoEquipo(infoEditEquipo); setEdit(false)}}>
               Guardar
             </Button>
           </DialogFooter>
