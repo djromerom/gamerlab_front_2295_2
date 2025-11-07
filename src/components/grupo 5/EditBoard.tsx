@@ -1,16 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Pencil } from "lucide-react"
+import { CloudUpload, Pencil } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { FaGithubAlt, FaYoutube } from "react-icons/fa"
 import { Textarea } from "../ui/textarea"
+import { useForm } from "react-hook-form";
+import type { CombinedFormValues } from "@/lib/schemas";
+import { ImageCropper } from "../grupo 11/ImageCropper"
 
 type Student = {
   id: string;
@@ -53,6 +56,7 @@ type Team = {
 export default function EditBoard() {
   // Simulación de datos (reemplaza por fetch si lo necesitas)
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [students, setStudents] = useState<Student[]>([])
   const [nrcOptions, setNrcOptions] = useState<NRCOption[]>([])
@@ -79,9 +83,36 @@ export default function EditBoard() {
 
   })
 
+  const { setValue, watch } = useForm<CombinedFormValues>();
   const [infoEditEquipo, setInfoEditEquipo] = useState(infoEquipo)
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState(false);
+  const currentFiles = watch("files") || [];
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+  
+      // Abrir el modal de recorte con el archivo seleccionadok
+      setSelectedFile(files[0]);
+      setCropperOpen(true);
 
+      console.log('nombre de la imagen: ', files[0].name)
+      setInfoEditEquipo((prev) => ({...prev, logo: 'https://imgs.search.brave.com/sukwXyqtV7CkkkVeModEMuGL8V3B1-hdqYkGtlnieTQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTMw/NTE1NTE5OC92ZWN0/b3Ivbi1pbXBvc3Np/YmxlLWxldHRlci1u/LW1vbm9ncmFtLWNv/bnNpc3Qtb2YtdGhp/bi1saW5lcy13ZWIt/aWNvbi5qcGc_cz02/MTJ4NjEyJnc9MCZr/PTIwJmM9T0NTZVFk/MXQzNE81YVdlTEdp/VlY4ZUVYYl9Xa3Vu/RF9OWmRBWWFjcWh1/cz0'}));
+      // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+      e.target.value = "";
+  };
+
+  const handleCroppedImage = (croppedFile: File) => {
+    setValue("files", [croppedFile]);
+    setFileError(false);
+  };
+
+  // Eliminar archivo
+  const handleDeleteFile = () => {
+    setValue("files", []);
+  };
 
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
     try {
@@ -493,6 +524,7 @@ export default function EditBoard() {
             </DialogDescription>
           </DialogHeader>
 
+
           <div className="space-y-8 mb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-2">
@@ -520,13 +552,75 @@ export default function EditBoard() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label>Logo</Label>
-              <Input
-                value={infoEditEquipo.logo}
-                onChange={(e) => setInfoEditEquipo((prev) => ({...prev, logo: e.target.value}))}
-                inputMode="numeric"
-                placeholder="http://..."
-              />
+              <Label>
+                Cambiar logo
+              </Label>
+              <div
+                  className="flex flex-col items-center justify-center rounded-md border border-dashed p-4 transition-colors hover:bg-muted/50 cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+              >
+                <CloudUpload className="h-8 w-8" />
+                <p>Arrastra o haz clic para seleccionar una imagen</p>
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Lista de archivos */}
+              {currentFiles.length > 0 && (
+                <div className="space-y-2 w-full contain-inline-size">
+                  
+                  {currentFiles.map((file, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-md border p-2"
+                    >
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md">
+                      <img
+                        src={
+                          URL.createObjectURL(file) || "/placeholder.svg"
+                        }
+                        alt={file.name}
+                        className="h-full w-full"
+                      />
+                    </div>
+                    <div className="flex-1 truncate">
+                      <div className="text-sm font-medium">{file.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {(file.size / 1024).toFixed(2)} KB
+                        </div>
+                      </div>
+                      <Button
+                        variant="home"
+                        size="icon"
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFile();
+                        }}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {fileError && (
+                <p className="text-red-500 text-sm mt-1">
+                  La imagen debe ser cuadrada (1:1)
+                </p>
+              )}
+
+              {currentFiles.length === 0 && (
+                <p className="pt-2 text-xs text-muted-foreground">
+                  No hay archivos seleccionados.
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-2">
@@ -551,16 +645,24 @@ export default function EditBoard() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={async () => { setInfoEditEquipo(infoEquipo); setEdit(false) }}
+              onClick={async () => { setInfoEditEquipo(infoEquipo); handleDeleteFile(); setEdit(false) }}
             >
               Cancelar
             </Button>
-            <Button onClick={async () => {await setInfoEquipo(infoEditEquipo); setEdit(false)}}>
+            <Button onClick={async () => { 
+              await setInfoEquipo(infoEditEquipo); 
+              setEdit(false)}}>
               Guardar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ImageCropper
+              file={selectedFile}
+              open={cropperOpen}
+              onClose={() => setCropperOpen(false)}
+              onCropComplete={handleCroppedImage}
+            />
     </div>
   )
 }

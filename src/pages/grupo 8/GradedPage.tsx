@@ -164,6 +164,7 @@ const GradedPage: React.FC = () => {
       comments: game.comments,
     })) || [];
 
+    console.log(gamesToShow)
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
