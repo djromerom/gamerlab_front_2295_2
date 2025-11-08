@@ -22,7 +22,7 @@ import { ImageCropper } from "./ImageCropper";
 
 export default function GameStep() {
   const { back, next } = useMultiForm();
-  const { control, setValue, watch, setError, clearErrors } =
+  const { control, setValue, watch, setError, clearErrors, getValues } =
     useFormContext<CombinedFormValues>();
   const [fileError, setFileError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,24 +33,89 @@ export default function GameStep() {
   // Estado para el modal de recorte
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Procesar archivo (común para click y drag & drop)
+  const processFile = (file: File) => {
+    setSelectedFile(file);
+    setCropperOpen(true);
+  };
 
   // Manejar la selección de archivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Abrir el modal de recorte con el archivo seleccionado
-    setSelectedFile(files[0]);
-    setCropperOpen(true);
-
+    processFile(files[0]);
     // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
     e.target.value = "";
+  };
+
+  // Manejar drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+      processFile(files[0]);
+    }
   };
 
   // Manejar la imagen recortada
   const handleCroppedImage = (croppedFile: File) => {
     setValue("files", [croppedFile]);
     setFileError(false);
+  };
+
+  // Validar antes de avanzar
+  const handleNext = () => {
+    const gameName = watch("gameName");
+    const description = watch("description");
+    let hasErrors = false;
+    
+    // Validar nombre del videojuego
+    if (!gameName || gameName.trim().length === 0) {
+      setError("gameName", {
+        type: "manual",
+        message: "El nombre del videojuego es requerido",
+      });
+      hasErrors = true;
+    } else if (gameName.length > 30) {
+      setError("gameName", {
+        type: "manual",
+        message: "El nombre no puede tener más de 30 caracteres",
+      });
+      hasErrors = true;
+    } else {
+      clearErrors("gameName");
+    }
+    
+    // Validar descripción
+    if (!description || description.trim().length === 0) {
+      setError("description", {
+        type: "manual",
+        message: "La descripción del videojuego es requerida",
+      });
+      hasErrors = true;
+    } else {
+      clearErrors("description");
+    }
+    
+    // Solo avanzar si no hay errores
+    if (!hasErrors) {
+      next();
+    }
   };
 
   // Eliminar archivo
@@ -82,10 +147,40 @@ export default function GameStep() {
           <FormItem>
             <FormLabel>Nombre del videojuego</FormLabel>
             <FormControl>
-              <Input
-                {...field}
-                placeholder="Escribe el nombre del videojuego"
-              />
+              <div className="flex flex-col">
+                <Input
+                  {...field}
+                  placeholder="Escribe el nombre del videojuego"
+                  maxLength={30}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value);
+                    
+                    // Validación en tiempo real
+                    if (value.length === 0) {
+                      setError("gameName", {
+                        type: "manual",
+                        message: "El nombre del videojuego es requerido",
+                      });
+                    } else if (value.length > 30) {
+                      setError("gameName", {
+                        type: "manual",
+                        message: "El nombre no puede tener más de 30 caracteres",
+                      });
+                    } else {
+                      clearErrors("gameName");
+                    }
+                  }}
+                  className={`${
+                    field.value?.length > 30 ? 'border-red-500 focus:border-red-500' : ''
+                  }`}
+                />
+                <div className="flex justify-end mt-1 text-xs text-muted-foreground">
+                  <span className={field.value?.length > 30 ? 'text-red-500' : ''}>
+                    {field.value?.length || 0}/30 caracteres
+                  </span>
+                </div>
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -105,7 +200,23 @@ export default function GameStep() {
                   {...field}
                   rows={4}
                   maxLength={300}
-                  className="w-full rounded border px-3 py-2"
+                  className={`w-full rounded border px-3 py-2 ${
+                    !field.value || field.value.trim().length === 0 ? 'border-gray-300' : ''
+                  }`}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value);
+                    
+                    // Validación en tiempo real
+                    if (!value || value.trim().length === 0) {
+                      setError("description", {
+                        type: "manual",
+                        message: "La descripción del videojuego es requerida",
+                      });
+                    } else {
+                      clearErrors("description");
+                    }
+                  }}
                 />
                 <div className="flex justify-end mt-1 text-xs text-muted-foreground">
                   {field.value?.length || 0}/300 caracteres
@@ -130,8 +241,15 @@ export default function GameStep() {
               <div className="space-y-2">
                 {/* Área para arrastrar o seleccionar archivos */}
                 <div
-                  className="flex flex-col items-center justify-center rounded-md border border-dashed p-4 transition-colors hover:bg-muted/50 cursor-pointer"
+                  className={`flex flex-col items-center justify-center rounded-md border border-dashed p-4 transition-colors cursor-pointer ${
+                    isDragOver 
+                      ? 'border-[#AC7CFF] bg-[#AC7CFF]/10' 
+                      : 'hover:bg-muted/50'
+                  }`}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
                   <CloudUpload className="h-8 w-8 mb-2" />
                   <p>Arrastra o haz clic para seleccionar una imagen</p>
@@ -232,7 +350,7 @@ export default function GameStep() {
           Atrás
         </Button>
 
-        <Button variant="home" type="button" onClick={next}>
+        <Button variant="home" type="button" onClick={handleNext}>
           Siguiente
         </Button>
       </div>

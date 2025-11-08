@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   FormControl,
   FormField,
@@ -21,13 +21,11 @@ export default function LinksStep() {
   const { control, setValue, watch } = useFormContext<CombinedFormValues>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentFiles = watch("additionalFiles") || [];
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  // Manejar la selección de archivos
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const newFiles = Array.from(files);
+  // Procesar archivos (común para click y drag & drop)
+  const processFiles = (files: FileList | File[]) => {
+    const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
     const totalFiles = currentFiles.length + newFiles.length;
     
     if (totalFiles > 5) {
@@ -36,7 +34,34 @@ export default function LinksStep() {
     }
 
     setValue("additionalFiles", [...currentFiles, ...newFiles]);
+  };
+
+  // Manejar la selección de archivos
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    processFiles(files);
     e.target.value = "";
+  };
+
+  // Manejar drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
   };
 
   // Eliminar archivo específico
@@ -109,8 +134,15 @@ export default function LinksStep() {
               <div className="space-y-4">
                 {/* Área para arrastrar o seleccionar archivos */}
                 <div
-                  className="flex flex-col items-center justify-center rounded-md border border-dashed p-6 transition-colors hover:bg-muted/50 cursor-pointer"
+                  className={`flex flex-col items-center justify-center rounded-md border border-dashed p-6 transition-colors cursor-pointer ${
+                    isDragOver 
+                      ? 'border-[#AC7CFF] bg-[#AC7CFF]/10' 
+                      : 'hover:bg-muted/50'
+                  }`}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
                   <CloudUpload className="h-8 w-8 mb-2 text-gray-400" />
                   <p className="text-center text-sm text-gray-600">
@@ -131,13 +163,13 @@ export default function LinksStep() {
 
                 {/* Lista de archivos seleccionados */}
                 {currentFiles.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentFiles.map((file, index) => (
                       <div
                         key={`${file.name}-${index}`}
                         className="relative group"
                       >
-                        <div className="aspect-square overflow-hidden rounded-lg border">
+                        <div className="aspect-video overflow-hidden rounded-lg border">
                           <img
                             src={URL.createObjectURL(file)}
                             alt={`Preview ${index + 1}`}

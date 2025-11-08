@@ -19,7 +19,6 @@ export interface Team {
   id: number;
   gameName: string;
   teamName: string;
-  image?: string;
   status: TeamStatus;
   video?: string;
   repo?: string;
@@ -75,7 +74,7 @@ export default function TeamsPage() {
             repo: team.repoUrl,
             members: team.members || [],
             description: team.descripcion || "Sin descripción disponible.",
-            logo: team.logoUrl || "/Arkad.svg",
+            logo: team.logoUrl,
             additionalImages: team.additionalImages || fallbackImages,
           };
         });
@@ -196,19 +195,21 @@ function TeamCard({ team }: TeamCardProps) {
         onClick={() => setIsOpen(true)}
         className="cursor-pointer"
       >
-        <Card className="transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50">
-          <CardContent className="flex space-x-5 py-5 px-7">
-            <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30">
-              <AvatarImage
-                src={team.logo || "/Arkad.svg"}
-                alt={`${team.gameName} logo`}
-                className="object-cover rounded-full"
-              />
-              <AvatarFallback className="bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] text-white font-bold text-2xl">
-                {team.gameName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
+        <Card className="transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
+          <CardContent className="flex space-x-5 py-6 px-8 h-full">
+            <div className="flex items-center">
+              <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
+                <AvatarImage
+                  src={team.logo}
+                  alt={`${team.teamName} logo`}
+                  className="object-cover rounded-full"
+                />
+                <AvatarFallback className="bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] text-white font-bold text-2xl">
+                  {team.gameName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="flex flex-col justify-center space-y-1 flex-1">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
               <p>Equipo: {team.teamName}</p>
               <p className={`${color} font-semibold`}>{text}</p>
@@ -230,6 +231,27 @@ interface MediaCarouselProps {
   gameImage?: string; // Solo para thumbnail del video
 }
 
+// Función para extraer miniatura automáticamente de la URL del video
+const getVideoThumbnail = (videoUrl: string): string => {
+  try {
+    // YouTube - extraer ID del video y generar URL de miniatura
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const youtubeMatch = videoUrl.match(youtubeRegex);
+    
+    if (youtubeMatch && youtubeMatch[1]) {
+      const videoId = youtubeMatch[1];
+      // Usar miniatura de alta calidad de YouTube
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    }
+    
+    // Para otros servicios de video, usar placeholder
+    return '/placeholder.svg';
+  } catch (error) {
+    console.error('Error extrayendo miniatura del video:', error);
+    return '/placeholder.svg';
+  }
+};
+
 function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   
@@ -240,8 +262,13 @@ function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
   
   // Agregar video como primer elemento si existe
   if (video) {
-    mediaItems.push({ type: 'video', src: video, thumbnail: gameImage });
-    console.log("📹 Video agregado al carrusel");
+    const autoThumbnail = getVideoThumbnail(video);
+    mediaItems.push({ 
+      type: 'video', 
+      src: video, 
+      thumbnail: autoThumbnail
+    });
+    console.log("📹 Video agregado al carrusel con miniatura:", autoThumbnail);
   }
   
   // Agregar SOLO las imágenes adicionales (no incluir el logo)
@@ -280,63 +307,84 @@ function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
   const currentItem = mediaItems[currentIndex];
 
   return (
-    <div className="relative w-full aspect-video rounded-xl overflow-hidden max-h-[550px]">
-      {/* Contenido actual */}
-      {currentItem.type === 'video' ? (
-        <ReactPlayer
-          src={currentItem.src}
-          width="100%"
-          height="100%"
-          controls
-          light={currentItem.thumbnail}
-        />
-      ) : (
-        <img
-          src={currentItem.src}
-          alt="Imagen del juego"
-          className="w-full h-full object-cover"
-        />
-      )}
+    <div className="relative w-full">
+      {/* Contenido principal del carrusel */}
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden max-h-[550px]">
+        {currentItem.type === 'video' ? (
+          <ReactPlayer
+            src={currentItem.src}
+            width="100%"
+            height="100%"
+            controls
+          />
+        ) : (
+          <img
+            src={currentItem.src}
+            alt="Imagen del juego"
+            className="w-full h-full object-cover"
+          />
+        )}
 
-      {/* Controles del carrusel (solo si hay más de un elemento) */}
+        {/* Controles del carrusel (solo si hay más de un elemento y solo en desktop) */}
+        {mediaItems.length > 1 && (
+          <>
+            {/* Botón anterior - Solo visible en desktop */}
+            <button
+              onClick={prevSlide}
+              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Botón siguiente - Solo visible en desktop */}
+            <button
+              onClick={nextSlide}
+              className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Barra de miniaturas (solo si hay más de un elemento) */}
       {mediaItems.length > 1 && (
-        <>
-          {/* Botón anterior */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-all"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {/* Botón siguiente */}
-          <button
-            onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-all"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Indicadores */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-            {mediaItems.map((_, index) => (
+        <div className="mt-4 flex justify-center">
+          <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 max-w-full px-4 py-2">
+            {mediaItems.map((item, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
+                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${
                   index === currentIndex
-                    ? 'bg-[#AC7CFF]'
-                    : 'bg-white/40 hover:bg-white/60'
+                    ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
+                    : 'opacity-70 hover:opacity-100'
                 }`}
-              />
+              >
+                {item.type === 'video' ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={item.thumbnail || '/placeholder.svg'}
+                      alt={`Video miniatura ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center">
+                        <div className="w-0 h-0 border-l-4 border-l-black border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={item.src}
+                    alt={`Miniatura ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </button>
             ))}
           </div>
-
-          {/* Contador */}
-          <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
-            {currentIndex + 1} / {mediaItems.length}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -351,38 +399,37 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[600px] max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[85vh] md:h-[600px] max-h-[85vh] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 12 }}
         >
-          {/* Botón de cerrar */}
+          {/* Botón X de cerrar - Oculto en móvil */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+            className="hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
           </button>
 
           {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
-          <div className="md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
+          <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
             <MediaCarousel 
               video={team.video} 
               images={team.additionalImages || []} 
-              gameImage={team.image} // Solo para thumbnail del video, no se incluye en el carrusel
             />
           </div>
 
           {/* 🧾 Información del equipo */}
-          <div className="md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
-            <div className="p-6 pt-12 md:pt-6 overflow-y-auto flex-1
+          <div className="w-full md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+            <div className="p-4 pt-4 md:p-6 md:pt-6 overflow-y-auto flex-1
               [&::-webkit-scrollbar]:w-2 pr-2
               [&::-webkit-scrollbar-track]:rounded-full
               [&::-webkit-scrollbar-track]:bg-gray-800
@@ -391,21 +438,27 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
               
               <div className="space-y-4">
-                {team.logo && (
-                  <div className="flex justify-center mb-4">
-                    <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1">
+                <div className="flex justify-center mb-2 md:mb-4">
+                  <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
+                    {team.logo ? (
                       <img
-                        src={team.logo || "/Arkad.svg"}
-                        alt={`${team.gameName} logo`}
+                        src={team.logo}
+                        alt={`${team.teamName} logo`}
                         className="w-full h-full object-cover rounded-full"
                       />
-                    </div>
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] flex items-center justify-center">
+                        <span className="text-white font-bold text-4xl">
+                          {team.gameName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-                <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
+                </div>
+                <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
                   {team.gameName}
                 </h2>
-                <p className="text-sm text-gray-400 mb-2">
+                <p className="text-sm text-gray-400 mb-3">
                   Equipo:{" "}
                   <span className="text-white font-semibold">
                     {team.teamName}
@@ -416,9 +469,9 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                   <span className="capitalize text-gray-200">{team.status}</span>
                 </p>
                 
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-[#AC7CFF] mb-3">Descripción</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed mb-5">
+                <div className="mt-2">
+                  <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed mb-3">
                     {team.description || "Sin descripción disponible."}
                   </p>
                 </div>
@@ -449,6 +502,14 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                       Ver repositorio en GitHub
                     </Button>
                   )}
+                  
+                  {/* Botón Cerrar - Solo visible en móvil */}
+                  <button
+                    onClick={onClose}
+                    className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
+                  >
+                    Cerrar
+                  </button>
                 </div>
               </div>
             </div>
