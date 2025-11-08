@@ -1,6 +1,7 @@
 "use client";
 
 import Criteriabutton from "@/components/grupo 8/criteriabutton";
+import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -71,9 +72,9 @@ export default function RatePage() {
   useEffect(() => {
     if (apiCriteria.length > 0) {
       setUiCriteria(
-        apiCriteria.map(criterion => ({
+        apiCriteria.map((criterion) => ({
           ...criterion,
-          score: 1,
+          scoreInput: "",
           maxScore: 5,
         }))
       );
@@ -96,35 +97,35 @@ export default function RatePage() {
   }
 
   // Star Rating Component
-  const StarRating: React.FC<{
-    value: number;
-    max: number;
-    onChange: (value: number) => void;
-  }> = ({ value, max, onChange }) => (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: max }, (_, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onChange(i + 1)}
-          className="focus:outline-none"
-          aria-label={`Puntuar con ${i + 1} estrellas`}
-        >
-          <svg
-            className={`w-5 h-5 ${i < value ? "text-yellow-400" : "text-gray-300"}`}
-            fill={i < value ? "currentColor" : "none"}
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <polygon
-              strokeWidth="1"
-              points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21 12 17.27"
-            />
-          </svg>
-        </button>
-      ))}
-    </div>
-  );
+  // const StarRating: React.FC<{
+  //   value: number;
+  //   max: number;
+  //   onChange: (value: number) => void;
+  // }> = ({ value, max, onChange }) => (
+  //   <div className="flex items-center gap-1">
+  //     {Array.from({ length: max }, (_, i) => (
+  //       <button
+  //         key={i}
+  //         type="button"
+  //         onClick={() => onChange(i + 1)}
+  //         className="focus:outline-none"
+  //         aria-label={`Puntuar con ${i + 1} estrellas`}
+  //       >
+  //         <svg
+  //           className={`w-5 h-5 ${i < value ? "text-yellow-400" : "text-gray-300"}`}
+  //           fill={i < value ? "currentColor" : "none"}
+  //           stroke="currentColor"
+  //           viewBox="0 0 24 24"
+  //         >
+  //           <polygon
+  //             strokeWidth="1"
+  //             points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21 12 17.27"
+  //           />
+  //         </svg>
+  //       </button>
+  //     ))}
+  //   </div>
+  // );
 
   const showErrorToast = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -141,11 +142,84 @@ export default function RatePage() {
     }, 2500);
   };
 
-  const handleScoreChange = (criterionId: number, score: number) => {
-    setUiCriteria(
-      uiCriteria.map((c) => (c.id === criterionId ? { ...c, score } : c))
+  const sanitizeScoreInputValue = (rawValue: string) => {
+    const normalized = rawValue.replace(/,/g, ".");
+    const digitsOnly = normalized.replace(/[^0-9.]/g, "");
+    const parts = digitsOnly.split(".");
+    if (parts.length <= 2) {
+      return digitsOnly;
+    }
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  };
+
+  const handleScoreInputFocus = (criterionId: number) => {
+    setUiCriteria((prev) =>
+      prev.map((c) =>
+        c.id === criterionId && c.scoreInput
+          ? { ...c, scoreInput: "" }
+          : c
+      )
     );
   };
+
+  const handleScoreInputChange = (criterionId: number, rawValue: string) => {
+    setUiCriteria((prev) =>
+      prev.map((c) => {
+        if (c.id !== criterionId) {
+          return c;
+        }
+
+        const sanitized = sanitizeScoreInputValue(rawValue);
+
+        if (!sanitized) {
+          return { ...c, scoreInput: "" };
+        }
+
+        const parsed = Number.parseFloat(sanitized);
+        if (!Number.isNaN(parsed) && parsed > c.maxScore) {
+          return { ...c, scoreInput: c.maxScore.toString() };
+        }
+
+        return { ...c, scoreInput: sanitized };
+      })
+    );
+  };
+
+  const parseScoreValue = (value: string, maxScore: number): number | null => {
+    if (!value.trim()) {
+      return null;
+    }
+
+    const normalized = value.replace(/,/g, ".");
+    const parsed = Number.parseFloat(normalized);
+
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    if (parsed < 0) {
+      return 0;
+    }
+
+    if (parsed > maxScore) {
+      return maxScore;
+    }
+
+    return parsed;
+  };
+
+  const totalScore = uiCriteria.reduce((acc, criterion) => {
+    const parsed = parseScoreValue(criterion.scoreInput, criterion.maxScore);
+    if (parsed === null) {
+      return acc;
+    }
+    return acc + parsed * criterion.weight;
+  }, 0);
+
+  const totalMaxScore = uiCriteria.reduce(
+    (acc, criterion) => acc + criterion.maxScore * criterion.weight,
+    0
+  );
 
   const handleSubmit = async () => {
     if (!game) {
@@ -155,20 +229,39 @@ export default function RatePage() {
     setIsSubmitting(true);
     setSubmissionError(null);
 
+    const parsedDetails: {
+      criterionId: number;
+      score: number;
+      createdAt: string;
+      updatedAt: string;
+      isActive: boolean;
+    }[] = [];
+
     const currentDate = new Date().toISOString();
-    const details = uiCriteria.map((c) => ({
-      criterionId: c.id,
-      score: c.score,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-      isActive: true,
-    }));
+
+    for (const criterion of uiCriteria) {
+      const parsedScore = parseScoreValue(criterion.scoreInput, criterion.maxScore);
+
+      if (parsedScore === null) {
+        setIsSubmitting(false);
+        showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+        return;
+      }
+
+      parsedDetails.push({
+        criterionId: criterion.id,
+        score: parsedScore,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+        isActive: true,
+      });
+    }
 
     const evaluationPayload = {
       date: currentDate,
       videogameId: game.id,
       comments: comments,
-      details,
+      details: parsedDetails,
     };
 
     try {
@@ -278,14 +371,14 @@ export default function RatePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 md:col-span-4">
+        <div className="grid grid-cols-12 gap-6 min-w-[800px]">
+          <div className="col-span-12 md:col-span-4 min-w-[200px]">
             <Card className="h-full py-5">
               <CardHeader>
                 {game?.imagen && (
-                  <div className="flex justify-center mb-4 p-3">
-                    <div className="w-38 h-38 bg-gray-300 rounded-full overflow-hidden shadow-md">
-                      <img
+                  <div className="flex justify-center mb-4 p-3 ">
+                    <div className="w-38 h-38 bg-gray-300 rounded-full overflow-hidden shadow-md ">
+                      <img 
                         src={game.imagen}
                         alt={`${game.nombre} logo`}
                         className="w-full h-full object-cover"
@@ -304,7 +397,7 @@ export default function RatePage() {
                   <div><p className="text-sm font-medium text-muted-foreground">Materia</p><p>{game?.materia || 'N/A'}</p></div>
                   <div><p className="text-sm font-medium text-muted-foreground">NRC</p><p>{game?.nrc || 'N/A'}</p></div>
                   <div><p className="text-sm font-medium text-muted-foreground">Participantes</p><p>{game?.participantes?.join(", ") || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">Descripción</p><p className="text-sm">{game?.descripcion || 'N/A'}</p></div>
+                  <div><p className="text-sm font-medium text-muted-foreground">Descripción</p><p className="text-lg">{game?.descripcion || 'N/A'}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -339,13 +432,27 @@ export default function RatePage() {
                             <p className="text-xs font-medium text-muted-foreground">
                               Puntuación:
                             </p>
-                            <StarRating
+
+                            <Input
+                              type="text"
+                              inputMode="decimal"
+                              value={criterion.scoreInput}
+                              onFocus={() => handleScoreInputFocus(criterion.id)}
+                              onChange={(e) =>
+                                handleScoreInputChange(criterion.id, e.target.value)
+                              }
+                              placeholder={`0 - ${criterion.maxScore}`}
+                              className="border rounded px-2 py-1 w-28 text-sm bg-transparent"
+                            />
+
+                            {/* <StarRating
                               value={criterion.score}
                               max={criterion.maxScore}
                               onChange={(val) => handleScoreChange(criterion.id, val)}
-                            />
+                            /> */}
+                            
                             <span className="text-sm font-medium px-0">
-                              {criterion.score}
+                              {criterion.scoreInput || "—"}
                             </span>
                             <div className="ml-auto">
                               <Criteriabutton description={getCriterionDescription(criterion.name)} />
@@ -356,6 +463,17 @@ export default function RatePage() {
                     ))}
                   </TableBody>
                 </Table>
+
+                <div className="mt-6 rounded-lg border bg-muted-foreground/20 px-4 py-4 flex items-center justify-between">
+                  <p className="text-2xl font-medium text-bold from-neutral-700">
+                    Nota Final
+                  </p>
+                  <span className="text-2xl font-bold text-primary">
+                    {totalMaxScore > 0
+                      ? `${totalScore.toFixed(2)} / ${totalMaxScore.toFixed(2)}`
+                      : "—"}
+                  </span>
+                </div>
 
                 <div className="mt-6">
                   <h3 className="font-medium mb-2">Comentarios Adicionales</h3>
