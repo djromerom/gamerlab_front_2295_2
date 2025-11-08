@@ -14,6 +14,8 @@ import { Textarea } from "../ui/textarea"
 import { useForm } from "react-hook-form";
 import type { CombinedFormValues } from "@/lib/schemas";
 import { ImageCropper } from "../grupo 11/ImageCropper"
+import { useAuth } from "@/contexts/AuthContext";
+import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
 
 type Student = {
   id: string;
@@ -45,17 +47,18 @@ type UpdateStudentNrcsDto = {
 
 type Team = {
   id: string;
-  nameTeam: string;
-  nameGame: string;
+  teamName: string;
+  videogameName: string;
   description: string;
-  logo: string;
-  url: string;
-  github: string;
+  logoUrl: string;
+  youtubeUrl: string;
+  githubUrl: string;
 }
 
 export default function EditBoard() {
   // Simulación de datos (reemplaza por fetch si lo necesitas)
 
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [students, setStudents] = useState<Student[]>([])
@@ -73,13 +76,13 @@ export default function EditBoard() {
 
   const [edit, setEdit] = useState < boolean | null >(false)
   const [infoEquipo, setInfoEquipo] = useState< Team >({
-    id: '1', 
-    nameTeam: 'Arcade',
-    nameGame: 'Piloto', 
-    description: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cupiditate iusto aliquid non qui doloribus magni! Assumenda at excepturi culpa dicta quod illum cupiditate amet, accusantium rerum doloribus ipsa, officia a!',
-    logo: 'https://gamerlab.blob.core.windows.net/gamer-storage-container/1762351036115-Imagenes%20Para%20Pc.jpg?sv=2025-11-05&se=2029-01-05T23%3A43%3A56Z&sr=b&sp=r&sig=UjJWzgbfrj84yk8m68M9T%2B5pZ%2BTubLDn720SMR%2FTveQ%3D',
-    url: 'https://www.youtube.com/watch?v=Geq5b0BHjE0',
-    github: 'https://github.com/settings/admin'
+    id: '', 
+    teamName: '',
+    videogameName: '', 
+    description: '',
+    logoUrl: '',
+    youtubeUrl: '',
+    githubUrl: ''
 
   })
 
@@ -97,9 +100,6 @@ export default function EditBoard() {
       // Abrir el modal de recorte con el archivo seleccionadok
       setSelectedFile(files[0]);
       setCropperOpen(true);
-
-      console.log('nombre de la imagen: ', files[0].name)
-      setInfoEditEquipo((prev) => ({...prev, logo: 'https://imgs.search.brave.com/sukwXyqtV7CkkkVeModEMuGL8V3B1-hdqYkGtlnieTQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTMw/NTE1NTE5OC92ZWN0/b3Ivbi1pbXBvc3Np/YmxlLWxldHRlci1u/LW1vbm9ncmFtLWNv/bnNpc3Qtb2YtdGhp/bi1saW5lcy13ZWIt/aWNvbi5qcGc_cz02/MTJ4NjEyJnc9MCZr/PTIwJmM9T0NTZVFk/MXQzNE81YVdlTEdp/VlY4ZUVYYl9Xa3Vu/RF9OWmRBWWFjcWh1/cz0'}));
       // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
       e.target.value = "";
   };
@@ -126,7 +126,6 @@ export default function EditBoard() {
       if (!response.ok) {
         throw new Error('Error al actualizar los NRCs del estudiante');
       }
-
       const data = await response.json();
       console.log('Estudiante actualizado:', data);
       return data;
@@ -135,24 +134,12 @@ export default function EditBoard() {
     }
   };
 
-  const updateStudentBasics = async ({
-    id,
-    firstName,
-    lastName,
-    email,
-    studentCode,
-  }: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    studentCode: string;
-  }) => {
-    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}`, {
+  const updateStudentBasics = async ({id, email}: { id: string; firstName: string; lastName: string; email: string; studentCode: string }) => {
+    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}/members/${id}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName, lastName, email, studentCode }),
+      body: JSON.stringify({email: email}),
     });
     if (!response.ok) {
       throw new Error("Error al actualizar los datos del estudiante");
@@ -160,11 +147,85 @@ export default function EditBoard() {
     return response.json();
   };
 
+  const getInfoEquipo = async () => {
+    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+      method: 'GET',
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    })
+
+    if (!response.ok) {
+      throw new Error("Error al obtener los datos del equipo")
+    }
+    const data = await response.json()
+    console.log(data)
+    const dataInfoEquipo = {
+      id: data.id,
+      teamName: data.teamName,
+      videogameName: data.videogame.name, 
+      description: data.videogame.description,
+      logoUrl: data.videogame.logoUrl,
+      youtubeUrl: data.videogame.youtubeUrl,
+      githubUrl: data.videogame.githubUrl
+    }
+    setInfoEquipo(dataInfoEquipo)
+    return dataInfoEquipo
+  }
+
+  async function uploadInfoTeam() {
+    console.log('ID DEL USUARIO: ', infoEditEquipo.id)
+    const uploadedFileUrls = []
+      
+    for (const file of currentFiles) {
+      const uploadResult = await uploadImage(file);
+      const urlResult = await getImageUrl(uploadResult.id);
+      uploadedFileUrls.push(urlResult.url);
+    }
+  
+      try {
+        console.log("url de la imagen", uploadedFileUrls[0])
+  
+        const payload = {
+          nameTeam: infoEditEquipo.teamName,
+          videogameName: infoEditEquipo.videogameName,
+          description: infoEditEquipo.description,
+          logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
+          youtubeUrl: infoEditEquipo.youtubeUrl,
+          githubUrl: infoEditEquipo.githubUrl
+        };
+  
+        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+    })
+
+        if (!response.ok) {
+          toast.error("Hubo un error al actualizar los datos.")
+          throw new Error ('Error')
+        } else {
+          const dataEquipo = await getInfoEquipo()
+          setInfoEquipo(dataEquipo)
+          setInfoEditEquipo(dataEquipo)
+
+          toast.success("El cambio se hizo de manera satisfactoria.")
+        }
+  
+      } catch (error) {
+        toast.error('Lo sentimos, ocurrió un error inesperado')
+        console.error('Los sentimos: ', error)
+      }
+    }
 
   useEffect(() => {
-
+    
     const fetchData = async () => {
+      const dataEquipo = await getInfoEquipo()
+      setInfoEquipo(dataEquipo)
+      setInfoEditEquipo(dataEquipo)
       setLoading(true);
+
       try {
         // Reemplaza estas URLs por las de tu backend
         const studentsRes = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
@@ -177,6 +238,7 @@ export default function EditBoard() {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         })
+
 
         if (!studentsRes.ok || !nrcsRes.ok) throw new Error("Error al cargar datos");
 
@@ -226,7 +288,7 @@ export default function EditBoard() {
         )
       );
       updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
-      toast.success("NRC Editado", { style: { background: "#22c55e", color: "#fff" } });
+      toast.success("Datos actualizados", { style: { background: "#22c55e", color: "#fff" } });
       setEditStudent(null);
     }
   }
@@ -312,6 +374,7 @@ export default function EditBoard() {
                 <Label>Nombre</Label>
                 <Input
                   value={editFirstName}
+                  disabled
                   onChange={(e) => setEditFirstName(e.target.value)}
                   placeholder="Nombre"
                 />
@@ -320,6 +383,7 @@ export default function EditBoard() {
                 <Label>Apellido</Label>
                 <Input
                   value={editLastName}
+                  disabled
                   onChange={(e) => setEditLastName(e.target.value)}
                   placeholder="Apellido"
                 />
@@ -332,7 +396,6 @@ export default function EditBoard() {
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 placeholder="usuario@uninorte.edu.co"
-                disabled={true}
               // Si este estudiante es el principal y debe bloquearse:
               // disabled={editStudent?.isLeader === true}
               />
@@ -342,6 +405,7 @@ export default function EditBoard() {
               <Label>Código estudiantil</Label>
               <Input
                 value={editStudentCode}
+                disabled
                 onChange={(e) => setEditStudentCode(e.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
                 placeholder="1234567890"
@@ -486,12 +550,12 @@ export default function EditBoard() {
         <CardContent>
           <div className="flex flex-col justify-center space-x-5 space-y-5">
             <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">
-              <img src={infoEquipo.logo} alt="Logo del equipo" className="w-[60px] rounded-[20px]"/>
+              <img src={infoEditEquipo.logoUrl || "https://imgs.search.brave.com/0T2pSr3i_oCsn6PToB2eUQEUmAkRmwR9jf2bFD-X9qA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/dmVjdG9yLWdyYXRp/cy9mb25kby1tb3Jh/ZG8tYWJzdHJhY3Rv/XzY5ODQ1Mi0yNzQx/LmpwZz9zZW10PWFp/c19oeWJyaWQmdz03/NDA"} alt="Logo del equipo" className="w-[60px] h-[60px] bg-cover rounded-[20px]"/>
               <div>
                 <h2 className="font-bold text-[20px]">
-                  {infoEquipo.nameGame.toUpperCase()}
+                  {infoEquipo.videogameName.toUpperCase()}
                 </h2>
-                <h3 className="font-medium">{infoEquipo.nameTeam}</h3>
+                <h3 className="font-medium">{infoEquipo.teamName}</h3>
               </div>
             </div>
             <div className="w-full">
@@ -500,10 +564,10 @@ export default function EditBoard() {
               </p>
             </div>
             <div className="flex justify-center items-center w-full space-x-5 border-t-1 p-5">
-              <a href={infoEquipo.github} target="_blank">
+              <a href={infoEquipo.githubUrl} target="_blank">
                 <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
               </a>
-              <a href={infoEquipo.url} target="_blank">
+              <a href={infoEquipo.youtubeUrl} target="_blank">
                 <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
               </a>
             </div>
@@ -518,7 +582,7 @@ export default function EditBoard() {
         <DialogContent  className="max-w-md w-full">
           
           <DialogHeader>
-            <DialogTitle>Editar equipo {infoEquipo?.nameTeam}</DialogTitle>
+            <DialogTitle>Editar equipo {infoEquipo?.teamName}</DialogTitle>
             <DialogDescription>
               Edita los datos del equipo y el juego.
             </DialogDescription>
@@ -530,16 +594,16 @@ export default function EditBoard() {
               <div className="flex flex-col gap-2">
                 <Label>Nombre del equipo</Label>
                 <Input
-                  value={infoEditEquipo?.nameTeam}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameTeam: e.target.value}))}
+                  value={infoEditEquipo?.teamName}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, teamName: e.target.value}))}
                   placeholder="Nombre del equipo"
                 />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Nombre del juego</Label>
                 <Input
-                  value={infoEditEquipo.nameGame}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameGame: e.target.value}))}
+                  value={infoEditEquipo.videogameName}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videogameName: e.target.value}))}
                   placeholder="Mi juego"
                 />
               </div>
@@ -626,16 +690,16 @@ export default function EditBoard() {
               <div className="flex flex-col gap-2">
                 <Label>Vídeo de youtube</Label>
                 <Input
-                  value={infoEditEquipo?.url}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, url: e.target.value}))}
+                  value={infoEditEquipo?.youtubeUrl}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, youtubeUrl: e.target.value}))}
                   placeholder="https://youtube..."
                 />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Repositorio Github</Label>
                 <Input
-                  value={infoEditEquipo.github}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, nameGame: e.target.value}))}
+                  value={infoEditEquipo.githubUrl}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, githubUrl: e.target.value}))}
                   placeholder="https://github..."
                 />
               </div>
@@ -650,6 +714,7 @@ export default function EditBoard() {
               Cancelar
             </Button>
             <Button onClick={async () => { 
+              await uploadInfoTeam();
               await setInfoEquipo(infoEditEquipo); 
               setEdit(false)}}>
               Guardar
