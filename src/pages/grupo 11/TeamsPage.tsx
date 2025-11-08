@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
+export type TeamType = "uninorte" | "externo";
 
 export interface Team {
   id: number;
@@ -26,6 +27,7 @@ export interface Team {
   description?: string;
   logo?: string;
   additionalImages?: string[];
+  teamType?: TeamType;
 }
 
 export default function TeamsPage() {
@@ -40,14 +42,51 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [activeTeamType, setActiveTeamType] = useState<string>("all");
   const customFetch = useFetch();
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
+
+  // Función para mapear estados numéricos o strings a los valores correctos
+  const mapStatusToString = (status: any): string => {
+    if (typeof status === 'number') {
+      switch (status) {
+        case 1: return "pendiente";
+        case 2: return "confirmado";
+        case 3: return "expirado";
+        default: return "pendiente";
+      }
+    }
+    if (typeof status === 'string') {
+      const lowerStatus = status.toLowerCase();
+      
+      // Mapeo específico para diferentes strings que puede enviar el backend
+      switch (lowerStatus) {
+        case "pendiente":
+        case "pending":
+          return "pendiente";
+        case "confirmado":
+        case "confirmed":
+        case "aprobado":
+        case "approved":
+          return "confirmado";
+        case "expirado":
+        case "expired":
+        case "rechazado":
+        case "rejected":
+          return "expirado";
+        default:
+          return "pendiente";
+      }
+    }
+    return "pendiente"; // fallback por defecto
+  };
 
   useEffect(() => {
     async function fetchTeams() {
       setLoading(true);
       
       try {
+        // Obtener equipos
         const res = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
           {
@@ -59,28 +98,105 @@ export default function TeamsPage() {
 
         const rawData = await res.json();
         console.log("🔍 Datos crudos del backend:", rawData);
+
+        // Intentar obtener integrantes con diferentes endpoints
+        let membersData: any[] = [];
+        const possibleEndpoints = ['/integrantes', '/members', '/students', '/team-members'];
+        
+        for (const endpoint of possibleEndpoints) {
+          try {
+            console.log(`🔍 Probando endpoint: ${endpoint}`);
+            const membersRes = await customFetch(
+              `${import.meta.env.VITE_ENDPOINT_BACKEND}${endpoint}`,
+              {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+              }
+            );
+
+            if (membersRes.ok) {
+              const membersRawData = await membersRes.json();
+              membersData = Array.isArray(membersRawData) ? membersRawData : [];
+              console.log(`✅ Integrantes obtenidos desde ${endpoint}:`, membersData);
+              break; // Salir del bucle si encontramos datos
+            } else {
+              console.log(`❌ ${endpoint}: ${membersRes.status}`);
+            }
+          } catch (memberError) {
+            console.log(`❌ Error en ${endpoint}:`, memberError);
+          }
+        }
+        
+        if (membersData.length === 0) {
+          console.warn("⚠️ No se pudieron obtener integrantes desde ningún endpoint");
+        }
         
         const data: Team[] = rawData.map((team: any) => {
           // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
           let fallbackImages: string[] = [];
           
+          // Debug: Log del estado original y mapeado
+          console.log(`🔍 Team ${team.id}: Estado original:`, team.status, `(tipo: ${typeof team.status})`);
+          const mappedStatus = mapStatusToString(team.status);
+          console.log(`🔍 Team ${team.id}: Estado mapeado:`, mappedStatus);
+          
+          // Obtener integrantes de este equipo específico
+          const teamMembers = membersData.filter((member: any) => member.id_equi === team.id);
+          console.log(`👥 Team ${team.id}: Integrantes encontrados:`, teamMembers);
+          
+          // Determinar tipo de equipo basado en emails
+          let teamType: TeamType = "uninorte"; // Por defecto
+          
+          if (teamMembers.length > 0) {
+            const hasExternalEmail = teamMembers.some((member: any) => {
+              const email = member.correo;
+              console.log(`📧 Revisando email: ${email}`);
+              return email && typeof email === 'string' && email.includes("@") && !email.includes("@uninorte.edu.co");
+            });
+            
+            teamType = hasExternalEmail ? "externo" : "uninorte";
+            console.log(`🏷️ Team ${team.id}: Tipo determinado: ${teamType}`);
+          } else {
+            // FALLBACK: Determinar tipo por patrones en el nombre del equipo o datos disponibles
+            const teamName = (team.teamName || "").toLowerCase();
+            const gameName = (team.name || "").toLowerCase();
+            
+            // Patrones que podrían indicar equipos externos (colegios)
+            const externalPatterns = [
+              'colegio', 'school', 'instituto', 'liceo', 'gymnasium',
+              'externo', 'external', 'visitante'
+            ];
+            
+            const isExternal = externalPatterns.some(pattern => 
+              teamName.includes(pattern) || gameName.includes(pattern)
+            );
+            
+            teamType = isExternal ? "externo" : "uninorte";
+            console.log(`🔧 FALLBACK: Team ${team.id} (${teamName}) determinado como: ${teamType}`);
+          }
           
           return {
             id: team.id,
             gameName: team.name || "Sin nombre",
             teamName: team.teamName || "Sin equipo",
-            status: team.status?.toLowerCase() as TeamStatus || "pendiente",
+            status: mappedStatus as TeamStatus || "pendiente",
             video: team.videoUrl,
             repo: team.repoUrl,
-            members: team.members || [],
+            members: teamMembers.map((m: any) => `${m.nombre || ''} ${m.apellido || ''}`.trim()),
             description: team.descripcion || "Sin descripción disponible.",
             logo: team.logoUrl,
             additionalImages: team.additionalImages || fallbackImages,
+            teamType: teamType,
           };
         });
         
+        // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
+        const teamsToShow = data.filter(team => team.status !== "expirado");
+        
         console.log("✅ Datos procesados:", data);
-        setTeams(data);
+        console.log("👥 Equipos a mostrar (sin rechazados):", teamsToShow);
+        setTeams(teamsToShow);
       } catch (error) {
         console.error("❌ Error al cargar equipos:", error);
         setTeams([]);
@@ -92,11 +208,16 @@ export default function TeamsPage() {
     fetchTeams();
   }, []);
 
-  const filteredTeams = teams.filter(
-    (team) =>
-      team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.teamName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTeams = teams.filter((team) => {
+    // Filtro de búsqueda por nombre
+    const matchesSearch = team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Filtro por tipo de equipo
+    const matchesType = activeTeamType === "all" ? true : team.teamType === activeTeamType;
+    
+    return matchesSearch && matchesType;
+  });
 
   const handleFilter = (value: string) => {
     setSearchQuery(value);
@@ -115,6 +236,42 @@ export default function TeamsPage() {
         <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
           ¡Echa un vistazo a los videojuegos participantes!
         </h1>
+
+        {/* Filtros de tipo de equipo */}
+        <div className="flex justify-center mb-6">
+          <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
+            <button
+              onClick={() => setActiveTeamType("all")}
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
+                activeTeamType === "all" 
+                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg" 
+                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+              }`}
+            >
+              Todos ({teams.length})
+            </button>
+            <button
+              onClick={() => setActiveTeamType("uninorte")}
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
+                activeTeamType === "uninorte" 
+                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg" 
+                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+              }`}
+            >
+              Uninorte ({teams.filter(t => t.teamType === "uninorte").length})
+            </button>
+            <button
+              onClick={() => setActiveTeamType("externo")}
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
+                activeTeamType === "externo" 
+                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg" 
+                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+              }`}
+            >
+              Externos ({teams.filter(t => t.teamType === "externo").length})
+            </button>
+          </div>
+        </div>
 
         <Filters onFilter={handleFilter} initialFilter={searchQuery} />
 
@@ -182,6 +339,8 @@ function TeamCard({ team }: TeamCardProps) {
         return { text: "Inscripción completa", color: "text-blue-400" };
       case "expirado":
         return { text: "Rechazada", color: "text-red-400" };
+      default:
+        return { text: "Estado desconocido", color: "text-gray-400" };
     }
   };
 
@@ -195,7 +354,16 @@ function TeamCard({ team }: TeamCardProps) {
         onClick={() => setIsOpen(true)}
         className="cursor-pointer"
       >
-        <Card className="transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
+        <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
+          {/* Badge de tipo de equipo */}
+          <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
+            team.teamType === "uninorte"
+              ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
+              : "bg-green-500/20 text-green-300 border border-green-400/30"
+          }`}>
+            {team.teamType === "uninorte" ? "Uninorte" : "Externo"}
+          </div>
+          
           <CardContent className="flex space-x-5 py-6 px-8 h-full">
             <div className="flex items-center">
               <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
@@ -209,7 +377,7 @@ function TeamCard({ team }: TeamCardProps) {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <div className="flex flex-col justify-center space-y-1 flex-1">
+            <div className="flex flex-col justify-center space-y-1 flex-1 pr-16">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
               <p>Equipo: {team.teamName}</p>
               <p className={`${color} font-semibold`}>{text}</p>
