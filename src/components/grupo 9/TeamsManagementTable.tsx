@@ -1,58 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, TicketPercentIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users} from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-import {
-  TeamRowData,
-  Props,
-  EstadoVideojuego,
-  NrcInfo,
-  MateriaInfo,
-  TeamConfirmationStatusResponse,
-} from "./teams-utils";
-
-import TeamWizardDialog, {
-  toInitialValuesFromTeam,
-} from "./TeamWizardDialog";
-
+import { TeamRowData, Props, NrcInfo, MateriaInfo} from "./teams-utils";
+import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import type { WizardValues } from "./validationTeamsAdmin";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "../ui/dialog";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -77,7 +37,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
-  const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
+  const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);

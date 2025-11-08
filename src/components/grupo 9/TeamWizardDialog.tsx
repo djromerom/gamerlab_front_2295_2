@@ -106,6 +106,19 @@ function buildPayload(
   nrcOptions: NrcInfo[],
   primaryEmailLocked?: string
 ) {
+  // helper para generar códigos estudiantiles únicos por llamada (>400000000)
+  const makeRandomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000); // rango 400000000..899999999
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
   // resolver código del NRC de forma robusta
   const resolveNrcCode = (item: any) => {
     if (!item) return undefined;
@@ -168,8 +181,12 @@ function buildPayload(
       nrc: nrcStrings,
     };
 
-    if (!data.isExternal) {
-      memberObj.studentCode = m.codigo_estudiantil;
+    // Siempre enviar studentCode. Si no viene y es externo, generar uno único y >400000000
+    if (m.codigo_estudiantil && String(m.codigo_estudiantil).trim() !== "") {
+      memberObj.studentCode = String(m.codigo_estudiantil);
+    } else {
+      // generar código para externos / cuando no exista
+      memberObj.studentCode = data.isExternal ? makeRandomStudentCode() : String(m.codigo_estudiantil ?? "");
     }
 
     return memberObj;
@@ -187,7 +204,7 @@ function buildPayload(
     teamName: data.nombre_equipo,
     isExternal: data.isExternal,
     // NOTA: no incluir team_nrc_global_id porque el backend no lo consume;
-    // en su lugar cada miembro ya lleva su nrc (global cuando isExternal=true).
+    // en su lugar cada miembro ya lleva su nrc (global cuando isExternal=true)
     members,
     videogame: {
       vgName: data.videojuego.nombre,
