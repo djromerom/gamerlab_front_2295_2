@@ -405,7 +405,7 @@ export default function DevelopersCredits() {
     },
      {
       id: "fullstacks",
-      name: "FulStacks",
+      name: "FullStacks",
       icon: <PcCase className="w-5 h-5" />,
       description:
         "Desarrolladores encargados tanto del frontend como del backend de la plataforma.",
