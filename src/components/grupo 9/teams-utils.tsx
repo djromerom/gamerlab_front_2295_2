@@ -142,3 +142,25 @@ interface PaginationMetadata {
   itemsPerPage: number;
   totalPages: number;
 }
+
+// Define an interface for your NRC option objects
+export interface NrcOption {
+  code: number | string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+export type SafeNrc = {
+  id: number;
+  codeStr: string;
+  label: string;
+};
+
+export type UploadInfo = {
+  blobName: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  isPublic: boolean;
+  url?: string;
+};

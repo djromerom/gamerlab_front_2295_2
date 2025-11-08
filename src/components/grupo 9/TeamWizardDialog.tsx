@@ -1,103 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog, DialogContent, DialogFooter,
-  DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { WizardSchema, WizardValues} from "./validationTeamsAdmin";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
-import type { NrcInfo, MateriaInfo, TeamRowData } from "./teams-utils";
+import { ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil, CloudUpload, X } from "lucide-react";
+import { ImageCropper } from "@/components/grupo 11/ImageCropper";
+import type { NrcInfo, MateriaInfo, TeamRowData, NrcOption, SafeNrc, UploadInfo } from "./teams-utils";
 import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
 
-// Define an interface for your NRC option objects
-interface NrcOption {
-  code: number | string;
-  name?: string;
-  [key: string]: unknown;
-}
-
-type SafeNrc = {
-  id: number;
-  codeStr: string;
-  label: string;
-};
-
-/* ────────────────────────────────────────────────────────────────────
-   Validaciones y helpers
-──────────────────────────────────────────────────────────────────── */
-const isYouTubeUrl = (url: string) =>
-  !url || /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/).+/i.test(url);
-
-const uninorteEmail = (s: string) => /^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(s);
-const onlyDigits = (s: string) => /^\d+$/.test(s);
-
-const MemberSchemaAllRequired = z.object({
-  nombre: z.string().trim().min(1, "Obligatorio"),
-  apellido: z.string().trim().min(1, "Obligatorio"),
-  correo: z.string().trim().min(1, "Obligatorio").email("Correo inválido"),
-  codigo_estudiantil: z.string().trim().min(1, "Obligatorio"),
-  nrcIds: z.array(z.number()).optional(), // ✅ Cambio: array de números
-});
-
-const WizardSchema = z.object({
-  mode: z.enum(["add", "edit"]).optional(),
-  id_equipo: z.number(),
-  isExternal: z.boolean(),
-  team_nrc_global_id: z.number().optional(),
-  nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
-  videojuego: z.object({
-    nombre: z.string().trim().min(1, "Nombre del videojuego requerido"),
-    descripcion: z.string().trim().min(1, "Descripción requerida"),
-    logo_url: z.string().url("URL inválida").or(z.literal("")).optional(),
-    video_demo_url: z.string().trim().refine(isYouTubeUrl, "Enlace de YouTube inválido"),
-  }),
-  integrantes: z.array(MemberSchemaAllRequired).min(1, "Agrega al menos un miembro"),
-}).superRefine((data, ctx) => {
-  if (data.isExternal) {
-    if (!data.team_nrc_global_id) {
-      ctx.addIssue({ code: "custom", path: ["team_nrc_global_id"], message: "Selecciona el NRC global" });
-    }
-  } else {
-    data.integrantes.forEach((m, i) => {
-      if (!uninorteEmail(m.correo))
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
-      if (!onlyDigits(m.codigo_estudiantil))
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });
-      // ✅ Validar que tenga al menos un NRC
-      if (!m.nrcIds || m.nrcIds.length === 0)
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "nrcIds"], message: "Selecciona al menos un NRC" });
-    });
-  }
-});
-
-export type WizardValues = z.infer<typeof WizardSchema>;
-
-/* Error bajo campo */
+// FieldError component for displaying validation errors
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="text-xs text-red-500 mt-1">{message}</p>;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
 }
 
-function StepHeader({
-  step, total, title, cantidad, subtitle,
-}: { step: number; total: number; title: string; cantidad?: number; subtitle?: string }) {
-  return (
-    <div className="mb-2">
-      <div className="text-xs text-muted-foreground">Paso {step} de {total}</div>
-      <h3 className="text-lg font-medium">{title}</h3>
-      {cantidad !== undefined && <h4 className="text-sm text-muted-foreground mb-1">Cantidad de miembros: {cantidad}</h4>}
-      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-    </div>
-  );
-}
+/* ────────────────────────────────────────────────────────────────────
+   Fetch de Nombre de Juego unico y correo no registrado
+──────────────────────────────────────────────────────────────────── */
 
 async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
   const res = await fetch(`${apiBaseUrl}/teams/videogame/${encodeURIComponent(gameName)}`);
@@ -107,35 +31,68 @@ async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
 }
 
 async function findUsedEmails(apiBaseUrl: string, emails: string[], excludeEmails: string[] = []) {
-  const results: string[] = [];
-  await Promise.all(
-    emails.map(async (email) => {
-      // Saltar emails que deben ser excluidos (ej: email original del líder en modo edición)
-      if (excludeEmails.includes(email)) return;
 
-      const res = await fetch(`${apiBaseUrl}/users/check-email?email=${encodeURIComponent(email)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.used) results.push(email);
-      }
-    })
-  );
-  return results;
+  const toCheck = (emails || [])
+    .map(e => (e || "").trim())
+    .filter(e => e && !excludeEmails.includes(e));
+
+  if (toCheck.length === 0) return [];
+
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/teams/validate-emails`;
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: toCheck }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "<no body>");
+      console.warn("[findUsedEmails] validate-emails failed:", url, res.status, body);
+      return [];
+    }
+
+    const data = await res.json().catch(() => null);
+
+    if (Array.isArray(data)) {
+      return data.map(String);
+    }
+    if (data && typeof data === "object") {
+      return Object.entries(data)
+        .filter(([, used]) => !!used)
+        .map(([email]) => email);
+    }
+
+    return [];
+  } catch (err) {
+    console.error("[findUsedEmails] network error:", err);
+    return [];
+  }
 }
 
 async function uploadFilesToAzure(filesList: File[]) {
-  if (!filesList || filesList.length === 0) return [] as string[];
+  if (!filesList || filesList.length === 0) return [] as UploadInfo[];
   const id = toast.loading("Subiendo archivos...");
   try {
-    const urls = await Promise.all(
+    const uploads = await Promise.all(
       filesList.map(async (file) => {
         const up = await uploadImage(file);
-        const url = await getImageUrl(up.id);
-        return url.url;
+        const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" }));
+        const url = urlObj?.url ?? "";
+        // devolver metadata mínima requerida por el backend
+        return {
+          blobName: url,
+          filename: file.name,
+          mimetype: file.type || "application/octet-stream",
+          size: file.size || 0,
+          isPublic: true,
+          url,
+        } as UploadInfo;
       })
     );
     toast.success("Archivos subidos correctamente", { id });
-    return urls;
+    return uploads;
   } catch (e: any) {
     toast.dismiss(id);
     throw new Error(e?.message || "Fallo al subir archivos");
@@ -144,52 +101,70 @@ async function uploadFilesToAzure(filesList: File[]) {
 
 function buildPayload(
   data: WizardValues,
-  uploadedUrls: string[],
+  logoUpload: UploadInfo | null,
+  galleryUploads: UploadInfo[],
   nrcOptions: NrcInfo[],
   primaryEmailLocked?: string
 ) {
   const globalNrcCode =
     data.isExternal && data.team_nrc_global_id
-      ? nrcOptions.find(n => n.id_nrc === data.team_nrc_global_id)?.codigo
+      ? String(nrcOptions.find(n => n.id_nrc === data.team_nrc_global_id)?.codigo ?? "")
       : undefined;
 
   const members = data.integrantes.map((m, idx) => {
     const email = idx === 0 && primaryEmailLocked ? primaryEmailLocked : m.correo;
 
-    if (data.isExternal) {
-      return {
-        memberFirstName: m.nombre,
-        memberLastName: m.apellido,
-        memberEmail: email,
-        nrc: globalNrcCode ? [globalNrcCode] : [],
-      };
-    }
+    const nrcStrings = data.isExternal
+      ? (globalNrcCode ? [String(globalNrcCode)] : [])
+      : (m.nrcIds || [])
+        .map((id) => {
+          // id puede ser id_nrc, codigo o code; buscar coincidencia segura
+          const idStr = String(id);
+          const match = nrcOptions.find((n: any) =>
+            String(n.id_nrc ?? n.id ?? "").toLowerCase() === idStr.toLowerCase()
+            || String(n.codigo ?? n.code ?? "").toLowerCase() === idStr.toLowerCase()
+          );
+          // preferir el campo 'codigo' si existe, si no devolver el id tal cual
+          if (match) return (match.codigo ?? match.codigo ?? match.id_nrc ?? match.id_materia);
+          return id;
+        })
+        .filter((c) => c !== undefined && c !== null)
+        .map(String);
 
-    // ✅ Mapear múltiples NRCs
-    const nrcCodes = (m.nrcIds || [])
-      .map(id => nrcOptions.find(n => n.id_nrc === id)?.codigo)
-      .filter((code): code is number => code !== undefined);
-
-    return {
+    const memberObj: Record<string, any> = {
       memberFirstName: m.nombre,
       memberLastName: m.apellido,
       memberEmail: email,
-      studentCode: m.codigo_estudiantil,
-      nrc: nrcCodes,
+      nrc: nrcStrings,
     };
+
+    if (!data.isExternal) {
+      memberObj.studentCode = m.codigo_estudiantil;
+    }
+
+    return memberObj;
   });
+
+  const uploads = (galleryUploads || []).map(u => ({
+    blobName: u.blobName,
+    filename: u.filename,
+    mimetype: u.mimetype,
+    size: u.size,
+    isPublic: u.isPublic,
+  }));
 
   return {
     teamName: data.nombre_equipo,
+    isExternal: data.isExternal,
     members,
     videogame: {
       vgName: data.videojuego.nombre,
       description: data.videojuego.descripcion,
-      logoURL: uploadedUrls[0] || data.videojuego.logo_url || "",
-      videoDemoUrl: data.videojuego.video_demo_url || "",
+      repoUrl: (data as any).videojuego?.repo_url || "",
+      logoUrl: logoUpload?.blobName || data.videojuego.logo_url || "",
+      videoUrl: data.videojuego.video_demo_url || "",
+      uploads,
     },
-    isExternal: data.isExternal,
-    teamNrcGlobal: data.isExternal ? (globalNrcCode ?? null) : null,
   };
 }
 
@@ -199,7 +174,6 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
     id_equipo: team.id_equipo,
     mode: "edit",
     isExternal: (team as any).isExternal ?? isExternalGuess,
-    // intentar preservar el id del NRC global si viene (puede ser id o código según backend)
     team_nrc_global_id: (team as any).team_nrc_global_id ?? (team as any).teamNrcGlobal ?? undefined,
     nombre_equipo: team.nombre_equipo,
     videojuego: {
@@ -209,11 +183,11 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       video_demo_url: (team as any).videojuego?.video_demo_url || "",
     },
     integrantes: team.integrantes.map((m: any) => ({
+      id_integrante: m.id_integrante ?? m.id ?? undefined, // ✅ conservar id del integrante
       nombre: m.nombre || "",
       apellido: m.apellido || "",
       correo: m.correo || "",
       codigo_estudiantil: String(m.codigo_estudiantil ?? ""),
-      // Mapear nrcs existentes a nrcIds (usar any porque integranted type no define nrcs)
       nrcIds: Array.isArray((m as any).nrcs) ? (m as any).nrcs.map((n: any) => n.id_nrc ?? n.id ?? n.code) : [],
     })),
   };
@@ -232,6 +206,34 @@ export type TeamWizardDialogProps = {
   initialData?: Partial<WizardValues>;
 };
 
+function StepHeader({
+  step,
+  total,
+  title,
+  cantidad,
+  subtitle,
+}: {
+  step: number;
+  total: number;
+  title: string;
+  cantidad?: number;
+  subtitle?: string;
+}) {
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <span className="text-primary">{`Paso ${step} de ${total}`}</span>
+        <span className="text-muted-foreground">|</span>
+        <span>{title}</span>
+        {typeof cantidad === "number" && (
+          <span className="ml-2 text-xs text-muted-foreground">{`(${cantidad})`}</span>
+        )}
+      </div>
+      {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
+    </div>
+  );
+}
+
 export default function TeamWizardDialog({
   open,
   onOpenChange,
@@ -240,17 +242,24 @@ export default function TeamWizardDialog({
   onSuccess,
   initialData,
 }: TeamWizardDialogProps) {
-  // ✅ TODOS LOS ESTADOS DENTRO DEL COMPONENTE
+  //ESTADOS DENTRO DEL COMPONENTE
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(0);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);
 
+  // Refs & cropper state for logo
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`;
 
-  // ✅ FETCH DE NRCs DENTRO DEL COMPONENTE
+  //FETCH DE NRCs DENTRO DEL COMPONENTE
   useEffect(() => {
     const fetchNrcs = async () => {
       setIsPageLoading(true);
@@ -333,11 +342,12 @@ export default function TeamWizardDialog({
     nombre_equipo: "",
     videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "" },
     integrantes: [{
+      id_integrante: undefined,
       nombre: "",
       apellido: "",
       correo: "",
       codigo_estudiantil: "",
-      nrcIds: [] // ✅ Cambio: array vacío
+      nrcIds: []
     }],
   };
   const methods = useForm<WizardValues>({
@@ -353,7 +363,6 @@ export default function TeamWizardDialog({
   const mode = watch("mode");
   const isExternal = watch("isExternal");
 
-  // Email del primer integrante bloqueado en edición
   const primaryEmailLocked = useMemo(() => {
     if (mode !== "edit") return undefined;
     const mem = watch("integrantes");
@@ -368,30 +377,24 @@ export default function TeamWizardDialog({
         reset(defaultValues);
       }
       setStep(1);
-      setFiles([]);
+      setGalleryFiles([]);
+      setLogoFile(null);
       setEditingIndex(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   /** Paso 1 → Paso 2 (validaciones de equipo+juego) */
   const nextFromStep1 = async () => {
     const vals = methods.getValues();
 
-    // dispare validación de estos campos visibles
-    await methods.trigger(["nombre_equipo", "videojuego.nombre", "videojuego.descripcion", "videojuego.video_demo_url"]);
+    await methods.trigger(["nombre_equipo", "videojuego.nombre", "videojuego.descripcion"]);
 
-    if (errors?.nombre_equipo || errors?.videojuego?.nombre || errors?.videojuego?.descripcion || errors?.videojuego?.video_demo_url) {
+    if (errors?.nombre_equipo || errors?.videojuego?.nombre || errors?.videojuego?.descripcion) {
       return;
     }
 
     if (isExternal && !vals.team_nrc_global_id) {
       toast.error("Selecciona el NRC global para colegios");
-      return;
-    }
-
-    if (files.length > 4) {
-      toast.error("Máximo 4 archivos");
       return;
     }
 
@@ -410,6 +413,89 @@ export default function TeamWizardDialog({
     }
   };
 
+  /** Paso 2 → Paso 3 (validar integrantes) */
+  const nextFromStep2 = async () => {
+    await methods.trigger(["integrantes"]);
+    const vals = methods.getValues();
+    if ((errors as any)?.integrantes) return;
+    if (!vals.integrantes || vals.integrantes.length === 0) {
+      toast.error("Agrega al menos un miembro");
+      return;
+    }
+    setStep(3);
+  };
+
+  // Logo handlers
+  const handleLogoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (f.size > MAX_BYTES) {
+      toast.error("La imagen debe pesar menos de 5 MB");
+      e.target.value = "";
+      return;
+    }
+    setSelectedLogoFile(f);
+    setCropperOpen(true);
+    e.target.value = "";
+  };
+
+  const handleCroppedLogo = (file: File) => {
+    setLogoFile(file);
+  };
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview(null);
+      return;
+    }
+    const u = URL.createObjectURL(logoFile);
+    setLogoPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [logoFile]);
+
+  // Gallery handlers & previews
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    if (!newFiles.length) return;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    for (const f of newFiles) {
+      if (!f.type.startsWith("image/")) {
+        toast.error("Solo se permiten imágenes");
+        e.target.value = "";
+        return;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error("Cada imagen debe ser menor a 5 MB");
+        e.target.value = "";
+        return;
+      }
+    }
+
+    const combined = [...galleryFiles, ...newFiles];
+    if (combined.length > 5) {
+      toast.error("Máximo 5 imágenes");
+      e.target.value = "";
+      return;
+    }
+
+    setGalleryFiles(combined);
+    e.target.value = "";
+  };
+
+  const handleDeleteGallery = (index: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    // revoke previous urls automatically by recreating
+    const urls = galleryFiles.map((f) => URL.createObjectURL(f));
+    setGalleryPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [galleryFiles]);
+
   /** Guardar (Paso 2) */
   const onSubmit = handleSubmit(async (data) => {
     setBusy(true);
@@ -418,9 +504,40 @@ export default function TeamWizardDialog({
       WizardSchema.parse(data);
 
       if (!data.isExternal && data.integrantes.length > 0) {
-        const emails = data.integrantes.map((m: { correo: any; }) => m.correo);
-        // ✅ En modo edición, excluir el email original del primer miembro
-        const excludeEmails = data.mode === "edit" && primaryEmailLocked ? [primaryEmailLocked] : [];
+        const emails = data.integrantes.map((m: { correo: any; }) => (m.correo || "").trim());
+
+        // En modo edición: excluir los emails que pertenecen a los integrantes originales
+        // y que NO fueron modificados (se compara por id_integrante cuando exista, y por posición como fallback).
+        let excludeEmails: string[] = [];
+
+        if (data.mode === "edit" && initialData?.integrantes) {
+          // Mapear originales por id (si existe) y por índice
+          const origById = new Map<number | string, string>();
+          (initialData.integrantes || []).forEach((m: any) => {
+            const id = m?.id_integrante ?? m?.id;
+            if (id != null) origById.set(id, (m.correo || "").trim());
+          });
+
+          // Si el miembro actual tiene id y el correo no cambió, excluirlo
+          data.integrantes.forEach((m: any, idx: number) => {
+            const id = m?.id_integrante ?? m?.id;
+            const curEmail = (m?.correo || "").trim();
+            if (id != null && origById.get(id) === curEmail) {
+              excludeEmails.push(curEmail);
+            } else {
+              // fallback por posición: si el correo en initialData en la misma posición coincide, excluirlo
+              const origAtPos = (initialData.integrantes?.[idx]?.correo || "").trim();
+              if (origAtPos && origAtPos === curEmail) excludeEmails.push(curEmail);
+            }
+          });
+
+          // asegurar unicidad
+          excludeEmails = Array.from(new Set(excludeEmails));
+        } else {
+          // en modo add no excluir nada
+          excludeEmails = [];
+        }
+
         const dup = await findUsedEmails(apiBaseUrl, emails, excludeEmails);
         if (dup.length) {
           toast.error(`Correo(s) ya usados: ${dup.join(", ")}`);
@@ -428,61 +545,179 @@ export default function TeamWizardDialog({
         }
       }
 
-      if (files.length > 4) throw new Error("Máximo 4 archivos");
-      const uploadedUrls = files.length ? await uploadFilesToAzure(files) : [];
+      // Subir logo (si existe) y galería (si existen)
+      let logoUpload: UploadInfo | null = null;
+      if (logoFile) {
+        const [logoMeta] = await uploadFilesToAzure([logoFile]);
+        logoUpload = logoMeta || null;
+      }
 
-      const payload = buildPayload(data, uploadedUrls, nrcOptions, primaryEmailLocked);
+      let galleryUploads: UploadInfo[] = [];
+      if (galleryFiles.length) {
+        if (galleryFiles.length > 5) throw new Error("Máximo 5 imágenes");
+        galleryUploads = await uploadFilesToAzure(galleryFiles);
+      }
+
+      // payload completo (para POST) generado por tu helper
+      const fullPayload = buildPayload(data, logoUpload, galleryUploads, nrcOptions, primaryEmailLocked);
+
       const url = data.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/${data.id_equipo}`;
       const method = data.mode === "add" ? "POST" : "PATCH";
+
+      // Si es update, construir un payload reducido según cambios detectados
+      let requestBody: any = fullPayload;
+      if (method === "PATCH") {
+        // Construir PATCH con solo campos modificados
+        const patch: any = {};
+
+        // Helper simple de comparación
+        const changed = (a: any, b: any) => {
+          try {
+            return JSON.stringify(a) !== JSON.stringify(b);
+          } catch {
+            return a !== b;
+          }
+        };
+
+        const origTeamName = initialData?.nombre_equipo ?? "";
+        if (changed(fullPayload.teamName, origTeamName)) patch.teamName = fullPayload.teamName;
+
+        const origIsExternal = initialData?.isExternal ?? false;
+        if (changed(fullPayload.isExternal, origIsExternal)) patch.isExternal = fullPayload.isExternal;
+        const origGlobalNrc = initialData?.team_nrc_global_id ?? undefined;
+        if (changed((fullPayload as any).team_nrc_global_id, origGlobalNrc)) patch.team_nrc_global_id = (fullPayload as any).team_nrc_global_id;
+
+        const vgPatch: any = {};
+        const origVg = {
+          nombre: "",
+          descripcion: "",
+          repo_url: "",
+          logo_url: "",
+          video_demo_url: "",
+          ...(initialData?.videojuego || {})
+        };
+        const curVg = (fullPayload as any).videogame || {};
+        if (changed(curVg.vgName, origVg.nombre)) vgPatch.vgName = curVg.vgName;
+        if (changed(curVg.description, origVg.descripcion)) vgPatch.description = curVg.description;
+        if (changed(curVg.repoUrl, origVg.repo_url)) vgPatch.repoUrl = curVg.repoUrl;
+        if (changed(curVg.logoUrl, origVg.logo_url)) vgPatch.logoUrl = curVg.logoUrl;
+        if (changed(curVg.videoUrl, origVg.video_demo_url)) vgPatch.videoUrl = curVg.videoUrl;
+        if ((galleryUploads?.length || 0) > 0) {
+          vgPatch.uploads = galleryUploads.map(() => ({}));
+        }
+        if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
+
+        // 4) members: detect changes per integrante (existing, updated, new)
+        const membersPatch: any[] = [];
+        const origMembers = initialData?.integrantes || [];
+        const curMembers = data.integrantes || [];
+
+        // track orig ids present to detect removals
+        const origIdsSet = new Set<number | string>(origMembers.map((m: any) => m?.id_integrante ?? m?.id).filter(Boolean));
+        const curIdsSet = new Set<number | string>();
+
+        for (let idx = 0; idx < curMembers.length; idx++) {
+          const cur = curMembers[idx];
+          const orig = origMembers[idx] || null;
+          const id = cur?.id_integrante ?? cur?.id ?? orig?.id_integrante ?? orig?.id;
+          if (id != null) curIdsSet.add(id);
+
+          if (id == null && (!orig || orig == null)) {
+            const newMember: any = {
+              memberFirstName: cur.nombre,
+              memberLastName: cur.apellido,
+              memberEmail: cur.correo,
+              nrc: (cur.nrcIds || []).map((nid: number) => {
+                const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.code) === String(nid));
+                return n ? String((n as any).codigo ?? (n as any).code) : String(nid);
+              }),
+            };
+            if (!data.isExternal) newMember.studentCode = cur.codigo_estudiantil;
+            membersPatch.push(newMember);
+            continue;
+          }
+
+          if (id != null) {
+            const changedMember: any = { id };
+            const origEmail = (orig?.correo || "").trim();
+            const curEmail = (cur?.correo || "").trim();
+            if (changed(curEmail, origEmail)) changedMember.memberEmail = curEmail;
+
+            const origFirst = (orig?.nombre || "");
+            if (changed(cur?.nombre || "", origFirst)) changedMember.memberFirstName = cur.nombre;
+            const origLast = (orig?.apellido || "");
+            if (changed(cur?.apellido || "", origLast)) changedMember.memberLastName = cur.apellido;
+            if (!data.isExternal) {
+              const origCode = String(orig?.codigo_estudiantil ?? "");
+              if (changed(cur?.codigo_estudiantil ?? "", origCode)) changedMember.studentCode = cur.codigo_estudiantil;
+            }
+            // nrcs compare
+            const origNrcs = Array.isArray(orig?.nrcIds) ? orig.nrcIds.map(String) : (Array.isArray((orig as any).nrcs) ? (orig as any).nrcs.map((n: any) => String(n.id_nrc ?? n.id ?? n.code)) : []);
+            const curNrcs = (cur?.nrcIds || []).map(String);
+            if (changed(origNrcs, curNrcs)) {
+              changedMember.nrc = curNrcs;
+            }
+
+            if (Object.keys(changedMember).length > 1) membersPatch.push(changedMember);
+          }
+        }
+
+        const removedIds = Array.from(origIdsSet).filter(id => !curIdsSet.has(id));
+        if (membersPatch.length) patch.members = membersPatch;
+        if (removedIds.length) patch.removedMemberIds = removedIds;
+
+        if (Object.keys(patch).length === 0) {
+          toast.info("No hay cambios para guardar");
+          setBusy(false);
+          return;
+        }
+
+        requestBody = patch;
+      }
+
+      console.log("Submitting teams payload:", { url, method, payload: requestBody });
 
       const res = await fetch(url, {
         method,
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
 
       if (!(data.mode === "add" ? res.status === 201 : res.ok)) {
-        // Intentar parsear body con errores estructurados
         const errBody = await res.json().catch(() => ({}));
-
-        // Si el backend devolvió errores por campo, mapearlos al formulario
-        const maybeErrors = (errBody && (errBody.errors || errBody.message || errBody)) || null;
         let mapped = false;
-
-        if (maybeErrors && typeof maybeErrors === "object") {
-          // ej: { nombre_equipo: 'required', integrantes: { '0.correo': 'invalid' } }
-          const assignError = (path: string, msg: string) => {
-            try {
-              // convertir paths con puntos a rutas para react-hook-form
-              methods.setError(path as any, { type: "server", message: msg });
-              mapped = true;
-            } catch (e) {
-              // ignore
-            }
-          };
-
-          // Si viene message como string, mostrarlo
-          if (typeof errBody.message === "string") {
-            // no field-level errors, mostrar toast
-            toast.error(errBody.message);
-          } else {
-            // recorrer keys y asignar
-            const source = errBody.errors ?? errBody.message ?? errBody;
-            if (typeof source === "object") {
-              Object.entries(source).forEach(([k, v]) => {
-                const msg = Array.isArray(v) ? v.join(", ") : String(v ?? "Error");
-                // si la clave contiene índices como integrantes.0.correo, setear directamente
-                assignError(k, msg);
-              });
-            }
+        const assignError = (path: string, msg: string) => {
+          try {
+            methods.setError(path as any, { type: "server", message: msg });
+            mapped = true;
+          } catch (e) {
           }
+        };
+
+        const source = errBody.errors ?? (typeof errBody.message === "object" ? errBody.message : errBody);
+
+        if (source && typeof source === "object") {
+          Object.entries(source).forEach(([k, v]) => {
+            const msg = Array.isArray(v) ? v.join(", ") : (typeof v === "string" ? v : JSON.stringify(v));
+            const normalizedKey = k.replace(/\[(\d+)\]/g, '.$1');
+            assignError(normalizedKey, msg);
+          });
         }
 
-        // Si no se mapeó a campos, arrojar con mensaje para el catch y mostrar toast
-        const fallbackMsg = (errBody && (errBody.message || JSON.stringify(errBody))) || `Error ${res.status}`;
-        if (!mapped) throw new Error(fallbackMsg);
-        else throw new Error("Validation error");
+        if (!mapped && typeof errBody.message === "string") {
+          const shortMsg = errBody.message.length > 250 ? errBody.message.slice(0, 250) + "..." : errBody.message;
+          throw new Error(shortMsg);
+        }
+
+        if (mapped) {
+          toast.error("Corrige los errores en el formulario");
+          return;
+        }
+
+        const fallbackRaw = JSON.stringify(errBody) || `Error ${res.status}`;
+        const fallback = fallbackRaw.length > 300 ? fallbackRaw.slice(0, 300) + "..." : fallbackRaw;
+        throw new Error(fallback);
       }
 
       toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
@@ -495,18 +730,30 @@ export default function TeamWizardDialog({
     }
   });
 
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (step === 3) {
+      await onSubmit();
+    } else if (step === 1) {
+      await nextFromStep1();
+    } else if (step === 2) {
+      await nextFromStep2();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl">
         <FormProvider {...methods}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <DialogHeader>
               <DialogTitle>{methods.watch("mode") === "add" ? "Registrar equipo" : "Editar equipo"}</DialogTitle>
             </DialogHeader>
 
-            {/* indicador 2 pasos */}
+            {/* indicador 3 pasos */}
             <div className="flex items-center gap-2 text-xs">
-              {[1, 2].map((i) => (
+              {[1, 2, 3].map((i) => (
                 <div key={i} className={`h-1 rounded w-full ${i <= step ? "bg-primary" : "bg-muted"}`} />
               ))}
             </div>
@@ -514,7 +761,7 @@ export default function TeamWizardDialog({
             {/* PASO 1: Equipo + Videojuego */}
             {step === 1 && (
               <div className="space-y-4">
-                <StepHeader step={1} total={2} title="Datos del equipo y del videojuego" />
+                <StepHeader step={1} total={3} title="Datos del equipo y del videojuego" />
                 <div className="grid grid-cols-1 gap-3">
                   {/* Tipo de equipo */}
                   <div className="flex flex-col gap-1">
@@ -535,13 +782,13 @@ export default function TeamWizardDialog({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                     <div className="flex flex-col gap-1">
-                    <Label>Nombre del equipo</Label>
-                    <Input
-                      {...methods.register("nombre_equipo")}
-                      aria-invalid={!!errors?.nombre_equipo}
-                      placeholder="Ej: Pixel Ninjas"
-                    />
-                    <FieldError message={(errors as any)?.nombre_equipo?.message} />
+                      <Label>Nombre del equipo</Label>
+                      <Input
+                        {...methods.register("nombre_equipo")}
+                        aria-invalid={!!errors?.nombre_equipo}
+                        placeholder="Ej: Pixel Ninjas"
+                      />
+                      <FieldError message={(errors as any)?.nombre_equipo?.message} />
                     </div>
 
                     {/* Videojuego */}
@@ -619,25 +866,119 @@ export default function TeamWizardDialog({
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Label>Archivos (opcional, máximo 4)</Label>
+                    <Label>Logo (opcional)</Label>
+                    <div className="flex flex-col md:flex-row items-start gap-3">
+                      <div
+                        className="flex flex-col items-center justify-center rounded-md border border-dashed p-4 transition-colors hover:bg-muted/50 cursor-pointer w-full md:w-1/3"
+                        onClick={() => logoInputRef.current?.click()}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") logoInputRef.current?.click();
+                        }}
+                      >
+                        <CloudUpload className="h-8 w-8 mb-2 text-gray-400" />
+                        <p className="text-center text-sm text-gray-600">Haz clic para seleccionar una imagen</p>
+                        <p className="text-xs text-gray-400 mt-1">Máximo 5 MB • PNG, JPG, JPEG</p>
+                        <Input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoInputChange}
+                          className="hidden"
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        {logoPreview ? (
+                          <div className="relative inline-block w-30 sm:w-32 md:w-32">
+                            <img
+                              src={logoPreview}
+                              alt="Logo preview"
+                              className="rounded-md border object-cover w-full h-full"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6"
+                              onClick={() => setLogoFile(null)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No hay logo seleccionado.</p>
+                        )}
+
+                        <div className="text-xs text-muted-foreground mt-2">Se abrirá un recortador para ajustar a 1:1</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PASO 3: Enlaces y galería */}
+            {step === 3 && (
+              <div className="space-y-4">
+                <StepHeader step={3} total={3} title="Repositorio y Material Multimedia" />
+                <div className="grid grid-cols-1 gap-3">
+
+                  <div className="flex flex-col gap-1">
+                    <Label>URL del Repositorio (opcional)</Label>
                     <Input
-                      type="file"
-                      multiple={true} // 👈 asegúrate de pasarlo explícitamente
-                      accept="image/*,video/*" // opcional: restringe tipos
-                      onChange={(e) => {
-                        const newFiles = Array.from(e.target.files || []);
-                        const combined = [...files, ...newFiles];
-                        if (combined.length > 4) {
-                          toast.error("Máximo 4 archivos");
-                          return;
-                        }
-                        setFiles(combined);
-                      }}
+                      placeholder="https://github.com/usuario/proyecto"
+                      {...methods.register("videojuego.repo_url")}
+                      aria-invalid={false}
                     />
-                    <div className="text-xs text-muted-foreground">
-                      {files.length
-                        ? `${files.length} archivo(s) seleccionados`
-                        : "Puedes subir hasta 4 archivos"}
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <Label>Fotos del Proyecto (opcional)</Label>
+                    <div className="space-y-3">
+                      <div
+                        className="flex items-center gap-3"
+                      >
+                        <div
+                          className="flex items-center justify-center rounded-md border border-dashed p-4 cursor-pointer"
+                          onClick={() => galleryInputRef.current?.click()}
+                        >
+                          <CloudUpload className="h-6 w-6 text-gray-400" />
+                          <p className="ml-2 text-sm text-muted-foreground">Sube hasta 5 imágenes</p>
+                          <Input
+                            ref={galleryInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleGalleryChange}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {galleryPreviews.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {galleryPreviews.map((src, idx) => (
+                            <div key={`${src}-${idx}`} className="relative group">
+                              <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                                <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDeleteGallery(idx)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -649,7 +990,7 @@ export default function TeamWizardDialog({
               <div className="space-y-4">
                 <StepHeader
                   step={2}
-                  total={2}
+                  total={3}
                   title="Miembros"
                   cantidad={fields.length}
                   subtitle={
@@ -711,7 +1052,6 @@ export default function TeamWizardDialog({
                         {/* Formulario del miembro (solo si está abierto) */}
                         {isOpen && (
                           <div className="p-3 pt-0 space-y-2">
-                            {/* Nombre + Apellido (responsive) */}
                             <div className="flex flex-col sm:flex-row gap-3">
                               <div className="flex flex-col gap-1 sm:w-1/2">
                                 <Label>Nombre</Label>
@@ -731,7 +1071,6 @@ export default function TeamWizardDialog({
                               </div>
                             </div>
 
-                            {/* Correo + Código en la misma línea */}
                             <div className="flex flex-col sm:flex-row gap-3">
                               <div className="flex flex-col gap-1 sm:w-2/3">
                                 <Label>
@@ -764,7 +1103,7 @@ export default function TeamWizardDialog({
                               )}
                             </div>
 
-                            {/* ✅ NRC SELECTOR CORREGIDO - Solo para Uninorte */}
+                            {/* Solo para Uninorte */}
                             {!isExternal && (
                               <div className="flex flex-col gap-1">
                                 <Label>NRCs del estudiante</Label>
@@ -888,6 +1227,9 @@ export default function TeamWizardDialog({
               </div>
             )}
 
+            {/* Image cropper modal for logo */}
+            <ImageCropper file={selectedLogoFile} open={cropperOpen} onClose={() => setCropperOpen(false)} onCropComplete={handleCroppedLogo} />
+
             <DialogFooter className="mt-2">
               <div className="flex w-full justify-between">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
@@ -895,7 +1237,7 @@ export default function TeamWizardDialog({
                 </Button>
                 <div className="space-x-2">
                   {step > 1 && (
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={busy}>
+                    <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={busy}>
                       <ChevronLeft className="w-4 h-4 mr-1" /> Atrás
                     </Button>
                   )}
@@ -904,10 +1246,16 @@ export default function TeamWizardDialog({
                       {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Siguiente <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
+                  ) : step === 2 ? (
+                    <Button type="button" onClick={nextFromStep2} disabled={busy}>
+                      {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
                   ) : (
-                    <Button type="submit" disabled={busy} onClick={() => onSubmit()}>
+                    <Button type="submit" disabled={busy}>
                       {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {methods.watch("mode") === "add" ? "Registrar" : "Guardar cambios"}
+
                     </Button>
                   )}
                 </div>

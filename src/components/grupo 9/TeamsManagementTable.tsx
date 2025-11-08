@@ -87,17 +87,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
 }) => {
 
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardInitial, setWizardInitial] = useState<
-    Partial<WizardValues> | undefined
-  >(undefined);
+  const [wizardInitial, setWizardInitial] = useState< Partial<WizardValues> | undefined >(undefined);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [expandedMembers, setExpandedMembers] = useState<Set<number>>(
-    new Set()
-  );
 
   const [estadosVideojuego, setEstadosVideojuego] = useState<
     EstadoVideojuego[]
@@ -175,10 +170,26 @@ export const TeamsManagementTable: React.FC<Props> = ({
     load();
   }, [API_ENDPOINT]);
 
-  const toggleMembersExpansion = (teamId: number) => {
-    const s = new Set(expandedMembers);
-    s.has(teamId) ? s.delete(teamId) : s.add(teamId);
-    setExpandedMembers(s);
+  const updateTeamStatus = async (teamId: number, status: number) => {
+
+    const body = {
+      videogame: {
+        videogameStatusId: status,
+      },
+    };
+
+    const res = await fetch(`${apiBaseUrl}/teams/${teamId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.message || "Error actualizando el equipo.");
+    }
+    // opcional: devolver body si el backend retorna el equipo actualizado
+    return res.json().catch(() => null);
   };
 
   const getStatusBadge = (statusId: number) => {
@@ -290,28 +301,43 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     <div className="max-h-64 overflow-y-auto p-3">
                       {/* badges inline, wrapables y con espacio entre ellas */}
                       <div className="flex flex-wrap gap-2 items-center">
-                        {members
-                          .flatMap((integrante) =>
-                            (integrante.nrcs ?? []).map((nrc: NrcInfo) => ({
-                              nrc,
-                              integranteId: integrante.id_integrante ?? `member-${Math.random().toString(36).slice(2,7)}`,
-                            }))
-                          )
-                          .map(({ nrc, integranteId }) => {
-                            const materia = materiasOptions.find(
-                              (m) =>
-                                // handle both shapes (id_materia / id)
-                                (m as any).id_materia === nrc.id_materia ||
-                                (m as any).id === nrc.id_materia
-                            );
-                            const materiaNombre = (materia as any)?.nombre ?? (materia as any)?.name ?? "Materia desconocida";
-                            const key = `${team.id_equipo}-${integranteId}-${String(nrc.id_nrc)}-${String(nrc.codigo)}`;
-                            return (
-                              <Badge key={key} className="text-xs">
-                                <b className="px-1">{nrc.codigo} - {materiaNombre}</b>
-                              </Badge>
-                            );
-                          })}
+                        {(() => {
+                          const shownNrcs = new Set<string>();
+                          return members
+                            .flatMap((integrante) =>
+                              (integrante.nrcs ?? []).map((nrc: NrcInfo) => ({
+                                nrc,
+                                integranteId:
+                                  integrante.id_integrante ??
+                                  `member-${Math.random().toString(36).slice(2, 7)}`,
+                              }))
+                            )
+                            .map(({ nrc, integranteId }) => {
+                              const materia = materiasOptions.find(
+                                (m) =>
+                                  (m as any).id_materia === nrc.id_materia ||
+                                  (m as any).id === nrc.id_materia
+                              );
+                              const materiaNombre =
+                                (materia as any)?.nombre ??
+                                (materia as any)?.name ??
+                                "Materia desconocida";
+
+                              // clave para deduplicar (preferir id_nrc si viene, si no usar código + materia)
+                              const nrcKey = String(nrc.id_nrc ?? `${nrc.codigo}-${nrc.id_materia}`);
+                              if (shownNrcs.has(nrcKey)) return null;
+                              shownNrcs.add(nrcKey);
+
+                              const key = `${team.id_equipo}-${integranteId}-${nrcKey}`;
+                              return (
+                                <Badge key={key} className="text-xs">
+                                  <b className="px-1">
+                                    {nrc.codigo} - {materiaNombre}
+                                  </b>
+                                </Badge>
+                              );
+                            });
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -363,20 +389,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
         const cached = statusEmailLeader(primaryEmail);
 
         // estado no iniciado: mostrar indicador ligero
-        if (cached === undefined) {
+        if (cached === undefined || cached === null) {
           return (
             <div className="flex items-center gap-2">
               <Badge variant="secondary">No consultado</Badge>
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          );
-        }
-
-        // explicitamente null -> sin correo / no aplicable
-        if (cached === null) {
-          return (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">No consultado</Badge>
             </div>
           );
         }
@@ -410,12 +427,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
         );
       },
     },
-    // ...existing code...,
     {
       key: "status",
       label: "Estado Videojuego",
       renderCell: (team: TeamRowData) => {
-        const idEstadoVideojuego = safeVideo(team).id_estado_videojuego;
+        const idEstadoVideojuego = team.videojuego?.id_estado_videojuego ?? 2;
 
         // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
         const estadoOptions = [
@@ -435,22 +451,18 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 const numericStatus = parseInt(newStatus, 10);
                 setInternalIsLoading(true);
                 try {
-                  const res = await fetch(
-                    `${apiBaseUrl}/teams/${team.id_equipo}/status`,
-                    {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ estado: numericStatus }),
-                    }
+                  await updateTeamStatus(team.id_equipo, numericStatus);
+                  console.log("Estado anterior:", team.videojuego.id_estado_videojuego);
+                  console.log("Estado actualizado en el backend");
+                  console.log("Nuevo estado:", team.videojuego.id_estado_videojuego);
+                  toast.success(
+                    `Estado cambiado a ${estadoOptions.find(
+                      (o) => o.id_estado === numericStatus
+                    )?.estado || numericStatus}.`
                   );
-                  if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    throw new Error(err?.message || "Error al cambiar el estado.");
-                  }
-                  toast.success(`Estado cambiado a ${estadoOptions.find(o => o.id_estado === numericStatus)?.estado || numericStatus}.`);
                   refreshData();
                 } catch (err: any) {
-                  showError(err.message || "Error al cambiar el estado.");
+                  showError(err?.message || "Error al cambiar el estado.");
                 } finally {
                   setInternalIsLoading(false);
                 }
