@@ -51,7 +51,7 @@ type Team = {
   videogameName: string;
   description: string;
   logoUrl: string;
-  youtubeUrl: string;
+  videoUrl: string;
   githubUrl: string;
 }
 
@@ -81,7 +81,7 @@ export default function EditBoard() {
     videogameName: '', 
     description: '',
     logoUrl: '',
-    youtubeUrl: '',
+    videoUrl: '',
     githubUrl: ''
 
   })
@@ -165,7 +165,7 @@ export default function EditBoard() {
       videogameName: data.videogame.name, 
       description: data.videogame.description,
       logoUrl: data.videogame.logoUrl,
-      youtubeUrl: data.videogame.youtubeUrl,
+      videoUrl: data.videogame.videoUrl,
       githubUrl: data.videogame.githubUrl
     }
     setInfoEquipo(dataInfoEquipo)
@@ -190,7 +190,7 @@ export default function EditBoard() {
           videogameName: infoEditEquipo.videogameName,
           description: infoEditEquipo.description,
           logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
-          youtubeUrl: infoEditEquipo.youtubeUrl,
+          videoUrl: infoEditEquipo.videoUrl,
           githubUrl: infoEditEquipo.githubUrl
         };
   
@@ -567,7 +567,7 @@ export default function EditBoard() {
               <a href={infoEquipo.githubUrl} target="_blank">
                 <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
               </a>
-              <a href={infoEquipo.youtubeUrl} target="_blank">
+              <a href={infoEquipo.videoUrl} target="_blank">
                 <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
               </a>
             </div>
@@ -690,8 +690,8 @@ export default function EditBoard() {
               <div className="flex flex-col gap-2">
                 <Label>Vídeo de youtube</Label>
                 <Input
-                  value={infoEditEquipo?.youtubeUrl}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, youtubeUrl: e.target.value}))}
+                  value={infoEditEquipo?.videoUrl}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videoUrl: e.target.value}))}
                   placeholder="https://youtube..."
                 />
               </div>
