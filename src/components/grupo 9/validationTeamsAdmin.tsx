@@ -14,7 +14,7 @@ export const MemberSchemaAllRequired = z.object({
   nombre: z.string().trim().min(1, "Obligatorio"),
   apellido: z.string().trim().min(1, "Obligatorio"),
   correo: z.string().trim().min(1, "Obligatorio").email("Correo inválido"),
-  codigo_estudiantil: z.string().trim().min(1, "Obligatorio"),
+  codigo_estudiantil: z.string().trim().optional(),
   nrcIds: z.array(z.number()).optional(),
 });
 
@@ -41,7 +41,7 @@ export const WizardSchema = z.object({
     data.integrantes.forEach((m, i) => {
       if (!uninorteEmail(m.correo))
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
-      if (!onlyDigits(m.codigo_estudiantil))
+      if (!onlyDigits(m.codigo_estudiantil || ""))
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });
       if (!m.nrcIds || m.nrcIds.length === 0)
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "nrcIds"], message: "Selecciona al menos un NRC" });

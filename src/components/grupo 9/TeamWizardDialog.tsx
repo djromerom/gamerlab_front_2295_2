@@ -106,30 +106,60 @@ function buildPayload(
   nrcOptions: NrcInfo[],
   primaryEmailLocked?: string
 ) {
+  // resolver código del NRC de forma robusta
+  const resolveNrcCode = (item: any) => {
+    if (!item) return undefined;
+    return (
+      item.codigo ??
+      item.code ??
+      item.codeStr ??
+      item.id_nrc ??
+      item.id ??
+      ""
+    ).toString();
+  };
+
+  const findNrcMatch = (value: any) => {
+    if (value === undefined || value === null) return undefined;
+    const vStr = String(value).toLowerCase();
+    return (nrcOptions || []).find((n: any) => {
+      const candidates = [
+        n?.id_nrc,
+        n?.id,
+        n?.code,
+        n?.codigo,
+        n?.codeStr,
+      ].map((c: any) => (c === undefined || c === null ? "" : String(c).toLowerCase()));
+      return candidates.includes(vStr);
+    });
+  };
+
+  // si es externo, resolver el "código" del NRC global y usarlo por miembro
   const globalNrcCode =
     data.isExternal && data.team_nrc_global_id
-      ? String(nrcOptions.find(n => n.id_nrc === data.team_nrc_global_id)?.codigo ?? "")
+      ? (() => {
+          const match = findNrcMatch(data.team_nrc_global_id);
+          return match ? resolveNrcCode(match) : String(data.team_nrc_global_id);
+        })()
       : undefined;
 
-  const members = data.integrantes.map((m, idx) => {
+  const members = (data.integrantes || []).map((m, idx) => {
     const email = idx === 0 && primaryEmailLocked ? primaryEmailLocked : m.correo;
 
     const nrcStrings = data.isExternal
+      // para equipos externos: asignar el NRC global a cada miembro
       ? (globalNrcCode ? [String(globalNrcCode)] : [])
       : (m.nrcIds || [])
-        .map((id) => {
-          // id puede ser id_nrc, codigo o code; buscar coincidencia segura
-          const idStr = String(id);
-          const match = nrcOptions.find((n: any) =>
-            String(n.id_nrc ?? n.id ?? "").toLowerCase() === idStr.toLowerCase()
-            || String(n.codigo ?? n.code ?? "").toLowerCase() === idStr.toLowerCase()
-          );
-          // preferir el campo 'codigo' si existe, si no devolver el id tal cual
-          if (match) return (match.codigo ?? match.codigo ?? match.id_nrc ?? match.id_materia);
-          return id;
-        })
-        .filter((c) => c !== undefined && c !== null)
-        .map(String);
+          .map((id) => {
+            const idStr = String(id);
+            const match = (nrcOptions || []).find((n: any) =>
+              String(n.id_nrc ?? n.id ?? n.code ?? n.codigo ?? n.codeStr ?? "").toLowerCase() === idStr.toLowerCase()
+            );
+            if (match) return resolveNrcCode(match);
+            return idStr;
+          })
+          .filter((c) => c !== undefined && c !== null)
+          .map(String);
 
     const memberObj: Record<string, any> = {
       memberFirstName: m.nombre,
@@ -156,6 +186,8 @@ function buildPayload(
   return {
     teamName: data.nombre_equipo,
     isExternal: data.isExternal,
+    // NOTA: no incluir team_nrc_global_id porque el backend no lo consume;
+    // en su lugar cada miembro ya lleva su nrc (global cuando isExternal=true).
     members,
     videogame: {
       vgName: data.videojuego.nombre,
@@ -612,6 +644,12 @@ export default function TeamWizardDialog({
         const origMembers = initialData?.integrantes || [];
         const curMembers = data.integrantes || [];
 
+        // NRC global para colegios (si aplica) — usado para new/changed members en PATCH
+        const globalNrcCodeForPatch =
+          data.isExternal && data.team_nrc_global_id
+            ? String((nrcOptions.find((n: any) => n.id_nrc === data.team_nrc_global_id)?.codigo) ?? "")
+            : undefined;
+
         // track orig ids present to detect removals
         const origIdsSet = new Set<number | string>(origMembers.map((m: any) => m?.id_integrante ?? m?.id).filter(Boolean));
         const curIdsSet = new Set<number | string>();
@@ -620,17 +658,18 @@ export default function TeamWizardDialog({
           const cur = curMembers[idx];
           const orig = origMembers[idx] || null;
           const id = cur?.id_integrante ?? orig?.id_integrante;
-          if (id != null) curIdsSet.add(id);
-
           if (id == null && (!orig || orig == null)) {
+            // Si es externo, asignar el NRC global a cada miembro; si no, usar nrcIds seleccionados
             const newMember: any = {
               memberFirstName: cur.nombre,
               memberLastName: cur.apellido,
               memberEmail: cur.correo,
-              nrc: (cur.nrcIds || []).map((nid: number) => {
-                const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.codigo) === String(nid));
-                return n ? String((n as any).codigo ?? (n as any).code) : String(nid);
-              }),
+              nrc: data.isExternal
+                ? (globalNrcCodeForPatch ? [String(globalNrcCodeForPatch)] : [])
+                : (cur.nrcIds || []).map((nid: number) => {
+                    const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.codigo) === String(nid));
+                    return n ? String((n as any).codigo ?? (n as any).code) : String(nid);
+                  }),
             };
             if (!data.isExternal) newMember.studentCode = cur.codigo_estudiantil;
             membersPatch.push(newMember);
@@ -654,8 +693,16 @@ export default function TeamWizardDialog({
             // nrcs compare
             const origNrcs = Array.isArray(orig?.nrcIds) ? orig.nrcIds.map(String) : (Array.isArray((orig as any).nrcs) ? (orig as any).nrcs.map((n: any) => String(n.id_nrc ?? n.id ?? n.code)) : []);
             const curNrcs = (cur?.nrcIds || []).map(String);
-            if (changed(origNrcs, curNrcs)) {
-              changedMember.nrc = curNrcs;
+            if (data.isExternal) {
+              // para equipos externos, siempre usar el NRC global (si existe)
+              const globalArr = globalNrcCodeForPatch ? [String(globalNrcCodeForPatch)] : [];
+              if (changed(origNrcs, globalArr)) {
+                changedMember.nrc = globalArr;
+              }
+            } else {
+              if (changed(origNrcs, curNrcs)) {
+                changedMember.nrc = curNrcs;
+              }
             }
 
             if (Object.keys(changedMember).length > 1) membersPatch.push(changedMember);
