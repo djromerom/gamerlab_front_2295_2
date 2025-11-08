@@ -8,11 +8,27 @@ export interface TeamRowData {
   activo: boolean;
   id_estado_confirmacion: number; // Estado del equipo, 1:confirmado, 2:pendiente, 3:expirado
   estado_nombre: string; // Desde estados_confirmacion
+  // Campos opcionales para compatibilidad con el nuevo backend
+  isExternal?: boolean;
+  team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
   videojuego: VideojuegoData;
   nrc_info?: NrcInfo; // Información del NRC si aplica
   materia_info?: MateriaInfo; // Información de la materia si aplica
 }
+
+export interface ConfirmationStatus {
+  id: number;
+  status: string; // e.g. "PENDIENTE", "CONFIRMADO", "EXPIRADO"
+  createdAt: string; // ISO datetime
+  updatedAt: string; // ISO datetime
+  isActive: boolean;
+}
+
+export interface TeamConfirmationStatusResponse {
+  confirmationStatus: ConfirmationStatus;
+}
+
 
 export interface IntegranteData {
   id_integrante: number;
@@ -24,6 +40,8 @@ export interface IntegranteData {
   activo: boolean;
   creado_en: string;
   actualizado_en: string;
+  // Nuevo: algunos endpoints traen los NRCs anidados dentro del integrante
+  nrcs?: any[]; // formato variable (se mapea en el cliente a NrcInfo cuando se requiere)
 }
 
 export interface VideojuegoData {
@@ -35,6 +53,9 @@ export interface VideojuegoData {
   id_estado_videojuego: number; // estado del videojuego -> 1:Confirmado, 2:pendiente, 3:rechazado
   id_equipo: number;
   activo: boolean;
+  // Campos opcionales recibidos por el nuevo backend
+  video_demo_url?: string;
+  repo_url?: string;
 }
 
 export interface NrcInfo {
@@ -111,6 +132,7 @@ export interface Props {
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   refreshData: () => void;
+  statusEmailLeader?: (email: string) => TeamConfirmationStatusResponse | null;
 }
 
 interface PaginationMetadata {

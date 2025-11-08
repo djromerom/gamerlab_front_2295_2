@@ -53,6 +53,7 @@ import {
   EstadoVideojuego,
   NrcInfo,
   MateriaInfo,
+  TeamConfirmationStatusResponse,
 } from "./teams-utils";
 
 import TeamWizardDialog, {
@@ -67,6 +68,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../ui/dialog";
+import { any } from "zod";
+import { set } from "react-hook-form";
+
 
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
@@ -79,7 +83,9 @@ export const TeamsManagementTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  statusEmailLeader,
 }) => {
+
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardInitial, setWizardInitial] = useState<
     Partial<WizardValues> | undefined
@@ -105,42 +111,69 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
 
+  // Helpers seguros para evitar lecturas sobre undefined
+  const safeMembers = (team: TeamRowData) => team?.integrantes ?? [];
+  const safeVideo = (team: TeamRowData) =>
+    team?.videojuego ?? {
+      id_videojuego: 0,
+      nombre: "—",
+      descripcion: "",
+      logo_url: "",
+      fecha_registro: new Date().toISOString(),
+      id_estado_videojuego: 2,
+      id_equipo: team?.id_equipo ?? 0,
+      activo: false,
+    };
+  const safeFecha = (team: TeamRowData) => team?.fecha_registro ?? new Date().toISOString();
+
+
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/subjects`;
+
   useEffect(() => {
     const load = async () => {
       setIsLoadingOptions(true);
       try {
-        // TODO: reemplazar por fetch reales a tu API
-        await new Promise((r) => setTimeout(r, 300));
-        setEstadosVideojuego([
-          { id_estado: 1, estado: "confirmado", activo: true },
-          { id_estado: 2, estado: "pendiente", activo: true },
-          { id_estado: 3, estado: "rechazado", activo: true }
-        ]);
-        setNrcOptions([
-          { id_nrc: 1, codigo: 12345, id_materia: 1, id_profesor: "prof_001" },
-          { id_nrc: 2, codigo: 12346, id_materia: 1, id_profesor: "prof_001" },
-          { id_nrc: 3, codigo: 12347, id_materia: 2, id_profesor: "prof_002" },
-        ]);
-        setMateriasOptions([
-          {
-            id_materia: 1,
-            nombre: "Programación de Videojuegos",
-            codigo: "PROG001",
-            semestre: 6,
-          },
-          {
-            id_materia: 2,
-            nombre: "Desarrollo de Software",
-            codigo: "DES001",
-            semestre: 5,
-          },
-        ]);
+        const res = await fetch(API_ENDPOINT, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+          try {
+            const errorBody = await res.json();
+            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          } catch (e) {
+            console.log(e);
+          }
+          throw new Error(errorMsg);
+        }
+        const apiResponseObject = await res.json();
+
+        console.log("API Response for subjects:", apiResponseObject);
+
+        const materiasData: MateriaInfo[] = apiResponseObject.data.map((materia: any) => ({
+          id: materia.id ?? materia.id_materia,
+          name: materia.name ?? materia.nombre,
+          code: materia.code ?? materia.codigo,
+          semester: materia.semester ?? materia.semestre,
+        }));
+
+        setMateriasOptions(materiasData);
+        console.log("Fetched subjects:", materiasData);
+
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
+        console.log("Error fetching subjects:", err);
+        setMateriasOptions([]);
+
       } finally {
         setIsLoadingOptions(false);
       }
     };
     load();
-  }, []);
+  }, [API_ENDPOINT]);
 
   const toggleMembersExpansion = (teamId: number) => {
     const s = new Set(expandedMembers);
@@ -179,31 +212,42 @@ export const TeamsManagementTable: React.FC<Props> = ({
     }
   }
 
+
   const columnsToDisplay = [
     {
       key: "teamInfo",
       label: "Equipo",
-      renderCell: (team: TeamRowData) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={team.videojuego.logo_url} alt={team.nombre_equipo} />
-            <AvatarFallback>{team.nombre_equipo.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{team.nombre_equipo}</div>
-            <div className="text-sm text-muted-foreground">
-              {team.videojuego.nombre}
+      renderCell: (team: TeamRowData) => {
+        const logo = team.videojuego?.logo_url ?? "";
+        const videojuegoNombre = team.videojuego?.nombre ?? "—";
+        const equipoNombre = team.nombre_equipo ?? "Equipo";
+
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              {logo ? (
+                <AvatarImage src={logo} alt={equipoNombre} />
+              ) : (
+                <AvatarFallback>{equipoNombre.charAt(0) ?? "?"}</AvatarFallback>
+              )}
+            </Avatar>
+            <div>
+              <div className="font-medium">{equipoNombre}</div>
+              <div className="text-sm text-muted-foreground">{videojuegoNombre}</div>
             </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
-    // Reemplaza las columnas "members" y "academicInfo" por esta columna:
     {
       key: "memberInfo",
       label: "Información miembros",
       renderCell: (team: TeamRowData) => {
         const isOpen = openInfoTeamId === team.id_equipo;
+        const logo = team.videojuego?.logo_url ?? "";
+        const videojuegoNombre = team.videojuego?.nombre ?? "—";
+        const equipoNombre = team.nombre_equipo ?? "Equipo";
+        const members = team.integrantes ?? [];
 
         return (
           <>
@@ -214,8 +258,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
               onClick={() => setOpenInfoTeamId(team.id_equipo)}
             >
               <Users className="w-3 h-3 mr-1" />
-              Ver {team.integrantes.length} miembro
-              {team.integrantes.length !== 1 ? "s" : ""} y datos académicos
+              Ver {members.length} miembro{members.length !== 1 ? "s" : ""} y datos académicos
             </Button>
 
             <Dialog open={isOpen} onOpenChange={(open) => !open && setOpenInfoTeamId(null)}>
@@ -223,35 +266,52 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-3">
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={team.videojuego.logo_url} alt={team.nombre_equipo} />
-                      <AvatarFallback>{team.nombre_equipo.charAt(0)}</AvatarFallback>
+                      {logo ? (
+                        <AvatarImage src={logo} alt={equipoNombre} />
+                      ) : (
+                        <AvatarFallback>{equipoNombre.charAt(0) ?? "?"}</AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="font-semibold">{team.nombre_equipo}</span>
-                      <span className="text-xs text-muted-foreground">{team.videojuego.nombre}</span>
+                      <span className="font-semibold">{equipoNombre}</span>
+                      <span className="text-xs text-muted-foreground">{videojuegoNombre}</span>
                     </div>
                   </DialogTitle>
                   <DialogDescription>Detalles de miembros y datos académicos</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
-                  {/* Información académica */}
-                  <div className="rounded-lg border p-3">
-                    <div className="text-sm space-y-1">
-                      {team.nrc_info && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">NRC:</span>
-                          <Badge variant="default">{team.nrc_info.codigo}</Badge>
-                        </div>
-                      )}
-                      {team.materia_info && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Materia:</span>
-                          <span>{team.materia_info.nombre}</span>
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Edición: {team.id_edicion}
+
+                  {/* NRCs Asociados */}
+                  <div className="rounded-lg border">
+                    <div className="px-3 py-2 text-sm font-medium border-b">
+                      NRCs Asociados
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-3">
+                      {/* badges inline, wrapables y con espacio entre ellas */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {members
+                          .flatMap((integrante) =>
+                            (integrante.nrcs ?? []).map((nrc: NrcInfo) => ({
+                              nrc,
+                              integranteId: integrante.id_integrante ?? `member-${Math.random().toString(36).slice(2,7)}`,
+                            }))
+                          )
+                          .map(({ nrc, integranteId }) => {
+                            const materia = materiasOptions.find(
+                              (m) =>
+                                // handle both shapes (id_materia / id)
+                                (m as any).id_materia === nrc.id_materia ||
+                                (m as any).id === nrc.id_materia
+                            );
+                            const materiaNombre = (materia as any)?.nombre ?? (materia as any)?.name ?? "Materia desconocida";
+                            const key = `${team.id_equipo}-${integranteId}-${String(nrc.id_nrc)}-${String(nrc.codigo)}`;
+                            return (
+                              <Badge key={key} className="text-xs">
+                                <b className="px-1">{nrc.codigo} - {materiaNombre}</b>
+                              </Badge>
+                            );
+                          })}
                       </div>
                     </div>
                   </div>
@@ -259,10 +319,10 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   {/* Miembros */}
                   <div className="rounded-lg border">
                     <div className="px-3 py-2 text-sm font-medium border-b">
-                      Miembros ({team.integrantes.length})
+                      Miembros ({members.length})
                     </div>
                     <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-                      {team.integrantes.map((integrante) => (
+                      {members.map((integrante) => (
                         <div
                           key={integrante.id_integrante}
                           className="text-xs bg-muted/50 p-2 rounded"
@@ -299,40 +359,63 @@ export const TeamsManagementTable: React.FC<Props> = ({
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
         const primaryEmail = team.integrantes?.[0]?.correo;
-        const confirmed = (team as any).id_estado_confirmacion;
+        statusEmailLeader = statusEmailLeader ?? (() => null);
+        const cached = statusEmailLeader(primaryEmail);
 
-        const confirmationLabel =
-          confirmed === 1 ? "Confirmado" :
-            confirmed === 2 ? "Pendiente" :
-              confirmed === 3 ? "Expirado" :
-                "Desconocido";
+        // estado no iniciado: mostrar indicador ligero
+        if (cached === undefined) {
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">No consultado</Badge>
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          );
+        }
+
+        // explicitamente null -> sin correo / no aplicable
+        if (cached === null) {
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">No consultado</Badge>
+            </div>
+          );
+        }
+
+        const rawLabel = cached?.confirmationStatus?.status ?? "No consultado";
+        const label = String(rawLabel);
+        const norm = label.toLowerCase();
+
+        const showResend = norm === "pendiente" || norm === "expirado";
+        const variant =
+          norm === "confirmado" ? "success" : norm === "pendiente" ? "secondary" : "destructive";
 
         return (
           <div className="flex items-center gap-2">
-            <Badge variant={confirmed === 1 ? "default" : "secondary"}>
-              {confirmationLabel}
-            </Badge>
+            <Badge variant={variant as any}>{label}</Badge>
 
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={() => resendInvite(primaryEmail)}
-              disabled={internalIsLoading}
-            >
-              Reenviar correo
-            </Button>
-
+            <div className="flex items-center gap-2">
+              {showResend && primaryEmail && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => primaryEmail && resendInvite(primaryEmail)}
+                  disabled={!primaryEmail || internalIsLoading}
+                >
+                  Reenviar correo
+                </Button>
+              )}
+            </div>
           </div>
         );
       },
     },
-    // ...existing code...
+    // ...existing code...,
     {
       key: "status",
       label: "Estado Videojuego",
       renderCell: (team: TeamRowData) => {
-        const idEstadoVideojuego = team.videojuego.id_estado_videojuego;
+        const idEstadoVideojuego = safeVideo(team).id_estado_videojuego;
 
         // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
         const estadoOptions = [
@@ -389,15 +472,15 @@ export const TeamsManagementTable: React.FC<Props> = ({
         );
       },
     },
-// ...existing code...,
+    // ...existing code...,
     {
       key: "createdAt",
       label: "Fecha de Registro",
       renderCell: (team: TeamRowData) => (
         <div className="text-sm">
-          <div>{new Date(team.fecha_registro).toLocaleDateString()}</div>
+          <div>{new Date(safeFecha(team)).toLocaleDateString()}</div>
           <div className="text-muted-foreground text-xs">
-            {new Date(team.fecha_registro).toLocaleTimeString()}
+            {new Date(safeFecha(team)).toLocaleTimeString()}
           </div>
         </div>
       ),
@@ -574,61 +657,62 @@ export const TeamsManagementTable: React.FC<Props> = ({
         </Table>
 
         {/* Paginación */}
-        {paginationMeta && paginationMeta.totalItems > 0 && (
-          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-            <div className="flex items-center gap-2">
-              <span>Filas por página</span>
-              <Select
-                value={paginationMeta.itemsPerPage.toString()}
-                onValueChange={(value) => onLimitChange(parseInt(value, 10))}
-                disabled={showLoader}
-              >
-                <SelectTrigger className="w-[70px] cursor-pointer">
-                  <SelectValue placeholder={paginationMeta.itemsPerPage} />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 10, 15, 20].map((n) => (
-                    <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {(() => {
+          const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
+          const currentPage = paginationMeta?.currentPage ?? 1;
+          const totalPages = paginationMeta?.totalPages ?? 0;
 
-            <div className="flex items-center gap-4">
-              <span>
-                Página{" "}
-                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
-                de {paginationMeta.totalPages}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  onClick={() => onPageChange(paginationMeta.currentPage - 1)}
-                  disabled={paginationMeta.currentPage === 1 || showLoader}
-                  variant="outline"
-                  size="icon"
-                  className="cursor-pointer"
+          // Siempre renderizamos la barra de paginación (pero acciones deshabilitadas si no hay páginas)
+          return (
+            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+              <div className="flex items-center gap-2">
+                <span>Filas por página</span>
+                <Select
+                  value={String(itemsPerPage)}
+                  onValueChange={(value) => onLimitChange(parseInt(value, 10))}
+                  disabled={showLoader}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={() => onPageChange(paginationMeta.currentPage + 1)}
-                  disabled={
-                    paginationMeta.currentPage === paginationMeta.totalPages ||
-                    paginationMeta.totalPages === 0 ||
-                    showLoader
-                  }
-                  variant="outline"
-                  size="icon"
-                  className="cursor-pointer"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <SelectTrigger className="w-[70px] cursor-pointer">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20].map((n) => (
+                      <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <span>
+                  Página {totalPages > 0 ? currentPage : 0} de {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1 || totalPages === 0 || showLoader}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages || totalPages === 0 || showLoader}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Card>
 
       {/* Eliminar */}
@@ -668,3 +752,4 @@ export const TeamsManagementTable: React.FC<Props> = ({
     </div>
   );
 };
+

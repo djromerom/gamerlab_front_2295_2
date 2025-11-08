@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
+  Dialog, DialogContent, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ const MemberSchemaAllRequired = z.object({
 
 const WizardSchema = z.object({
   mode: z.enum(["add", "edit"]).optional(),
+  id_equipo: z.number(),
   isExternal: z.boolean(),
   team_nrc_global_id: z.number().optional(),
   nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
@@ -195,9 +196,11 @@ function buildPayload(
 /** Para abrir "Editar" desde la tabla */
 export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = false): WizardValues {
   return {
+    id_equipo: team.id_equipo,
     mode: "edit",
     isExternal: (team as any).isExternal ?? isExternalGuess,
-    team_nrc_global_id: (team as any).team_nrc_global_id,
+    // intentar preservar el id del NRC global si viene (puede ser id o código según backend)
+    team_nrc_global_id: (team as any).team_nrc_global_id ?? (team as any).teamNrcGlobal ?? undefined,
     nombre_equipo: team.nombre_equipo,
     videojuego: {
       nombre: team.videojuego.nombre,
@@ -210,7 +213,8 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       apellido: m.apellido || "",
       correo: m.correo || "",
       codigo_estudiantil: String(m.codigo_estudiantil ?? ""),
-      nrcIds: [] // ✅ Cambio: array vacío o mapear desde los datos existentes
+      // Mapear nrcs existentes a nrcIds (usar any porque integranted type no define nrcs)
+      nrcIds: Array.isArray((m as any).nrcs) ? (m as any).nrcs.map((n: any) => n.id_nrc ?? n.id ?? n.code) : [],
     })),
   };
 }
@@ -233,7 +237,6 @@ export default function TeamWizardDialog({
   onOpenChange,
   apiBaseUrl,
   nrcOptions,
-  materiasOptions,
   onSuccess,
   initialData,
 }: TeamWizardDialogProps) {
@@ -324,6 +327,7 @@ export default function TeamWizardDialog({
 
   const defaultValues: WizardValues = {
     mode: "add",
+    id_equipo: 0,
     isExternal: false,
     team_nrc_global_id: undefined,
     nombre_equipo: "",
@@ -394,7 +398,7 @@ export default function TeamWizardDialog({
     try {
       setBusy(true);
       const exists = await checkGameNameUnique(apiBaseUrl, vals.videojuego.nombre);
-      if (exists) {
+      if (exists && (mode !== "edit" || vals.videojuego.nombre !== (initialData?.videojuego?.nombre || ""))) {
         toast.error("El nombre del videojuego ya está en uso.");
         return;
       }
@@ -428,7 +432,7 @@ export default function TeamWizardDialog({
       const uploadedUrls = files.length ? await uploadFilesToAzure(files) : [];
 
       const payload = buildPayload(data, uploadedUrls, nrcOptions, primaryEmailLocked);
-      const url = data.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/update`;
+      const url = data.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/${data.id_equipo}`;
       const method = data.mode === "add" ? "POST" : "PATCH";
 
       const res = await fetch(url, {
@@ -439,14 +443,46 @@ export default function TeamWizardDialog({
       });
 
       if (!(data.mode === "add" ? res.status === 201 : res.ok)) {
-        const err = await res.json().catch(() => ({}));
-        const msg = (err as any)?.message;
-        throw new Error(
-          typeof msg === "string" ? msg :
-            Array.isArray(msg) ? msg.join(", ") :
-              msg && typeof msg === "object" ? Object.values(msg).join(", ") :
-                `Error ${res.status}`
-        );
+        // Intentar parsear body con errores estructurados
+        const errBody = await res.json().catch(() => ({}));
+
+        // Si el backend devolvió errores por campo, mapearlos al formulario
+        const maybeErrors = (errBody && (errBody.errors || errBody.message || errBody)) || null;
+        let mapped = false;
+
+        if (maybeErrors && typeof maybeErrors === "object") {
+          // ej: { nombre_equipo: 'required', integrantes: { '0.correo': 'invalid' } }
+          const assignError = (path: string, msg: string) => {
+            try {
+              // convertir paths con puntos a rutas para react-hook-form
+              methods.setError(path as any, { type: "server", message: msg });
+              mapped = true;
+            } catch (e) {
+              // ignore
+            }
+          };
+
+          // Si viene message como string, mostrarlo
+          if (typeof errBody.message === "string") {
+            // no field-level errors, mostrar toast
+            toast.error(errBody.message);
+          } else {
+            // recorrer keys y asignar
+            const source = errBody.errors ?? errBody.message ?? errBody;
+            if (typeof source === "object") {
+              Object.entries(source).forEach(([k, v]) => {
+                const msg = Array.isArray(v) ? v.join(", ") : String(v ?? "Error");
+                // si la clave contiene índices como integrantes.0.correo, setear directamente
+                assignError(k, msg);
+              });
+            }
+          }
+        }
+
+        // Si no se mapeó a campos, arrojar con mensaje para el catch y mostrar toast
+        const fallbackMsg = (errBody && (errBody.message || JSON.stringify(errBody))) || `Error ${res.status}`;
+        if (!mapped) throw new Error(fallbackMsg);
+        else throw new Error("Validation error");
       }
 
       toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
@@ -496,7 +532,9 @@ export default function TeamWizardDialog({
                   </div>
 
                   {/* Equipo */}
-                  <div className="flex flex-col gap-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                    <div className="flex flex-col gap-1">
                     <Label>Nombre del equipo</Label>
                     <Input
                       {...methods.register("nombre_equipo")}
@@ -504,6 +542,19 @@ export default function TeamWizardDialog({
                       placeholder="Ej: Pixel Ninjas"
                     />
                     <FieldError message={(errors as any)?.nombre_equipo?.message} />
+                    </div>
+
+                    {/* Videojuego */}
+                    <div className="flex flex-col gap-1">
+                      <Label>Nombre del videojuego</Label>
+                      <Input
+                        {...methods.register("videojuego.nombre")}
+                        aria-invalid={!!errors?.videojuego?.nombre}
+                        placeholder="Ej: Cyber Runner"
+                      />
+                      <FieldError message={(errors as any)?.videojuego?.nombre?.message} />
+                    </div>
+
                   </div>
 
                   {/* NRC global si colegio */}
@@ -544,17 +595,6 @@ export default function TeamWizardDialog({
                       <FieldError message={(errors as any)?.team_nrc_global_id?.message} />
                     </div>
                   )}
-
-                  {/* Videojuego */}
-                  <div className="flex flex-col gap-1">
-                    <Label>Nombre del videojuego</Label>
-                    <Input
-                      {...methods.register("videojuego.nombre")}
-                      aria-invalid={!!errors?.videojuego?.nombre}
-                      placeholder="Ej: Cyber Runner"
-                    />
-                    <FieldError message={(errors as any)?.videojuego?.nombre?.message} />
-                  </div>
 
                   <div className="flex flex-col gap-1">
                     <Label>Descripción</Label>
@@ -865,7 +905,7 @@ export default function TeamWizardDialog({
                       Siguiente <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={busy}>
+                    <Button type="submit" disabled={busy} onClick={() => onSubmit()}>
                       {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {methods.watch("mode") === "add" ? "Registrar" : "Guardar cambios"}
                     </Button>

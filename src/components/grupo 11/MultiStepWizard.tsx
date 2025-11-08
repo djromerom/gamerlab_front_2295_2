@@ -38,8 +38,7 @@ export default function MultiStepWizard() {
 
   async function onSubmit(data: CombinedFormValues) {
     const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${
-        data.gameName
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
     );
     const exists = await res.json();
@@ -67,7 +66,7 @@ export default function MultiStepWizard() {
 
         console.log("Uploading file to Azure...");
         console.log('TAMAÑO DEL FILE:', data.files.length);
-        
+
         for (const file of data.files) {
           const uploadResult = await uploadImage(file);
           const urlResult = await getImageUrl(uploadResult.id);
@@ -114,7 +113,7 @@ export default function MultiStepWizard() {
       } else {
         const errorData = await response.json();
         let errorMessage = "Error en el registro";
-        
+
         if (errorData && errorData.message) {
           // Manejar diferentes mensajes de error
           if (typeof errorData.message === 'string') {
@@ -125,7 +124,7 @@ export default function MultiStepWizard() {
             errorMessage = Object.values(errorData.message).join(', ');
           }
         }
-        
+
         throw new Error(errorMessage || `Error ${response.status}`);
       }
     } catch (e) {
