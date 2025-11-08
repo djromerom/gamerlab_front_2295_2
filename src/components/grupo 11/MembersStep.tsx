@@ -266,7 +266,7 @@ export default function MembersStep() {
                         !selectedNRCs.includes(String(nrcOption.code))
                     );
 
-                  let triggerText = "Selecciona uno o más NRCs";
+                  let triggerText = "Selecciona TODOS los NRCs del integrante";
                   if (isPageLoading) {
                     triggerText = "Cargando NRCs...";
                   } else if (allNrcOptionsFromState.length === 0) {

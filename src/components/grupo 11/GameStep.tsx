@@ -21,7 +21,7 @@ import type { CombinedFormValues } from "@/lib/schemas";
 import { ImageCropper } from "./ImageCropper";
 
 export default function GameStep() {
-  const { back } = useMultiForm();
+  const { back, next } = useMultiForm();
   const { control, setValue, watch, setError, clearErrors } =
     useFormContext<CombinedFormValues>();
   const [fileError, setFileError] = useState(false);
@@ -87,48 +87,6 @@ export default function GameStep() {
                 placeholder="Escribe el nombre del videojuego"
               />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="YoutubeUrl"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL de YouTube (opcional)</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="https://www.youtube.com/watch?v=..."
-                type="url"
-              />
-            </FormControl>
-            <FormDescription>
-              Video promocional o gameplay de tu videojuego
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="RepoUrl"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL del Repositorio (opcional)</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="https://github.com/usuario/proyecto"
-                type="url"
-              />
-            </FormControl>
-            <FormDescription>
-              Enlace al repositorio de GitHub, GitLab, etc.
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -274,8 +232,8 @@ export default function GameStep() {
           Atrás
         </Button>
 
-        <Button variant="home" type="submit">
-          Enviar
+        <Button variant="home" type="button" onClick={next}>
+          Siguiente
         </Button>
       </div>
 

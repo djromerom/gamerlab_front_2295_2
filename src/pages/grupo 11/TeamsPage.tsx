@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Search, X, ExternalLink, Users } from "lucide-react";
+import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,7 +12,6 @@ import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
-
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 
@@ -27,6 +26,7 @@ export interface Team {
   members?: string[];
   description?: string;
   logo?: string;
+  additionalImages?: string[];
 }
 
 export default function TeamsPage() {
@@ -37,6 +37,7 @@ export default function TeamsPage() {
       document.documentElement.classList.remove("dark");
     };
   }, []);
+  
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -46,47 +47,59 @@ export default function TeamsPage() {
   useEffect(() => {
     async function fetchTeams() {
       setLoading(true);
-      const res = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      const rawData = await res.json();
-      console.log("🔍 Datos crudos del backend:", rawData);
       
-      interface RawTeam {
-        id: number;
-        name: string;
-        teamName: string;
-        status: string;
-        logoUrl: string;
-        videoUrl?: string;
-        repoUrl?: string;
-        members?: string[];
-        descripcion?: string;
+      try {
+        const res = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        const rawData = await res.json();
+        console.log("🔍 Datos crudos del backend:", rawData);
+        
+        const data: Team[] = rawData.map((team: any) => {
+          // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
+          let fallbackImages: string[] = [];
+          
+          // Para equipos con "prueba" en el nombre, usar imágenes de ejemplo como fallback
+          if (team.name && team.name.toLowerCase().includes('prueba') && (!team.additionalImages || team.additionalImages.length === 0)) {
+            fallbackImages = [
+              "https://picsum.photos/800/600?random=1",
+              "https://picsum.photos/800/600?random=2", 
+              "https://picsum.photos/800/600?random=3",
+              "https://picsum.photos/800/600?random=4"
+            ];
+            console.log("🖼️ Usando imágenes de fallback para:", team.name);
+          }
+          
+          return {
+            id: team.id,
+            gameName: team.name || "Sin nombre",
+            teamName: team.teamName || "Sin equipo",
+            status: team.status?.toLowerCase() as TeamStatus || "pendiente",
+            video: team.videoUrl,
+            repo: team.repoUrl,
+            members: team.members || [],
+            description: team.descripcion || "Sin descripción disponible.",
+            logo: team.logoUrl || "/Arkad.svg",
+            additionalImages: team.additionalImages || fallbackImages,
+          };
+        });
+        
+        console.log("✅ Datos procesados:", data);
+        setTeams(data);
+      } catch (error) {
+        console.error("❌ Error al cargar equipos:", error);
+        setTeams([]);
+      } finally {
+        setLoading(false);
       }
-
-      const data: Team[] = rawData.map((team: RawTeam) => ({
-        id: team.id,
-        gameName: team.name || "Sin nombre",
-        teamName: team.teamName || "Sin equipo",
-        status: team.status?.toLowerCase() as TeamStatus || "pendiente",
-        //cambiar por vector de imagenes de carrusel
-
-        video: team.videoUrl,
-        repo: team.repoUrl,
-        members: team.members || [],
-        description: team.descripcion || "Sin descripción disponible.",
-        logo: team.logoUrl || "/Arkad.svg",
-      }));
-      console.log("✅ Datos procesados:", data);
-      setTeams(data);
-      setLoading(false);
     }
+    
     fetchTeams();
   }, []);
 
@@ -218,6 +231,124 @@ function TeamCard({ team }: TeamCardProps) {
   );
 }
 
+interface MediaCarouselProps {
+  video?: string;
+  images: string[]; // Solo imágenes adicionales, NO incluye el logo
+  gameImage?: string; // Solo para thumbnail del video
+}
+
+function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  console.log("🎨 MediaCarousel recibió:", { video, images, gameImage });
+  
+  // Crear array con todos los elementos multimedia (solo video e imágenes adicionales, NO el logo)
+  const mediaItems = [];
+  
+  // Agregar video como primer elemento si existe
+  if (video) {
+    mediaItems.push({ type: 'video', src: video, thumbnail: gameImage });
+    console.log("📹 Video agregado al carrusel");
+  }
+  
+  // Agregar SOLO las imágenes adicionales (no incluir el logo)
+  images.forEach((image, index) => {
+    console.log(`🖼️ Procesando imagen ${index}:`, image);
+    if (image && image.trim() !== '') {
+      mediaItems.push({ type: 'image', src: image });
+      console.log("✅ Imagen agregada al carrusel:", image);
+    } else {
+      console.log("❌ Imagen vacía o inválida:", image);
+    }
+  });
+  
+  console.log("📋 MediaItems finales:", mediaItems);
+
+  // Si no hay elementos, mostrar placeholder
+  if (mediaItems.length === 0) {
+    return (
+      <div className="w-full aspect-video rounded-xl overflow-hidden max-h-[550px] bg-gray-800 flex items-center justify-center">
+        <p className="text-gray-400 text-center px-4">
+          Sin multimedia disponible<br />
+          <span className="text-sm opacity-75">Sube un video o imágenes adicionales</span>
+        </p>
+      </div>
+    );
+  }
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
+  };
+
+  const currentItem = mediaItems[currentIndex];
+
+  return (
+    <div className="relative w-full aspect-video rounded-xl overflow-hidden max-h-[550px]">
+      {/* Contenido actual */}
+      {currentItem.type === 'video' ? (
+        <ReactPlayer
+          src={currentItem.src}
+          width="100%"
+          height="100%"
+          controls
+          light={currentItem.thumbnail}
+        />
+      ) : (
+        <img
+          src={currentItem.src}
+          alt="Imagen del juego"
+          className="w-full h-full object-cover"
+        />
+      )}
+
+      {/* Controles del carrusel (solo si hay más de un elemento) */}
+      {mediaItems.length > 1 && (
+        <>
+          {/* Botón anterior */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Botón siguiente */}
+          <button
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Indicadores */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+            {mediaItems.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  index === currentIndex
+                    ? 'bg-[#AC7CFF]'
+                    : 'bg-white/40 hover:bg-white/60'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Contador */}
+          <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
+            {currentIndex + 1} / {mediaItems.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
@@ -233,7 +364,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[600px] max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
@@ -242,88 +373,89 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
           {/* Botón de cerrar */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
           </button>
 
-          {/* 🎬 Video de YouTube (ReactPlayer) */}
-          <div className="md:w-2/3 bg-black flex items-center justify-center p-3">
-            <div className="w-full aspect-video rounded-xl overflow-hidden">
-              <ReactPlayer
-                src={team.video || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
-                width="100%"
-                height="100%"
-                controls
-                light={team.image || undefined}
-              />
-            </div>
+          {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
+          <div className="md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
+            <MediaCarousel 
+              video={team.video} 
+              images={team.additionalImages || []} 
+              gameImage={team.image} // Solo para thumbnail del video, no se incluye en el carrusel
+            />
           </div>
 
           {/* 🧾 Información del equipo */}
-          <div className="md:w-1/3 p-6 flex flex-col justify-between bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
-            <div>
-              {team.logo && (
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={team.logo || "/Arkad.svg"}
-                    alt={`${team.gameName} logo`}
-                    className="w-28 h-28 object-contain"
-                  />
-                </div>
-              )}
-              <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
-                {team.gameName}
-              </h2>
-              <p className="text-sm text-gray-400 mb-2">
-                Equipo:{" "}
-                <span className="text-white font-semibold">
-                  {team.teamName}
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 mb-4">
-                Estado:{" "}
-                <span className="capitalize text-gray-200">{team.status}</span>
-              </p>
-              <p className="text-gray-300 text-sm leading-relaxed mb-5">
-                {team.description || "Sin descripción disponible."}
-              </p>
-
-              {team.members && team.members.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <h4 className="text-lg font-semibold">Integrantes</h4>
+          <div className="md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+            <div className="p-6 pt-12 md:pt-6 overflow-y-auto flex-1
+              [&::-webkit-scrollbar]:w-2 pr-2
+              [&::-webkit-scrollbar-track]:rounded-full
+              [&::-webkit-scrollbar-track]:bg-gray-800
+              [&::-webkit-scrollbar-thumb]:rounded-full
+              [&::-webkit-scrollbar-thumb]:bg-[#AC7CFF]/50
+              [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
+              
+              <div className="space-y-4">
+                {team.logo && (
+                  <div className="flex justify-center mb-4">
+                    <img
+                      src={team.logo || "/Arkad.svg"}
+                      alt={`${team.gameName} logo`}
+                      className="w-28 h-28 object-contain"
+                    />
                   </div>
-                  <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
-                    {team.members.map((member, index) => (
-                      <li key={index}>{member}</li>
-                    ))}
-                  </ul>
+                )}
+                <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
+                  {team.gameName}
+                </h2>
+                <p className="text-sm text-gray-400 mb-2">
+                  Equipo:{" "}
+                  <span className="text-white font-semibold">
+                    {team.teamName}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-400 mb-4">
+                  Estado:{" "}
+                  <span className="capitalize text-gray-200">{team.status}</span>
+                </p>
+                
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-[#AC7CFF] mb-3">Descripción</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed mb-5">
+                    {team.description || "Sin descripción disponible."}
+                  </p>
                 </div>
-              )}
-            </div>
 
-            {/* 🔗 Botones */}
-            
-            <div className="flex flex-col gap-3 mt-6">
-              {team.repo && (
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(team.repo, "_blank")}
-                  className="flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Ver repositorio en GitHub
-                </Button>
-              )}
-              <Button
-                variant="default"
-                onClick={onClose}
-                className="bg-[#AC7CFF] hover:bg-[#945EFF]"
-              >
-                Cerrar
-              </Button>
+                {team.members && team.members.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-5 h-5 text-[#AC7CFF]" />
+                      <h4 className="text-lg font-semibold">Integrantes</h4>
+                    </div>
+                    <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                      {team.members.map((member, index) => (
+                        <li key={index}>{member}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 🔗 Botones */}
+                <div className="flex flex-col items-center gap-3 mt-8 pb-4 pr-4">
+                  {team.repo && (
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(team.repo, "_blank")}
+                      className="w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ver repositorio en GitHub
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -331,4 +463,3 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
     </AnimatePresence>
   );
 }
-
