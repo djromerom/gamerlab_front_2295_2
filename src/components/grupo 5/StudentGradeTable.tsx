@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -73,40 +73,9 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const [editedGrade, setEditedGrade] = useState<string>("");
   const [savingGrade, setSavingGrade] = useState(false);
 
-  // Initialize available NRCs
-  useEffect(() => {
-    const fetchAvailableNRCs = async () => {
-      try {
-        // Pedimos includeSubjects=true para que cada NRC traiga la información de la materia (id, name)
-        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/my-nrcs?includeSubjects=true`, {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-          throw new Error("Error fetching available NRCs");
-        }
-
-    const data = await response.json();
-      // data es un array de NRCs; con includeSubjects=true cada NRC idealmente tendrá `subject` con su id
-      setAllNRCs(data || []);
-      setAvailableNRCs(data || []);
-
-            // Set initial NRC selection only if a default NRC was passed
-            if (defaultNRC && defaultNRC !== "-") {
-              setSelectedNRC(defaultNRC);
-            }
-      } catch (err) {
-        console.error("Error fetching available NRCs:", err);
-        toast.error("Error al cargar los NRCs");
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-
-    fetchAvailableNRCs();
-  }, [defaultNRC]);
+  // Nota: ahora usamos únicamente el endpoint `/professors/my-subjects` (cada materia incluye sus NRCs)
+  // por lo que no necesitamos llamar a `/professors/my-nrcs` por separado. Inicializamos `allNRCs`
+  // cuando cargamos las materias en el efecto de abajo.
 
   // Initialize available subjects
   useEffect(() => {
@@ -125,14 +94,50 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         const data = await response.json();
         setAvailableSubjects(data);
 
+        // Extraer todos los NRCs incluidos en cada materia y anexar info de la materia
+        const allNrcsFromSubjects = (data || []).flatMap((subject: any) => {
+          const subjectId = subject.id || subject._id || subject.code;
+          const subjectName = subject.name || subject.title || "";
+          const nrcs = subject.nrcs || [];
+          return nrcs.map((nrc: any) => ({
+            ...nrc,
+            subject: { id: subjectId, name: subjectName },
+          }));
+        });
+
+        // Guardamos todos los NRCs en el estado (se usará para filtrado local)
+        setAllNRCs(allNrcsFromSubjects);
+
         if (data.length > 0) {
-          setSelectedSubject(data[0].name);
+          const initialSubjectName = data[0].name;
+          setSelectedSubject(initialSubjectName);
+          // Inicialmente filtramos los NRCs para la materia seleccionada
+          const filtered = allNrcsFromSubjects.filter((n: any) => {
+            const name = n.subject?.name || n.subjectName || n.name || "";
+            return name && String(name).toLowerCase() === String(initialSubjectName).toLowerCase();
+          });
+          setAvailableNRCs(filtered);
+          // Si hay exactamente un NRC para la materia, auto-seleccionarlo (salvo que venga initialNRC explícito)
+          if (filtered.length === 1) {
+            if (!(defaultNRC && defaultNRC !== "-")) {
+              setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
+            }
+          }
+          // Si se pasó un NRC por props (defaultNRC), lo aplicamos si existe (tiene prioridad)
+          if (defaultNRC && defaultNRC !== "-") {
+            const match = allNrcsFromSubjects.find((x: any) => String(x.code) === String(defaultNRC) || String(x.id) === String(defaultNRC));
+            if (match) setSelectedNRC(defaultNRC);
+          }
         } else {
           toast.info("No se encontraron materias disponibles");
         }
       } catch (err) {
         console.error("Error fetching available Subjects:", err);
         toast.error("Error al cargar las materias");
+      }
+      finally {
+        // Desactivamos la pantalla inicial de carga
+        setInitialLoading(false);
       }
     };
 
@@ -166,8 +171,13 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
       if (filtered.length > 0) {
         setAvailableNRCs(filtered);
-        // SIEMPRE reseteamos a vacío cuando cambia la materia para mostrar "Todos los NRCs"
-        setSelectedNRC("");
+        // Si solo hay un NRC disponible para la materia, auto-seleccionarlo
+        if (filtered.length === 1) {
+          setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
+        } else {
+          // Varios NRCs: mostramos la opción "Todos los NRCs" por defecto
+          setSelectedNRC("");
+        }
       } else {
         setAvailableNRCs([]);
         setSelectedNRC("");
@@ -186,6 +196,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     
     // Check cache first
     if (fetchedStudentsByNRC[cacheKey]) {
+      const cached = fetchedStudentsByNRC[cacheKey] || [];
+      // Reflect cached state in the UI (avoid stale "no projects" view)
+      setNoStudents(!cached || cached.length === 0);
+      setPaginationMetadata((prev) => prev || null);
       return;
     }
 
@@ -231,7 +245,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       setPaginationMetadata(metadata);
 
       if (studentsData.length > 0) {
-        toast.success(`${studentsData.length} registros cargados para el NRC ${nrc}`);
+        // Calcular número de registros en la tabla (equipos únicos) a partir de los estudiantes recibidos
+        const teamSet = new Set<string>();
+        studentsData.forEach((s: any) => {
+          const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
+          teamSet.add(String(teamCode));
+        });
+        const teamCount = teamSet.size;
+        toast.success(`${teamCount} equipos en la tabla cargados para el NRC ${nrc}`);
       } else {
         setNoStudents(true);
         toast.info(`No hay información registrada para el NRC ${nrc}`);
@@ -261,6 +282,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     
     // Check cache first
     if (fetchedStudentsBySubject[cacheKey]) {
+      const cached = fetchedStudentsBySubject[cacheKey] || [];
+      // Reflect cached state in the UI immediately
+      setNoStudents(!cached || cached.length === 0);
+      setPaginationMetadata((prev) => prev || null);
       return;
     }
 
@@ -310,7 +335,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         setNoStudents(true);
         toast.info(`No hay información registrada para la materia ${subject}`);
       } else {
-        toast.success(`${studentsArray.length} registros cargados para la materia ${subject}`);
+       // Agrupar por equipo para contar registros en la tabla
+        const teamSet = new Set<string>();
+        studentsArray.forEach((s: any) => {
+          const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
+          teamSet.add(String(teamCode));
+        });
+        const teamCount = teamSet.size;
+        toast.success(`${teamCount} equipos en la tabla cargados para la materia ${subject}`);
       }
 
     } catch (err) {
@@ -367,6 +399,42 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   };
 
   const students = getCurrentStudents();
+
+  // Agrupar estudiantes por equipo (soporta varios shapes: teamCode, team, teamName)
+  const teams = useMemo(() => {
+    const map = new Map<string, any>();
+    students.forEach((s: any) => {
+      const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
+      const teamName = s.teamName || s.team || `Equipo ${teamCode}`;
+      if (!map.has(teamCode)) {
+        map.set(teamCode, {
+          teamCode,
+          teamName,
+          members: [],
+          videogame: s.videogame || null,
+          gradeSum: 0,
+          gradeCount: 0,
+          grade: null,
+          seniorGrade: s.seniorGrade ?? null,
+        });
+      }
+      const t = map.get(teamCode);
+      t.members.push(s);
+      if (s.videogame && !t.videogame) t.videogame = s.videogame;
+      if (s.grade != null) {
+        t.gradeSum += s.grade;
+        t.gradeCount += 1;
+      }
+      // If any member has seniorGrade and team doesn't, prefer member's grade (backend may send team-level)
+      if (t.seniorGrade == null && s.seniorGrade != null) t.seniorGrade = s.seniorGrade;
+    });
+
+    const arr = Array.from(map.values()).map((t: any) => ({
+      ...t,
+      grade: t.gradeCount > 0 ? t.gradeSum / t.gradeCount : null,
+    }));
+    return arr;
+  }, [students]);
 
   // No view mode: la navegación es Materia -> NRC
 
@@ -442,13 +510,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const exportToExcel = () => {
     setDownloading(true);
 
-    toast(
-      `Preparando exportación ${selectedNRC ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
-    );
+    // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
+    toast(`Preparando exportación global (todos los NRCs)...`);
 
-    const endpoint = selectedNRC
-      ? `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportNRC/${selectedNRC}`
-      : `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportSubject/${encodeURIComponent(selectedSubject)}`;
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportAll`;
 
     fetch(endpoint, {
       method: 'GET',
@@ -463,14 +528,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         return response.blob();
       })
       .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-  a.download = selectedNRC ? `reporte_nrc_${selectedNRC || 'desconocido'}.xlsx` : `reporte_materia_${selectedSubject || 'desconocido'}.xlsx`;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+  a.download = `reporte_todos_nrcs_${new Date().toISOString().slice(0,10)}.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
-  toast.success(`Reporte de videojuegos ${selectedNRC ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`} exportado correctamente`);
+  toast.success(`Reporte global exportado correctamente`);
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -485,13 +550,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const downloadGradingTemplate = () => {
     setDownloadingTemplate(true);
 
-    toast(
-      `Preparando plantilla de calificaciones ${selectedNRC ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
-    );
+    // Descargar plantilla GLOBAL: ignorar filtros
+    toast(`Preparando plantilla de calificaciones global...`);
 
-    const endpoint = selectedNRC
-      ? `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template/${selectedNRC}`
-      : `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-subject/${encodeURIComponent(selectedSubject)}`;
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
 
     fetch(endpoint, {
       method: 'GET',
@@ -509,9 +571,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = selectedNRC 
-          ? `plantilla_calificaciones_nrc_${selectedNRC}.xlsx` 
-          : `plantilla_calificaciones_${selectedSubject}.xlsx`;
+        a.download = `plantilla_calificaciones_todas_${new Date().toISOString().slice(0,10)}.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -547,12 +607,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
     const formData = new FormData();
     formData.append('file', file);
-    
-    if (selectedNRC) {
-      formData.append('nrc', selectedNRC);
-    } else if (selectedSubject) {
-      formData.append('subject', selectedSubject);
-    }
+    // Nota: subida GLOBAL — no añadimos filtros (nrc/subject) al formData
 
     const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
 
@@ -573,22 +628,13 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       .then((data) => {
         toast.success(`✅ Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`);
         
-        // Clear cache to force refresh
-        const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
-        
-        if (selectedNRC) {
-          setFetchedStudentsByNRC(prev => {
-            const newCache = { ...prev };
-            delete newCache[cacheKey];
-            return newCache;
-          });
+        // Clear all caches to force a global refresh (subida fue global)
+        setFetchedStudentsByNRC({});
+        setFetchedStudentsBySubject({});
+        // Re-fetch current view depending on selection
+        if (selectedNRC && selectedNRC !== "") {
           fetchStudentsByNRC(selectedNRC, currentPage);
-        } else {
-          setFetchedStudentsBySubject(prev => {
-            const newCache = { ...prev };
-            delete newCache[cacheKey];
-            return newCache;
-          });
+        } else if (selectedSubject) {
           fetchStudentsBySubject(selectedSubject, currentPage);
         }
         
@@ -604,10 +650,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       });
   };
 
-  // Start editing a row
+  // Start editing a team row
   const startEditing = (index: number, currentGrade?: number) => {
     setEditingRowIndex(index);
-    setEditedGrade(currentGrade ? currentGrade.toString() : "");
+    setEditedGrade(currentGrade != null ? String(currentGrade) : "");
   };
 
   // Cancel editing
@@ -616,8 +662,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setEditedGrade("");
   };
 
-  // Save edited grade
-  const saveGrade = async (student: any, index: number) => {
+  // Save edited grade (now for a team)
+  const saveGrade = async (team: any) => {
     const gradeValue = parseFloat(editedGrade);
     
     // Validate grade
@@ -631,14 +677,15 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
     try {
       const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/update-senior-grade`;
-      
+
+      // Now we send teamCode instead of studentCode
       const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentCode: student.studentCode,
-          nrc: selectedNRC || student.NRC,
+          teamCode: team.teamCode || team.teamName,
+          nrc: selectedNRC || undefined,
           subject: selectedSubject,
           seniorGrade: gradeValue
         }),
@@ -655,16 +702,21 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       toast.success(`✅ Calificación guardada: ${gradeValue.toFixed(2)}`);
       console.log('Grade saved:', result);
 
-      // Update local cache
+      // Update local cache: update members of the team to include seniorGrade
       const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
-      
+
       if (selectedNRC) {
         setFetchedStudentsByNRC(prev => {
           const updatedCache = { ...prev };
           if (updatedCache[cacheKey]) {
-            updatedCache[cacheKey] = updatedCache[cacheKey].map((s, i) => 
-              i === index ? { ...s, seniorGrade: gradeValue } : s
-            );
+            updatedCache[cacheKey] = updatedCache[cacheKey].map((s) => {
+              const code = s.teamCode || s.team || s.teamName || s.teamId;
+              const teamCode = team.teamCode || team.teamName;
+              if (String(code) === String(teamCode)) {
+                return { ...s, seniorGrade: gradeValue };
+              }
+              return s;
+            });
           }
           return updatedCache;
         });
@@ -672,9 +724,14 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         setFetchedStudentsBySubject(prev => {
           const updatedCache = { ...prev };
           if (updatedCache[cacheKey]) {
-            updatedCache[cacheKey] = updatedCache[cacheKey].map((s, i) => 
-              i === index ? { ...s, seniorGrade: gradeValue } : s
-            );
+            updatedCache[cacheKey] = updatedCache[cacheKey].map((s) => {
+              const code = s.teamCode || s.team || s.teamName || s.teamId;
+              const teamCode = team.teamCode || team.teamName;
+              if (String(code) === String(teamCode)) {
+                return { ...s, seniorGrade: gradeValue };
+              }
+              return s;
+            });
           }
           return updatedCache;
         });
@@ -698,7 +755,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       size="sm"
       className="cursor-pointer"
       onClick={exportToExcel}
-      disabled={students.length === 0 || downloading}
+      disabled={downloading}
     >
       {downloading ? (
         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -717,7 +774,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       size="sm"
       className="cursor-pointer"
       onClick={downloadGradingTemplate}
-      disabled={students.length === 0 || downloadingTemplate}
+      disabled={downloadingTemplate}
     >
       {downloadingTemplate ? (
         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -765,77 +822,25 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     <div className="bg-background text-foreground min-h-screen p-4">
       {/* Header */}
       <div className="mb-6 px-4">
-        <h1 className="text-xl font-medium">
-          Panel de Calificaciones
-        </h1>
-        <p className="opacity-70 text-sm mt-1">
-          Gestiona y visualiza las calificaciones de tus estudiantes
-        </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-medium">Panel de Calificaciones</h1>
+            <p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p>
+          </div>
+          <div className="flex items-start sm:items-center">
+            {/* Export button in the top-right corner of the header */}
+            <div className="ml-2">{ExportButton}</div>
+          </div>
+        </div>
       </div>
 
       {/* Barra de Filtros y Acciones */}
       <Card className="rounded-lg overflow-hidden bg-card mb-6">
         <div className="p-5 space-y-4">
-          {/* Selector de Materia */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium mb-1.5 opacity-70">
-                Materia
-              </label>
-              <Select
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
-              >
-                <SelectTrigger className="cursor-pointer h-9">
-                  <SelectValue placeholder="Selecciona Materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSubjects.map((subject) => (
-                    <SelectItem key={subject.name} value={subject.name} className="cursor-pointer">
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Filtro de NRCs con botones y Exportar */}
-          {selectedSubject && availableNRCs.length > 0 && (
-            <div className="pt-4 border-t border-border">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
-                <label className="block text-xs font-medium opacity-70">
-                  Filtrar por NRC
-                </label>
-                {students.length > 0 && ExportButton}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={selectedNRC === "" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedNRC("")}
-                  className="cursor-pointer"
-                >
-                  Todos los NRCs
-                </Button>
-                {availableNRCs.map((nrc) => (
-                  <Button
-                    key={nrc.code}
-                    variant={selectedNRC === nrc.code ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedNRC(nrc.code)}
-                    className="cursor-pointer"
-                  >
-                    {nrc.code}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Gestión de Calificaciones Jurado Senior */}
-          {students.length > 0 && (
-            <div className="pt-4 border-t border-border">
+          {/* Gestión de Calificaciones Jurado Senior*/}
+          {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
+          {selectedSubject && (
+            <div className="pt-0 pb-4 border-b border-border">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="flex items-start gap-3">
                   <div className="mt-1">
@@ -857,6 +862,67 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               </div>
             </div>
           )}
+
+          {/* Fila única: Materia | Filtrar por NRC (pills) */}
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+            {/* Materia */}
+            <div className="w-full lg:w-1/3">
+              <label className="block text-xs font-medium mb-1.5 opacity-70">
+                Materia
+              </label>
+              <Select
+                value={selectedSubject}
+                onValueChange={setSelectedSubject}
+              >
+                <SelectTrigger className="cursor-pointer h-9">
+                  <SelectValue placeholder="Selecciona Materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubjects.map((subject) => (
+                    <SelectItem key={subject.name} value={subject.name} className="cursor-pointer">
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* NRC pills + label */}
+            <div className="w-full lg:w-1/3">
+              {selectedSubject && availableNRCs.length > 0 && (
+                <>
+                  <div className="flex items-center justify-start gap-3 mb-2">
+                    <label className="block text-xs font-medium opacity-70">Filtrar por NRC</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableNRCs.length > 1 && (
+                      <Button
+                        variant={selectedNRC === "" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedNRC("")}
+                        className="cursor-pointer"
+                      >
+                        Todos los NRCs
+                      </Button>
+                    )}
+                    {availableNRCs.map((nrc) => (
+                      <Button
+                        key={nrc.code}
+                        variant={selectedNRC === nrc.code ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedNRC(nrc.code)}
+                        className="cursor-pointer"
+                      >
+                        {nrc.code}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="w-full lg:w-1/3" />
+          </div>
         </div>
       </Card>
 
@@ -875,89 +941,97 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             <Table>
               <TableHeader className="bg-card border-b border-border">
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Estudiante</TableHead>
-                  <TableHead>{selectedNRC ? "Materia" : "NRC"}</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Videojuego</TableHead>
-                  <TableHead className="text-center">Calificación</TableHead>
-                  <TableHead className="text-center">Nota J. Senior</TableHead>
-                  <TableHead className="text-center">Acciones</TableHead>
-                </TableRow>
+                    <TableHead>Team Code</TableHead>
+                    <TableHead>Equipo</TableHead>
+                    <TableHead>Integrantes</TableHead>
+                    <TableHead>Videojuego</TableHead>
+                    <TableHead className="text-center">Calificación Feria</TableHead>
+                    <TableHead className="text-center">Nota J. Senior</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((s: any, i: number) => (
-                  <TableRow key={i} className="hover:bg-muted/50">
-                    <TableCell className="font-mono">{s.studentCode}</TableCell>
-                    <TableCell className="font-medium">{s.student}</TableCell>
-                    <TableCell>{selectedNRC ? s.subject : s.NRC}</TableCell>
-                    <TableCell>{s.team || "Sin equipo"}</TableCell>
-                    <TableCell>{s.videogame || "Sin videojuego"}</TableCell>
-                    <TableCell className={`text-center ${getGradeStatus(s.grade)}`}>
-                      {s.grade ? s.grade.toFixed(2) : <span className="opacity-50">-</span>}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {editingRowIndex === i ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="5"
-                            step="0.1"
-                            value={editedGrade}
-                            onChange={(e) => setEditedGrade(e.target.value)}
-                            className="w-20 h-8 text-center"
-                            placeholder="0.0"
-                            autoFocus
-                            disabled={savingGrade}
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                            onClick={() => saveGrade(s, i)}
-                            disabled={savingGrade}
-                          >
-                            {savingGrade ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Save className="h-4 w-4 text-green-600" />
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                            onClick={cancelEditing}
-                            disabled={savingGrade}
-                          >
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
+                {teams.map((t: any, i: number) => (
+                  <>
+                    <TableRow key={t.teamCode} className="hover:bg-muted/50">
+                      <TableCell className="font-mono">{t.teamCode}</TableCell>
+                      <TableCell className="font-medium">{t.teamName}</TableCell>
+                      <TableCell>
+                        <div className="text-sm opacity-80">
+                          {t.members.map((m: any) => m.student).join(', ')}
                         </div>
-                      ) : (
-                        <span>
-                          {s.seniorGrade ? (
-                            <span className="font-medium">{s.seniorGrade.toFixed(2)}</span>
-                          ) : (
-                            <span className="opacity-50">-</span>
-                          )}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {editingRowIndex !== i && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                          onClick={() => startEditing(i, s.seniorGrade)}
-                          disabled={savingGrade || editingRowIndex !== null}
-                        >
-                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell>{t.videogame || 'Sin videojuego'}</TableCell>
+                      <TableCell className={`text-center ${getGradeStatus(t.grade ?? 0)}`}>
+                        {t.grade != null ? (
+                          t.grade.toFixed(2)
+                        ) : (
+                          <span className="text-orange-600 font-medium">Pendiente</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {editingRowIndex === i ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="5"
+                              step="0.1"
+                              value={editedGrade}
+                              onChange={(e) => setEditedGrade(e.target.value)}
+                              className="w-20 h-8 text-center"
+                              placeholder="0.0"
+                              autoFocus
+                              disabled={savingGrade}
+                            />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                                onClick={() => saveGrade(t)}
+                                disabled={savingGrade}
+                              >
+                              {savingGrade ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4 text-green-600" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                              onClick={cancelEditing}
+                              disabled={savingGrade}
+                            >
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span>
+                            {t.seniorGrade ? (
+                              <span className="font-medium">{t.seniorGrade.toFixed(2)}</span>
+                            ) : (
+                              <span className="opacity-50">-</span>
+                            )}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {editingRowIndex !== i && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                            onClick={() => startEditing(i, t.seniorGrade)}
+                            disabled={savingGrade || editingRowIndex !== null}
+                          >
+                            <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </>
                 ))}
               </TableBody>
             </Table>
