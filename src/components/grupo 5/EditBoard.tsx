@@ -186,7 +186,7 @@ export default function EditBoard() {
         console.log("url de la imagen", uploadedFileUrls[0])
   
         const payload = {
-          nameTeam: infoEditEquipo.teamName,
+          teamName: infoEditEquipo.teamName,
           videogameName: infoEditEquipo.videogameName,
           description: infoEditEquipo.description,
           logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
@@ -550,7 +550,7 @@ export default function EditBoard() {
         <CardContent>
           <div className="flex flex-col justify-center space-x-5 space-y-5">
             <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">
-              <img src={infoEditEquipo.logoUrl || "https://imgs.search.brave.com/0T2pSr3i_oCsn6PToB2eUQEUmAkRmwR9jf2bFD-X9qA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/dmVjdG9yLWdyYXRp/cy9mb25kby1tb3Jh/ZG8tYWJzdHJhY3Rv/XzY5ODQ1Mi0yNzQx/LmpwZz9zZW10PWFp/c19oeWJyaWQmdz03/NDA"} alt="Logo del equipo" className="w-[60px] h-[60px] bg-cover rounded-[20px]"/>
+              <img src={infoEditEquipo.logoUrl || "#"} alt="Logo del equipo" className="w-[60px] h-[60px] bg-cover rounded-[20px]"/>
               <div>
                 <h2 className="font-bold text-[20px]">
                   {infoEquipo.videogameName.toUpperCase()}
