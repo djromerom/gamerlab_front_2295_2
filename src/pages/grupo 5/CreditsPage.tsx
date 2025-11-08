@@ -720,7 +720,7 @@ export default function DevelopersCredits() {
       icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
     },
     {
-      value: "500+",
+      value: "999+",
       label: "Commits",
       icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
     },

@@ -14,7 +14,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
-export type TeamType = "uninorte" | "externo";
 
 export interface Team {
   id: number;
@@ -27,7 +26,7 @@ export interface Team {
   description?: string;
   logo?: string;
   additionalImages?: string[];
-  teamType?: TeamType;
+  isExternal?: boolean;
 }
 
 export default function TeamsPage() {
@@ -86,119 +85,140 @@ export default function TeamsPage() {
       setLoading(true);
       
       try {
-        // Obtener equipos
-        const res = await customFetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-        const rawData = await res.json();
-        console.log("🔍 Datos crudos del backend:", rawData);
-
-        // Intentar obtener integrantes con diferentes endpoints
-        let membersData: any[] = [];
-        const possibleEndpoints = ['/integrantes', '/members', '/students', '/team-members'];
+        // Intentar obtener equipos desde el endpoint de teams primero
+        let rawData = [];
+        let videogamesData = [];
         
-        for (const endpoint of possibleEndpoints) {
+        try {
+          const teamsRes = await customFetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          if (teamsRes.ok) {
+            rawData = await teamsRes.json();
+          } else {
+            throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
+          }
+        } catch (teamsError) {
+          
+          // Fallback: obtener desde videogames y luego equipos por separado
+          const videogamesRes = await customFetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          
+          videogamesData = await videogamesRes.json();
+          
+          // Ahora intentamos obtener información de equipos para el campo isExternal
           try {
-            console.log(`🔍 Probando endpoint: ${endpoint}`);
-            const membersRes = await customFetch(
-              `${import.meta.env.VITE_ENDPOINT_BACKEND}${endpoint}`,
+            const teamsInfoRes = await customFetch(
+              `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
               {
                 method: "GET",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
               }
             );
-
-            if (membersRes.ok) {
-              const membersRawData = await membersRes.json();
-              membersData = Array.isArray(membersRawData) ? membersRawData : [];
-              console.log(`✅ Integrantes obtenidos desde ${endpoint}:`, membersData);
-              break; // Salir del bucle si encontramos datos
+            
+            if (teamsInfoRes.ok) {
+              const teamsInfo = await teamsInfoRes.json();
+              
+              // Mapear videogames con información de equipos
+              rawData = videogamesData.map((videogame: any) => {
+                const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
+                return {
+                  ...videogame,
+                  isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
+                  teamName: teamInfo?.teamName || "Sin equipo",
+                  confirmId: teamInfo?.confirmId || videogame.status
+                };
+              });
             } else {
-              console.log(`❌ ${endpoint}: ${membersRes.status}`);
+              // Si tampoco funciona, usar solo datos de videogames sin isExternal
+              rawData = videogamesData.map((videogame: any) => ({
+                ...videogame,
+                isExternal: false, // fallback
+                teamName: "Sin equipo"
+              }));
             }
-          } catch (memberError) {
-            console.log(`❌ Error en ${endpoint}:`, memberError);
+          } catch (teamInfoError) {
+            rawData = videogamesData.map((videogame: any) => ({
+              ...videogame,
+              isExternal: false,
+              teamName: "Sin equipo"
+            }));
           }
         }
+
+        // Los miembros ya vienen incluidos en los datos de teams desde el backend
         
-        if (membersData.length === 0) {
-          console.warn("⚠️ No se pudieron obtener integrantes desde ningún endpoint");
-        }
-        
-        const data: Team[] = rawData.map((team: any) => {
+        const data: Team[] = rawData.map((item: any) => {
           // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
           let fallbackImages: string[] = [];
           
-          // Debug: Log del estado original y mapeado
-          console.log(`🔍 Team ${team.id}: Estado original:`, team.status, `(tipo: ${typeof team.status})`);
-          const mappedStatus = mapStatusToString(team.status);
-          console.log(`🔍 Team ${team.id}: Estado mapeado:`, mappedStatus);
+          // Determinar si los datos vienen del endpoint de teams o videogames
+          const isFromTeamsEndpoint = item.videogame !== undefined;
+          const team = isFromTeamsEndpoint ? item : item;
+          const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
           
-          // Obtener integrantes de este equipo específico
-          const teamMembers = membersData.filter((member: any) => member.id_equi === team.id);
-          console.log(`👥 Team ${team.id}: Integrantes encontrados:`, teamMembers);
+          // Determinar el estado del equipo
+          const statusField = team.confirmId || team.status || videogame.status;
+          const mappedStatus = mapStatusToString(statusField);
           
-          // Determinar tipo de equipo basado en emails
-          let teamType: TeamType = "uninorte"; // Por defecto
+          // Obtener integrantes que ya vienen incluidos en los datos del equipo
+          const teamMembers = team.members || [];
           
-          if (teamMembers.length > 0) {
-            const hasExternalEmail = teamMembers.some((member: any) => {
-              const email = member.correo;
-              console.log(`📧 Revisando email: ${email}`);
-              return email && typeof email === 'string' && email.includes("@") && !email.includes("@uninorte.edu.co");
-            });
-            
-            teamType = hasExternalEmail ? "externo" : "uninorte";
-            console.log(`🏷️ Team ${team.id}: Tipo determinado: ${teamType}`);
-          } else {
-            // FALLBACK: Determinar tipo por patrones en el nombre del equipo o datos disponibles
-            const teamName = (team.teamName || "").toLowerCase();
-            const gameName = (team.name || "").toLowerCase();
-            
-            // Patrones que podrían indicar equipos externos (colegios)
-            const externalPatterns = [
-              'colegio', 'school', 'instituto', 'liceo', 'gymnasium',
-              'externo', 'external', 'visitante'
-            ];
-            
-            const isExternal = externalPatterns.some(pattern => 
-              teamName.includes(pattern) || gameName.includes(pattern)
-            );
-            
-            teamType = isExternal ? "externo" : "uninorte";
-            console.log(`🔧 FALLBACK: Team ${team.id} (${teamName}) determinado como: ${teamType}`);
+          // Debug temporal: verificar estructura de los datos  
+          if (team.id === 1) {
+            console.log("🔍 Estructura completa del team:", team);
+            console.log("🔍 Miembros del equipo:", teamMembers);
           }
+          
+          // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
+          const isExternal = Boolean(team.isExternal || team.externo);
           
           return {
             id: team.id,
-            gameName: team.name || "Sin nombre",
-            teamName: team.teamName || "Sin equipo",
+            gameName: videogame.name || team.teamName || "Sin nombre",
+            teamName: team.teamName || "Sin equipo", 
             status: mappedStatus as TeamStatus || "pendiente",
-            video: team.videoUrl,
-            repo: team.repoUrl,
-            members: teamMembers.map((m: any) => `${m.nombre || ''} ${m.apellido || ''}`.trim()),
-            description: team.descripcion || "Sin descripción disponible.",
-            logo: team.logoUrl,
-            additionalImages: team.additionalImages || fallbackImages,
-            teamType: teamType,
+            video: videogame.videoUrl || videogame.video_url,
+            repo: videogame.repoUrl || videogame.repo_url,
+            members: teamMembers.map((m: any) => {
+              // Probar diferentes nombres de campos para nombre y apellido
+              const firstName = m.firstName || m.nombre || m.first_name || '';
+              const lastName = m.lastName || m.apellido || m.last_name || '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              
+              // Debug para el primer miembro del primer equipo
+              if (team.id === 1 && teamMembers.indexOf(m) === 0) {
+                console.log("🔍 Estructura del primer miembro:", m);
+                console.log("🔍 Nombre completo construido:", fullName);
+              }
+              
+              return fullName || 'Sin nombre';
+            }),
+            description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
+            logo: videogame.logoUrl || videogame.logo_url,
+            additionalImages: videogame.additionalImages || fallbackImages,
+            isExternal: isExternal,
           };
         });
         
         // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
         const teamsToShow = data.filter(team => team.status !== "expirado");
         
-        console.log("✅ Datos procesados:", data);
-        console.log("👥 Equipos a mostrar (sin rechazados):", teamsToShow);
         setTeams(teamsToShow);
       } catch (error) {
-        console.error("❌ Error al cargar equipos:", error);
         setTeams([]);
       } finally {
         setLoading(false);
@@ -213,8 +233,9 @@ export default function TeamsPage() {
     const matchesSearch = team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Filtro por tipo de equipo
-    const matchesType = activeTeamType === "all" ? true : team.teamType === activeTeamType;
+    // Filtro por tipo de equipo basado en isExternal
+    const matchesType = activeTeamType === "all" ? true : 
+      (activeTeamType === "externo" ? team.isExternal === true : team.isExternal === false);
     
     return matchesSearch && matchesType;
   });
@@ -258,7 +279,7 @@ export default function TeamsPage() {
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
               }`}
             >
-              Uninorte ({teams.filter(t => t.teamType === "uninorte").length})
+              Uninorte ({teams.filter(t => !t.isExternal).length})
             </button>
             <button
               onClick={() => setActiveTeamType("externo")}
@@ -268,7 +289,7 @@ export default function TeamsPage() {
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
               }`}
             >
-              Externos ({teams.filter(t => t.teamType === "externo").length})
+              Externos ({teams.filter(t => t.isExternal).length})
             </button>
           </div>
         </div>
@@ -357,11 +378,11 @@ function TeamCard({ team }: TeamCardProps) {
         <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
           {/* Badge de tipo de equipo */}
           <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-            team.teamType === "uninorte"
+            !team.isExternal
               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
               : "bg-green-500/20 text-green-300 border border-green-400/30"
           }`}>
-            {team.teamType === "uninorte" ? "Uninorte" : "Externo"}
+            {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
           
           <CardContent className="flex space-x-5 py-6 px-8 h-full">
@@ -415,15 +436,12 @@ const getVideoThumbnail = (videoUrl: string): string => {
     // Para otros servicios de video, usar placeholder
     return '/placeholder.svg';
   } catch (error) {
-    console.error('Error extrayendo miniatura del video:', error);
     return '/placeholder.svg';
   }
 };
 
-function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
+function MediaCarousel({ video, images }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
-  console.log("🎨 MediaCarousel recibió:", { video, images, gameImage });
   
   // Crear array con todos los elementos multimedia (solo video e imágenes adicionales, NO el logo)
   const mediaItems = [];
@@ -436,21 +454,14 @@ function MediaCarousel({ video, images, gameImage }: MediaCarouselProps) {
       src: video, 
       thumbnail: autoThumbnail
     });
-    console.log("📹 Video agregado al carrusel con miniatura:", autoThumbnail);
   }
   
   // Agregar SOLO las imágenes adicionales (no incluir el logo)
-  images.forEach((image, index) => {
-    console.log(`🖼️ Procesando imagen ${index}:`, image);
+  images.forEach((image) => {
     if (image && image.trim() !== '') {
       mediaItems.push({ type: 'image', src: image });
-      console.log("✅ Imagen agregada al carrusel:", image);
-    } else {
-      console.log("❌ Imagen vacía o inválida:", image);
     }
   });
-  
-  console.log("📋 MediaItems finales:", mediaItems);
 
   // Si no hay elementos, mostrar placeholder
   if (mediaItems.length === 0) {
