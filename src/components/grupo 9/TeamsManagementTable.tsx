@@ -1,24 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreVertical,
-  Plus,
-  Loader2,
-  Users,
-  ChevronDown,
-  MailCheck,
-  MailWarning,
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, TicketPercentIcon } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -57,9 +40,11 @@ import {
 } from "./teams-utils";
 
 import TeamWizardDialog, {
-  WizardValues,
   toInitialValuesFromTeam,
 } from "./TeamWizardDialog";
+
+import type { WizardValues } from "./validationTeamsAdmin";
+
 import {
   Dialog,
   DialogContent,
@@ -68,8 +53,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../ui/dialog";
-import { any } from "zod";
-import { set } from "react-hook-form";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -87,38 +70,24 @@ export const TeamsManagementTable: React.FC<Props> = ({
 }) => {
 
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardInitial, setWizardInitial] = useState< Partial<WizardValues> | undefined >(undefined);
+  const [wizardInitial, setWizardInitial] = useState<Partial<WizardValues> | undefined>(undefined);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
-  const [estadosVideojuego, setEstadosVideojuego] = useState<
-    EstadoVideojuego[]
-  >([]);
   const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
+  // filtro (all | external | uninorte)
+  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
 
-  // Helpers seguros para evitar lecturas sobre undefined
-  const safeMembers = (team: TeamRowData) => team?.integrantes ?? [];
-  const safeVideo = (team: TeamRowData) =>
-    team?.videojuego ?? {
-      id_videojuego: 0,
-      nombre: "—",
-      descripcion: "",
-      logo_url: "",
-      fecha_registro: new Date().toISOString(),
-      id_estado_videojuego: 2,
-      id_equipo: team?.id_equipo ?? 0,
-      activo: false,
-    };
   const safeFecha = (team: TeamRowData) => team?.fecha_registro ?? new Date().toISOString();
 
 
@@ -259,6 +228,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         const videojuegoNombre = team.videojuego?.nombre ?? "—";
         const equipoNombre = team.nombre_equipo ?? "Equipo";
         const members = team.integrantes ?? [];
+        const tipoEquipo = (team as any).isExternal === true ? "Externo" : "Uninorte";
 
         return (
           <>
@@ -271,6 +241,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
               <Users className="w-3 h-3 mr-1" />
               Ver {members.length} miembro{members.length !== 1 ? "s" : ""} y datos académicos
             </Button>
+
+            <div>
+              <Badge variant={tipoEquipo === "Externo" ? "outline" : "outline"} className="mr-1">
+                {tipoEquipo}
+              </Badge>
+            </div>
 
             <Dialog open={isOpen} onOpenChange={(open) => !open && setOpenInfoTeamId(null)}>
               <DialogContent className="max-w-lg w-full">
@@ -400,15 +376,17 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
         const rawLabel = cached?.confirmationStatus?.status ?? "No consultado";
         const label = String(rawLabel);
-        const norm = label.toLowerCase();
 
-        const showResend = norm === "pendiente" || norm === "expirado";
+        const s = String(label).trim();
+        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalizar
+
+        const showResend = norm === "Pendiente" || norm === "Expirado";
         const variant =
-          norm === "confirmado" ? "success" : norm === "pendiente" ? "secondary" : "destructive";
+          norm === "Confirmado" ? "default" : norm === "Pendiente" ? "secondary" : "destructive";
 
         return (
           <div className="flex items-center gap-2">
-            <Badge variant={variant as any}>{label}</Badge>
+            <Badge variant={variant as any}>{norm}</Badge>
 
             <div className="flex items-center gap-2">
               {showResend && primaryEmail && (
@@ -484,7 +462,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
         );
       },
     },
-    // ...existing code...,
     {
       key: "createdAt",
       label: "Fecha de Registro",
@@ -562,31 +539,87 @@ export const TeamsManagementTable: React.FC<Props> = ({
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-6 px-4">
-        <h1 className="text-xl font-medium">Equipos Inscritos</h1>
 
-        {/* Botón Agregar -> abre el Wizard */}
-        <Button
-          variant="outline"
-          className="bg-card hover:bg-accent text-foreground"
-          disabled={showLoader}
-          onClick={handleOpenAdd}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Agregar
-        </Button>
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="text-xl font-medium">Equipos Inscritos</h1>
+          </div>
 
-        {/* Wizard (add/edit) */}
-        <TeamWizardDialog
-          open={wizardOpen}
-          onOpenChange={setWizardOpen}
-          apiBaseUrl={apiBaseUrl}
-          nrcOptions={nrcOptions}
-          materiasOptions={materiasOptions}
-          initialData={wizardInitial}
-          onSuccess={() => {
-            onPageChange(1);
-            refreshData();
-          }}
-        />
+          {/* Filtro externo / uninorte — fila de 3 botones */}
+          <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
+            <Button
+              size="sm"
+              variant={externalFilter === "all" ? "default" : "ghost"}
+              className="h-8 px-3 text-sm"
+              onClick={() => {
+                if (externalFilter === "all") return;
+                setExternalFilter("all");
+                try { onPageChange(1); } catch (e) { }
+              }}
+              disabled={showLoader}
+              aria-pressed={externalFilter === "all"}
+            >
+              Todos
+            </Button>
+
+            <Button
+              size="sm"
+              variant={externalFilter === "external" ? "default" : "ghost"}
+              className="h-8 px-3 text-sm"
+              onClick={() => {
+                if (externalFilter === "external") return;
+                setExternalFilter("external");
+                try { onPageChange(1); } catch (e) { }
+              }}
+              disabled={showLoader}
+              aria-pressed={externalFilter === "external"}
+            >
+              Externos
+            </Button>
+
+            <Button
+              size="sm"
+              variant={externalFilter === "uninorte" ? "default" : "ghost"}
+              className="h-8 px-3 text-sm"
+              onClick={() => {
+                if (externalFilter === "uninorte") return;
+                setExternalFilter("uninorte");
+                try { onPageChange(1); } catch (e) { }
+              }}
+              disabled={showLoader}
+              aria-pressed={externalFilter === "uninorte"}
+            >
+              Uninorte
+            </Button>
+          </div>
+
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Botón Agregar -> abre el Wizard */}
+          <Button
+            variant="outline"
+            className="bg-card hover:bg-accent text-foreground"
+            disabled={showLoader}
+            onClick={handleOpenAdd}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Agregar
+          </Button>
+
+          {/* Wizard (add/edit) */}
+          <TeamWizardDialog
+            open={wizardOpen}
+            onOpenChange={setWizardOpen}
+            apiBaseUrl={apiBaseUrl}
+            nrcOptions={nrcOptions}
+            materiasOptions={materiasOptions}
+            initialData={wizardInitial}
+            onSuccess={() => {
+              onPageChange(1);
+              refreshData();
+            }}
+          />
+        </div>
       </div>
 
       {/* Tabla */}
@@ -624,46 +657,57 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              teams?.map((team) => (
-                <TableRow key={team.id_equipo}>
-                  {columnsToDisplay.map(({ key, renderCell }) => (
-                    <TableCell key={key}>{renderCell(team)}</TableCell>
-                  ))}
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0 cursor-pointer"
-                          disabled={internalIsLoading}
-                        >
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleOpenEdit(team)}
-                          disabled={internalIsLoading}
-                          className="cursor-pointer"
-                        >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setDeletingId(team.id_equipo);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
-                          disabled={internalIsLoading}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+              // aplicar filtro cliente por isExternal
+              (() => {
+                const filteredTeams = teams?.filter((team) => {
+                  if (!team) return false;
+                  const isExt = (team as any).isExternal === true;
+                  if (externalFilter === "all") return true;
+                  if (externalFilter === "external") return isExt;
+                  return !isExt; // uninorte
+                }) ?? [];
+
+                return filteredTeams.map((team) => (
+                  <TableRow key={team.id_equipo}>
+                    {columnsToDisplay.map(({ key, renderCell }) => (
+                      <TableCell key={key}>{renderCell(team)}</TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleOpenEdit(team)}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingId(team.id_equipo);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ));
+              })()
             )}
           </TableBody>
         </Table>

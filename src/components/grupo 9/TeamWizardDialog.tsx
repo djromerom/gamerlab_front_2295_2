@@ -619,7 +619,7 @@ export default function TeamWizardDialog({
         for (let idx = 0; idx < curMembers.length; idx++) {
           const cur = curMembers[idx];
           const orig = origMembers[idx] || null;
-          const id = cur?.id_integrante ?? cur?.id ?? orig?.id_integrante ?? orig?.id;
+          const id = cur?.id_integrante ?? orig?.id_integrante;
           if (id != null) curIdsSet.add(id);
 
           if (id == null && (!orig || orig == null)) {
@@ -628,7 +628,7 @@ export default function TeamWizardDialog({
               memberLastName: cur.apellido,
               memberEmail: cur.correo,
               nrc: (cur.nrcIds || []).map((nid: number) => {
-                const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.code) === String(nid));
+                const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.codigo) === String(nid));
                 return n ? String((n as any).codigo ?? (n as any).code) : String(nid);
               }),
             };
