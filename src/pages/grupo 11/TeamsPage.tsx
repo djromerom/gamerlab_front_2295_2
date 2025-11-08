@@ -65,16 +65,6 @@ export default function TeamsPage() {
           // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
           let fallbackImages: string[] = [];
           
-          // Para equipos con "prueba" en el nombre, usar imágenes de ejemplo como fallback
-          if (team.name && team.name.toLowerCase().includes('prueba') && (!team.additionalImages || team.additionalImages.length === 0)) {
-            fallbackImages = [
-              "https://picsum.photos/800/600?random=1",
-              "https://picsum.photos/800/600?random=2", 
-              "https://picsum.photos/800/600?random=3",
-              "https://picsum.photos/800/600?random=4"
-            ];
-            console.log("🖼️ Usando imágenes de fallback para:", team.name);
-          }
           
           return {
             id: team.id,
@@ -208,12 +198,15 @@ function TeamCard({ team }: TeamCardProps) {
       >
         <Card className="transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50">
           <CardContent className="flex space-x-5 py-5 px-7">
-            <Avatar className="w-20 h-20">
+            <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30">
               <AvatarImage
-                src={team.image || "/placeholder.svg"}
-                alt={team.teamName}
+                src={team.logo || "/Arkad.svg"}
+                alt={`${team.gameName} logo`}
+                className="object-cover rounded-full"
               />
-              <AvatarFallback>{team.teamName.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] text-white font-bold text-2xl">
+                {team.gameName.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
@@ -400,11 +393,13 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
               <div className="space-y-4">
                 {team.logo && (
                   <div className="flex justify-center mb-4">
-                    <img
-                      src={team.logo || "/Arkad.svg"}
-                      alt={`${team.gameName} logo`}
-                      className="w-28 h-28 object-contain"
-                    />
+                    <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1">
+                      <img
+                        src={team.logo || "/Arkad.svg"}
+                        alt={`${team.gameName} logo`}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
                   </div>
                 )}
                 <h2 className="text-3xl font-bold text-[#AC7CFF] mb-1">
