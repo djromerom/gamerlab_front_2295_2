@@ -401,47 +401,36 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const students = getCurrentStudents();
 
   // Agrupar estudiantes por equipo (soporta varios shapes: teamCode, team, teamName)
+  // Agrupar por equipo usando los campos del backend (teamCode, nrc, team, integrantes, etc.)
   const teams = useMemo(() => {
     const map = new Map<string, any>();
     students.forEach((s: any) => {
-      const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
-      const teamName = s.teamName || s.team || `Equipo ${teamCode}`;
+      // Usar teamCode como clave principal, si no existe usar team o un identificador único
+      const teamCode = s.teamCode ?? s.team ?? s.videogameId ?? s.videogame ?? `TEAM_${s.nrc ?? ''}_${s.team ?? ''}`;
       if (!map.has(teamCode)) {
         map.set(teamCode, {
-          teamCode,
-          teamName,
-          members: [],
-          videogame: s.videogame || null,
-          gradeSum: 0,
-          gradeCount: 0,
-          grade: null,
-          seniorGrade: s.seniorGrade ?? null,
-          // calificación docente única por equipo (tomamos la primera no nula)
-          teacherGrade: null,
+          teamCode: s.teamCode ?? s.team ?? '-',
+          nrc: s.nrc ?? '-',
+          teamName: s.team ?? '-',
+          integrantes: s.integrantes ? s.integrantes.split(',').map((x:any) => x.trim()) : [],
+          videogame: s.videogame ?? '-',
+          calificacionFeria: s.calificacionFeria ?? null,
+          calificacionDocente: s.calificacionDocente ?? null,
+          videogameId: s.videogameId ?? null,
+          // Para edición inline, guardar todos los objetos originales
+          _rows: [s],
         });
+      } else {
+        // Si ya existe el equipo, solo agregamos integrantes adicionales si vienen separados
+        const t = map.get(teamCode);
+        if (s.integrantes) {
+          const nuevos = s.integrantes.split(',').map((x:any) => x.trim());
+          t.integrantes = Array.from(new Set([...t.integrantes, ...nuevos]));
+        }
+        t._rows.push(s);
       }
-      const t = map.get(teamCode);
-      t.members.push(s);
-      if (s.videogame && !t.videogame) t.videogame = s.videogame;
-      if (s.grade != null) {
-        t.gradeSum += s.grade;
-        t.gradeCount += 1;
-      }
-      // Calificación docente por fila (campo 'calificacionDocente' en el JSON)
-      // Tomamos la primera calificación docente encontrada para el equipo (no acumulamos)
-      if (s.calificacionDocente != null && t.teacherGrade == null) {
-        t.teacherGrade = Number(s.calificacionDocente);
-      }
-      // If any member has seniorGrade and team doesn't, prefer member's grade (backend may send team-level)
-      if (t.seniorGrade == null && s.seniorGrade != null) t.seniorGrade = s.seniorGrade;
     });
-
-    const arr = Array.from(map.values()).map((t: any) => ({
-      ...t,
-      grade: t.gradeCount > 0 ? t.gradeSum / t.gradeCount : null,
-  teacherGrade: t.teacherGrade ?? null,
-    }));
-    return arr;
+    return Array.from(map.values());
   }, [students]);
 
   // No view mode: la navegación es Materia -> NRC
@@ -521,7 +510,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
     toast(`Preparando exportación global (todos los NRCs)...`);
 
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportAll`;
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
 
     fetch(endpoint, {
       method: 'GET',
@@ -539,7 +528,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-  a.download = `reporte_todos_nrcs_${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.download = `Reporte_Calificaciones_FeriaGamer_${new Date().toISOString().slice(0,10)}.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -579,7 +568,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Plantilla Calificaciones FeriaGamer.xlsx`;
+        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -672,7 +661,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
   // Save edited grade (now for a team)
   const saveGrade = async (team: any) => {
-    const gradeValue = parseFloat(editedGrade);
+  // Asegura que gradeValue tenga solo un decimal
+  const gradeValue = parseFloat(Number(editedGrade).toFixed(1));
     
     // Validate grade
     if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 5) {
@@ -684,73 +674,13 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     toast("Guardando calificación...");
 
     try {
-  // Prepare videogame identifiers (backend can accept videogameId, videogameName or teamCode)
-  const vg = team.videogame;
-  let videogameId: any = undefined;
-      if (vg != null) {
-        if (typeof vg === 'object') {
-          videogameId = vg.id ?? vg._id ?? vg.videojuegoId ?? undefined;
-        }
-      }
-
-          // El backend identifica por videogameId. Preferimos extraerlo directamente
-          // desde los campos a nivel de estudiante (forma más fiable en nuestros datos):
-          // m.videogameid | m.videogameId | m.videojuegoId | m.videogame_id
-          // Si no se encuentra, usamos como fallback la forma anidada (m.videogame.id)
-          // y finalmente team.videogame (antiguo shape).
-          let finalVideogameId: any = undefined;
-
-          const members = team.members || [];
-
-          // 1) Buscar campo scalar a nivel de miembro (forma preferida)
-          for (const m of members) {
-            const scalarId = m.videogameid ?? m.videogameId ?? m.videojuegoId ?? m.videogame_id ?? null;
-            if (scalarId) {
-              finalVideogameId = scalarId;
-              break;
-            }
-          }
-
-          // 2) Si no hay scalar id, intentar objetos anidados por compatibilidad
-          if (!finalVideogameId) {
-            for (const m of members) {
-              const mv = m.videogame ?? m.videojuego ?? m.game;
-              if (mv && typeof mv === 'object') {
-                finalVideogameId = mv.id ?? mv._id ?? mv.videojuegoId ?? undefined;
-                if (finalVideogameId) break;
-              }
-            }
-          }
-
-          // 3) Finalmente, intentar extraer desde team.videogame (legacy)
-          if (!finalVideogameId && team.videogame && typeof team.videogame === 'object') {
-            finalVideogameId = team.videogame.id ?? team.videogame._id ?? team.videogame.videojuegoId ?? undefined;
-          }
-
-      // DEBUG: show what was found while trying to extract videogameId
-      try {
-        const membersDebug = (team.members || []).map((m: any, idx: number) => {
-          const mv = m.videogame ?? m.videojuego ?? m.game;
-          const id = mv && typeof mv === 'object' ? (mv.id ?? mv._id ?? mv.videojuegoId ?? null) : null;
-          return { index: idx, foundId: id, raw: mv };
-        });
-        const debugInfo = { fromTeamVg: videogameId ?? null, members: membersDebug, finalVideogameId: finalVideogameId ?? null };
-        console.debug('StudentGradeTable - videogame id extraction debug:', debugInfo);
-        // Try to copy debug info to clipboard to make it easy to paste into backend logs
-        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(JSON.stringify(debugInfo));
-          toast('IDs copiados al portapapeles para revisar en tus logs');
-        }
-      } catch (e) {
-        console.debug('No se pudo copiar/mostrar debug de videogameId', e);
-      }
-
+      // Ahora simplemente usamos el campo videogameId del equipo
+      const finalVideogameId = team.videogameId;
       if (!finalVideogameId) {
-        toast.error('No se encontró videogameId para el equipo. Asegúrate que algún integrante tiene el videojuego con id.');
+        toast.error('No se encontró videogameId para el equipo.');
         setSavingGrade(false);
         return;
       }
-
       const payload: any = {
         videogameId: finalVideogameId,
         score: gradeValue,
@@ -801,7 +731,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         throw new Error(msg);
       }
 
-  toast.success(`✅ Calificación guardada: ${gradeValue.toFixed(1)}`);
+  toast.success(`✅ Calificación guardada: ${gradeValue}`);
       console.log('Grade saved:', parsed ?? { status: response.status });
 
       // After saving the senior grade we prefer to reload the authoritative
@@ -1033,6 +963,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               <TableHeader className="bg-card border-b border-border">
                 <TableRow>
                     <TableHead>Team Code</TableHead>
+                    <TableHead>NRC</TableHead>
                     <TableHead>Equipo</TableHead>
                     <TableHead>Integrantes</TableHead>
                     <TableHead>Videojuego</TableHead>
@@ -1043,86 +974,85 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               </TableHeader>
               <TableBody>
                 {teams.map((t: any, i: number) => (
-                  <>
-                    <TableRow key={t.teamCode} className="hover:bg-muted/50">
-                      <TableCell className="font-mono">{t.teamCode}</TableCell>
-                      <TableCell className="font-medium">{t.teamName}</TableCell>
-                      <TableCell>
-                        <div className="text-sm opacity-80">
-                          {t.members.map((m: any) => m.student).join(', ')}
-                        </div>
-                      </TableCell>
-                      <TableCell>{t.videogame || 'Sin videojuego'}</TableCell>
-                      <TableCell className={`text-center ${getGradeStatus(t.grade ?? 0)}`}>
-                          {t.grade != null ? (
-                          t.grade.toFixed(1)
-                        ) : (
-                          <span className="text-orange-600 font-medium">Pendiente</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {editingRowIndex === i ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <Input
-                              type="number"
-                              min="0"
-                              max="5"
-                              step="0.1"
-                              value={editedGrade}
-                              onChange={(e) => setEditedGrade(e.target.value)}
-                              className="w-20 h-8 text-center"
-                              placeholder="0.0"
-                              autoFocus
-                              disabled={savingGrade}
-                            />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                onClick={() => saveGrade(t)}
-                                disabled={savingGrade}
-                              >
-                              {savingGrade ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Save className="h-4 w-4 text-green-600" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                              onClick={cancelEditing}
-                              disabled={savingGrade}
-                            >
-                              <X className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span>
-                            {t.teacherGrade != null ? (
-                              <span className="font-medium">{t.teacherGrade.toFixed(1)}</span>
-                            ) : (
-                              <span className="text-orange-600 font-medium">Pendiente</span>
-                            )}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {editingRowIndex !== i && (
+                  <TableRow key={t.teamCode} className="hover:bg-muted/50">
+                    <TableCell>{t.teamCode}</TableCell>
+                    <TableCell>{t.nrc}</TableCell>
+                    <TableCell>{t.teamName}</TableCell>
+                    <TableCell>
+                      <div className="text-sm opacity-80">
+                        {Array.isArray(t.integrantes) ? t.integrantes.join(', ') : t.integrantes || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell>{t.videogame}</TableCell>
+                    <TableCell className={`text-center ${getGradeStatus(t.calificacionFeria ?? 0)}`}>
+                      {t.calificacionFeria != null ? (
+                        t.calificacionFeria.toFixed(1)
+                      ) : (
+                        <span className="text-orange-600 font-medium">Pendiente</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {editingRowIndex === i ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            value={editedGrade}
+                            onChange={(e) => setEditedGrade(e.target.value)}
+                            className="w-20 h-8 text-center"
+                            placeholder="0.0"
+                            autoFocus
+                            disabled={savingGrade}
+                          />
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                            onClick={() => startEditing(i, t.seniorGrade)}
-                            disabled={savingGrade || editingRowIndex !== null}
+                            className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                            onClick={() => saveGrade(t)}
+                            disabled={savingGrade}
                           >
-                            <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            {savingGrade ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4 text-green-600" />
+                            )}
                           </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  </>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            onClick={cancelEditing}
+                            disabled={savingGrade}
+                          >
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span>
+                          {t.calificacionDocente != null ? (
+                            <span>{t.calificacionDocente.toFixed(1)}</span>
+                          ) : (
+                            <span className="text-orange-600 font-medium">Pendiente</span>
+                          )}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {editingRowIndex !== i && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                          onClick={() => startEditing(i, t.calificacionFeria)}
+                          disabled={savingGrade || editingRowIndex !== null}
+                        >
+                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>
