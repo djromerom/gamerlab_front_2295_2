@@ -52,7 +52,7 @@ type Team = {
   description: string;
   logoUrl: string;
   videoUrl: string;
-  githubUrl: string;
+  repoUrl: string;
 }
 
 export default function EditBoard() {
@@ -82,7 +82,7 @@ export default function EditBoard() {
     description: '',
     logoUrl: '',
     videoUrl: '',
-    githubUrl: ''
+    repoUrl: ''
 
   })
 
@@ -166,7 +166,7 @@ export default function EditBoard() {
       description: data.videogame.description,
       logoUrl: data.videogame.logoUrl,
       videoUrl: data.videogame.videoUrl,
-      githubUrl: data.videogame.githubUrl
+      repoUrl: data.videogame.repoUrl
     }
     setInfoEquipo(dataInfoEquipo)
     return dataInfoEquipo
@@ -191,7 +191,7 @@ export default function EditBoard() {
           description: infoEditEquipo.description,
           logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
           videoUrl: infoEditEquipo.videoUrl,
-          githubUrl: infoEditEquipo.githubUrl
+          repoUrl: infoEditEquipo.repoUrl
         };
   
         const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
@@ -564,7 +564,7 @@ export default function EditBoard() {
               </p>
             </div>
             <div className="flex justify-center items-center w-full space-x-5 border-t-1 p-5">
-              <a href={infoEquipo.githubUrl} target="_blank">
+              <a href={infoEquipo.repoUrl} target="_blank">
                 <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
               </a>
               <a href={infoEquipo.videoUrl} target="_blank">
@@ -698,8 +698,8 @@ export default function EditBoard() {
               <div className="flex flex-col gap-2">
                 <Label>Repositorio Github</Label>
                 <Input
-                  value={infoEditEquipo.githubUrl}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, githubUrl: e.target.value}))}
+                  value={infoEditEquipo.repoUrl}
+                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, repoUrl: e.target.value}))}
                   placeholder="https://github..."
                 />
               </div>
