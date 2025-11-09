@@ -7,6 +7,7 @@ export const isYouTubeUrl = (url: string) =>
   !url || /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/).+/i.test(url);
 
 export const uninorteEmail = (s: string) => /^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(s);
+export const emailValid = (s: string) => /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(s);
 export const onlyDigits = (s: string) => /^\d+$/.test(s);
 
 export const MemberSchemaAllRequired = z.object({
@@ -37,14 +38,31 @@ export const WizardSchema = z.object({
     if (!data.team_nrc_global_id) {
       ctx.addIssue({ code: "custom", path: ["team_nrc_global_id"], message: "Selecciona el NRC global" });
     }
-  } else {
-    data.integrantes.forEach((m, i) => {
-      if (!uninorteEmail(m.correo))
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
-      if (!onlyDigits(m.codigo_estudiantil || ""))
+    if (!data.integrantes || data.integrantes.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["integrantes"], message: "Agrega al menos un miembro" });
+    }
+    data.integrantes?.forEach((m, i) => {
+      if (!emailValid(m?.correo || "")) {
+        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Ingresa un correo válido" });
+      }
+      if (m?.codigo_estudiantil && !onlyDigits(m.codigo_estudiantil)) {
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });
-      if (!m.nrcIds || m.nrcIds.length === 0)
+      }
+    });
+  } else {
+    if (!data.integrantes || data.integrantes.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["integrantes"], message: "Agrega al menos un miembro" });
+    }
+    data.integrantes?.forEach((m, i) => {
+      if (!uninorteEmail(m?.correo || "")) {
+        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
+      }
+      if (!onlyDigits(m?.codigo_estudiantil || "")) {
+        ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });
+      }
+      if (!m?.nrcIds || m.nrcIds.length === 0) {
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "nrcIds"], message: "Selecciona al menos un NRC" });
+      }
     });
   }
 });
