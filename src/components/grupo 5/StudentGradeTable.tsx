@@ -496,11 +496,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     );
   }
 
-  const getGradeStatus = (grade: number) => {
-    if (grade >= 4.5) return "text-green-600 font-medium";
-    if (grade >= 4.0) return "text-blue-600 font-medium";
-    if (grade >= 3.0) return "text-yellow-600 font-medium";
-    return "text-red-600 font-medium";
+  const getGradeStatus = (_grade: number) => {
+    return "";
   };
 
   // Export to Excel function
@@ -960,7 +957,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         <>
           <Card className="rounded-lg overflow-hidden bg-card">
             <Table>
-              <TableHeader className="bg-card border-b border-border">
+              <TableHeader className="bg-blue-100 dark:bg-blue-900/30 border-b border-border">
                 <TableRow>
                     <TableHead>Team Code</TableHead>
                     <TableHead>NRC</TableHead>
