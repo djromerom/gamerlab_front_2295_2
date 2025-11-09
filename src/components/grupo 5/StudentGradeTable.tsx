@@ -416,6 +416,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           gradeCount: 0,
           grade: null,
           seniorGrade: s.seniorGrade ?? null,
+          // calificación docente única por equipo (tomamos la primera no nula)
+          teacherGrade: null,
         });
       }
       const t = map.get(teamCode);
@@ -425,6 +427,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         t.gradeSum += s.grade;
         t.gradeCount += 1;
       }
+      // Calificación docente por fila (campo 'calificacionDocente' en el JSON)
+      // Tomamos la primera calificación docente encontrada para el equipo (no acumulamos)
+      if (s.calificacionDocente != null && t.teacherGrade == null) {
+        t.teacherGrade = Number(s.calificacionDocente);
+      }
       // If any member has seniorGrade and team doesn't, prefer member's grade (backend may send team-level)
       if (t.seniorGrade == null && s.seniorGrade != null) t.seniorGrade = s.seniorGrade;
     });
@@ -432,6 +439,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     const arr = Array.from(map.values()).map((t: any) => ({
       ...t,
       grade: t.gradeCount > 0 ? t.gradeSum / t.gradeCount : null,
+  teacherGrade: t.teacherGrade ?? null,
     }));
     return arr;
   }, [students]);
@@ -571,7 +579,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `plantilla_calificaciones_todas_${new Date().toISOString().slice(0,10)}.xlsx`;
+        a.download = `Plantilla Calificaciones FeriaGamer.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -676,65 +684,148 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     toast("Guardando calificación...");
 
     try {
-      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/update-senior-grade`;
+  // Prepare videogame identifiers (backend can accept videogameId, videogameName or teamCode)
+  const vg = team.videogame;
+  let videogameId: any = undefined;
+      if (vg != null) {
+        if (typeof vg === 'object') {
+          videogameId = vg.id ?? vg._id ?? vg.videojuegoId ?? undefined;
+        }
+      }
 
-      // Now we send teamCode instead of studentCode
-      const response = await fetch(endpoint, {
+          // El backend identifica por videogameId. Preferimos extraerlo directamente
+          // desde los campos a nivel de estudiante (forma más fiable en nuestros datos):
+          // m.videogameid | m.videogameId | m.videojuegoId | m.videogame_id
+          // Si no se encuentra, usamos como fallback la forma anidada (m.videogame.id)
+          // y finalmente team.videogame (antiguo shape).
+          let finalVideogameId: any = undefined;
+
+          const members = team.members || [];
+
+          // 1) Buscar campo scalar a nivel de miembro (forma preferida)
+          for (const m of members) {
+            const scalarId = m.videogameid ?? m.videogameId ?? m.videojuegoId ?? m.videogame_id ?? null;
+            if (scalarId) {
+              finalVideogameId = scalarId;
+              break;
+            }
+          }
+
+          // 2) Si no hay scalar id, intentar objetos anidados por compatibilidad
+          if (!finalVideogameId) {
+            for (const m of members) {
+              const mv = m.videogame ?? m.videojuego ?? m.game;
+              if (mv && typeof mv === 'object') {
+                finalVideogameId = mv.id ?? mv._id ?? mv.videojuegoId ?? undefined;
+                if (finalVideogameId) break;
+              }
+            }
+          }
+
+          // 3) Finalmente, intentar extraer desde team.videogame (legacy)
+          if (!finalVideogameId && team.videogame && typeof team.videogame === 'object') {
+            finalVideogameId = team.videogame.id ?? team.videogame._id ?? team.videogame.videojuegoId ?? undefined;
+          }
+
+      // DEBUG: show what was found while trying to extract videogameId
+      try {
+        const membersDebug = (team.members || []).map((m: any, idx: number) => {
+          const mv = m.videogame ?? m.videojuego ?? m.game;
+          const id = mv && typeof mv === 'object' ? (mv.id ?? mv._id ?? mv.videojuegoId ?? null) : null;
+          return { index: idx, foundId: id, raw: mv };
+        });
+        const debugInfo = { fromTeamVg: videogameId ?? null, members: membersDebug, finalVideogameId: finalVideogameId ?? null };
+        console.debug('StudentGradeTable - videogame id extraction debug:', debugInfo);
+        // Try to copy debug info to clipboard to make it easy to paste into backend logs
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(JSON.stringify(debugInfo));
+          toast('IDs copiados al portapapeles para revisar en tus logs');
+        }
+      } catch (e) {
+        console.debug('No se pudo copiar/mostrar debug de videogameId', e);
+      }
+
+      if (!finalVideogameId) {
+        toast.error('No se encontró videogameId para el equipo. Asegúrate que algún integrante tiene el videojuego con id.');
+        setSavingGrade(false);
+        return;
+      }
+
+      const payload: any = {
+        videogameId: finalVideogameId,
+        score: gradeValue,
+        isSenior: true,
+      };
+
+      // Use the new inline endpoint that expects { teamId, score }.
+      const teamEvalEndpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation`;
+
+      // Build headers: Content-Type required; include Authorization Bearer if cookie `access-token` exists
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      try {
+        if (typeof document !== 'undefined' && document.cookie) {
+          const match = document.cookie.match('(?:^|; )access-token=([^;]+)');
+          if (match && match[1]) {
+            const token = decodeURIComponent(match[1]);
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+        }
+      } catch (e) {
+        // ignore cookie read errors
+        console.debug('No se pudo leer cookie access-token', e);
+      }
+
+      const response = await fetch(teamEvalEndpoint, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teamCode: team.teamCode || team.teamName,
-          nrc: selectedNRC || undefined,
-          subject: selectedSubject,
-          seniorGrade: gradeValue
-        }),
+        headers,
+        body: JSON.stringify(payload),
       });
 
       toast.dismiss();
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Error al guardar calificación');
+      // Try to parse JSON body safely; backend may return empty body on 204 or on errors
+      let parsed: any = null;
+      try {
+        parsed = await response.json();
+      } catch (e) {
+        // ignore parse errors — we'll rely on status code and fallback messages
+        parsed = null;
       }
 
-      const result = await response.json();
-      toast.success(`✅ Calificación guardada: ${gradeValue.toFixed(2)}`);
-      console.log('Grade saved:', result);
+      if (!response.ok) {
+        const msg = parsed?.message || `Error ${response.status} al guardar calificación`;
+        throw new Error(msg);
+      }
 
-      // Update local cache: update members of the team to include seniorGrade
+  toast.success(`✅ Calificación guardada: ${gradeValue.toFixed(1)}`);
+      console.log('Grade saved:', parsed ?? { status: response.status });
+
+      // After saving the senior grade we prefer to reload the authoritative
+      // data for the current page from the backend instead of trying to
+      // patch the local cache. This avoids sync issues when backend alters
+      // shapes or computes derived fields.
       const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
 
       if (selectedNRC) {
+        // Remove cached page and re-fetch from backend
         setFetchedStudentsByNRC(prev => {
-          const updatedCache = { ...prev };
-          if (updatedCache[cacheKey]) {
-            updatedCache[cacheKey] = updatedCache[cacheKey].map((s) => {
-              const code = s.teamCode || s.team || s.teamName || s.teamId;
-              const teamCode = team.teamCode || team.teamName;
-              if (String(code) === String(teamCode)) {
-                return { ...s, seniorGrade: gradeValue };
-              }
-              return s;
-            });
-          }
-          return updatedCache;
+          const updated = { ...prev };
+          delete updated[cacheKey];
+          return updated;
         });
+        // Await refetch so UI updates immediately with server data
+        await fetchStudentsByNRC(selectedNRC, currentPage);
       } else {
         setFetchedStudentsBySubject(prev => {
-          const updatedCache = { ...prev };
-          if (updatedCache[cacheKey]) {
-            updatedCache[cacheKey] = updatedCache[cacheKey].map((s) => {
-              const code = s.teamCode || s.team || s.teamName || s.teamId;
-              const teamCode = team.teamCode || team.teamName;
-              if (String(code) === String(teamCode)) {
-                return { ...s, seniorGrade: gradeValue };
-              }
-              return s;
-            });
-          }
-          return updatedCache;
+          const updated = { ...prev };
+          delete updated[cacheKey];
+          return updated;
         });
+        await fetchStudentsBySubject(selectedSubject, currentPage);
       }
 
       // Reset editing state
@@ -851,7 +942,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                   <div>
                     <h3 className="font-semibold text-sm">Calificación Jurado Senior</h3>
                     <p className="text-xs opacity-70 mt-0.5">
-                      Descarga plantilla, completa las notas y súbelas, o edita directamente en la tabla
+                      Descarga una plantilla, completa las notas y súbelas, o edita directamente en la tabla
                     </p>
                   </div>
                 </div>
@@ -946,7 +1037,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                     <TableHead>Integrantes</TableHead>
                     <TableHead>Videojuego</TableHead>
                     <TableHead className="text-center">Calificación Feria</TableHead>
-                    <TableHead className="text-center">Nota J. Senior</TableHead>
+                    <TableHead className="text-center">Calificación Docente</TableHead>
                     <TableHead className="text-center">Acciones</TableHead>
                   </TableRow>
               </TableHeader>
@@ -963,8 +1054,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                       </TableCell>
                       <TableCell>{t.videogame || 'Sin videojuego'}</TableCell>
                       <TableCell className={`text-center ${getGradeStatus(t.grade ?? 0)}`}>
-                        {t.grade != null ? (
-                          t.grade.toFixed(2)
+                          {t.grade != null ? (
+                          t.grade.toFixed(1)
                         ) : (
                           <span className="text-orange-600 font-medium">Pendiente</span>
                         )}
@@ -1009,10 +1100,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                           </div>
                         ) : (
                           <span>
-                            {t.seniorGrade ? (
-                              <span className="font-medium">{t.seniorGrade.toFixed(2)}</span>
+                            {t.teacherGrade != null ? (
+                              <span className="font-medium">{t.teacherGrade.toFixed(1)}</span>
                             ) : (
-                              <span className="opacity-50">-</span>
+                              <span className="text-orange-600 font-medium">Pendiente</span>
                             )}
                           </span>
                         )}
