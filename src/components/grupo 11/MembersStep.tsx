@@ -260,13 +260,15 @@ export default function MembersStep() {
                   const selectedNRCs: string[] = field.value || [];
                   const allNrcOptionsFromState: NrcOption[] = nrcActivos;
 
+                  // Solo evitar duplicados dentro del mismo miembro
+                  // Diferentes miembros SÍ pueden tener el mismo NRC
                   const availableNrcOptionsToSelect =
                     allNrcOptionsFromState.filter(
                       (nrcOption) =>
                         !selectedNRCs.includes(String(nrcOption.code))
                     );
 
-                  let triggerText = "Selecciona uno o más NRCs";
+                  let triggerText = "Selecciona TODOS los NRCs del integrante";
                   if (isPageLoading) {
                     triggerText = "Cargando NRCs...";
                   } else if (allNrcOptionsFromState.length === 0) {
@@ -279,10 +281,13 @@ export default function MembersStep() {
                       <FormControl>
                         <div className="space-y-2">
                           <Select
-                            onValueChange={(selectedCodeValue) =>
-                              selectedCodeValue &&
-                              field.onChange([...selectedNRCs, selectedCodeValue])
-                            }
+                            key={selectedNRCs.join(",")} // Fuerza re-render cuando cambian los NRCs
+                            value="" // Siempre vacio para permitir nueva selección
+                            onValueChange={(selectedCodeValue) => {
+                              if (selectedCodeValue && !selectedNRCs.includes(selectedCodeValue)) {
+                                field.onChange([...selectedNRCs, selectedCodeValue]);
+                              }
+                            }}
                             disabled={
                               isPageLoading ||
                               (allNrcOptionsFromState.length === 0 &&
@@ -357,7 +362,7 @@ export default function MembersStep() {
         ))}
       </div>
 
-      {fields.length < 6 && (
+      {fields.length < 5 && (
         <Button
           className="cursor-pointer"
           variant="outline"

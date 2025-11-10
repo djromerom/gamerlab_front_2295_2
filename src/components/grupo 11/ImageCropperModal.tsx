@@ -10,6 +10,16 @@ import { Slider } from "@/components/ui/slider"
 import { ZoomIn, ZoomOut, RotateCw } from "lucide-react"
 import "react-image-crop/dist/ReactCrop.css"
 
+// Estilos personalizados para el crop circular
+const cropStyles = `
+  .ReactCrop--circular-crop .ReactCrop__crop-selection {
+    border-radius: 50%;
+  }
+  .ReactCrop--circular-crop .ReactCrop__crop-selection::before {
+    border-radius: 50%;
+  }
+`
+
 interface ImageCropperModalProps {
   isOpen: boolean
   onClose: () => void
@@ -130,6 +140,7 @@ export function ImageCropperModal({ isOpen, onClose, imageFile, onCropComplete }
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <style>{cropStyles}</style>
         <DialogHeader>
           <DialogTitle>Recortar imagen</DialogTitle>
         </DialogHeader>
@@ -143,7 +154,8 @@ export function ImageCropperModal({ isOpen, onClose, imageFile, onCropComplete }
                   onChange={(c) => setCrop(c)}
                   onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
-                  circularCrop={false}
+                  circularCrop={true}
+                  className="ReactCrop--circular-crop"
                 >
                   <img
                     ref={imgRef}

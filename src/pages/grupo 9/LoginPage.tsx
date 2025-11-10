@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   useEffect(() => {
@@ -61,7 +62,17 @@ export default function LoginPage() {
         }}
       ></div>
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
-        <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
+        <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50 relative">
+          {/* Botón de flecha para volver */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="absolute top-4 left-4 text-white hover:bg-white/10 p-2"
+            disabled={isSubmitting}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div className="flex items-center w-full justify-center">
             <Link to="/" className="flex items-center">
               <img
@@ -82,7 +93,7 @@ export default function LoginPage() {
 
           <CardContent className="w-full p-0">
             <form onSubmit={handleLogIn}>
-              <div className="flex flex-col gap-4 sm:gap-6 items-center w-full">
+              <div className="flex flex-col gap-3 sm:gap-4 items-center w-full">
                 <div className="flex flex-col w-full items-start gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
