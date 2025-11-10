@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users} from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TeamRowData, Props, NrcInfo, MateriaInfo} from "./teams-utils";
+import { TeamRowData, Props, NrcInfo, MateriaInfo } from "./teams-utils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import type { WizardValues } from "./validationTeamsAdmin";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -39,11 +39,22 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [, setIsLoadingOptions] = useState(false);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
   // filtro (all | external | uninorte)
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+
+  // Responsive header: detectar móvil para mostrar título + dropdown + agregar
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    try { return window.innerWidth < 768; } catch { return false; }
+  });
+  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [handleResize]);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -497,90 +508,147 @@ export const TeamsManagementTable: React.FC<Props> = ({
       className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
-      {/* Header */}
+      {/* Header (responsive): título visible junto al filtro desplegable y botón Agregar en móvil) */}
       <div className="flex justify-between items-center mb-6 px-4">
+        {isMobile ? (
+          <div className="flex items-center gap-2 w-full">
+            <h1 className="text-lg font-medium truncate">Equipos Inscritos</h1>
 
-        <div className="flex items-center gap-6">
-          <div>
-            <h1 className="text-xl font-medium">Equipos Inscritos</h1>
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8" disabled={showLoader}>
+                    Filtro
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "all") return;
+                      setExternalFilter("all");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Todos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "external") return;
+                      setExternalFilter("external");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Externos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "uninorte") return;
+                      setExternalFilter("uninorte");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Uninorte
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button
+                variant="outline"
+                className="bg-card hover:bg-accent text-foreground"
+                disabled={showLoader}
+                onClick={handleOpenAdd}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Agregar
+              </Button>
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-6">
+              <div>
+                <h1 className="text-xl font-medium">Equipos Inscritos</h1>
+              </div>
 
-          {/* Filtro externo / uninorte — fila de 3 botones */}
-          <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
-            <Button
-              size="sm"
-              variant={externalFilter === "all" ? "default" : "ghost"}
-              className="h-8 px-3 text-sm"
-              onClick={() => {
-                if (externalFilter === "all") return;
-                setExternalFilter("all");
-                try { onPageChange(1); } catch (e) { }
-              }}
-              disabled={showLoader}
-              aria-pressed={externalFilter === "all"}
-            >
-              Todos
-            </Button>
+              {/* Filtro externo / uninorte — fila de 3 botones */}
+              <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
+                <Button
+                  size="sm"
+                  variant={externalFilter === "all" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "all") return;
+                    setExternalFilter("all");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "all"}
+                >
+                  Todos
+                </Button>
 
-            <Button
-              size="sm"
-              variant={externalFilter === "external" ? "default" : "ghost"}
-              className="h-8 px-3 text-sm"
-              onClick={() => {
-                if (externalFilter === "external") return;
-                setExternalFilter("external");
-                try { onPageChange(1); } catch (e) { }
-              }}
-              disabled={showLoader}
-              aria-pressed={externalFilter === "external"}
-            >
-              Externos
-            </Button>
+                <Button
+                  size="sm"
+                  variant={externalFilter === "external" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "external") return;
+                    setExternalFilter("external");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "external"}
+                >
+                  Externos
+                </Button>
 
-            <Button
-              size="sm"
-              variant={externalFilter === "uninorte" ? "default" : "ghost"}
-              className="h-8 px-3 text-sm"
-              onClick={() => {
-                if (externalFilter === "uninorte") return;
-                setExternalFilter("uninorte");
-                try { onPageChange(1); } catch (e) { }
-              }}
-              disabled={showLoader}
-              aria-pressed={externalFilter === "uninorte"}
-            >
-              Uninorte
-            </Button>
-          </div>
+                <Button
+                  size="sm"
+                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "uninorte") return;
+                    setExternalFilter("uninorte");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "uninorte"}
+                >
+                  Uninorte
+                </Button>
+              </div>
+            </div>
 
-        </div>
+            <div className="flex items-center gap-3">
+              {/* Botón Agregar -> abre el Wizard */}
+              <Button
+                variant="outline"
+                className="bg-card hover:bg-accent text-foreground"
+                disabled={showLoader}
+                onClick={handleOpenAdd}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Agregar
+              </Button>
 
-        <div className="flex items-center gap-3">
-          {/* Botón Agregar -> abre el Wizard */}
-          <Button
-            variant="outline"
-            className="bg-card hover:bg-accent text-foreground"
-            disabled={showLoader}
-            onClick={handleOpenAdd}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Agregar
-          </Button>
+              {/* Wizard (add/edit) */}
+              {/* (TeamWizardDialog moved below so it's available en mobile también) */}
+            </div>
+          </>
+        )}
+      </div> {/* end header */}
 
-          {/* Wizard (add/edit) */}
-          <TeamWizardDialog
-            open={wizardOpen}
-            onOpenChange={setWizardOpen}
-            apiBaseUrl={apiBaseUrl}
-            nrcOptions={nrcOptions}
-            materiasOptions={materiasOptions}
-            initialData={wizardInitial}
-            onSuccess={() => {
-              onPageChange(1);
-              refreshData();
-            }}
-          />
-        </div>
-      </div>
+      {/* TeamWizardDialog debe montarse siempre (móvil y desktop) */}
+      <TeamWizardDialog
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        apiBaseUrl={apiBaseUrl}
+        nrcOptions={nrcOptions}
+        materiasOptions={materiasOptions}
+        initialData={wizardInitial}
+        onSuccess={() => {
+          onPageChange(1);
+          refreshData();
+        }}
+      />
 
       {/* Tabla */}
       <Card className="rounded-lg overflow-hidden bg-card">
@@ -682,7 +750,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           return (
             <div className="flex justify-between items-center p-4 text-sm border-t border-border">
               <div className="flex items-center gap-2">
-                <span>Filas por página</span>
+                <span>Filas</span>
                 <Select
                   value={String(itemsPerPage)}
                   onValueChange={(value) => onLimitChange(parseInt(value, 10))}
@@ -703,7 +771,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
               <div className="flex items-center gap-4">
                 <span>
-                  Página {totalPages > 0 ? currentPage : 0} de {totalPages}
+                  {totalPages > 0 ? currentPage : 0} de {totalPages}
                 </span>
                 <div className="flex gap-1">
                   <Button
