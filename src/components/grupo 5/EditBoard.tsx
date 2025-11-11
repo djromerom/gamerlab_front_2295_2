@@ -1,106 +1,61 @@
 "use client"
+/**
+ * EditBoard Component
+ * -------------------
+ * This component provides an interface for editing team information and managing its members.
+ * It handles both the team’s videogame details (name, logo, repo URL, etc.)
+ * and the members' personal and academic information (name, email, NRCs).
+ */
 
 import { useEffect, useRef, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { CloudUpload, Pencil } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
-import { Label } from "../ui/label"
-import { Input } from "../ui/input"
-import { FaGithubAlt, FaYoutube } from "react-icons/fa"
-import { Textarea } from "../ui/textarea"
 import { useForm } from "react-hook-form";
 import type { CombinedFormValues } from "@/lib/schemas";
-import { ImageCropper } from "../grupo 11/ImageCropper"
 import { useAuth } from "@/contexts/AuthContext";
 import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
-
-type Student = {
-  id: string;
-  name: string;
-  nrcs: string[];
-  firstName: string;
-  lastName: string;
-  email: string;
-  studentCode: string;
-};
-
-type RawStudent = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  studentCode: string;
-  nrcs: { code: string }[]; // Suponiendo que cada NRC tiene un campo `code`
-};
-
-type NRCOption = {
-  code: string
-}
-
-type UpdateStudentNrcsDto = {
-  id: string;
-  nrcCodes: string[];
-};
-
-type Team = {
-  id: string;
-  teamName: string;
-  videogameName: string;
-  description: string;
-  logoUrl: string;
-  videoUrl: string;
-  repoUrl: string;
-}
+import TeamMembers from "./TeamMembers"
+import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
+import { Team } from "@/types/teamVideogames";
+import TeamVideogame from "./TeamVideogame";
 
 export default function EditBoard() {
-  // Simulación de datos (reemplaza por fetch si lo necesitas)
-
+  //context and refs
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  //Member information
   const [students, setStudents] = useState<Student[]>([])
   const [nrcOptions, setNrcOptions] = useState<NRCOption[]>([])
-
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editStudentCode, setEditStudentCode] = useState("");
-
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [editNrcs, setEditNrcs] = useState<string[]>([])
   const [searchNrc, setSearchNrc] = useState("")
+
+  //Team videogame information
   const [loading, setLoading] = useState(false)
+  const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
+  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '' })
 
-  const [edit, setEdit] = useState < boolean | null >(false)
-  const [infoEquipo, setInfoEquipo] = useState< Team >({
-    id: '', 
-    teamName: '',
-    videogameName: '', 
-    description: '',
-    logoUrl: '',
-    videoUrl: '',
-    repoUrl: ''
-
-  })
-
+  //Manage image
   const { setValue, watch } = useForm<CombinedFormValues>();
-  const [infoEditEquipo, setInfoEditEquipo] = useState(infoEquipo)
+  const currentFiles = watch("files") || [];
+  const [infoEditEquipo, setInfoEditEquipo] = useState< Team >(infoEquipo)
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState(false);
-  const currentFiles = watch("files") || [];
 
+
+  //Triggered when a new file is selected.
+  //Opens the cropper modal for image editing.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
-  
-      // Abrir el modal de recorte con el archivo seleccionadok
       setSelectedFile(files[0]);
       setCropperOpen(true);
-      // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
       e.target.value = "";
   };
 
@@ -109,11 +64,12 @@ export default function EditBoard() {
     setFileError(false);
   };
 
-  // Eliminar archivo
+
   const handleDeleteFile = () => {
     setValue("files", []);
   };
 
+  //PATCH request to update NRC codes for a given student.
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
@@ -134,7 +90,8 @@ export default function EditBoard() {
     }
   };
 
-  const updateStudentBasics = async ({id, email}: { id: string; firstName: string; lastName: string; email: string; studentCode: string }) => {
+  //PATCH request to update basic student information (email).
+  const updateStudentBasics = async ({id, email}: { id: string; email: string }) => {
     const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}/members/${id}`, {
       method: "PATCH",
       credentials: "include",
@@ -147,6 +104,7 @@ export default function EditBoard() {
     return response.json();
   };
 
+  //Fetches full team data (including videogame details) from the backend.
   const getInfoEquipo = async () => {
     const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
       method: 'GET',
@@ -172,6 +130,8 @@ export default function EditBoard() {
     return dataInfoEquipo
   }
 
+
+  //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
   async function uploadInfoTeam() {
     console.log('ID DEL USUARIO: ', infoEditEquipo.id)
     const uploadedFileUrls = []
@@ -182,44 +142,59 @@ export default function EditBoard() {
       uploadedFileUrls.push(urlResult.url);
     }
   
-      try {
-        console.log("url de la imagen", uploadedFileUrls[0])
+    try {
+      console.log("url de la imagen", uploadedFileUrls[0])
+      const payload = {
+        teamName: infoEditEquipo.teamName,
+        videogameName: infoEditEquipo.videogameName,
+        description: infoEditEquipo.description,
+        logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
+        videoUrl: infoEditEquipo.videoUrl,
+        repoUrl: infoEditEquipo.repoUrl
+      };
   
-        const payload = {
-          teamName: infoEditEquipo.teamName,
-          videogameName: infoEditEquipo.videogameName,
-          description: infoEditEquipo.description,
-          logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
-          videoUrl: infoEditEquipo.videoUrl,
-          repoUrl: infoEditEquipo.repoUrl
-        };
-  
-        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-    })
+      const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
 
-        if (!response.ok) {
-          toast.error("Hubo un error al actualizar los datos.")
-          throw new Error ('Error')
-        } else {
-          const dataEquipo = await getInfoEquipo()
-          setInfoEquipo(dataEquipo)
-          setInfoEditEquipo(dataEquipo)
-
-          toast.success("El cambio se hizo de manera satisfactoria.")
-        }
-  
-      } catch (error) {
-        toast.error('Lo sentimos, ocurrió un error inesperado')
-        console.error('Los sentimos: ', error)
+      if (!response.ok) {
+        toast.error("Hubo un error al actualizar los datos.")
+        throw new Error ('Error')
+      } else {
+        const dataEquipo = await getInfoEquipo()
+        setInfoEquipo(dataEquipo)
+        setInfoEditEquipo(dataEquipo)
+        toast.success("El cambio se hizo de manera satisfactoria.")
       }
+    } catch (error) {
+      toast.error('Lo sentimos, ocurrió un error inesperado')
+      console.error('Los sentimos: ', error)
     }
+  }
 
-  useEffect(() => {
-    
+  function handleSaveNrcs(
+    editStudent: Student | null,
+    editNrcs: string[],
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>,
+    setEditStudent: (s: Student | null) => void
+  ) {
+    if (editStudent) {
+      setStudents(students =>
+        students.map(s =>
+          s.id === editStudent.id ? { ...s, nrcs: editNrcs } : s
+        )
+      );
+      updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
+      toast.success("Datos actualizados", { style: { background: "#22c55e", color: "#fff" } });
+      setEditStudent(null);
+    }
+  }
+  
+  //Fetches both team and member data when the component mounts.
+  useEffect(() => {  
     const fetchData = async () => {
       const dataEquipo = await getInfoEquipo()
       setInfoEquipo(dataEquipo)
@@ -227,7 +202,6 @@ export default function EditBoard() {
       setLoading(true);
 
       try {
-        // Reemplaza estas URLs por las de tu backend
         const studentsRes = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
           method: "GET",
           credentials: "include",
@@ -238,7 +212,6 @@ export default function EditBoard() {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         })
-
 
         if (!studentsRes.ok || !nrcsRes.ok) throw new Error("Error al cargar datos");
 
@@ -262,12 +235,10 @@ export default function EditBoard() {
             studentCode: s.studentCode,
           }))
         )
-
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -275,459 +246,42 @@ export default function EditBoard() {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
   }
 
-  function handleSaveNrcs(
-    editStudent: Student | null,
-    editNrcs: string[],
-    setStudents: React.Dispatch<React.SetStateAction<Student[]>>,
-    setEditStudent: (s: Student | null) => void
-  ) {
-    if (editStudent) {
-      setStudents(students =>
-        students.map(s =>
-          s.id === editStudent.id ? { ...s, nrcs: editNrcs } : s
-        )
-      );
-      updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
-      toast.success("Datos actualizados", { style: { background: "#22c55e", color: "#fff" } });
-      setEditStudent(null);
-    }
-  }
-
-
-
   return (
     <div className="w-full min-w-[400px] max-w-3xl mx-auto p-4 space-y-[40px]">
-      <Card className="w-full shadow-sm border pb-4">
-        <CardHeader className="pt-6">
-          <CardTitle className="text-lg font-medium text-foreground mb-6 w-full">
-            Estudiantes del equipo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-2 text-left">Nombre</th>
-                  <th className="py-2 px-2 text-left">NRCs</th>
-                  <th className="py-2 px-2 text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id} className="border-b hover:bg-muted transition-colors">
-                    <td className="py-2 px-2">{student.name}</td>
-                    <td className="py-2 px-2">
-                      <div className="flex flex-wrap gap-2">
-                        {student.nrcs.map((nrc) => {
-                          const nrcObj = nrcOptions.find(opt => opt.code === nrc)
-                          return (
-                            <span
-                              key={nrc}
-                              className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-accent"
-                            >
-                              {nrcObj ? `${nrcObj.code}` : nrc}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </td>
-                    <td className="py-2 px-2 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditStudent(student)
-                          setEditNrcs(student.nrcs)
-                          setEditFirstName(student.firstName || "");
-                          setEditLastName(student.lastName || "");
-                          setEditEmail(student.email || "");
-                          setEditStudentCode(student.studentCode || "");
-                        }}
-                      >
-                        <Pencil className="w-4 h-4 mr-1" />
-                        Editar información
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <TeamMembers 
+        students={students} 
+        setStudents={setStudents} 
+        editStudent={editStudent}
+        setEditStudent={setEditStudent}
+        editNrcs={editNrcs}
+        setEditNrcs={setEditNrcs}
+        editFirstName={editFirstName}
+        setEditFirstName={setEditFirstName}
+        editLastName={editLastName}
+        setEditLastName={setEditLastName}
+        editEmail={editEmail}
+        setEditEmail={setEditEmail}
+        editStudentCode={editStudentCode}
+        setEditStudentCode={setEditStudentCode}
+        nrcOptions={nrcOptions}
+        setNrcOptions={setNrcOptions}
+        searchNrc={searchNrc}
+        setSearchNrc={setSearchNrc}
+        updateStudentBasics={updateStudentBasics}
+        handleSaveNrcs={handleSaveNrcs}
+      />
 
-      {/* Dialog para editar NRCs */}
-      <Dialog open={!!editStudent} onOpenChange={open => !open && setEditStudent(null)}>
-        <DialogContent className="max-w-md w-full">
-          <DialogHeader>
-            <DialogTitle>Editar datos de {editStudent?.name}</DialogTitle>
-            <DialogDescription>
-              Edita los datos del estudiante y sus NRCs asignados.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* NUEVOS CAMPOS: ENCIMA DE LOS NRCs */}
-          <div className="space-y-3 mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <Label>Nombre</Label>
-                <Input
-                  value={editFirstName}
-                  disabled
-                  onChange={(e) => setEditFirstName(e.target.value)}
-                  placeholder="Nombre"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label>Apellido</Label>
-                <Input
-                  value={editLastName}
-                  disabled
-                  onChange={(e) => setEditLastName(e.target.value)}
-                  placeholder="Apellido"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <Label>Correo</Label>
-              <Input
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="usuario@uninorte.edu.co"
-              // Si este estudiante es el principal y debe bloquearse:
-              // disabled={editStudent?.isLeader === true}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <Label>Código estudiantil</Label>
-              <Input
-                value={editStudentCode}
-                disabled
-                onChange={(e) => setEditStudentCode(e.target.value.replace(/\D/g, ""))}
-                inputMode="numeric"
-                placeholder="1234567890"
-              />
-            </div>
-          </div>
-
-          {/* TUS CAMPOS EXISTENTES DE NRCs */}
-          <div className="space-y-4">
-            <label className="block text-sm font-medium">NRCs asignados</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {editNrcs.map((nrc) => {
-                const nrcObj = nrcOptions.find(opt => opt.code === nrc);
-                return (
-                  <span
-                    key={nrc}
-                    className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-accent"
-                  >
-                    {nrcObj ? `${nrcObj.code}` : nrc}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="ml-1 p-0.5 flex items-center justify-center cursor-pointer"
-                      style={{ lineHeight: 1, height: '1.5em', width: '1.5em' }}
-                      onClick={() => setEditNrcs(prev => prev.filter(code => code !== nrc))}
-                      aria-label="Eliminar NRC"
-                    >
-                      <span className="text-lg leading-none">×</span>
-                    </Button>
-                  </span>
-                );
-              })}
-            </div>
-
-            <label className="block text-sm font-medium">Agregar NRC</label>
-            <div>
-              <input
-                type="text"
-                placeholder="Buscar NRC"
-                className="w-full border rounded px-2 py-1 mb-2"
-                value={searchNrc}
-                onChange={e => setSearchNrc(e.target.value)}
-              />
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                {nrcOptions
-                  .filter(nrc => !editNrcs.includes(nrc.code) && String(nrc.code).includes(searchNrc))
-                  .map(nrc => (
-                    <Button
-                      key={nrc.code}
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => setEditNrcs(prev => prev.length >= 2 ? prev : [...prev, nrc.code])}
-                      disabled={editNrcs.length >= 2}
-                      title={editNrcs.length >= 2 ? "Máximo 2 NRCs" : undefined}
-                    >
-                      {nrc.code}
-                    </Button>
-                  ))}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditStudent(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={async () => {
-                // Validaciones mínimas
-                if (!editFirstName.trim() || !editLastName.trim()) {
-                  toast.error("Nombre y apellido son obligatorios");
-                  return;
-                }
-                if (!editEmail.trim()) {
-                  toast.error("El correo es obligatorio");
-                  return;
-                }
-                if (!/^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(editEmail)) {
-                  toast.error("El correo debe ser @uninorte.edu.co");
-                  return;
-                }
-                if (!editStudentCode.trim()) {
-                  toast.error("Código estudiantil obligatorio");
-                  return;
-                }
-                if (editNrcs.length === 0) {
-                  toast.error("Debes asignar al menos un NRC", { style: { background: "#ef4444", color: "#fff" } });
-                  return;
-                }
-                if (editNrcs.length > 2) {
-                  toast.error("No puedes asignar más de 2 NRCs", { style: { background: "#ef4444", color: "#fff" } });
-                  return;
-                }
-
-                try {
-                  // 1) Actualiza datos básicos
-                  if (editStudent) {
-                    await updateStudentBasics({
-                      id: editStudent.id,
-                      firstName: editFirstName.trim(),
-                      lastName: editLastName.trim(),
-                      email: editEmail.trim(),
-                      studentCode: editStudentCode.trim(),
-                    });
-
-                    // refresca en memoria local
-                    setStudents(prev =>
-                      prev.map(s =>
-                        s.id === editStudent.id
-                          ? {
-                            ...s,
-                            name: `${editFirstName.trim()} ${editLastName.trim()}`,
-                            firstName: editFirstName.trim(),
-                            lastName: editLastName.trim(),
-                            email: editEmail.trim(),
-                            studentCode: editStudentCode.trim(),
-                          }
-                          : s
-                      )
-                    );
-                  }
-
-                  // 2) Actualiza NRCs
-                  handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
-                } catch (err: any) {
-                  console.error(err);
-                  toast.error(err?.message || "No se pudo actualizar el estudiante");
-                }
-              }}
-            >
-              Guardar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-
-      <Card className="w-full shadow-sm border pb-4 bg-transparent py-5 md:p-10">
-        <CardContent>
-          <div className="flex flex-col justify-center space-x-5 space-y-5">
-            <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">
-              <img src={infoEditEquipo.logoUrl || "#"} alt="Logo del equipo" className="w-[60px] h-[60px] bg-cover rounded-[20px]"/>
-              <div>
-                <h2 className="font-bold text-[20px]">
-                  {infoEquipo.videogameName.toUpperCase()}
-                </h2>
-                <h3 className="font-medium">{infoEquipo.teamName}</h3>
-              </div>
-            </div>
-            <div className="w-full">
-              <p className="text-[12px] mt-3 text-center">
-                {infoEquipo.description}
-              </p>
-            </div>
-            <div className="flex justify-center items-center w-full space-x-5 border-t-1 p-5">
-              <a href={infoEquipo.repoUrl} target="_blank">
-                <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
-              </a>
-              <a href={infoEquipo.videoUrl} target="_blank">
-                <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
-              </a>
-            </div>
-          </div>
-          <Button className="w-full cursor-pointer" onClick={()=>setEdit(true)}>
-            Editar
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Dialog open={!!edit} onOpenChange={() => {!open; setEdit(null)}}>
-        <DialogContent  className="max-w-md w-full">
-          
-          <DialogHeader>
-            <DialogTitle>Editar equipo {infoEquipo?.teamName}</DialogTitle>
-            <DialogDescription>
-              Edita los datos del equipo y el juego.
-            </DialogDescription>
-          </DialogHeader>
-
-
-          <div className="space-y-8 mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <Label>Nombre del equipo</Label>
-                <Input
-                  value={infoEditEquipo?.teamName}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, teamName: e.target.value}))}
-                  placeholder="Nombre del equipo"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label>Nombre del juego</Label>
-                <Input
-                  value={infoEditEquipo.videogameName}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videogameName: e.target.value}))}
-                  placeholder="Mi juego"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label>Description</Label>
-              <Textarea className={"flex resize-none"} value={infoEditEquipo.description} onChange={(e) => setInfoEditEquipo((prev) => ({...prev, description: e.target.value}))} placeholder={"Escribe una descripción del juego"} style={{height:80}}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label>
-                Cambiar logo
-              </Label>
-              <div
-                  className="flex flex-col items-center justify-center rounded-md border border-dashed p-4 transition-colors hover:bg-muted/50 cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-              >
-                <CloudUpload className="h-8 w-8" />
-                <p>Arrastra o haz clic para seleccionar una imagen</p>
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Lista de archivos */}
-              {currentFiles.length > 0 && (
-                <div className="space-y-2 w-full contain-inline-size">
-                  
-                  {currentFiles.map((file, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 rounded-md border p-2"
-                    >
-                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md">
-                      <img
-                        src={
-                          URL.createObjectURL(file) || "/placeholder.svg"
-                        }
-                        alt={file.name}
-                        className="h-full w-full"
-                      />
-                    </div>
-                    <div className="flex-1 truncate">
-                      <div className="text-sm font-medium">{file.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </div>
-                      </div>
-                      <Button
-                        variant="home"
-                        size="icon"
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFile();
-                        }}
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {fileError && (
-                <p className="text-red-500 text-sm mt-1">
-                  La imagen debe ser cuadrada (1:1)
-                </p>
-              )}
-
-              {currentFiles.length === 0 && (
-                <p className="pt-2 text-xs text-muted-foreground">
-                  No hay archivos seleccionados.
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <Label>Vídeo de youtube</Label>
-                <Input
-                  value={infoEditEquipo?.videoUrl}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videoUrl: e.target.value}))}
-                  placeholder="https://youtube..."
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label>Repositorio Github</Label>
-                <Input
-                  value={infoEditEquipo.repoUrl}
-                  onChange={(e) => setInfoEditEquipo((prev) => ({...prev, repoUrl: e.target.value}))}
-                  placeholder="https://github..."
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={async () => { setInfoEditEquipo(infoEquipo); handleDeleteFile(); setEdit(false) }}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={async () => { 
-              await uploadInfoTeam();
-              await setInfoEquipo(infoEditEquipo); 
-              setEdit(false)}}>
-              Guardar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <ImageCropper
-              file={selectedFile}
-              open={cropperOpen}
-              onClose={() => setCropperOpen(false)}
-              onCropComplete={handleCroppedImage}
-            />
+      <TeamVideogame 
+        edit={edit} setEdit={setEdit}
+        infoEquipo={infoEquipo} setInfoEquipo={setInfoEquipo}
+        infoEditEquipo={infoEditEquipo} setInfoEditEquipo={setInfoEditEquipo}
+        fileInputRef={fileInputRef}
+        currentFiles={currentFiles}
+        fileError={fileError} setFileError={setFileError}
+        selectedFile={selectedFile} setSelectedFile={setSelectedFile}
+        cropperOpen={cropperOpen} setCropperOpen={setCropperOpen}
+        handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
+      />
     </div>
   )
 }
