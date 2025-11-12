@@ -12,6 +12,7 @@ export default function TeamVideogame (
         fileError, setFileError,
         selectedFile, setSelectedFile,
         cropperOpen, setCropperOpen, 
+        additionalImages, setAdditionalImages,
         handleFileChange, handleDeleteFile, uploadInfoTeam, handleCroppedImage 
     } : TeamVideogameProps) {
     return (
@@ -31,6 +32,7 @@ export default function TeamVideogame (
                 fileError={fileError} setFileError={setFileError}
                 selectedFile={selectedFile} setSelectedFile={setSelectedFile}
                 cropperOpen={cropperOpen} setCropperOpen={setCropperOpen}
+                additionalImages={additionalImages} setAdditionalImages={setAdditionalImages}
                 handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
             />
         </>

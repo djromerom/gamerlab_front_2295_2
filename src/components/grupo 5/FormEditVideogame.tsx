@@ -1,12 +1,18 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CloudUpload } from "lucide-react"
+import { CloudUpload, X } from "lucide-react"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { Textarea } from "../ui/textarea"
 import { ImageCropper } from "../grupo 11/ImageCropper"
 
 import { TeamVideogameProps } from "@/types/teamVideogames";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
+import { useFormContext } from "react-hook-form"
+import { useEffect, useRef, useState } from "react"
+import { useMultiForm } from "@/contexts/MultiFormContext"
+import { CombinedFormValues } from "@/lib/schemas"
+import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
 
 export default function FormEditVideogame (
     {
@@ -18,12 +24,70 @@ export default function FormEditVideogame (
         fileError, 
         selectedFile, 
         cropperOpen, setCropperOpen, 
+        additionalImages, setAdditionalImages,
         handleFileChange, handleDeleteFile, uploadInfoTeam, handleCroppedImage 
     } : TeamVideogameProps) {
+    
+    const [isDragOver, setIsDragOver] = useState(false); 
+    const fileInputRefImages = useRef<HTMLInputElement | null>(null);
+
+    // Procesar archivos (común para click y drag & drop) 
+
+    const processFiles = (files: FileList | File[]) => { 
+        const newFiles = Array.from(files).filter(file => file.type.startsWith('image/')); 
+        const totalFiles = additionalImages.length + newFiles.length; 
+        if (totalFiles > 5) { 
+            alert("Máximo 5 fotos permitidas"); 
+            return; 
+        } 
+        setAdditionalImages(prev => [...prev, ...newFiles])
+    }; 
+
+    // Manejar la selección de archivos 
+    const handleFileChangeImages = (e: React.ChangeEvent<HTMLInputElement>) => { 
+        const files = e.target.files; 
+        console.log('Esta es una imagen: ', files)
+        if (!files || files.length === 0) return; 
+        processFiles(files); 
+        e.target.value = ""; 
+
+        console.log("Estas son las nuevas imagenes", additionalImages)
+    }; 
+    
+    // Manejar drag & drop 
+    const handleDragOver = (e: React.DragEvent) => { 
+        e.preventDefault(); 
+        setIsDragOver(true); 
+    }; 
+    
+    
+    const handleDragLeave = (e: React.DragEvent) => { 
+        e.preventDefault(); 
+        setIsDragOver(false); 
+    }; 
+    
+    const handleDrop = (e: React.DragEvent) => { 
+        e.preventDefault(); 
+        setIsDragOver(false); 
+        const files = Array.from(e.dataTransfer.files); 
+        processFiles(files); 
+    }; 
+
+ 
+
+    // Eliminar archivo específico 
+    const handleDeleteFileImage = (index: number) => { 
+        setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+    }; 
+
+    useEffect(() => {
+  console.log("✅ Nuevas imágenes guardadas:", additionalImages);
+}, [additionalImages]);
+
     return (
         <>
             <Dialog open={!!edit} onOpenChange={() => {!open; setEdit(null)}}>
-                <DialogContent  className="max-w-md w-full">
+                <DialogContent className="self-center w-full m-auto max-h-[80vh] overflow-y-auto">
                 
                     <DialogHeader>
                         <DialogTitle>Editar equipo {infoEquipo?.teamName}</DialogTitle>
@@ -146,12 +210,76 @@ export default function FormEditVideogame (
                                 />
                             </div>
                         </div>
+
+
+                        {/*IMÁGENES ADICIONALES HASTA 5*/}
+                        {/* 📸 Imágenes adicionales */}
+                        <div className="space-y-4">
+                            <Label>Fotos del proyecto</Label>
+                            <p className="text-sm text-gray-500">
+                                Sube hasta 5 fotos que muestren tu videojuego.
+                            </p>
+
+                            <div className={`flex flex-col items-center justify-center rounded-md border border-dashed p-6 transition-colors cursor-pointer 
+                                ${
+                                    isDragOver ? "border-[#AC7CFF] bg-[#AC7CFF]/10" : "hover:bg-muted/50"
+                                }`}
+                                onClick={() => fileInputRefImages.current?.click()}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                <CloudUpload className="h-8 w-8 mb-2 text-gray-400" />
+                                <p className="text-center text-sm text-gray-600">
+                                    Haz clic para subir una imagen
+                                </p>
+                                <Input
+                                    ref={fileInputRefImages}
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleFileChangeImages}
+                                    className="hidden"
+                                />
+                            </div>
+                        
+                            {additionalImages.length > 0 ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                    {additionalImages.map((file, index) => (
+                                        <div key={index} className="relative group">
+                                            <div className="aspect-video overflow-hidden rounded-lg border">
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt={`Preview ${index + 1}`}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => handleDeleteFileImage(index)}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                            <p className="text-xs text-center mt-1 truncate">{file.name}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground text-center">
+                                    No hay fotos seleccionadas.
+                                </p>
+                            )}
+            
+                        </div>
                     </div>
 
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={async () => { setInfoEditEquipo(infoEquipo); handleDeleteFile(); setEdit(false) }}
+                            onClick={ ()=>setEdit(false) }
                         >
                             Cancelar
                         </Button>

@@ -38,7 +38,7 @@ export default function EditBoard() {
   //Team videogame information
   const [loading, setLoading] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
-  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '' })
+  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
 
   //Manage image
   const { setValue, watch } = useForm<CombinedFormValues>();
@@ -47,6 +47,7 @@ export default function EditBoard() {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState(false);
+  const [ additionalImages, setAdditionalImages ] = useState<File[]>([])
 
 
   //Triggered when a new file is selected.
@@ -124,23 +125,31 @@ export default function EditBoard() {
       description: data.videogame.description,
       logoUrl: data.videogame.logoUrl,
       videoUrl: data.videogame.videoUrl,
-      repoUrl: data.videogame.repoUrl
+      repoUrl: data.videogame.repoUrl,
+      additionalImages: []
     }
     setInfoEquipo(dataInfoEquipo)
     return dataInfoEquipo
   }
 
-
   //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
   async function uploadInfoTeam() {
     console.log('ID DEL USUARIO: ', infoEditEquipo.id)
     const uploadedFileUrls = []
-      
     for (const file of currentFiles) {
       const uploadResult = await uploadImage(file);
       const urlResult = await getImageUrl(uploadResult.id);
       uploadedFileUrls.push(urlResult.url);
     }
+
+    const uploadedAdditional = []  
+    for (const file of additionalImages) {
+        const uploadResult = await uploadImage(file);
+        const urlResult = await getImageUrl(uploadResult.id);
+        uploadedAdditional.push(urlResult.url);
+    }
+
+    console.log('ESTAS SON LAS IMAGENES ADICIONALES: ', uploadedAdditional)
   
     try {
       console.log("url de la imagen", uploadedFileUrls[0])
@@ -150,7 +159,8 @@ export default function EditBoard() {
         description: infoEditEquipo.description,
         logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
         videoUrl: infoEditEquipo.videoUrl,
-        repoUrl: infoEditEquipo.repoUrl
+        repoUrl: infoEditEquipo.repoUrl,
+        additionalImages: uploadedAdditional
       };
   
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
@@ -280,6 +290,7 @@ export default function EditBoard() {
         fileError={fileError} setFileError={setFileError}
         selectedFile={selectedFile} setSelectedFile={setSelectedFile}
         cropperOpen={cropperOpen} setCropperOpen={setCropperOpen}
+        additionalImages={additionalImages} setAdditionalImages={setAdditionalImages}
         handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
       />
     </div>

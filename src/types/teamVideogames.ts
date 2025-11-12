@@ -6,6 +6,7 @@ export type Team = {
   logoUrl: string;
   videoUrl: string;
   repoUrl: string;
+  additionalImages: File[]
 }
 
 export interface TeamVideogameProps {
@@ -30,6 +31,9 @@ export interface TeamVideogameProps {
 
     cropperOpen: boolean,
     setCropperOpen: React.Dispatch<React.SetStateAction<boolean>>,
+
+    additionalImages: File[],
+    setAdditionalImages: React.Dispatch<React.SetStateAction<File[] | []>>,
 
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
     handleDeleteFile: () => void,
