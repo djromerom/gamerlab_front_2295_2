@@ -15,13 +15,17 @@ import { CloudUpload, X } from "lucide-react";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFormContext } from "react-hook-form";
 import type { CombinedFormValues } from "@/lib/schemas";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LinksStep() {
   const { back } = useMultiForm();
-  const { control, setValue, watch } = useFormContext<CombinedFormValues>();
+  const { control, setValue, watch, setError, clearErrors } = useFormContext<CombinedFormValues>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentFiles = watch("additionalFiles") || [];
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const SITE_KEY = `${import.meta.env.VITE_SITE_KEY}`;
 
   // Procesar archivos (común para click y drag & drop)
   const processFiles = (files: FileList | File[]) => {
@@ -68,6 +72,21 @@ export default function LinksStep() {
   const handleDeleteFile = (index: number) => {
     const updatedFiles = currentFiles.filter((_, i) => i !== index);
     setValue("additionalFiles", updatedFiles);
+  };
+
+  // Handle reCAPTCHA change - almacena solamente el token para validación en backend
+  const handleRecaptchaChange = (token: string | null) => {
+    if (!token) {
+      setError("recaptcha", {
+        type: "manual",
+        message: "Por favor, complete la verificación de reCAPTCHA",
+      });
+      return;
+    }
+
+    // Simplemente almacenamos el token para enviarlo al backend
+    setValue("recaptcha", token);
+    clearErrors("recaptcha");
   };
 
   return (
@@ -198,6 +217,27 @@ export default function LinksStep() {
                     No hay fotos seleccionadas.
                   </p>
                 )}
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="recaptcha"
+        render={() => (
+          <FormItem>
+            <FormLabel>Verificación de seguridad</FormLabel>
+            <FormControl>
+              <div>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  className="cursor-pointer"
+                  sitekey={SITE_KEY}
+                  onChange={handleRecaptchaChange}
+                />
               </div>
             </FormControl>
             <FormMessage />

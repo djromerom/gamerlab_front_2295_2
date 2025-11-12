@@ -3,7 +3,6 @@
 import type React from "react";
 
 import { useState, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
 import {
   FormControl,
   FormField,
@@ -22,13 +21,11 @@ import { ImageCropper } from "./ImageCropper";
 
 export default function GameStep() {
   const { back, next } = useMultiForm();
-  const { control, setValue, watch, setError, clearErrors, getValues } =
+  const { control, setValue, watch, setError, clearErrors } =
     useFormContext<CombinedFormValues>();
   const [fileError, setFileError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentFiles = watch("files") || [];
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
-  const SITE_KEY = `${import.meta.env.VITE_SITE_KEY}`;
 
   // Estado para el modal de recorte
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -121,21 +118,6 @@ export default function GameStep() {
   // Eliminar archivo
   const handleDeleteFile = () => {
     setValue("files", []);
-  };
-
-  // Handle reCAPTCHA change - almacena solamente el token para validación en backend
-  const handleRecaptchaChange = (token: string | null) => {
-    if (!token) {
-      setError("recaptcha", {
-        type: "manual",
-        message: "Por favor, complete la verificación de reCAPTCHA",
-      });
-      return;
-    }
-
-    // Simplemente almacenamos el token para enviarlo al backend
-    setValue("recaptcha", token);
-    clearErrors("recaptcha");
   };
 
   return (
@@ -312,27 +294,6 @@ export default function GameStep() {
                     No hay archivos seleccionados.
                   </p>
                 )}
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="recaptcha"
-        render={() => (
-          <FormItem>
-            <FormLabel>Verificación de seguridad</FormLabel>
-            <FormControl>
-              <div>
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  className="cursor-pointer"
-                  sitekey={SITE_KEY}
-                  onChange={handleRecaptchaChange}
-                />
               </div>
             </FormControl>
             <FormMessage />
