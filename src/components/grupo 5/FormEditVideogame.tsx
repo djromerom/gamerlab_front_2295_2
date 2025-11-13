@@ -119,8 +119,17 @@ export default function FormEditVideogame (
 
                         <div className="flex flex-col gap-2">
                             <Label>Description</Label>
-                            <Textarea className={"flex resize-none"} value={infoEditEquipo.description} onChange={(e) => setInfoEditEquipo((prev) => ({...prev, description: e.target.value}))} placeholder={"Escribe una descripción del juego"} style={{height:80}}
+                            <Textarea 
+                                className={"flex resize-none"} 
+                                value={infoEditEquipo.description} 
+                                onChange={(e) => setInfoEditEquipo((prev) => ({...prev, description: e.target.value}))} 
+                                placeholder={"Escribe una descripción del juego"} 
+                                style={{height:80}}
+                                maxLength={300}
                             />
+                            <div className="flex justify-end mt-1 text-xs text-muted-foreground">
+                                {infoEditEquipo.description?.length || 0}/300 caracteres
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-2">
