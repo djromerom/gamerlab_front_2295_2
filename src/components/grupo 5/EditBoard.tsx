@@ -37,6 +37,7 @@ export default function EditBoard() {
 
   //Team videogame information
   const [loading, setLoading] = useState(false)
+  const [loadingForm, setLoadingForm] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
   const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
 
@@ -134,24 +135,25 @@ export default function EditBoard() {
 
   //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
   async function uploadInfoTeam() {
+    setLoadingForm(true)
     console.log('ID DEL USUARIO: ', infoEditEquipo.id)
-    const uploadedFileUrls = []
-    for (const file of currentFiles) {
-      const uploadResult = await uploadImage(file);
-      const urlResult = await getImageUrl(uploadResult.id);
-      uploadedFileUrls.push(urlResult.url);
-    }
-
-    const uploadedAdditional = []  
-    for (const file of additionalImages) {
+  
+    try {
+      const uploadedFileUrls = []
+      const uploadedAdditional = []
+      
+      for (const file of currentFiles) {
+        const uploadResult = await uploadImage(file);
+        const urlResult = await getImageUrl(uploadResult.id);
+        uploadedFileUrls.push(urlResult.url);
+      }
+      for (const file of additionalImages) {
         const uploadResult = await uploadImage(file);
         const urlResult = await getImageUrl(uploadResult.id);
         uploadedAdditional.push(urlResult.url);
-    }
-
-    console.log('ESTAS SON LAS IMAGENES ADICIONALES: ', uploadedAdditional)
-  
-    try {
+      }
+      
+      console.log('ESTAS SON LAS IMAGENES ADICIONALES: ', uploadedAdditional)
       console.log("url de la imagen", uploadedFileUrls[0])
       const payload = {
         teamName: infoEditEquipo.teamName,
@@ -171,17 +173,19 @@ export default function EditBoard() {
       })
 
       if (!response.ok) {
-        toast.error("Hubo un error al actualizar los datos.")
+        toast.error("Hubo un error al actualizar los datos.", { id: 777 })
         throw new Error ('Error')
       } else {
         const dataEquipo = await getInfoEquipo()
         setInfoEquipo(dataEquipo)
         setInfoEditEquipo(dataEquipo)
-        toast.success("El cambio se hizo de manera satisfactoria.")
+        toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
       }
     } catch (error) {
-      toast.error('Lo sentimos, ocurrió un error inesperado')
+      toast.error(`Ocurrió un error: ${error}`, { id: 777 })
       console.error('Los sentimos: ', error)
+    } finally {
+      setLoadingForm(false)
     }
   }
 
@@ -254,6 +258,10 @@ export default function EditBoard() {
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
+  }
+
+  if (loadingForm) {
+    toast.loading("Subiendo datos...", { id: 777 })
   }
 
   return (
