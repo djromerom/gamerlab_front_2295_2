@@ -85,7 +85,6 @@ export default function EditBoard() {
         throw new Error('Error al actualizar los NRCs del estudiante');
       }
       const data = await response.json();
-      console.log('Estudiante actualizado:', data);
       return data;
     } catch (error) {
       console.error('Error en PATCH:', error);
@@ -118,7 +117,6 @@ export default function EditBoard() {
       throw new Error("Error al obtener los datos del equipo")
     }
     const data = await response.json()
-    console.log(data)
     const dataInfoEquipo = {
       id: data.id,
       teamName: data.teamName,
@@ -136,7 +134,6 @@ export default function EditBoard() {
   //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
   async function uploadInfoTeam() {
     setLoadingForm(true)
-    console.log('ID DEL USUARIO: ', infoEditEquipo.id)
   
     try {
       const uploadedFileUrls = []
@@ -153,8 +150,6 @@ export default function EditBoard() {
         uploadedAdditional.push(urlResult.url);
       }
       
-      console.log('ESTAS SON LAS IMAGENES ADICIONALES: ', uploadedAdditional)
-      console.log("url de la imagen", uploadedFileUrls[0])
       const payload = {
         teamName: infoEditEquipo.teamName,
         videogame: {

@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button"
 import { CloudUpload, X } from "lucide-react"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
-import { Textarea } from "../ui/textarea"
 import { ImageCropper } from "../grupo 11/ImageCropper"
 
 import { TeamVideogameProps } from "@/types/teamVideogames";
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 
 export default function FormEditVideogame (
     {
@@ -42,12 +41,9 @@ export default function FormEditVideogame (
     // Manejar la selección de archivos 
     const handleFileChangeImages = (e: React.ChangeEvent<HTMLInputElement>) => { 
         const files = e.target.files; 
-        console.log('Esta es una imagen: ', files)
         if (!files || files.length === 0) return; 
         processFiles(files); 
         e.target.value = ""; 
-
-        console.log("Estas son las nuevas imagenes", additionalImages)
     }; 
     
     // Manejar drag & drop 
@@ -75,10 +71,6 @@ export default function FormEditVideogame (
     const handleDeleteFileImage = (index: number) => { 
         setAdditionalImages(prev => prev.filter((_, i) => i !== index))
     }; 
-
-    useEffect(() => {
-  console.log("✅ Nuevas imágenes guardadas:", additionalImages);
-}, [additionalImages]);
 
     return (
         <>
