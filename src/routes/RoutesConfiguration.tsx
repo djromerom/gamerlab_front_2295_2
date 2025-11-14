@@ -6,6 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
+import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
 import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
@@ -47,6 +48,7 @@ interface RouteConfig {
 
 const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
+  { path: "/auth-error", element: <AuthErrorPage /> },
   {
     path: "/profesor",
     element: <ProfessorPage />,
