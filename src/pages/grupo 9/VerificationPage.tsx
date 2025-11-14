@@ -91,6 +91,10 @@ export function VerifyEmailPage() {
   }, []);
 
 
+  const outlookLogin = () => {
+    window.location.href = `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/outlook-login`;
+  }
+
   useEffect(() => {
     const tokenFromUrl = searchParams.get("token");
 
@@ -314,6 +318,15 @@ export function VerifyEmailPage() {
               ) : (
                 "Guardar Contraseña y Continuar"
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2 cursor-pointer"
+              onClick={outlookLogin}
+              disabled={status === "submitting_password"}
+            >
+              Iniciar sesión con Outlook
             </Button>
           </form>
         );
