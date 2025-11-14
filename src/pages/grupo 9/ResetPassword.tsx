@@ -338,7 +338,7 @@ export default function ResetPassword() {
                             href="/login"
                             className="text-blue-600 hover:underline dark:text-blue-400 font-medium cursor-pointer"
                             >
-                                Iniciar sesión
+                                Iniciar Sesión
                             </a>
                         </p>
                     </div>

@@ -183,7 +183,7 @@ export default function LoginPage() {
                   onClick={outlookLogin}
                   disabled={isSubmitting}
                 >
-                  Iniciar sesión con Outlook
+                  Iniciar Sesión con Outlook
                 </Button>
               </div>
             </form>

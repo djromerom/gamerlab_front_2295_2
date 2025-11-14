@@ -326,7 +326,7 @@ export function VerifyEmailPage() {
               onClick={outlookLogin}
               disabled={status === "submitting_password"}
             >
-              Iniciar sesión con Outlook
+              Iniciar Sesión con Outlook
             </Button>
           </form>
         );
@@ -378,7 +378,7 @@ export function VerifyEmailPage() {
                   href="/login"
                   className="text-blue-600 hover:underline dark:text-blue-400 font-medium cursor-pointer"
                 >
-                  Iniciar sesión
+                  Iniciar Sesión
                 </a>
               </p>
             </div>
