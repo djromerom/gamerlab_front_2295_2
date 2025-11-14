@@ -157,12 +157,14 @@ export default function EditBoard() {
       console.log("url de la imagen", uploadedFileUrls[0])
       const payload = {
         teamName: infoEditEquipo.teamName,
-        videogameName: infoEditEquipo.videogameName,
-        description: infoEditEquipo.description,
-        logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
-        videoUrl: infoEditEquipo.videoUrl,
-        repoUrl: infoEditEquipo.repoUrl,
-        additionalImages: uploadedAdditional
+        videogame: {
+          vgName: infoEditEquipo.videogameName,
+          description: infoEditEquipo.description,
+          logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
+          videoUrl: infoEditEquipo.videoUrl,
+          repoUrl: infoEditEquipo.repoUrl,
+          additionalImages: uploadedAdditional
+        }
       };
   
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
