@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FaGithubAlt, FaYoutube } from "react-icons/fa"
 import { Team } from "@/types/teamVideogames"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 export default function CardTeamVideogame ({ infoEquipo, infoEditEquipo, setEdit } : {infoEquipo: Team, infoEditEquipo: Team, setEdit: React.Dispatch<React.SetStateAction<boolean | null>>}) {
     return (
@@ -9,7 +10,11 @@ export default function CardTeamVideogame ({ infoEquipo, infoEditEquipo, setEdit
             <CardContent>
                 <div className="flex flex-col justify-center space-x-5 space-y-5">
                     <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">
-                        <img src={infoEditEquipo.logoUrl || "#"} alt="Logo del equipo" className="w-[60px] h-[60px] bg-cover rounded-[20px]"/>
+                        <Avatar className="w-[60px] h-[60px] bg-cover rounded-[20px]">
+                            <AvatarImage src={infoEditEquipo.logoUrl || "/placeholder.svg"} alt={infoEquipo.teamName} />
+                            <AvatarFallback>{infoEquipo.videogameName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        
                         <div>
                             <h2 className="font-bold text-[20px]">
                                 {infoEquipo.videogameName.toUpperCase()}

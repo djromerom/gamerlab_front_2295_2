@@ -7,12 +7,7 @@ import { Textarea } from "../ui/textarea"
 import { ImageCropper } from "../grupo 11/ImageCropper"
 
 import { TeamVideogameProps } from "@/types/teamVideogames";
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
-import { useFormContext } from "react-hook-form"
 import { useEffect, useRef, useState } from "react"
-import { useMultiForm } from "@/contexts/MultiFormContext"
-import { CombinedFormValues } from "@/lib/schemas"
-import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
 
 export default function FormEditVideogame (
     {
@@ -28,6 +23,7 @@ export default function FormEditVideogame (
         handleFileChange, handleDeleteFile, uploadInfoTeam, handleCroppedImage 
     } : TeamVideogameProps) {
     
+    const MAX_DESCRIPTION = 300;
     const [isDragOver, setIsDragOver] = useState(false); 
     const fileInputRefImages = useRef<HTMLInputElement | null>(null);
 
@@ -118,17 +114,19 @@ export default function FormEditVideogame (
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label>Description</Label>
-                            <Textarea 
-                                className={"flex resize-none"} 
+                            <Label htmlFor="description">Descripción</Label>
+                            <textarea 
+                                id="description"
+                                className={"flex h-[120px] resize-none border-2 rounded-[10px] p-2 overflow-hidden"} 
                                 value={infoEditEquipo.description} 
                                 onChange={(e) => setInfoEditEquipo((prev) => ({...prev, description: e.target.value}))} 
                                 placeholder={"Escribe una descripción del juego"} 
-                                style={{height:80}}
-                                maxLength={300}
+                                
+                                aria-describedby="description-counter"
+                                maxLength={MAX_DESCRIPTION}
                             />
-                            <div className="flex justify-end mt-1 text-xs text-muted-foreground">
-                                {infoEditEquipo.description?.length || 0}/300 caracteres
+                            <div id="description-counter" aria-live="polite" className="flex justify-end mt-1 text-xs text-muted-foreground">
+                                {infoEditEquipo.description?.length || 0}/{MAX_DESCRIPTION} caracteres
                             </div>
                         </div>
 
@@ -141,7 +139,7 @@ export default function FormEditVideogame (
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <CloudUpload className="h-8 w-8" />
-                                <p>Arrastra o haz clic para seleccionar una imagen</p>
+                                <p>Haz clic para seleccionar una imagen</p>
                                 <Input
                                 ref={fileInputRef}
                                 type="file"
