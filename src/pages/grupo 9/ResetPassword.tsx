@@ -154,9 +154,9 @@ export default function ResetPassword() {
             }
 
             setStatus("success");
-            const successMessage = "¡Contraseña establecida con éxito! Serás redirigido a iniciar sesión.";
+            const successMessage = "¡Contraseña establecida con éxito! Serás redirigido a Iniciar Sesión.";
             setMessage(successMessage);
-            toast.success("Contraseña establecida.");
+            toast.success("Contraseña Establecida.");
 
             setTimeout(() => {
                 navigate("/login");
