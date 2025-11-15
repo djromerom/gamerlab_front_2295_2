@@ -184,7 +184,7 @@ function buildPayload(
     videogame: {
       vgName: data.videojuego.nombre,
       description: data.videojuego.descripcion,
-      logoURL: uploadedUrls[0] || data.videojuego.logo_url || "",
+      logoUrl: uploadedUrls[0] || data.videojuego.logo_url || "",
       videoDemoUrl: data.videojuego.video_demo_url || "",
     },
     isExternal: data.isExternal,

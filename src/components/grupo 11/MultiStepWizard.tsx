@@ -158,7 +158,7 @@ export default function MultiStepWizard() {
         videogame: {
           vgName: data.gameName,
           description: data.description,
-          logoURL: uploadedFileUrls[0] || "",
+          logoUrl: uploadedFileUrls[0] || "",
           videoUrl: data.YoutubeUrl && data.YoutubeUrl.trim() !== "" ? data.YoutubeUrl.trim() : "",
           repoUrl: data.RepoUrl && data.RepoUrl.trim() !== "" ? data.RepoUrl.trim() : "",
           additionalImages: uploadedAdditionalFileUrls,
