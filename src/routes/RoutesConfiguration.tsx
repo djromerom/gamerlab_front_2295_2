@@ -31,6 +31,7 @@ import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
 import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 
 type Role =
   | "Profesor"
@@ -115,6 +116,11 @@ const routes: RouteConfig[] = [
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
+    path: "/equipos-inscritos",
+    element: <TeamsManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
     roles: ["Jurado"],
@@ -135,7 +141,7 @@ const routes: RouteConfig[] = [
     roles: ["Profesor"],
   },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
-
+  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -154,7 +160,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />, 
+    element: <HomeTeacherPage />,
     roles: ["Profesor"],
   },
   {

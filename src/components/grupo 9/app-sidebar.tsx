@@ -8,6 +8,7 @@ import {
   FileUser,
   Gavel,
   ChartLine,
+  Users,
 } from "lucide-react";
 import { NavUser } from "@/components/grupo 9/nav-user";
 import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
@@ -34,6 +35,7 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
+        { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
         {
           name: "Criterios de Calificación",
           url: "/criterios",
