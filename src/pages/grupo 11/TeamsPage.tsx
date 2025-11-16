@@ -179,8 +179,8 @@ export default function TeamsPage() {
           
           // Debug temporal: verificar estructura de los datos  
           if (team.id === 1) {
-            
-            
+            console.log("🔍 Estructura completa del team:", team);
+            console.log("🔍 Miembros del equipo:", teamMembers);
           }
           
           // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
@@ -201,8 +201,8 @@ export default function TeamsPage() {
               
               // Debug para el primer miembro del primer equipo
               if (team.id === 1 && teamMembers.indexOf(m) === 0) {
-                
-                
+                console.log("🔍 Estructura del primer miembro:", m);
+                console.log("🔍 Nombre completo construido:", fullName);
               }
               
               return fullName || 'Sin nombre';
@@ -430,7 +430,7 @@ const getVideoThumbnail = (videoUrl: string): string => {
     if (youtubeMatch && youtubeMatch[1]) {
       const videoId = youtubeMatch[1];
       // Usar miniatura de alta calidad de YouTube
-      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     }
     
     // Para otros servicios de video, usar placeholder
