@@ -35,7 +35,6 @@ export default function TeamVideogame (
                 additionalImages={additionalImages} setAdditionalImages={setAdditionalImages}
                 handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
             />
-            <h2 className="text-center">Puedes ver la información pública de tu videojuego <a href="/equipos" className="text-violet-700 hover:text-shadow-violet-300 hover:underline">aquí</a></h2>
         </>
     )
 }
