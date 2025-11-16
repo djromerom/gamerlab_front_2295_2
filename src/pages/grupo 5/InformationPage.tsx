@@ -342,15 +342,9 @@ export default function CompetitionInfo() {
               <div className="space-y-3 text-gray-300">
                 <div>
                   <h4 className="font-semibold text-white">
-                    Jornada AM - Por Definir
+                    Jornada AM - Jueves 27 de Noviembre
                   </h4>
-                  <p>Por Definir</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-white">
-                    Jornada PM - Por Definir
-                  </h4>
-                  <p>Por Definir</p>
+                  <p>08:30 a.m. - 12:30 p.m.</p>
                 </div>
               </div>
             </div>

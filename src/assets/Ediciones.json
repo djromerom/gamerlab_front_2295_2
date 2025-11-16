@@ -1,13 +1,13 @@
 [
     {
-        "titulo": "Titulo",
+        "titulo": "Feria Gamer 2025 - S1",
         "id": "2025-10",
         "año": 2025,
         "semestre": "Primer semestre",
         "nombre": "Feria Gamer 2024 - S1",
-        "fecha": "Marzo 2024",
+        "fecha": "Junio 2025",
         "descripcion": "Edición destacada por la integración de estudios indie y universidades locales.",
-        "Juegos Destacados": "Destacado 1;Destacado 2;Destacado 3;Destacado 4",
+        "Juegos Destacados": "EcoPlay;EcoLoops;Purge The Poison;Last Sigh",
         "alt": "Feria Gamer 2025-10",
         "podio": [
             {
@@ -32,19 +32,19 @@
         "enfoquesEducativos": [
             {
                 "titulo": "Medio Ambiental",
-                "descripcion": "Descripcion"
+                "descripcion": "Experiencias educativas que fomentan la conciencia ecológica, enseñando cómo nuestras acciones impactan el planeta y qué prácticas sostenibles podemos adoptar para proteger los recursos naturales y preservar los ecosistemas."
             }
         ]
     },
     {
-        "titulo": "Titulo",
+        "titulo": "Feria Gamer 2024 - S2",
         "id": "2024-30",
         "año": 2024,
         "semestre": "Segundo semestre",
         "nombre": "Feria Gamer 2024 - S2",
         "fecha": "Abril 2024",
-        "descripcion": "Innovacion y aprendizaje se fusionaron en la II Feria Gamer del Programa de Ingeniería de Software y Computacion de la Universidad Del Norte, evento donde los videojuegos se transformaron en Herramientas para educar sobre los peligros del mundo digital",
-        "descripcion2": "Estudiantes de primero a tercer semestre presentaron el jueves, 24 de abril de 2024, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
+        "descripcion": "Innovación y aprendizaje se fusionaron en la II Feria Gamer del Programa de Ingeniería de Software y Computación de la Universidad Del Norte, evento donde los videojuegos se transformaron en herramientas para educar sobre los peligros del mundo digital.",
+        "descripcion2": "Estudiantes de primer a tercer semestre presentaron el jueves, 24 de abril de 2024, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
         "Juegos Destacados": "Dulce y Burbujas;Leyendas de Papel, Páginas de Aventura;Carrot Mania;Musical Bubble Coffee",
         "alt": "Feria Gamer 2024-30",
         "podio": [

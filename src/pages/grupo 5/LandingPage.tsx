@@ -22,8 +22,8 @@ function Landing(): React.ReactElement {
     document.documentElement.classList.add("dark")
 
     // Check event status when component mounts
-    const startDate = new Date("2026-06-05T08:30:00")
-    const endDate = new Date("2026-06-05T12:30:00") 
+    const startDate = new Date("2025-11-27T08:30:00")
+    const endDate = new Date("2025-11-27T12:30:00") 
     const now = new Date()
 
     if (now >= endDate) {
@@ -67,7 +67,7 @@ function Landing(): React.ReactElement {
     }
   }, [])
 
-  const targetDate = new Date("2025-11-28T08:30:00")
+  const targetDate = new Date("2025-11-27T08:30:00")
   const navigate = useNavigate()
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT"
 
@@ -132,7 +132,7 @@ function Landing(): React.ReactElement {
           )}
 
           <h1 className="font-inter text-4xl sm:text-5xl xl:text-7xl font-bold">
-            Una muestra de videojuegos sin precedentes en Uninorte
+            Una muestra de videojuegos creativa e única en Uninorte
           </h1>
           <h2 className="text-2xl md:text-4xl font-medium tracking-tighter mt-4">Feria Gamer Uninorte</h2>
           <p className="text-lg md:text-xl mt-6 max-w-3xl">{getDescriptionText()}</p>
