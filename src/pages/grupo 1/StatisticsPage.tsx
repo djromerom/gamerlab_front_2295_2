@@ -42,8 +42,8 @@ export default function StatisticsPage() {
   // La página debe mostrar loading si está en carga inicial O si está cargando datos del contexto
   const shouldShowLoading = isPageLoading || isLoading;
 
-  console.log("Is loading:", isLoading);
-  console.log("Lista de videojuegos:", listaVideojuegos);
+  
+  
 
   const breadcrumbs = [{ label: "Estadisticas", href: "/estadisticas" }];
 

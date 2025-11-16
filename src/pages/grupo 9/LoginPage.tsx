@@ -99,7 +99,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="correo@uninorte.edu.co"
+                    placeholder="Ingresa tu correo"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -113,7 +113,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={show ? "text" : "password"}
-                      placeholder="miContraseña123!"
+                      placeholder="********"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required

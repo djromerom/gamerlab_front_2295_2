@@ -64,9 +64,9 @@ export default function MultiStepWizard() {
   }, []); // Empty dependency array = runs only once on mount
 
   async function onSubmit(data: CombinedFormValues) {
-    console.log("🚀 INICIO DEL SUBMIT - Datos completos:", data);
-    console.log("📁 Archivos del logo (files):", data.files?.length || 0, data.files);
-    console.log("🖼️ Archivos adicionales (additionalFiles):", data.additionalFiles?.length || 0, data.additionalFiles);
+    
+    
+    
 
     const res = await fetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
@@ -98,8 +98,8 @@ export default function MultiStepWizard() {
       } else {
         // Upload logo files (files)
         if (data.files && data.files.length > 0) {
-          console.log("Uploading logo files to Azure...");
-          console.log('TAMAÑO DEL LOGO:', data.files.length);
+          
+          
 
           for (const file of data.files) {
             const uploadResult = await uploadImage(file);
@@ -109,29 +109,29 @@ export default function MultiStepWizard() {
         }
 
         // Upload additional files (additionalFiles)
-        console.log("🔍 DEBUG - data.additionalFiles:", data.additionalFiles);
-        console.log("🔍 DEBUG - data.additionalFiles length:", data.additionalFiles?.length);
+        
+        
         
         if (data.additionalFiles && data.additionalFiles.length > 0) {
-          console.log("✅ Uploading additional files to Azure...");
-          console.log('TAMAÑO DE FOTOS ADICIONALES:', data.additionalFiles.length);
+          
+          
 
           for (let i = 0; i < data.additionalFiles.length; i++) {
             const file = data.additionalFiles[i];
-            console.log(`📁 Subiendo archivo adicional ${i + 1}:`, file.name, file.size);
+            
             
             const uploadResult = await uploadImage(file);
-            console.log(`✅ Upload result ${i + 1}:`, uploadResult);
+            
             
             const urlResult = await getImageUrl(uploadResult.id); 
-            console.log(`🔗 URL result ${i + 1}:`, urlResult);
+            
             
             uploadedAdditionalFileUrls.push(urlResult.url);
           }
           
-          console.log("🎯 URLs adicionales finales:", uploadedAdditionalFileUrls);
+          
         } else {
-          console.log("❌ No hay archivos adicionales para subir");
+          
         }
 
         if (uploadToastId) {
@@ -142,9 +142,9 @@ export default function MultiStepWizard() {
       }
 
       // Debug: Ver qué URLs se están enviando
-      console.log("🔍 DEBUG - URLs del logo:", uploadedFileUrls);
-      console.log("🔍 DEBUG - URLs adicionales:", uploadedAdditionalFileUrls);
-      console.log("🔍 DEBUG - Archivos adicionales originales:", data.additionalFiles);
+      
+      
+      
 
       const payload = {
         teamName: data.teamName,
@@ -166,7 +166,7 @@ export default function MultiStepWizard() {
         recaptchaToken: data.recaptcha,
       };
       
-      console.log("🔍 DEBUG - Payload completo:", JSON.stringify(payload, null, 2));
+      
 
       const response = await customFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,

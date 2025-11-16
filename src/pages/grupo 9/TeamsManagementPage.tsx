@@ -59,7 +59,7 @@ const TeamsManagementPage = () => {
 
       if (Array.isArray(apiResponse)) {
         // Si la respuesta es directamente un array (formato simple)
-        console.log("API returned simple array format, converting to paginated format");
+        
         dataRespond = {
           data: apiResponse,
           metadata: {
@@ -90,7 +90,7 @@ const TeamsManagementPage = () => {
 
         // Si no hay datos y es la primera página, mostrar datos de ejemplo
         if (dataRespond.data.length === 0 && page === 1) {
-          console.log("No teams found, showing example data");
+          
           const exampleData: PaginatedTeams = {
             data: [
               {

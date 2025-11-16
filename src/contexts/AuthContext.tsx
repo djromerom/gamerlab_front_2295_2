@@ -66,8 +66,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       const data = await res.json();
-      console.log("AuthContext: Respuesta de /auth/refresh:", res);
-      console.log("AuthContext: Datos de /auth/refresh:", data);
+      
+      
 
       if (data.accessToken && typeof data.accessToken === "string") {
         setAccessToken(data.accessToken);

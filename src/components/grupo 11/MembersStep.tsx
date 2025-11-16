@@ -122,7 +122,7 @@ export default function MembersStep() {
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            console.log(e)
+            
             /* Silently ignore error parsing error body */
           }
           throw new Error(errorMsg);
