@@ -397,7 +397,7 @@ export default function CompetitionInfo() {
     };
   }, []);
 //podio , top 1 top 2 y top 3 separados por;
-const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
+// const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
 
 
   return (
