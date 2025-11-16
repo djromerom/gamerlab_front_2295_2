@@ -467,7 +467,7 @@ export default function CompetitionInfo() {
                     <p className="text-gray-300 mb-4">
                       {edicionSeleccionada.descripcion2}
                     </p>
-                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full inline-flex">
+                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                       <Calendar className="w-4 h-4 text-[#AC7CFF]" />
 
                       <span className="text-sm">{edicionSeleccionada.fecha}</span>
