@@ -729,7 +729,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       }
 
   toast.success(`✅ Calificación guardada: ${gradeValue}`);
-      console.log('Grade saved:', parsed ?? { status: response.status });
+      
 
       // After saving the senior grade we prefer to reload the authoritative
       // data for the current page from the backend instead of trying to

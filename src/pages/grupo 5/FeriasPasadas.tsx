@@ -580,7 +580,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
           {/* Featured Games (CHECK BRITO)*/}
           <div className="mb-8">
             <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
-              Mencion Honorifica
+              Mencion Honorífica
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="game-card">
@@ -810,7 +810,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
             <p className="text-gray-300">
               Para más información contacta a:{" "}
               <span className="text-[#AC7CFF]">
-                feriagamer@uninorte.edu.co
+                info-openlab@uninorte.edu.co
               </span>
             </p>
           </div>

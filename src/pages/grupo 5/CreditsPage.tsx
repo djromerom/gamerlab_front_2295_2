@@ -421,7 +421,25 @@ export default function DevelopersCredits() {
       version: "2.0",
       github: "https://github.com/Carpinteron",
       email: "carpinteron@uninorte.edu.co",
-    }, 
+    },
+    {
+      id: 26,
+      name: "Kevin Torregrosa",
+      role: "Backend Leader",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/MrManini",
+      email: "kjtorregrosa@uninorte.edu.co",
+    },
+    {
+      id: 23,
+      name: "Carlos Arango",
+      role: "Frontend Leader",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/carlosam7",
+      email: "arangocarlos@uninorte.edu.co",
+    },
     {
       id: 27,
       name: "Isabella Arrieta",
@@ -441,16 +459,6 @@ export default function DevelopersCredits() {
       github: "https://github.com/sbritoa20",
       email: "sbritoa@uninorte.edu.co",
     },
-    
-    {
-      id: 23,
-      name: "Carlos Arango",
-      role: "Frontend Leader",
-      department: "frontend",
-      version: "2.0",
-      github: "https://github.com/carlosam7",
-      email: "arangocarlos@uninorte.edu.co",
-    },
     {
       id: 21,
       name: "Andres Monserrat",
@@ -460,8 +468,6 @@ export default function DevelopersCredits() {
       github: "https://github.com/andresmonserrat",
       email: "monserrata@uninorte.edu.co",
     },
-    
-   
     {
       id: 24,
       name: "Judith Perez",
@@ -470,15 +476,6 @@ export default function DevelopersCredits() {
       version: "2.0",
       github: "https://github.com/judithpc23",
       email: "jiconde@uninorte.edu.co",
-    },
-    {
-      id: 26,
-      name: "Kevin Torregrosa",
-      role: "Backend Leader",
-      department: "backend",
-      version: "2.0",
-      github: "https://github.com/MrManini",
-      email: "kjtorregrosa@uninorte.edu.co",
     },
     {
       id: 22,
@@ -717,7 +714,7 @@ export default function DevelopersCredits() {
   // Estadísticas del proyecto
   const projectStats = [
     {
-      value: "28",
+      value: "29",
       label: "Desarrolladores",
       icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
     },
@@ -770,7 +767,7 @@ export default function DevelopersCredits() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>19 Desarrolladores</span>
+                    <span>29 Desarrolladores</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Heart className="w-5 h-5 text-[#AC7CFF]" />
@@ -824,7 +821,7 @@ export default function DevelopersCredits() {
                   </button>
                   <button
                     onClick={() => setActiveVersion("2.0")}
-                    className={`px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-purple-500/20 text-purple-300 border border-purple-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    className={`px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     v2
                   </button>
@@ -897,7 +894,7 @@ export default function DevelopersCredits() {
                           {dev.name}
                         </h3>
                         {dev.version && (
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${dev.version === "1.0" ? "bg-blue-500/20 text-blue-300" : "bg-purple-500/20 text-purple-300"}`}>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${dev.version === "1.0" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"}`}>
                             v{dev.version}
                           </span>
                         )}

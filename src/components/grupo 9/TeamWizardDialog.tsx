@@ -264,7 +264,7 @@ export default function TeamWizardDialog({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            console.log(e);
+            
           }
           throw new Error(errorMsg);
         }
