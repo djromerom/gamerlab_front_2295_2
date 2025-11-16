@@ -18,6 +18,7 @@ import TeamMembers from "./TeamMembers"
 import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
+import { TeamImages } from "./TeamImages";
 
 export default function EditBoard() {
   //context and refs
@@ -125,7 +126,7 @@ export default function EditBoard() {
       logoUrl: data.videogame.logoUrl,
       videoUrl: data.videogame.videoUrl,
       repoUrl: data.videogame.repoUrl,
-      additionalImages: []
+      additionalImages: data.videogame.additionalImages
     }
     setInfoEquipo(dataInfoEquipo)
     return dataInfoEquipo
@@ -149,6 +150,8 @@ export default function EditBoard() {
         const urlResult = await getImageUrl(uploadResult.id);
         uploadedAdditional.push(urlResult.url);
       }
+
+      const uploadedAdditionalImages = [...uploadedAdditional, ...infoEquipo.additionalImages]
       
       const payload = {
         teamName: infoEditEquipo.teamName,
@@ -158,7 +161,7 @@ export default function EditBoard() {
           logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
           videoUrl: infoEditEquipo.videoUrl,
           repoUrl: infoEditEquipo.repoUrl,
-          additionalImages: uploadedAdditional
+          additionalImages: uploadedAdditionalImages
         }
       };
   
@@ -183,6 +186,7 @@ export default function EditBoard() {
       console.error('Los sentimos: ', error)
     } finally {
       setLoadingForm(false)
+      setTimeout(() => {window.location.reload()}, 1000); 
     }
   }
 
@@ -298,6 +302,9 @@ export default function EditBoard() {
         additionalImages={additionalImages} setAdditionalImages={setAdditionalImages}
         handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
       />
+
+      <TeamImages/>
+      <h2 className="text-center">Puedes ver la información pública de tu videojuego <a href="/equipos" target="_blank" className="text-violet-700 hover:text-shadow-violet-300 hover:underline">aquí</a></h2>
     </div>
   )
 }
