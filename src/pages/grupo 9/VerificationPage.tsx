@@ -319,6 +319,10 @@ export function VerifyEmailPage() {
                 "Guardar Contraseña y Continuar"
               )}
             </Button>
+            <CardDescription className="text-sm sm:text-[15px] mt-2">
+                Si eres usuario Uninorte, puedes:
+            </CardDescription>
+                           
             <Button
               type="button"
               variant="outline"
@@ -326,6 +330,11 @@ export function VerifyEmailPage() {
               onClick={outlookLogin}
               disabled={status === "submitting_password"}
             >
+               <img
+                    src="/assets/Microsoft_icon.svg"
+                    alt="Microsoft Icon"
+                    className="h-5 w-5"
+                  />
               Iniciar Sesión con Outlook
             </Button>
           </form>
