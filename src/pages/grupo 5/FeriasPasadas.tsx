@@ -810,7 +810,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
             <p className="text-gray-300">
               Para más información contacta a:{" "}
               <span className="text-[#AC7CFF]">
-                feriagamer@uninorte.edu.co
+                info-openlab@uninorte.edu.co
               </span>
             </p>
           </div>

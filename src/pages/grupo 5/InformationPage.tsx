@@ -412,7 +412,7 @@ export default function CompetitionInfo() {
               <p className="text-gray-300">
                 Para más información contacta a:{" "}
                 <span className="text-[#AC7CFF]">
-                  djromero@uninorte.edu.co
+                  info-openlab@uninorte.edu.co
                 </span>
               </p>
             </div>
