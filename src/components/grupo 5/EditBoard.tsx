@@ -8,6 +8,9 @@ import { Pencil } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
 
+import TeamCode from "@/components/grupo 5/TeamCode.tsx"
+
+
 type Student = {
   id: string
   name: string
@@ -134,6 +137,7 @@ export default function EditBoard() {
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
+      <TeamCode />
       <Card className="w-full shadow-sm border pb-4">
         <CardHeader className="pt-6">
           <CardTitle className="text-lg font-medium text-foreground mb-6 w-full">

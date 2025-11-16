@@ -19,6 +19,8 @@ export interface Team {
   id: number;
   gameName: string;
   teamName: string;
+  teamCode: string;
+  userId: string;
   status: TeamStatus;
   video?: string;
   repo?: string;

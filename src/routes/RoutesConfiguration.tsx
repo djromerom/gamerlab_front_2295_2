@@ -31,7 +31,9 @@ import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
 import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
-
+// 
+import TeamCode from "@/components/grupo 5/TeamCode";
+// 
 type Role =
   | "Profesor"
   | "Administrador"

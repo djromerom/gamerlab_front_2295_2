@@ -47,7 +47,7 @@ export default function MembersStep() {
     
     if (emailsToValidate.length === 0) return true; // No emails to validate
     
-    setIsValidatingEmails(true);
+    // setIsValidatingEmails(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/validate-emails`, {
         method: 'POST',
