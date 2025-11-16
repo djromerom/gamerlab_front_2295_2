@@ -84,7 +84,7 @@ export default function Scoreboard() {
   const progressPercent = Number.isFinite(averagePercent) ? averagePercent : 0
 
   const renderStars = (rating: number) => {
-    const starSize = "w-10 h-20"
+    const starSize = "w-7 h-12"
     const stars = []
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
@@ -138,9 +138,6 @@ export default function Scoreboard() {
         {/* Team code */}
         <TeamCode variant="default" />
         {/* finished teamCode */}
-      
-
-
       <Card className="w-full shadow-sm border">
         <CardHeader className="p-6 pb-2">
           
@@ -150,9 +147,9 @@ export default function Scoreboard() {
           </CardDescription>
         </CardHeader>
         {/* circulo de calificacion */}
-        <CardContent className="p-6 pt-0 space-y-4">
+        <CardContent className="p-6 pt-2 space-y-4">
           <div className="flex flex-col items-center mb-10">
-            <div className="relative w-70 h-70">
+            <div className="relative w-60 h-60 ">
               <div className="absolute inset-0 rounded-full border-8 border-gray-100"></div>
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#e5e7eb" strokeWidth="8" />
@@ -169,9 +166,9 @@ export default function Scoreboard() {
                   transform="rotate(-90 50 50)"
                 />
               </svg>
-
+              {/* tamaño de estrella */}
               <div className="absolute inset-0 flex flex-col items-center ">
-                <span className="text-7xl font-bold pt-[3.3rem]">{averageRating}</span>
+                <span className="text-[3rem] font-bold pt-[3.3rem]">{averageRating}</span>
                 <div className="flex mt-0">{renderStars(isNaN(Number.parseFloat(averageRating)) ? 0 : Number.parseFloat(averageRating))}</div>
                 <span className="text-md text-foreground mt-1 pt-[0.2rem]">de 5.0</span>
               </div>
@@ -196,10 +193,10 @@ export default function Scoreboard() {
 
 
           <div className="space-y-1">
-            {/* Barra de progreso */}
+            {/* Progress Bar */}
             <div className="flex items-center gap-2">
-              <div className="w-24 text-sm text-right">Progreso</div>
-              <div className="flex-1 relative h-6 bg-gray-400 rounded-full overflow-hidden">
+              <div className="w-24 font-semibold text-right">Total </div>
+              <div className="flex-1 relative h-4 bg-gray-400 rounded-full overflow-hidden">
                 
                 <div
                   ref={progressBarRef}
@@ -207,7 +204,7 @@ export default function Scoreboard() {
                 />
               </div>
               
-              <div className="w-14 text-sm  text-foreground/70 text-right">
+              <div className="w-14 font-semibold text-foreground text-left">
                 <span>{progressPercent.toFixed(0)}%</span>
               </div>
             </div>

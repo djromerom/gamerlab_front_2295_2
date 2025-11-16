@@ -9,7 +9,7 @@ interface TeamCodeProps {
 
 export default function TeamCode({ variant = "default"}: TeamCodeProps) {
     const [team, setTeam] = useState<Team | null>(null);
-
+    const [teams, setTeams] = useState<Team[]>([]);
     const { user, userRole } = useAuth();
 
     if (userRole === undefined) {
@@ -20,8 +20,9 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
         return null;
     }
 
-    useEffect(() => {
 
+    // 1. Traer todos los teams
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
@@ -29,23 +30,54 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
                     credentials: "include",
                     headers: { "Content-Type": "application/json" }
                 });
-                if (!response.ok) {
-                    throw new Error("Error fetching teams");
-                }
-                const teamsInfo = await response.json();
 
+                if (!response.ok) throw new Error("Error fetching teams");
 
-                setTeam(
-                    teamsInfo.find((t: { userId: string }) => t.userId === user?.id) || null
-                );
-                
+                const data = await response.json();
+                setTeams(data); // guardas todos los equipos
             } catch (error) {
                 console.error(error);
             }
         };
 
         fetchData();
-    }, [user?.id]);
+    }, []); 
+
+    //   2. Filtrar team cuando user.id YA EXISTE y teams YA ESTÁN CARGADOS
+    useEffect(() => {
+        if (!user?.id || teams.length === 0) return;
+
+        const userTeam = teams.find(t => t.userId === user.id) || null;
+        setTeam(userTeam);
+
+    }, [user?.id, teams]);
+
+    // useEffect(() => {
+
+    //     const fetchData = async () => {
+    //         try {
+    //             const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
+    //                 method: "GET",
+    //                 credentials: "include",
+    //                 headers: { "Content-Type": "application/json" }
+    //             });
+    //             if (!response.ok) {
+    //                 throw new Error("Error fetching teams");
+    //             }
+    //             const teamsInfo = await response.json();
+
+
+    //             setTeam(
+    //                 teamsInfo.find((t: { userId: string }) => t.userId === user?.id) || null
+    //             );
+                
+    //         } catch (error) {
+    //             console.error(error);
+    //         }
+    //     };
+
+    //     fetchData();
+    // }, [user?.id]);
 
     
 
@@ -65,13 +97,13 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
     } else if (variant === "title" && userRole === "Estudiante") {
         return (
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">   
-                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px ">
-                    <div className="flex justify-center text-3xl border-b-2  ">
+                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px">
+                    <div className="flex justify-center text-4xl border-b-2  ">
                         <h1 className="font-bold tracking-tighter">Equipo</h1>
                         
                     </div>
                     <div className="flex justify-center ">
-                        <p className="font-bold in-dark:text-white tracking-tighter text-4xl p-5 text-shadow-10xl ">
+                        <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl p-5 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
                             {team?.teamCode ?? "Cargando..."}
                         </p>
                     </div>
