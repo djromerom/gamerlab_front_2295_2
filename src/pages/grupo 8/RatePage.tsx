@@ -1,6 +1,8 @@
 "use client";
 
+
 import Criteriabutton from "@/components/grupo 8/criteriabutton";
+import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -60,7 +62,7 @@ export default function RatePage() {
     isLoading: isLoadingCriteria, 
     error: criteriaError 
   } = useCriteria();
-  
+
   const [uiCriteria, setUiCriteria] = useState<UiCriterion[]>([]);
   const [comments, setComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,15 +73,15 @@ export default function RatePage() {
   useEffect(() => {
     if (apiCriteria.length > 0) {
       setUiCriteria(
-        apiCriteria.map(criterion => ({
+        apiCriteria.map((criterion) => ({
           ...criterion,
-          score: 1,
+          score: "",
           maxScore: 5,
         }))
       );
     }
   }, [apiCriteria]);
-  
+
   useEffect(() => {
     if (!game) {
       toast.error("No se encontró información del juego. Redirigiendo...");
@@ -95,36 +97,6 @@ export default function RatePage() {
     );
   }
 
-  // Star Rating Component
-  const StarRating: React.FC<{
-    value: number;
-    max: number;
-    onChange: (value: number) => void;
-  }> = ({ value, max, onChange }) => (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: max }, (_, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onChange(i + 1)}
-          className="focus:outline-none"
-          aria-label={`Puntuar con ${i + 1} estrellas`}
-        >
-          <svg
-            className={`w-5 h-5 ${i < value ? "text-yellow-400" : "text-gray-300"}`}
-            fill={i < value ? "currentColor" : "none"}
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <polygon
-              strokeWidth="1"
-              points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21 12 17.27"
-            />
-          </svg>
-        </button>
-      ))}
-    </div>
-  );
 
   const showErrorToast = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -141,11 +113,93 @@ export default function RatePage() {
     }, 2500);
   };
 
-  const handleScoreChange = (criterionId: number, score: number) => {
-    setUiCriteria(
-      uiCriteria.map((c) => (c.id === criterionId ? { ...c, score } : c))
+    const sanitizeScoreInputValue = (rawValue: string) => {
+      const normalized = rawValue.replace(/,/g, ".");
+      const digitsOnly = normalized.replace(/[^0-9.]/g, "");
+      const parts = digitsOnly.split(".");
+      if (parts.length <= 2) {
+        return digitsOnly;
+      }
+      return `${parts[0]}.${parts.slice(1).join("")}`;
+    };
+
+    const handleScoreInputFocus = (criterionId: number) => {
+      setUiCriteria((prev) =>
+        prev.map((c) =>
+          c.id === criterionId && c.score
+            ? { ...c, score: "" }
+            : c
+        )
+      );
+    };
+
+  const handleScoreInputChange = (criterionId: number, rawValue: string) => {
+    setUiCriteria((prev) =>
+      prev.map((c) => {
+        if (c.id !== criterionId) {
+          return c;
+        }
+
+        const sanitized = sanitizeScoreInputValue(rawValue);
+
+        if (!sanitized) {
+          return { ...c, score: "" };
+        }
+
+        const parsed = Number.parseFloat(sanitized);
+        if (!Number.isNaN(parsed) && parsed > c.maxScore) {
+          return { ...c, score: String(c.maxScore) };
+        }
+
+        return { ...c, score: sanitized };
+      })
     );
   };
+
+  const parseScoreValue = (value: string, maxScore: number): number | null => {
+    // if (!value.trim()) {
+    //   return null;
+    // }
+
+    // const normalized = value.replace(/,/g, ".");
+    // const parsed = Number.parseFloat(normalized);
+
+    // if (Number.isNaN(parsed)) {
+    //   return null;
+    // }
+
+    // if (parsed < 0) {
+    //   return 0;
+    // }
+
+    // if (parsed > maxScore) {
+    //   return maxScore;
+    // }
+
+    // return parsed;
+
+    const raw = typeof value === "number" ? String(value) : (value || "").toString();
+    if (!raw.trim()) return null;
+    const normalized = raw.replace(/,/g, ".");
+    const parsed = Number.parseFloat(normalized);
+    if (Number.isNaN(parsed)) return null;
+    if (parsed < 0) return 0;
+    if (parsed > maxScore) return maxScore;
+    return parsed;
+  };
+
+  const totalScore = uiCriteria.reduce((acc, criterion) => {
+    const parsed = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+    if (parsed === null) {
+      return acc;
+    }
+    return acc + parsed * criterion.weight;
+  }, 0);
+
+  const totalMaxScore = uiCriteria.reduce(
+    (acc, criterion) => acc + criterion.maxScore * criterion.weight,
+    0
+  );
 
   const handleSubmit = async () => {
     if (!game) {
@@ -155,22 +209,66 @@ export default function RatePage() {
     setIsSubmitting(true);
     setSubmissionError(null);
 
+    const parsedDetails: {
+      criterionId: number;
+      score: number;
+      createdAt: string;
+      updatedAt: string;
+      isActive: boolean;
+    }[] = [];
+
     const currentDate = new Date().toISOString();
-    const details = uiCriteria.map((c) => ({
-      criterionId: c.id,
-      score: c.score,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-      isActive: true,
-    }));
+
+    for (const criterion of uiCriteria) {
+    //   const parsedScore = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+    //   console.log("Parsed score for criterion", criterion.name, ":", parsedScore);
+
+    //   if (parsedScore === null) {
+    //     setIsSubmitting(false);
+    //     showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+    //     return;
+    //   }
+    //   const parsedScoreRaw = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+    //   console.log("Parsed score for criterion", criterion.name, ":", parsedScoreRaw);
+
+    //   parsedDetails.push({
+    //     criterionId: criterion.id,
+    //     score: parsedScore,
+    //     createdAt: currentDate,
+    //     updatedAt: currentDate,
+    //     isActive: true,
+    //   });
+    // }
+
+//  debug: inspeccionar el valor real que viene del UI
+    console.log("handleSubmit - criterion", criterion.id, "raw score:", criterion.score);
+
+      // parsear una sola vez (acepta number o string)
+      const parsedRaw = parseScoreValue(criterion.score.toString() ?? "", criterion.maxScore);
+      // Opción A (estricto): descomentar para exigir que ingresen un valor
+      if (parsedRaw === null) {
+        setIsSubmitting(false);
+        showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+        return;
+      }
+      const parsedScore = parsedRaw === null ? 0 : parsedRaw;
+
+      parsedDetails.push({
+        criterionId: criterion.id,
+        score: parsedScore,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+        isActive: true,
+      });
+    }
 
     const evaluationPayload = {
       date: currentDate,
       videogameId: game.id,
       comments: comments,
-      details,
+      details: parsedDetails,
     };
-
+    // evaluacion exitosa no existe
     try {
       const res = await fetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/with-details`,
@@ -182,9 +280,20 @@ export default function RatePage() {
         }
       );
 
+      // if (!res.ok) {
+      //   const errorData = await res.json();
+      //   throw new Error(errorData.message || "Error al guardar la evaluación");
+      // }
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al guardar la evaluación");
+        let errorText = `${res.status} ${res.statusText}`;
+        try {
+          const errorData = await res.json();
+          errorText = errorData.message || JSON.stringify(errorData) || errorText;
+        } catch (e) {
+          // no-op: no JSON body
+        }
+        throw new Error(errorText);
       }
 
       setConfirmDialogOpen(false);
@@ -195,7 +304,7 @@ export default function RatePage() {
       setIsSubmitting(false);
     }
   };
-  
+
   const getCriterionDescription = (criterionName: string): string => {
     const foundCriterion = uiCriteria.find(c => c.name === criterionName);
     return foundCriterion?.description || "Sin descripción detallada.";
@@ -221,7 +330,7 @@ export default function RatePage() {
       </LayoutAplication>
     );
   }
-  
+
   if (criteriaError) {
     return (
       <LayoutAplication breadcrumbs={[]}>
@@ -234,7 +343,7 @@ export default function RatePage() {
       </LayoutAplication>
     );
   }
-  
+
   if (uiCriteria.length === 0 && !isLoadingCriteria) {
      return (
       <LayoutAplication breadcrumbs={[]}>
@@ -278,13 +387,13 @@ export default function RatePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-4">
             <Card className="h-full py-5">
               <CardHeader>
                 {game?.imagen && (
                   <div className="flex justify-center mb-4 p-3">
-                    <div className="w-38 h-38 bg-gray-300 rounded-full overflow-hidden shadow-md">
+                    <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-300 rounded-full overflow-hidden shadow-md">
                       <img
                         src={game.imagen}
                         alt={`${game.nombre} logo`}
@@ -304,7 +413,7 @@ export default function RatePage() {
                   <div><p className="text-sm font-medium text-muted-foreground">Materia</p><p>{game?.materia || 'N/A'}</p></div>
                   <div><p className="text-sm font-medium text-muted-foreground">NRC</p><p>{game?.nrc || 'N/A'}</p></div>
                   <div><p className="text-sm font-medium text-muted-foreground">Participantes</p><p>{game?.participantes?.join(", ") || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">Descripción</p><p className="text-sm">{game?.descripcion || 'N/A'}</p></div>
+                  <div><p className="text-sm font-medium text-muted-foreground">Descripción</p><p className="text-lg">{game?.descripcion || 'N/A'}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -321,7 +430,8 @@ export default function RatePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-lg font-bold px-0">
@@ -330,24 +440,35 @@ export default function RatePage() {
                       <TableHead className="text-right"></TableHead>
                     </TableRow>
                   </TableHeader>
+
+                  
+                  
                   <TableBody>
                     {uiCriteria.map((criterion) => (
                       <TableRow key={criterion.id}>
-                        <TableCell colSpan={2} className="font-medium text-base px-0 whitespace-normal break-words">
+                        <TableCell colSpan={2} className="font-medium text-base px-0 whitespace-normal break-words ">
                           {criterion.name} ({ (criterion.weight * 100).toFixed(0) }%)
-                          <div className="mt-2 flex items-center gap-4">
+                          <div className="mt-2 flex items-center gap-10">
                             <p className="text-xs font-medium text-muted-foreground">
                               Puntuación:
                             </p>
-                            <StarRating
-                              value={criterion.score}
-                              max={criterion.maxScore}
-                              onChange={(val) => handleScoreChange(criterion.id, val)}
+
+                            <Input
+                              type="text"
+                              inputMode="decimal"
+                              value={criterion.score ?? ""}
+                              onFocus={() => handleScoreInputFocus(criterion.id)}
+                              onChange={(e) =>
+                                handleScoreInputChange(criterion.id, e.target.value)
+                              }
+                              placeholder={`0 - ${criterion.maxScore}`}
+                              className="border rounded px-2 py-1 w-24 sm:w-28 bg-transparent text-sm"
                             />
-                            <span className="text-sm font-medium px-0">
-                              {criterion.score}
+                            
+                            <span className="text-sm font-medium">
+                              {Number(criterion.score).toFixed(2) || "—"}
                             </span>
-                            <div className="ml-auto">
+                            <div className="sm:ml-auto">
                               <Criteriabutton description={getCriterionDescription(criterion.name)} />
                             </div>
                           </div>
@@ -355,7 +476,25 @@ export default function RatePage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
+
+                <div className="flex justify-end">
+                  <div className="w-80px md:w-auto mt-6 rounded-lg border bg-muted-foreground/10 px-4 py-3 flex flex-row md:flex-row gap-3 md:gap-10 items-center md:items-center md:justify-end">
+                    <div className="flex flex-auto gap-2">
+                      <p className="tracking-tighter text-lg font-bold">Nota Final</p>
+                      <p className="text-lg font-medium text-foreground">|</p>
+                    </div>
+
+                    <div className="ml-0 md:ml-2">
+                      <span className="text- font-bold text-primary ">
+                        {totalMaxScore > 0
+                          ? `${totalScore.toFixed(2)} / ${totalMaxScore.toFixed(2)}`
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-6">
                   <h3 className="font-medium mb-2">Comentarios Adicionales</h3>
@@ -369,7 +508,7 @@ export default function RatePage() {
 
                 <div className="flex justify-end mt-6">
                   <Button
-                    className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer"
+                    className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2 "
                     onClick={() => setConfirmDialogOpen(true)}
                     disabled={isSubmitting || uiCriteria.length === 0}
                   >
