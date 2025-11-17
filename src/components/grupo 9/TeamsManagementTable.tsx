@@ -90,14 +90,14 @@ export const TeamsManagementTable: React.FC<Props> = ({
   >([]);
   const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  //const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
 
   useEffect(() => {
     const load = async () => {
-      setIsLoadingOptions(true);
+      //setIsLoadingOptions(true);
       try {
         // TODO: reemplazar por fetch reales a tu API
         await new Promise((r) => setTimeout(r, 300));
@@ -126,7 +126,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           },
         ]);
       } finally {
-        setIsLoadingOptions(false);
+        //setIsLoadingOptions(false);
       }
     };
     load();

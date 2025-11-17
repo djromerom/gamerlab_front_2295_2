@@ -221,7 +221,7 @@ export default function RatePage() {
 
     for (const criterion of uiCriteria) {
     //   const parsedScore = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-    //   console.log("Parsed score for criterion", criterion.name, ":", parsedScore);
+    //   
 
     //   if (parsedScore === null) {
     //     setIsSubmitting(false);
@@ -229,7 +229,7 @@ export default function RatePage() {
     //     return;
     //   }
     //   const parsedScoreRaw = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-    //   console.log("Parsed score for criterion", criterion.name, ":", parsedScoreRaw);
+    //   
 
     //   parsedDetails.push({
     //     criterionId: criterion.id,
@@ -241,7 +241,7 @@ export default function RatePage() {
     // }
 
 //  debug: inspeccionar el valor real que viene del UI
-    console.log("handleSubmit - criterion", criterion.id, "raw score:", criterion.score);
+    
 
       // parsear una sola vez (acepta number o string)
       const parsedRaw = parseScoreValue(criterion.score.toString() ?? "", criterion.maxScore);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
+  Dialog, DialogContent, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,8 @@ const MemberSchemaAllRequired = z.object({
 });
 
 const WizardSchema = z.object({
-  mode: z.enum(["add", "edit"]).optional().default("add"),
-  isExternal: z.boolean().default(false),
+  mode: z.enum(["add", "edit"]),
+  isExternal: z.boolean(),
   team_nrc_global_id: z.number().optional(),
   nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
   videojuego: z.object({
@@ -233,7 +233,6 @@ export default function TeamWizardDialog({
   onOpenChange,
   apiBaseUrl,
   nrcOptions,
-  materiasOptions,
   onSuccess,
   initialData,
 }: TeamWizardDialogProps) {
@@ -408,15 +407,16 @@ export default function TeamWizardDialog({
 
   /** Guardar (Paso 2) */
   const onSubmit = handleSubmit(async (data) => {
+    const validatedData = data as unknown as WizardValues;
     setBusy(true);
     try {
       // Validación completa
-      WizardSchema.parse(data);
+      WizardSchema.parse(validatedData);
 
-      if (!data.isExternal && data.integrantes.length > 0) {
-        const emails = data.integrantes.map((m: { correo: any; }) => m.correo);
+      if (!validatedData.isExternal && validatedData.integrantes.length > 0) {
+        const emails = validatedData.integrantes.map((m) => m.correo);
         // ✅ En modo edición, excluir el email original del primer miembro
-        const excludeEmails = data.mode === "edit" && primaryEmailLocked ? [primaryEmailLocked] : [];
+        const excludeEmails = validatedData.mode === "edit" && primaryEmailLocked ? [primaryEmailLocked] : [];
         const dup = await findUsedEmails(apiBaseUrl, emails, excludeEmails);
         if (dup.length) {
           toast.error(`Correo(s) ya usados: ${dup.join(", ")}`);
@@ -427,9 +427,9 @@ export default function TeamWizardDialog({
       if (files.length > 4) throw new Error("Máximo 4 archivos");
       const uploadedUrls = files.length ? await uploadFilesToAzure(files) : [];
 
-      const payload = buildPayload(data, uploadedUrls, nrcOptions, primaryEmailLocked);
-      const url = data.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/update`;
-      const method = data.mode === "add" ? "POST" : "PATCH";
+      const payload = buildPayload(validatedData, uploadedUrls, nrcOptions, primaryEmailLocked);
+      const url = validatedData.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/update`;
+      const method = validatedData.mode === "add" ? "POST" : "PATCH";
 
       const res = await fetch(url, {
         method,
@@ -438,7 +438,7 @@ export default function TeamWizardDialog({
         body: JSON.stringify(payload),
       });
 
-      if (!(data.mode === "add" ? res.status === 201 : res.ok)) {
+      if (!(validatedData.mode === "add" ? res.status === 201 : res.ok)) {
         const err = await res.json().catch(() => ({}));
         const msg = (err as any)?.message;
         throw new Error(
@@ -449,7 +449,7 @@ export default function TeamWizardDialog({
         );
       }
 
-      toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
+      toast.success(validatedData.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
       onOpenChange(false);
       onSuccess();
     } catch (e: any) {

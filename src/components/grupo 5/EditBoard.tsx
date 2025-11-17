@@ -19,31 +19,6 @@ import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/te
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
 import { TeamImages } from "./TeamImages";
-import TeamCode from "@/components/grupo 5/TeamCode.tsx"
-
-type Student = {
-  id: string
-  name: string
-  nrcs: string[]
-}
-
-type RawStudent = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  studentCode: string;
-  nrcs: { code: string }[]; // Suponiendo que cada NRC tiene un campo `code`
-};
-
-type NRCOption = {
-  code: string
-}
-
-type UpdateStudentNrcsDto = {
-  id: string;
-  nrcCodes: string[];
-};
 
 export default function EditBoard() {
   //context and refs

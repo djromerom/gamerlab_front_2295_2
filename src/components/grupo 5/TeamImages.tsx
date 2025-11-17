@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect, useState } from "react"
-import { CircleX, Delete, DeleteIcon, Scroll, SquareX, X } from "lucide-react"
+import { X } from "lucide-react"
 import { Button } from "../ui/button"
 import { toast } from "sonner"
 

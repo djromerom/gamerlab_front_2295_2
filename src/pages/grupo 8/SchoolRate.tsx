@@ -363,7 +363,7 @@ export default function RatePage() {
                               Puntuación:
                             </p>
                             <StarRating
-                              value={criterion.score}
+                              value={Number(criterion.score)}
                               max={criterion.maxScore}
                               onChange={(val) => handleScoreChange(criterion.id, val)}
                             />
