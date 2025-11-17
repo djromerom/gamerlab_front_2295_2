@@ -65,6 +65,7 @@ const PendingSchoolGradesPage: React.FC = () => {
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const fetchGames = async (page: number, limit: number) => {
+    
     setIsPageLoading(true);
     setError(null);
 
@@ -80,17 +81,18 @@ const PendingSchoolGradesPage: React.FC = () => {
           },
         }
       );
-
+      
       if (!res.ok) {
-        let errorMsg = `Error ${res.status}: Failed to fetch pending games`;
+        let errorMsg;
         try {
-          const errorBody = await res.json();
-          errorMsg = errorBody.message || errorMsg;
+          //const errorBody = await res.json();
+          //errorMsg = errorBody.message || errorMsg;
+          errorMsg = "This feature is coming soon.";
         } catch (e) {
-          /* ignore */
         }
         throw new Error(errorMsg);
       }
+      
 
       const dataRespond: PaginatedGames = await res.json();
 
@@ -134,10 +136,11 @@ const PendingSchoolGradesPage: React.FC = () => {
       );
 
       if (!res.ok) {
-        let errorMsg = `Error ${res.status}: Failed to search games`;
+        let errorMsg;
         try {
-          const errorBody = await res.json();
-          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          //const errorBody = await res.json();
+          //errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          errorMsg = "This feature is coming soon.";
         } catch (e) {
           /* ignore */
         }
