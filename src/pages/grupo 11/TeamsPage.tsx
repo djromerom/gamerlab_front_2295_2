@@ -101,6 +101,7 @@ export default function TeamsPage() {
             }
           );
 
+          console.log(teamsRes);
           if (teamsRes.ok) {
             rawData = await teamsRes.json();
           } else {

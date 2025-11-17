@@ -33,7 +33,6 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   }
 
   const uploadResult = (await res.json()) as UploadResult;
-  console.debug('[azureFile] uploadImage result:', uploadResult);
   return uploadResult;
 }
 
@@ -55,6 +54,5 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   }
 
   const urlResult = (await res.json()) as UrlResult;
-  console.debug('[azureFile] getImageUrl result:', urlResult);
   return urlResult;
 }

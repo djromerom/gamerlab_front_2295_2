@@ -59,6 +59,7 @@ interface Subject {
   id: number;
   name: string;
   code: string;
+  abrevName: string;
   semester: number;
   isActive: boolean;
   createdAt: Date;
@@ -68,6 +69,7 @@ interface Subject {
 interface SubjectFormData {
   name: string;
   code: string;
+  abrevName: string;
   semester: string;
 }
 
@@ -103,6 +105,7 @@ export const SubjectsTable: React.FC<Props> = ({
   const [newSubject, setNewSubject] = useState<SubjectFormData>({
     name: "",
     code: "",
+    abrevName: "",
     semester: "",
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -117,6 +120,7 @@ export const SubjectsTable: React.FC<Props> = ({
   const columns = [
     { key: "name", label: "Nombre" },
     { key: "code", label: "Código" },
+    { key: "abrevName", label: "Abreviación"},
     { key: "semester", label: "Semestre" },
   ];
 
@@ -126,6 +130,11 @@ export const SubjectsTable: React.FC<Props> = ({
     return codeRegex.test(code);
   };
 
+  const validateAbrevFormat = (abrevName: string): boolean => {
+    const abrevNameRegex = /^[A-Z]{3}$/;
+    return abrevNameRegex.test(abrevName);
+  }
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setInternalIsLoading(true);
@@ -133,13 +142,18 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       // Validaciones de campos requeridos
-      if (!newSubject.name || !newSubject.code || !newSubject.semester) {
+      if (!newSubject.name || !newSubject.code || !newSubject.abrevName || !newSubject.semester) {
         throw new Error("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       }
 
       // Validación de formato del código
       if (!validateCodeFormat(newSubject.code)) {
         throw new Error("El código debe tener 3 letras mayúsculas seguidas de 4 números");
+      }
+
+      // Validación del formato de la abreviación
+      if (!validateAbrevFormat(newSubject.abrevName)) {
+        throw new Error("La abreviación debe tener 3 letras mayúsculas");
       }
 
       // Validación del semestre
@@ -157,6 +171,7 @@ export const SubjectsTable: React.FC<Props> = ({
         body: JSON.stringify({
           name: newSubject.name,
           code: newSubject.code,
+          abrevName: newSubject.abrevName,
           semester: semesterValue,
         }),
       });
@@ -167,7 +182,7 @@ export const SubjectsTable: React.FC<Props> = ({
       }
 
       onPageChange(1);
-      setNewSubject({ name: "", code: "", semester: "" });
+      setNewSubject({ name: "", code: "", abrevName: "", semester: "" });
       setAddDialogOpen(false);
       refreshData();
       toast.success("Materia agregada exitosamente");
@@ -187,13 +202,18 @@ export const SubjectsTable: React.FC<Props> = ({
 
     try {
       // Validaciones de campos requeridos
-      if (!editingSubject.name || !editingSubject.code || !editingSubject.semester) {
+      if (!editingSubject.name || !editingSubject.code || !editingSubject.abrevName || !editingSubject.semester) {
         throw new Error("Todos los campos (Nombre, Código, Semestre) son requeridos.");
       }
 
       // Validación de formato del código
       if (!validateCodeFormat(editingSubject.code)) {
         throw new Error("El código debe tener 3 letras mayúsculas seguidas de 4 números");
+      }
+
+      // Validación del formato de la abreviación
+      if (!validateAbrevFormat(editingSubject.abrevName)) {
+        throw new Error("La abreviación debe tener 3 letras mayúsculas");
       }
 
       // Validación del semestre
@@ -213,6 +233,7 @@ export const SubjectsTable: React.FC<Props> = ({
           body: JSON.stringify({
             name: editingSubject.name,
             code: editingSubject.code,
+            abrevName: editingSubject.abrevName,
             semester: semesterValue,
           }),
         }
@@ -338,7 +359,7 @@ export const SubjectsTable: React.FC<Props> = ({
                   onClick={() => {
                     setAddDialogOpen(false);
                     setError(null);
-                    setNewSubject({ name: "", code: "", semester: "" });
+                    setNewSubject({ name: "", code: "", abrevName: "", semester: "" });
                   }}
                   disabled={internalIsLoading}
                 >
@@ -396,6 +417,7 @@ export const SubjectsTable: React.FC<Props> = ({
                   <TableRow key={subject.id}>
                     <TableCell>{subject.name}</TableCell>
                     <TableCell>{subject.code}</TableCell>
+                    <TableCell>{subject.abrevName}</TableCell>
                     <TableCell>{subject.semester}</TableCell>
                     <TableCell>
                       <DropdownMenu>
