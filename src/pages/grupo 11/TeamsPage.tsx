@@ -51,8 +51,8 @@ export default function TeamsPage() {
   const mapStatusToString = (status: any): string => {
     if (typeof status === 'number') {
       switch (status) {
-        case 1: return "pendiente";
-        case 2: return "confirmado";
+        case 1: return "confirmado";
+        case 2: return "pendiente";
         case 3: return "expirado";
         default: return "pendiente";
       }
@@ -101,7 +101,6 @@ export default function TeamsPage() {
             }
           );
 
-          console.log(teamsRes);
           if (teamsRes.ok) {
             rawData = await teamsRes.json();
           } else {
