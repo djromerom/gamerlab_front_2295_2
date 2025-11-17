@@ -397,7 +397,7 @@ export default function CompetitionInfo() {
     };
   }, []);
 //podio , top 1 top 2 y top 3 separados por;
-const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
+// const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
 
 
   return (
@@ -467,7 +467,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
                     <p className="text-gray-300 mb-4">
                       {edicionSeleccionada.descripcion2}
                     </p>
-                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full inline-flex">
+                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                       <Calendar className="w-4 h-4 text-[#AC7CFF]" />
 
                       <span className="text-sm">{edicionSeleccionada.fecha}</span>
@@ -580,7 +580,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
           {/* Featured Games (CHECK BRITO)*/}
           <div className="mb-8">
             <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
-              Mencion Honorifica
+              Mencion Honorífica
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="game-card">
@@ -810,7 +810,7 @@ const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
             <p className="text-gray-300">
               Para más información contacta a:{" "}
               <span className="text-[#AC7CFF]">
-                feriagamer@uninorte.edu.co
+                info-openlab@uninorte.edu.co
               </span>
             </p>
           </div>

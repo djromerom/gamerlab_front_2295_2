@@ -6,14 +6,14 @@ import { Toaster } from "@/components/ui/sonner"
 export function ToastTest() {
 
   const testToast = () => {
-    console.log("Mostrando toast...")
+    
     toast.loading( "message", {
       description: "Este es un toast de prueba",})
   }
 
 
   const testErrorToast = () => {
-    console.log("Mostrando toast de error...")
+    
     toast.error( "message", {
       description: "Este es un toast de prueba de error",
       duration: 50000,})

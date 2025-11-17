@@ -38,7 +38,7 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
       endpointUrl += `?${queryString}`;
     }
 
-    console.log("Descargando Excel con filtros desde:", endpointUrl);
+    
 
     try {
       const response = await fetch(endpointUrl, {

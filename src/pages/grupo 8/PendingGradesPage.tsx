@@ -245,7 +245,7 @@ const PendingGradesPage: React.FC = () => {
                 }
               </div>
             )}
-          {error && !gamesData && (
+          {/* {error && !gamesData && (
             <div className="flex justify-center items-center min-h-[200px]">
               <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
                 <svg
@@ -261,7 +261,7 @@ const PendingGradesPage: React.FC = () => {
                 <span>{error}</span>
               </div>
             </div>
-          )}
+          )} */}
         </>
       )}
     </LayoutAplication>

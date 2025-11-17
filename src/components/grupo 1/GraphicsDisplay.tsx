@@ -87,7 +87,7 @@ const GraphicDisplay = () => {
         nrcsFiltrados, // Para la lógica del nuevo gráfico de barras
     } = useGlobalState();
 
-    console.log("Datos Grafico Torta Materias:", datosGraficoTortaMaterias);
+    
 
     const carouselRef = useRef<HTMLDivElement>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -159,7 +159,7 @@ const GraphicDisplay = () => {
         } else {
             // Mostrar promedios por NRC de la materia seleccionada
             if (!listaVideojuegosFiltrados) return [];
-            console.log(nrcsFiltrados, listaVideojuegosFiltrados);
+            
             return listaVideojuegosFiltrados
                 .filter(vj => vj.materia === filtroMateria)
                 .map(vj => ({
@@ -266,8 +266,8 @@ const GraphicDisplay = () => {
             {message}
         </div>
     );
-    //console.log("Datos para BarChart Vertical:", datosCriteriosChart);
-    console.log("Datos para BarChart Horizontal:", barChartHorizontalData);
+    //
+    
     return (
         <TabsContent value="graficos">
             {/* --- Carousel --- */}

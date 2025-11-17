@@ -432,7 +432,7 @@ const getVideoThumbnail = (videoUrl: string): string => {
     if (youtubeMatch && youtubeMatch[1]) {
       const videoId = youtubeMatch[1];
       // Usar miniatura de alta calidad de YouTube
-      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     }
     
     // Para otros servicios de video, usar placeholder

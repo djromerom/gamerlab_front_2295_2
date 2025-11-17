@@ -1,15 +1,25 @@
 "use client"
+/**
+ * EditBoard Component
+ * -------------------
+ * This component provides an interface for editing team information and managing its members.
+ * It handles both the team’s videogame details (name, logo, repo URL, etc.)
+ * and the members' personal and academic information (name, email, NRCs).
+ */
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Pencil } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
-
+import { useForm } from "react-hook-form";
+import type { CombinedFormValues } from "@/lib/schemas";
+import { useAuth } from "@/contexts/AuthContext";
+import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
+import TeamMembers from "./TeamMembers"
+import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
+import { Team } from "@/types/teamVideogames";
+import TeamVideogame from "./TeamVideogame";
+import { TeamImages } from "./TeamImages";
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
-
 
 type Student = {
   id: string
@@ -35,46 +45,203 @@ type UpdateStudentNrcsDto = {
   nrcCodes: string[];
 };
 
-
 export default function EditBoard() {
-  // Simulación de datos (reemplaza por fetch si lo necesitas)
+  //context and refs
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-
+  //Member information
   const [students, setStudents] = useState<Student[]>([])
   const [nrcOptions, setNrcOptions] = useState<NRCOption[]>([])
-
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editStudentCode, setEditStudentCode] = useState("");
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [editNrcs, setEditNrcs] = useState<string[]>([])
   const [searchNrc, setSearchNrc] = useState("")
+
+  //Team videogame information
   const [loading, setLoading] = useState(false)
-  
+  const [loadingForm, setLoadingForm] = useState(false)
+  const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
+  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
+
+  //Manage image
+  const { setValue, watch } = useForm<CombinedFormValues>();
+  const currentFiles = watch("files") || [];
+  const [infoEditEquipo, setInfoEditEquipo] = useState< Team >(infoEquipo)
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState(false);
+  const [ additionalImages, setAdditionalImages ] = useState<File[]>([])
+
+
+  //Triggered when a new file is selected.
+  //Opens the cropper modal for image editing.
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      setSelectedFile(files[0]);
+      setCropperOpen(true);
+      e.target.value = "";
+  };
+
+  const handleCroppedImage = (croppedFile: File) => {
+    setValue("files", [croppedFile]);
+    setFileError(false);
+  };
+
+
+  const handleDeleteFile = () => {
+    setValue("files", []);
+  };
+
+  //PATCH request to update NRC codes for a given student.
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
         method: 'PATCH',
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify( {nrcCodes} ),
+        body: JSON.stringify({ nrcCodes }),
       });
 
       if (!response.ok) {
         throw new Error('Error al actualizar los NRCs del estudiante');
       }
-
       const data = await response.json();
-      console.log('Estudiante actualizado:', data);
       return data;
     } catch (error) {
       console.error('Error en PATCH:', error);
     }
   };
 
-  useEffect(() => {
+  //PATCH request to update basic student information (email).
+  const updateStudentBasics = async ({id, email}: { id: string; email: string }) => {
+    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}/members/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({email: email}),
+    });
+    if (!response.ok) {
+      throw new Error("Error al actualizar los datos del estudiante");
+    }
+    return response.json();
+  };
 
+  //Fetches full team data (including videogame details) from the backend.
+  const getInfoEquipo = async () => {
+    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+      method: 'GET',
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    })
+
+    if (!response.ok) {
+      throw new Error("Error al obtener los datos del equipo")
+    }
+    const data = await response.json()
+    const dataInfoEquipo = {
+      id: data.id,
+      teamName: data.teamName,
+      videogameName: data.videogame.name, 
+      description: data.videogame.description,
+      logoUrl: data.videogame.logoUrl,
+      videoUrl: data.videogame.videoUrl,
+      repoUrl: data.videogame.repoUrl,
+      additionalImages: data.videogame.additionalImages
+    }
+    setInfoEquipo(dataInfoEquipo)
+    return dataInfoEquipo
+  }
+
+  //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
+  async function uploadInfoTeam() {
+    setLoadingForm(true)
+  
+    try {
+      const uploadedFileUrls = []
+      const uploadedAdditional = []
+      
+      for (const file of currentFiles) {
+        const uploadResult = await uploadImage(file);
+        const urlResult = await getImageUrl(uploadResult.id);
+        uploadedFileUrls.push(urlResult.url);
+      }
+      for (const file of additionalImages) {
+        const uploadResult = await uploadImage(file);
+        const urlResult = await getImageUrl(uploadResult.id);
+        uploadedAdditional.push(urlResult.url);
+      }
+
+      const uploadedAdditionalImages = [...uploadedAdditional, ...infoEquipo.additionalImages]
+      
+      const payload = {
+        teamName: infoEditEquipo.teamName,
+        videogame: {
+          vgName: infoEditEquipo.videogameName,
+          description: infoEditEquipo.description,
+          logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
+          videoUrl: infoEditEquipo.videoUrl,
+          repoUrl: infoEditEquipo.repoUrl,
+          additionalImages: uploadedAdditionalImages
+        }
+      };
+  
+      const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        toast.error("Hubo un error al actualizar los datos.", { id: 777 })
+        throw new Error ('Error')
+      } else {
+        const dataEquipo = await getInfoEquipo()
+        setInfoEquipo(dataEquipo)
+        setInfoEditEquipo(dataEquipo)
+        toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
+      }
+    } catch (error) {
+      toast.error(`Ocurrió un error: ${error}`, { id: 777 })
+      console.error('Los sentimos: ', error)
+    } finally {
+      setLoadingForm(false)
+      setTimeout(() => {window.location.reload()}, 1000); 
+    }
+  }
+
+  function handleSaveNrcs(
+    editStudent: Student | null,
+    editNrcs: string[],
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>,
+    setEditStudent: (s: Student | null) => void
+  ) {
+    if (editStudent) {
+      setStudents(students =>
+        students.map(s =>
+          s.id === editStudent.id ? { ...s, nrcs: editNrcs } : s
+        )
+      );
+      updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
+      toast.success("Datos actualizados", { style: { background: "#22c55e", color: "#fff" } });
+      setEditStudent(null);
+    }
+  }
+  
+  //Fetches both team and member data when the component mounts.
+  useEffect(() => {  
     const fetchData = async () => {
+      const dataEquipo = await getInfoEquipo()
+      setInfoEquipo(dataEquipo)
+      setInfoEditEquipo(dataEquipo)
       setLoading(true);
+
       try {
-        // Reemplaza estas URLs por las de tu backend
         const studentsRes = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
           method: "GET",
           credentials: "include",
@@ -98,188 +265,71 @@ export default function EditBoard() {
         );
 
         setStudents(
-          studentsData.map((s: RawStudent ) => ({
+          studentsData.map((s: RawStudent) => ({
             id: s.id.toString(),
             name: `${s.firstName} ${s.lastName}`,
             nrcs: s.nrcs.map((nrc) => nrc.code),
+            firstName: s.firstName,
+            lastName: s.lastName,
+            email: s.email,
+            studentCode: s.studentCode,
           }))
         )
-
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
-  } 
+  }
 
-  function handleSaveNrcs(
-    editStudent: Student | null,
-    editNrcs: string[],
-    setStudents: React.Dispatch<React.SetStateAction<Student[]>>,
-    setEditStudent: (s: Student | null) => void
-  ) {
-    if (editStudent) {
-      setStudents(students =>
-        students.map(s =>
-          s.id === editStudent.id ? { ...s, nrcs: editNrcs } : s
-        )
-      );
-      updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
-      toast.success("NRC Editado", { style: { background: "#22c55e", color: "#fff" } });
-      setEditStudent(null);
-    }
+  if (loadingForm) {
+    toast.loading("Subiendo datos...", { id: 777 })
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4">
-      <TeamCode />
-      <Card className="w-full shadow-sm border pb-4">
-        <CardHeader className="pt-6">
-          <CardTitle className="text-lg font-medium text-foreground mb-6 w-full">
-            Estudiantes del equipo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-2 text-left">Nombre</th>
-                  <th className="py-2 px-2 text-left">NRCs</th>
-                  <th className="py-2 px-2 text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id} className="border-b hover:bg-muted transition-colors">
-                    <td className="py-2 px-2">{student.name}</td>
-                    <td className="py-2 px-2">
-                      <div className="flex flex-wrap gap-2">
-                        {student.nrcs.map((nrc) => {
-                          const nrcObj = nrcOptions.find(opt => opt.code === nrc)
-                          return (
-                            <span
-                              key={nrc}
-                              className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-accent"
-                            >
-                              {nrcObj ? `${nrcObj.code}` : nrc}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </td>
-                    <td className="py-2 px-2 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditStudent(student)
-                          setEditNrcs(student.nrcs)
-                        }}
-                      >
-                        <Pencil className="w-4 h-4 mr-1" />
-                        Editar NRCs
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="w-full min-w-[400px] max-w-3xl mx-auto p-4 space-y-[40px]">
+      <TeamMembers 
+        students={students} 
+        setStudents={setStudents} 
+        editStudent={editStudent}
+        setEditStudent={setEditStudent}
+        editNrcs={editNrcs}
+        setEditNrcs={setEditNrcs}
+        editFirstName={editFirstName}
+        setEditFirstName={setEditFirstName}
+        editLastName={editLastName}
+        setEditLastName={setEditLastName}
+        editEmail={editEmail}
+        setEditEmail={setEditEmail}
+        editStudentCode={editStudentCode}
+        setEditStudentCode={setEditStudentCode}
+        nrcOptions={nrcOptions}
+        setNrcOptions={setNrcOptions}
+        searchNrc={searchNrc}
+        setSearchNrc={setSearchNrc}
+        updateStudentBasics={updateStudentBasics}
+        handleSaveNrcs={handleSaveNrcs}
+      />
 
-      {/* Dialog para editar NRCs */}
-      <Dialog open={!!editStudent} onOpenChange={open => !open && setEditStudent(null)}>
-        <DialogContent className="max-w-md w-full">
-          <DialogHeader>
-            <DialogTitle>Editar NRCs de {editStudent?.name}</DialogTitle>
-            <DialogDescription>
-              Aquí puedes eliminar o agregar NRCs para este estudiante.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium">NRCs asignados</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {editNrcs.map((nrc) => {
-                const nrcObj = nrcOptions.find(opt => opt.code === nrc);
-                return (
-                  <span
-                    key={nrc}
-                    className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-accent"
-                  >
-                    {nrcObj ? `${nrcObj.code}` : nrc}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="ml-1 p-0.5 flex items-center justify-center cursor-pointer"
-                      style={{ lineHeight: 1, height: '1.5em', width: '1.5em' }}
-                      onClick={() => setEditNrcs(prev => prev.filter(code => code !== nrc))}
-                      aria-label="Eliminar NRC"
-                    >
-                      <span className="text-lg leading-none">×</span>
-                    </Button>
-                  </span>
-                );
-              })}
-            </div>
-            <label className="block text-sm font-medium">Agregar NRC</label>
-            <div>
-              <input
-                type="text"
-                placeholder="Buscar NRC"
-                className="w-full border rounded px-2 py-1 mb-2"
-                value={searchNrc}
-                onChange={e => setSearchNrc(e.target.value)}
-              />
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                {nrcOptions
-                  .filter(nrc => !editNrcs.includes(nrc.code) && String(nrc.code).includes(searchNrc))
-                  .map(nrc => (
-                    <Button
-                      key={nrc.code}
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => setEditNrcs(prev => [...prev, nrc.code])}
-                    >
-                      {nrc.code}
-                    </Button>
-                  ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditStudent(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => {
-                if (editNrcs.length === 0) {
-                  toast.error("Debes asignar al menos un NRC", { style: { background: "#ef4444", color: "#fff" } });
-                  return;
-                }
+      <TeamVideogame 
+        edit={edit} setEdit={setEdit}
+        infoEquipo={infoEquipo} setInfoEquipo={setInfoEquipo}
+        infoEditEquipo={infoEditEquipo} setInfoEditEquipo={setInfoEditEquipo}
+        fileInputRef={fileInputRef}
+        currentFiles={currentFiles}
+        fileError={fileError} setFileError={setFileError}
+        selectedFile={selectedFile} setSelectedFile={setSelectedFile}
+        cropperOpen={cropperOpen} setCropperOpen={setCropperOpen}
+        additionalImages={additionalImages} setAdditionalImages={setAdditionalImages}
+        handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
+      />
 
-                if (editNrcs.length > 2) {
-                  toast.error("No puedes asignar más de 2 NRCs", { style: { background: "#ef4444", color: "#fff" } });
-                  return;
-                }
-
-                handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
-              }}
-            >
-              Guardar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TeamImages/>
+      <h2 className="text-center">Puedes ver la información pública de tu videojuego <a href="/equipos" target="_blank" className="text-violet-700 hover:text-shadow-violet-300 hover:underline">aquí</a></h2>
     </div>
   )
 }
