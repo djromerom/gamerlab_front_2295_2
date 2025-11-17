@@ -4,9 +4,11 @@ import { CloudUpload, X } from "lucide-react"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { ImageCropper } from "../grupo 11/ImageCropper"
-
 import { TeamVideogameProps } from "@/types/teamVideogames";
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
+import { TeamImages } from "./TeamImages"
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "sonner"
 
 export default function FormEditVideogame (
     {
@@ -25,7 +27,10 @@ export default function FormEditVideogame (
     const MAX_DESCRIPTION = 300;
     const [isDragOver, setIsDragOver] = useState(false); 
     const fileInputRefImages = useRef<HTMLInputElement | null>(null);
-
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const { user } = useAuth();
+    const [data, setData] = useState<any>();
+    const [error, setError] = useState("");
     // Procesar archivos (común para click y drag & drop) 
 
     const processFiles = (files: FileList | File[]) => { 
@@ -35,7 +40,7 @@ export default function FormEditVideogame (
             alert("Máximo 5 fotos permitidas"); 
             return; 
         } 
-        setAdditionalImages(prev => [...prev, ...newFiles])
+        setAdditionalImages(prev => [...prev, ...newFiles]);
     }; 
 
     // Manejar la selección de archivos 
@@ -65,16 +70,76 @@ export default function FormEditVideogame (
         processFiles(files); 
     }; 
 
- 
+    const getImages = async () => {
+        try {
+            const response: any = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+                method: 'GET',
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+            })
+            
+            const data = await response.json();
+            if (!response.ok) {
+                setError(`No fue posible obtener las imagenes: ${data.message}`)
+            }
+            setData(data);
+            setImageUrls(data.videogame.additionalImages);
+        } catch (error) {
+            setError(`Error: ${error}`,);
+        }
+    }
 
     // Eliminar archivo específico 
     const handleDeleteFileImage = (index: number) => { 
         setAdditionalImages(prev => prev.filter((_, i) => i !== index))
     }; 
 
+    const updateImages = async () => {
+        try {
+            if (data) {
+                const payload = {
+                    videogame: {
+                        additionalImages: imageUrls
+                    }
+                };
+            const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${data.id}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+
+            if (!response.ok) {
+                toast.error("Hubo un error al actualizar los datos.", { id: 777 })
+                throw new Error ('Error')
+            } else {
+                toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
+            }
+        }
+        } catch (error) {
+            toast.error(`${error}`)
+        }
+    }
+
+    useEffect(() => {
+        if (edit) {
+            getImages();
+        } else {
+            setAdditionalImages([]);
+            setImageUrls([]);
+            setError("");
+        }
+    }, [edit]);
+
     return (
         <>
-            <Dialog open={!!edit} onOpenChange={() => {!open; setEdit(null)}}>
+                <Dialog 
+                    open={!!edit} 
+                    onOpenChange={(isOpen) => {
+                        if (!isOpen) setEdit(null);
+                    }}
+                >
+
                 <DialogContent className="self-center w-full m-auto max-h-[80vh] overflow-y-auto">
                 
                     <DialogHeader>
@@ -195,7 +260,7 @@ export default function FormEditVideogame (
                             <div className="flex flex-col gap-2">
                                 <Label>Vídeo de youtube</Label>
                                 <Input
-                                    value={infoEditEquipo?.videoUrl}
+                                    value={infoEditEquipo.videoUrl}
                                     onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videoUrl: e.target.value}))}
                                     placeholder="https://youtube..."
                                 />
@@ -274,7 +339,7 @@ export default function FormEditVideogame (
             
                         </div>
                     </div>
-
+                    <TeamImages imageUrls={imageUrls} setImageUrls={setImageUrls}/>
                     <DialogFooter>
                         <Button
                             variant="outline"
@@ -283,8 +348,9 @@ export default function FormEditVideogame (
                             Cancelar
                         </Button>
                         <Button onClick={async () => { 
-                            await uploadInfoTeam();
-                            await setInfoEquipo(infoEditEquipo); 
+                            uploadInfoTeam();
+                            setInfoEquipo(infoEditEquipo); 
+                            await updateImages();
                             setEdit(false)}}>
                                 Guardar
                         </Button>
@@ -297,6 +363,11 @@ export default function FormEditVideogame (
                 onClose={() => setCropperOpen(false)}
                 onCropComplete={handleCroppedImage}
             />
+            {
+                error && (
+                    <h2 className="text-center text-red-500">{error}</h2>
+                )
+            }
         </>
     )
 }

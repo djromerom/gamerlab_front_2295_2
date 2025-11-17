@@ -18,7 +18,6 @@ import TeamMembers from "./TeamMembers"
 import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
-import { TeamImages } from "./TeamImages";
 
 export default function EditBoard() {
   //context and refs
@@ -151,7 +150,7 @@ export default function EditBoard() {
         uploadedAdditional.push(urlResult.url);
       }
 
-      const uploadedAdditionalImages = [...uploadedAdditional, ...infoEquipo.additionalImages]
+      const uploadedAdditionalImages = [...infoEquipo.additionalImages, ...uploadedAdditional];
       
       const payload = {
         teamName: infoEditEquipo.teamName,
@@ -171,14 +170,13 @@ export default function EditBoard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
-
       if (!response.ok) {
         toast.error("Hubo un error al actualizar los datos.", { id: 777 })
         throw new Error ('Error')
       } else {
-        const dataEquipo = await getInfoEquipo()
-        setInfoEquipo(dataEquipo)
-        setInfoEditEquipo(dataEquipo)
+        const dataEquipo = await getInfoEquipo();
+        setInfoEquipo(dataEquipo);
+        setInfoEditEquipo(dataEquipo);
         toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
       }
     } catch (error) {
@@ -186,7 +184,6 @@ export default function EditBoard() {
       console.error('Los sentimos: ', error)
     } finally {
       setLoadingForm(false)
-      setTimeout(() => {window.location.reload()}, 1000); 
     }
   }
 
@@ -303,7 +300,6 @@ export default function EditBoard() {
         handleFileChange={handleFileChange} handleDeleteFile={handleDeleteFile} uploadInfoTeam={uploadInfoTeam} handleCroppedImage={handleCroppedImage}
       />
 
-      <TeamImages/>
       <h2 className="text-center">Puedes ver la información pública de tu videojuego <a href="/equipos" target="_blank" className="text-violet-700 hover:text-shadow-violet-300 hover:underline">aquí</a></h2>
     </div>
   )
