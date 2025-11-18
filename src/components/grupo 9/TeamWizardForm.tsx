@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,9 @@ export default function TeamWizardForm(props: any) {
   } = props;
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  const [countcCaracteres, setCountCaracteres] = useState(false);
+  
 
   async function resendInvite(email: string) {
     setInternalIsLoading(true);
@@ -113,7 +116,7 @@ export default function TeamWizardForm(props: any) {
         // si estamos en modo "add", reenviar confirmación al primer integrante (si existe)
         try {
           if (methods.watch("mode") === "add") {
-            const firstEmail = ((methods.getValues("integrantes") || [])[0]?.correo || "").trim();
+            const firstEmail = ((methods.getValues("integrantes") || [])[0]?.correo || "").toLowerCase().trim();
             if (firstEmail) {
               await resendInvite(firstEmail);
             }
@@ -171,8 +174,11 @@ export default function TeamWizardForm(props: any) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <Label>Nombre del equipo</Label>
-                <Input className="w-full" {...methods.register("nombre_equipo")} placeholder="Ej: Pixel Ninjas" />
-                <FieldError message={(methods.formState.errors as any)?.nombre_equipo?.message} />
+                <Input className="w-full" maxLength={50}{...methods.register("nombre_equipo")} placeholder="Ej: Pixel Ninjas" />
+                <div className="flex justify-between items-center">
+                  <FieldError message={(methods.formState.errors as any)?.nombre_equipo?.message} />
+                  <div className="text-xs text-muted-foreground float-right">{methods.watch("nombre_equipo")?.length || 0}/50</div>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -217,8 +223,12 @@ export default function TeamWizardForm(props: any) {
 
             <div className="flex flex-col gap-1">
               <Label>Descripción</Label>
-              <textarea className="p-2 border rounded-md w-full" rows={4} {...methods.register("videojuego.descripcion")} placeholder="Breve descripción del juego…" />
-              <FieldError message={(methods.formState.errors as any)?.videojuego?.descripcion?.message} />
+              <textarea className="p-2 border rounded-md w-full resize-none" rows={4} maxLength={300} {...methods.register("videojuego.descripcion")} placeholder="Breve descripción del juego…" />
+              <div className="flex justify-between items-center">
+                <FieldError message={(methods.formState.errors as any)?.videojuego?.descripcion?.message} />
+                <div className="text-xs text-muted-foreground">{methods.watch("videojuego.descripcion")?.length || 0}/300</div>
+              </div>
+              
             </div>
 
             <div className="flex flex-col gap-1">
@@ -418,11 +428,7 @@ export default function TeamWizardForm(props: any) {
 
       <ImageCropper file={selectedLogoFile} open={cropperOpen} onClose={() => setCropperOpen(false)} onCropComplete={handleCroppedLogo} />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div className="hidden sm:block w-full sm:w-auto">
-          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => methods.getValues && methods.setValue && methods.setValue("mode", methods.watch("mode"))} disabled={busy}>Cancelar</Button>
-        </div>
-
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
         <div className="flex w-full sm:w-auto gap-2 flex-col-reverse sm:flex-row">
           {step > 1 && (
             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setStep((s: number) => Math.max(1, s - 1))} disabled={busy}>

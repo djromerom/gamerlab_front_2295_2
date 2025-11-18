@@ -20,6 +20,16 @@ async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
   return exists === true;
 }
 
+async function checkNameTeamUnique(apiBaseUrl: string, teamName: string) {
+  const res = await fetch(`${apiBaseUrl}/teams/name/${encodeURIComponent(teamName)}`);
+  if (!res.ok) throw new Error("No se pudo verificar el nombre del equipo.");
+  const exists = await res.json();
+  return exists === true;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Team Wizard Dialog
+──────────────────────────────────────────────────────────────────── */
 async function findUsedEmails(apiBaseUrl: string, emails: string[], excludeEmails: string[] = []) {
 
   const toCheck = (emails || [])
@@ -410,8 +420,13 @@ export default function TeamWizardDialog({
     try {
       setBusy(true);
       const exists = await checkGameNameUnique(apiBaseUrl, vals.videojuego.nombre);
+      const teamExists = await checkNameTeamUnique(apiBaseUrl, vals.nombre_equipo);
       if (exists && (mode !== "edit" || vals.videojuego.nombre !== (initialData?.videojuego?.nombre || ""))) {
         toast.error("El nombre del videojuego ya está en uso.");
+        return;
+      }
+      if (teamExists && (mode !== "edit" || vals.nombre_equipo !== (initialData?.nombre_equipo || ""))) {
+        toast.error("El nombre del equipo ya está en uso.");
         return;
       }
       setStep(2);

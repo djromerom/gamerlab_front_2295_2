@@ -126,10 +126,30 @@ export const TeamsManagementTable: React.FC<Props> = ({
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.message || "Error actualizando el equipo.");
+      throw new Error(err?.message || "Error actualizando estado del videojuego.");
     }
-    // opcional: devolver body si el backend retorna el equipo actualizado
+
     return res.json().catch(() => null);
+  };
+
+  const getTeamStatus = async (teamId: number) => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/teams/${teamId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || "Error obteniendo estado del videojuego.");
+      }
+
+      return res.json().catch(() => null);
+    } catch (e: any) {
+      console.error("Network error getting team status:", e);
+      throw new Error(e?.message || "Error de red al obtener el estado del videojuego.");
+    }
   };
 
   const getStatusBadge = (statusId: number) => {
@@ -331,7 +351,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = team.integrantes?.[0]?.correo;
+        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
@@ -382,7 +402,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
       renderCell: (team: TeamRowData) => {
         const idEstadoVideojuego = team.videojuego?.id_estado_videojuego ?? 2;
 
-        // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
         const estadoOptions = [
           { id_estado: 1, estado: "Confirmado" },
           { id_estado: 2, estado: "Pendiente" },
@@ -391,7 +410,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
         return (
           <div className="space-y-2">
-            {/* Mostrar badge basado en el id real del videojuego */}
             <div>{getStatusBadge(idEstadoVideojuego)}</div>
 
             <Select
@@ -508,7 +526,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
       className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
-      {/* Header (responsive): título visible junto al filtro desplegable y botón Agregar en móvil) */}
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
           <div className="flex items-center gap-2 w-full">

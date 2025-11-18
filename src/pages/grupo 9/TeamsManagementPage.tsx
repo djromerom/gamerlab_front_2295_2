@@ -16,14 +16,12 @@ const TeamsManagementPage = () => {
     limit: 10,
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
-  const [internalIsLoading, setInternalIsLoading] = useState(false);
+  const [ , setInternalIsLoading] = useState(false);
 
-  // cache del estado de confirmación por id_equipo
   const [emailConfirmMap, setEmailConfirmMap] = useState<Record<number, TeamConfirmationStatusResponse | null>>({});
 
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
-  // Hacer la petición en una callback estable para poder usarla en useEffect
   const statusEmailLeader = useCallback(async (email: string): Promise<TeamConfirmationStatusResponse> => {
     setInternalIsLoading(true);
     try {
@@ -40,7 +38,6 @@ const TeamsManagementPage = () => {
 
       const json = await res.json();
 
-      // Validar y mapear la respuesta a la interfaz
       if (json && typeof json.confirmationStatus === "object" && typeof json.confirmationStatus.id === "number") {
         const cs = json.confirmationStatus;
         const mapped: TeamConfirmationStatusResponse = {
@@ -55,10 +52,8 @@ const TeamsManagementPage = () => {
         return mapped;
       }
 
-      // Si la respuesta no tiene la estructura esperada, lanzar para caer en el catch
       throw new Error("Respuesta inesperada del servidor");
     } catch (e: any) {
-      // Valor por defecto cuando falla la consulta
       return {
         confirmationStatus: {
           id: 0,
@@ -73,7 +68,6 @@ const TeamsManagementPage = () => {
     }
   }, [API_ENDPOINT]);
 
-  // Prefetch: intenta obtener el estado del líder para cada equipo (si tiene correo)
   useEffect(() => {
     let mounted = true;
     const loadAll = async () => {
@@ -81,12 +75,10 @@ const TeamsManagementPage = () => {
       if (!teams.length) return;
       for (const team of teams) {
         const id = team.id_equipo;
-        // Evitar reconsultar si ya tenemos un valor cacheado
         if (Object.prototype.hasOwnProperty.call(emailConfirmMap, id)) continue;
 
         const primaryEmail = team.integrantes?.[0]?.correo;
         if (!primaryEmail) {
-          // marcar explícitamente como null para no reintentar
           setEmailConfirmMap((p) => ({ ...p, [id]: null }));
           continue;
         }
@@ -105,7 +97,7 @@ const TeamsManagementPage = () => {
     return () => {
       mounted = false;
     };
-  }, [teamsData?.data, statusEmailLeader]); // se ejecuta cuando se cargan los equipos
+  }, [teamsData?.data, statusEmailLeader]); 
 
   const fetchTeams = async (page: number, limit: number) => {
     setIsPageLoading(true);
@@ -122,10 +114,8 @@ const TeamsManagementPage = () => {
       );
 
       if (!res.ok) {
-        // Si el endpoint no existe (404), mostrar datos de ejemplo
         if (res.status === 404) {
           console.warn("Teams endpoint not found, using mock data");
-          // Los datos mock se manejan en la sección de datos vacíos más abajo
           setTeamsData(null);
           return;
         }
@@ -135,14 +125,12 @@ const TeamsManagementPage = () => {
           const errorBody = await res.json();
           errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
         } catch (e) {
-          /* ignore */
         }
         throw new Error(errorMsg);
       }
 
       const apiResponse = await res.json();
 
-      // Helper: mapear item de la API (nuevo esquema) -> TeamRowData (esquema interno)
       const mapApiTeamToTeamRow = (t: any): TeamRowData => {
         const members = Array.isArray(t.members) ? t.members : [];
 
@@ -169,7 +157,6 @@ const TeamsManagementPage = () => {
 
         const vg = t.videogame ?? t.videojuego ?? {};
 
-        // nrc_info / materia_info: intentar inferir desde el primer miembro
         let nrc_info = undefined;
         let materia_info = undefined;
         const firstNrc = integrantes?.[0]?.nrcs?.[0];
@@ -215,18 +202,14 @@ const TeamsManagementPage = () => {
           },
           nrc_info,
           materia_info,
-          // conservar propiedades que algunos componentes leen directamente
           isExternal: (t as any).isExternal,
           team_nrc_global_id: (t as any).teamNrcGlobal ?? (t as any).team_nrc_global_id,
         } as TeamRowData;
       };
 
-      // Normalize response into PaginatedTeams
       let dataRespond: PaginatedTeams;
 
       if (Array.isArray(apiResponse)) {
-        // respuesta simple -> mapear y construir metadata básica
-        console.log("API returned simple array format, converting to paginated format");
         const mapped = apiResponse.map(mapApiTeamToTeamRow);
         dataRespond = {
           data: mapped,
@@ -239,7 +222,6 @@ const TeamsManagementPage = () => {
           },
         };
       } else if (apiResponse && Array.isArray(apiResponse.data)) {
-        // API ahora devuelve { data: [...], metaData: { ... } }
         const mapped = apiResponse.data.map(mapApiTeamToTeamRow);
         const md = apiResponse.metaData ?? apiResponse.metadata ?? {};
         dataRespond = {
@@ -303,8 +285,6 @@ const TeamsManagementPage = () => {
   };
 
   const breadcrumbs = [{ label: "Equipos Inscritos", href: "/equipos-inscritos" }];
-
-
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
