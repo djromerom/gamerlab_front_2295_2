@@ -14,13 +14,11 @@ RUN npm ci --silent
 # Build-time env vars (passed as --build-arg). These will be written to a .env
 # so Vite can replace import.meta.env.VITE_* during build.
 
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_ENDPOINT_BACKEND
 ARG VITE_SITE_KEY
 
 # Write a simple .env file consumed at build time by Vite
-RUN printf "VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\nVITE_ENDPOINT_BACKEND=%s\nVITE_SITE_KEY=%s\n" "$VITE_SUPABASE_URL" "$VITE_SUPABASE_ANON_KEY" "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" > .env || true
+RUN printf "VITE_ENDPOINT_BACKEND=%s\nVITE_SITE_KEY=%s\n" "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" > .env || true
 
 # Copy the rest of the source code and build
 COPY . .
