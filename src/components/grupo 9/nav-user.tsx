@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, Home } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/types/auth";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   user: UserProfile;
@@ -27,6 +28,7 @@ interface Props {
 export const NavUser: React.FC<Props> = ({ user }) => {
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
+  const navigate = useNavigate();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -82,6 +84,13 @@ export const NavUser: React.FC<Props> = ({ user }) => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="cursor-pointer" 
+              onClick={() => navigate("/")}
+            >
+              <Home />
+              Página Principal
+            </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer" onClick={logout}>
               <LogOut />
               Salir
