@@ -35,7 +35,7 @@ jobs:
   docker-image:
       runs-on: ubuntu-latest
       needs: test  
-      if: github.ref == 'refs/heads/test' && success()
+      if: github.ref == 'refs/heads/dev-deploy' && success()
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
