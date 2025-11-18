@@ -66,7 +66,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   useEffect(() => {
     const load = async () => {
-      setIsLoadingOptions(true);
+      //setIsLoadingOptions(true);
       try {
         const res = await fetch(API_ENDPOINT, {
           method: "GET",
@@ -104,7 +104,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         setMateriasOptions([]);
 
       } finally {
-        setIsLoadingOptions(false);
+        //setIsLoadingOptions(false);
       }
     };
     load();

@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import EditBoard from "@/components/grupo 5/EditBoard";
 
+
 const EditTeamPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();

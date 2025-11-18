@@ -12,15 +12,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const handleGoBack = () => {
+    navigate("/"); // Navegar a la landing page
+  };
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +57,7 @@ export default function LoginPage({
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogIn}>
-                <div className="flex flex-col gap-6 items-center">
+                <div className="flex flex-col gap-4 items-center">
                   <div className="flex flex-col items-start gap-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -75,9 +81,19 @@ export default function LoginPage({
                     />
                   </div>
                   {error && <p className="text-red-600">{error}</p>}
-                  <Button type="submit" className="w-80 cursor-pointer">
-                    Ingresar
-                  </Button>
+                  <div className="flex flex-col gap-2 w-80">
+                    <Button type="submit" className="w-full cursor-pointer">
+                      Ingresar
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleGoBack}
+                      className="w-full cursor-pointer"
+                    >
+                      Volver a la página principal
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>

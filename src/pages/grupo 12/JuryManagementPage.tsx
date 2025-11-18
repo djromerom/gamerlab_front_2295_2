@@ -51,7 +51,7 @@ const JuryManagementPage = () => {
       }
 
       const dataRespond: PaginatedJurors = await res.json();
-      console.log("dataRespond", dataRespond);
+      
 
       // If the current page is empty (e.g., after deleting the last item)
       // and it's not the first page, fetch the previous page.

@@ -16,14 +16,14 @@ function Landing(): React.ReactElement {
   const [eventEnded, setEventEnded] = useState<boolean>(false)
   const [showConfetti, setShowConfetti] = useState<boolean>(false)
   const [confettiFadingOut, setConfettiFadingOut] = useState<boolean>(false)
+  const startDate = new Date("2025-11-27T08:30:00")
+  const endDate = new Date("2025-11-27T12:30:00") 
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
     document.documentElement.classList.add("dark")
 
     // Check event status when component mounts
-    const startDate = new Date("2026-06-05T08:30:00")
-    const endDate = new Date("2026-06-05T12:30:00") 
     const now = new Date()
 
     if (now >= endDate) {
@@ -67,7 +67,6 @@ function Landing(): React.ReactElement {
     }
   }, [])
 
-  const targetDate = new Date("2025-11-28T08:30:00")
   const navigate = useNavigate()
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT"
 
@@ -90,12 +89,13 @@ function Landing(): React.ReactElement {
 
   const getButtonText = () => {
     if (eventEnded) return "Ver ranking"
-    return "Registrar Equipo"
+    if (eventStarted) return "Ver videojuegos"
+    return "Registrar equipo"
   }
 
   const getButtonRoute = () => {
     if (eventEnded) return "/ranking"
-    //return "/informacion"
+    if (eventStarted) return "/equipos"
     return "/registro-equipo"
   }
 
@@ -106,7 +106,7 @@ function Landing(): React.ReactElement {
     if (eventStarted) {
       return "La experiencia definitiva donde la creatividad y la tecnología se encuentran ya está aquí. Explora los videojuegos más innovadores creados por talentosos estudiantes."
     }
-    return "Bienvenidos a la experiencia definitiva donde la creatividad y la tecnología se encuentran. Únete a nosotros para explorar los videojuegos más innovadores creados por talentosos estudiantes."
+    return "Bienvenidos a la experiencia definitiva donde la creatividad y la tecnología se encuentran. Inscríbete y explora los videojuegos creados por nuestros estudiantes."
   }
 
   return (
@@ -128,14 +128,14 @@ function Landing(): React.ReactElement {
               eventEnded={eventEnded}
             />
           ) : (
-            <CountdownTimer targetDate={targetDate} onCountdownEnd={handleCountdownEnd} />
+            <CountdownTimer targetDate={startDate} onCountdownEnd={handleCountdownEnd} />
           )}
 
-          <h1 className="font-inter text-4xl sm:text-5xl xl:text-7xl font-bold">
-            Una muestra de videojuegos sin precedentes en Uninorte
+          <h1 className="md:px-24 font-inter text-3xl md:text-4xl sm:text-5xl xl:text-7xl font-bold">
+            Una exhibición de los mejores videojuegos estudiantiles
           </h1>
-          <h2 className="text-2xl md:text-4xl font-medium tracking-tighter mt-4">Feria Gamer Uninorte</h2>
-          <p className="text-lg md:text-xl mt-6 max-w-3xl">{getDescriptionText()}</p>
+          <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4">Feria Gamer Uninorte</h2>
+          <p className="text-md md:text-2xl mt-6 max-w-4xl">{getDescriptionText()}</p>
           <div className="mt-8">
             <button
               onClick={() => navigate(getButtonRoute())}
