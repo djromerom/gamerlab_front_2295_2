@@ -13,7 +13,7 @@ function FieldError({ message }: { message?: string }) {
     return <p className="text-sm text-destructive mt-1">{message}</p>;
   }
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
 export default function TeamWizardForm(props: any) {
   const {
