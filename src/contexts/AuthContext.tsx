@@ -103,9 +103,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
       );
 
+      const log = await res.json();
+
       if (!res.ok) {
         setLoading(false);
-        throw new Error("Login fallido");
+        throw new Error(log.message || "Invalid credentials");
       }
       await contextRefreshAccessToken();
     } catch (error) {
