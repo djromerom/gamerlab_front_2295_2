@@ -108,30 +108,13 @@ export default function MultiStepWizard() {
           }
         }
 
-        // Upload additional files (additionalFiles)
-        
-        
-        
-        if (data.additionalFiles && data.additionalFiles.length > 0) {
-          
-          
+        console.log("Uploading file to Azure...");
+        console.log('TAMAÑO DEL FILE:', data.files.length);
 
-          for (let i = 0; i < data.additionalFiles.length; i++) {
-            const file = data.additionalFiles[i];
-            
-            
-            const uploadResult = await uploadImage(file);
-            
-            
-            const urlResult = await getImageUrl(uploadResult.id); 
-            
-            
-            uploadedAdditionalFileUrls.push(urlResult.url);
-          }
-          
-          
-        } else {
-          
+        for (const file of data.files) {
+          const uploadResult = await uploadImage(file);
+          const urlResult = await getImageUrl(uploadResult.id);
+          uploadedFileUrls.push(urlResult.url);
         }
 
         if (uploadToastId) {

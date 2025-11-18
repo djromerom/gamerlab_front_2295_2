@@ -1,102 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Dialog, DialogContent, DialogFooter,
-  DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { FormProvider, useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { WizardSchema, WizardValues } from "./validationTeamsAdmin";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
-import type { NrcInfo, MateriaInfo, TeamRowData } from "./teams-utils";
+import type { NrcInfo, MateriaInfo, TeamRowData, NrcOption, SafeNrc, UploadInfo } from "./teams-utils";
 import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
-
-// Define an interface for your NRC option objects
-interface NrcOption {
-  code: number | string;
-  name?: string;
-  [key: string]: unknown;
-}
-
-type SafeNrc = {
-  id: number;
-  codeStr: string;
-  label: string;
-};
+import { submitTeam, SubmitCtx } from "./submitTeamsAdmin";
+import TeamWizardForm from "./TeamWizardForm";
 
 /* ────────────────────────────────────────────────────────────────────
-   Validaciones y helpers
+   Fetch de Nombre de Juego unico y correo no registrado
 ──────────────────────────────────────────────────────────────────── */
-const isYouTubeUrl = (url: string) =>
-  !url || /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/).+/i.test(url);
-
-const uninorteEmail = (s: string) => /^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(s);
-const onlyDigits = (s: string) => /^\d+$/.test(s);
-
-const MemberSchemaAllRequired = z.object({
-  nombre: z.string().trim().min(1, "Obligatorio"),
-  apellido: z.string().trim().min(1, "Obligatorio"),
-  correo: z.string().trim().min(1, "Obligatorio").email("Correo inválido"),
-  codigo_estudiantil: z.string().trim().min(1, "Obligatorio"),
-  nrcIds: z.array(z.number()).optional(), // ✅ Cambio: array de números
-});
-
-const WizardSchema = z.object({
-  mode: z.enum(["add", "edit"]),
-  isExternal: z.boolean(),
-  team_nrc_global_id: z.number().optional(),
-  nombre_equipo: z.string().trim().min(1, "Nombre del equipo requerido"),
-  videojuego: z.object({
-    nombre: z.string().trim().min(1, "Nombre del videojuego requerido"),
-    descripcion: z.string().trim().min(1, "Descripción requerida"),
-    logo_url: z.string().url("URL inválida").or(z.literal("")).optional(),
-    video_demo_url: z.string().trim().refine(isYouTubeUrl, "Enlace de YouTube inválido"),
-  }),
-  integrantes: z.array(MemberSchemaAllRequired).min(1, "Agrega al menos un miembro"),
-}).superRefine((data, ctx) => {
-  if (data.isExternal) {
-    if (!data.team_nrc_global_id) {
-      ctx.addIssue({ code: "custom", path: ["team_nrc_global_id"], message: "Selecciona el NRC global" });
-    }
-  } else {
-    data.integrantes.forEach((m, i) => {
-      if (!uninorteEmail(m.correo))
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
-      if (!onlyDigits(m.codigo_estudiantil))
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });
-      // ✅ Validar que tenga al menos un NRC
-      if (!m.nrcIds || m.nrcIds.length === 0)
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "nrcIds"], message: "Selecciona al menos un NRC" });
-    });
-  }
-});
-
-export type WizardValues = z.infer<typeof WizardSchema>;
-
-/* Error bajo campo */
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-red-500 mt-1">{message}</p>;
-}
-
-function StepHeader({
-  step, total, title, cantidad, subtitle,
-}: { step: number; total: number; title: string; cantidad?: number; subtitle?: string }) {
-  return (
-    <div className="mb-2">
-      <div className="text-xs text-muted-foreground">Paso {step} de {total}</div>
-      <h3 className="text-lg font-medium">{title}</h3>
-      {cantidad !== undefined && <h4 className="text-sm text-muted-foreground mb-1">Cantidad de miembros: {cantidad}</h4>}
-      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-    </div>
-  );
-}
 
 async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
   const res = await fetch(`${apiBaseUrl}/teams/videogame/${encodeURIComponent(gameName)}`);
@@ -106,35 +21,67 @@ async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
 }
 
 async function findUsedEmails(apiBaseUrl: string, emails: string[], excludeEmails: string[] = []) {
-  const results: string[] = [];
-  await Promise.all(
-    emails.map(async (email) => {
-      // Saltar emails que deben ser excluidos (ej: email original del líder en modo edición)
-      if (excludeEmails.includes(email)) return;
 
-      const res = await fetch(`${apiBaseUrl}/users/check-email?email=${encodeURIComponent(email)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.used) results.push(email);
-      }
-    })
-  );
-  return results;
+  const toCheck = (emails || [])
+    .map(e => (e || "").trim())
+    .filter(e => e && !excludeEmails.includes(e));
+
+  if (toCheck.length === 0) return [];
+
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/teams/validate-emails`;
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: toCheck }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "<no body>");
+      console.warn("[findUsedEmails] validate-emails failed:", url, res.status, body);
+      return [];
+    }
+
+    const data = await res.json().catch(() => null);
+
+    if (Array.isArray(data)) {
+      return data.map(String);
+    }
+    if (data && typeof data === "object") {
+      return Object.entries(data)
+        .filter(([, used]) => !!used)
+        .map(([email]) => email);
+    }
+
+    return [];
+  } catch (err) {
+    console.error("[findUsedEmails] network error:", err);
+    return [];
+  }
 }
 
 async function uploadFilesToAzure(filesList: File[]) {
-  if (!filesList || filesList.length === 0) return [] as string[];
+  if (!filesList || filesList.length === 0) return [] as UploadInfo[];
   const id = toast.loading("Subiendo archivos...");
   try {
-    const urls = await Promise.all(
+    const uploads = await Promise.all(
       filesList.map(async (file) => {
         const up = await uploadImage(file);
-        const url = await getImageUrl(up.id);
-        return url.url;
+        const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" }));
+        const url = urlObj?.url ?? "";
+        return {
+          blobName: url,
+          filename: file.name,
+          mimetype: file.type || "application/octet-stream",
+          size: file.size || 0,
+          isPublic: true,
+          url,
+        } as UploadInfo;
       })
     );
     toast.success("Archivos subidos correctamente", { id });
-    return urls;
+    return uploads;
   } catch (e: any) {
     toast.dismiss(id);
     throw new Error(e?.message || "Fallo al subir archivos");
@@ -143,61 +90,139 @@ async function uploadFilesToAzure(filesList: File[]) {
 
 function buildPayload(
   data: WizardValues,
-  uploadedUrls: string[],
+  logoUpload: UploadInfo | null,
+  galleryUploads: UploadInfo[],
   nrcOptions: NrcInfo[],
   primaryEmailLocked?: string
 ) {
+  const makeRandomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000); // rango 400000000..899999999
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
+  const resolveNrcCode = (item: any) => {
+    if (!item) return undefined;
+    return (
+      item.codigo ??
+      item.code ??
+      item.codeStr ??
+      item.id_nrc ??
+      item.id ??
+      ""
+    ).toString();
+  };
+
+  const findNrcMatch = (value: any) => {
+    if (value === undefined || value === null) return undefined;
+    const vStr = String(value).toLowerCase();
+    return (nrcOptions || []).find((n: any) => {
+      const candidates = [
+        n?.id_nrc,
+        n?.id,
+        n?.code,
+        n?.codigo,
+        n?.codeStr,
+      ].map((c: any) => (c === undefined || c === null ? "" : String(c).toLowerCase()));
+      return candidates.includes(vStr);
+    });
+  };
+
   const globalNrcCode =
     data.isExternal && data.team_nrc_global_id
-      ? nrcOptions.find(n => n.id_nrc === data.team_nrc_global_id)?.codigo
+      ? (() => {
+        const match = findNrcMatch(data.team_nrc_global_id);
+        return match ? resolveNrcCode(match) : String(data.team_nrc_global_id);
+      })()
       : undefined;
 
-  const members = data.integrantes.map((m, idx) => {
+  const members = (data.integrantes || []).map((m, idx) => {
     const email = idx === 0 && primaryEmailLocked ? primaryEmailLocked : m.correo;
 
-    if (data.isExternal) {
-      return {
-        memberFirstName: m.nombre,
-        memberLastName: m.apellido,
-        memberEmail: email,
-        nrc: globalNrcCode ? [globalNrcCode] : [],
-      };
-    }
+    const nrcStrings = data.isExternal
+      ? (globalNrcCode ? [String(globalNrcCode)] : [])
+      : (m.nrcIds || [])
+        .map((id) => {
+          const idStr = String(id);
+          const match = (nrcOptions || []).find((n: any) =>
+            String(n.id_nrc ?? n.id ?? n.code ?? n.codigo ?? n.codeStr ?? "").toLowerCase() === idStr.toLowerCase()
+          );
+          if (match) return resolveNrcCode(match);
+          return idStr;
+        })
+        .filter((c) => c !== undefined && c !== null)
+        .map(String);
 
-    // ✅ Mapear múltiples NRCs
-    const nrcCodes = (m.nrcIds || [])
-      .map(id => nrcOptions.find(n => n.id_nrc === id)?.codigo)
-      .filter((code): code is number => code !== undefined);
-
-    return {
+    const memberObj: Record<string, any> = {
       memberFirstName: m.nombre,
       memberLastName: m.apellido,
       memberEmail: email,
-      studentCode: m.codigo_estudiantil,
-      nrc: nrcCodes,
+      nrc: nrcStrings,
     };
+
+    if (m.codigo_estudiantil && String(m.codigo_estudiantil).trim() !== "") {
+      memberObj.studentCode = String(m.codigo_estudiantil);
+    } else {
+      memberObj.studentCode = data.isExternal ? makeRandomStudentCode() : String(m.codigo_estudiantil ?? "");
+    }
+
+    return memberObj;
   });
+
+  const uploads = (galleryUploads || []).map(u => ({
+    blobName: u.blobName,
+    filename: u.filename,
+    mimetype: u.mimetype,
+    size: u.size,
+    isPublic: u.isPublic,
+  }));
 
   return {
     teamName: data.nombre_equipo,
+    isExternal: data.isExternal,
     members,
     videogame: {
       vgName: data.videojuego.nombre,
       description: data.videojuego.descripcion,
-      logoUrl: uploadedUrls[0] || data.videojuego.logo_url || "",
-      videoDemoUrl: data.videojuego.video_demo_url || "",
+      repoUrl: (data as any).videojuego?.repo_url || "",
+      logoUrl: logoUpload?.blobName || data.videojuego.logo_url || "",
+      videoUrl: data.videojuego.video_demo_url || "",
+      uploads,
     },
-    isExternal: data.isExternal,
-    teamNrcGlobal: data.isExternal ? (globalNrcCode ?? null) : null,
   };
 }
 
 /** Para abrir "Editar" desde la tabla */
 export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = false): WizardValues {
+  const integrantes = team.integrantes.map((m: any) => ({
+    id_integrante: m.id_integrante ?? m.id ?? undefined, // ✅ conservar id del integrante
+    nombre: m.nombre || "",
+    apellido: m.apellido || "",
+    correo: m.correo || "",
+    codigo_estudiantil: String(m.codigo_estudiantil ?? ""),
+    nrcIds: Array.isArray((m as any).nrcs) ? (m as any).nrcs.map((n: any) => n.id_nrc ?? n.id ?? n.code) : [],
+  }));
+
+  // si el equipo no trae team_nrc_global_id, intentar derivarlo del primer integrante
+  let inferredTeamNrc: number | undefined = undefined;
+  if ((team as any).team_nrc_global_id) {
+    inferredTeamNrc = (team as any).team_nrc_global_id;
+  } else if (integrantes.length > 0 && Array.isArray((team.integrantes?.[0] as any)?.nrcs) && (team.integrantes?.[0] as any).nrcs.length > 0) {
+    const firstNrc = (team.integrantes?.[0] as any).nrcs[0];
+    inferredTeamNrc = firstNrc?.id_nrc ?? firstNrc?.id ?? undefined;
+  }
+
   return {
+    id_equipo: team.id_equipo,
     mode: "edit",
     isExternal: (team as any).isExternal ?? isExternalGuess,
-    team_nrc_global_id: (team as any).team_nrc_global_id,
+    team_nrc_global_id: inferredTeamNrc ?? (team as any).teamNrcGlobal ?? undefined,
     nombre_equipo: team.nombre_equipo,
     videojuego: {
       nombre: team.videojuego.nombre,
@@ -205,13 +230,7 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       logo_url: team.videojuego.logo_url,
       video_demo_url: (team as any).videojuego?.video_demo_url || "",
     },
-    integrantes: team.integrantes.map((m: any) => ({
-      nombre: m.nombre || "",
-      apellido: m.apellido || "",
-      correo: m.correo || "",
-      codigo_estudiantil: String(m.codigo_estudiantil ?? ""),
-      nrcIds: [] // ✅ Cambio: array vacío o mapear desde los datos existentes
-    })),
+    integrantes,
   };
 }
 
@@ -236,17 +255,22 @@ export default function TeamWizardDialog({
   onSuccess,
   initialData,
 }: TeamWizardDialogProps) {
-  // ✅ TODOS LOS ESTADOS DENTRO DEL COMPONENTE
+
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(0);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);
 
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`;
 
-  // ✅ FETCH DE NRCs DENTRO DEL COMPONENTE
   useEffect(() => {
     const fetchNrcs = async () => {
       setIsPageLoading(true);
@@ -299,7 +323,6 @@ export default function TeamWizardDialog({
     fetchNrcs();
   }, [API_ENDPOINT]);
 
-  // ✅ USEMEMO DENTRO DEL COMPONENTE
   const safeNrcs: SafeNrc[] = useMemo(() => {
     const toNumber = (v: unknown) => {
       if (typeof v === "number") return v;
@@ -323,16 +346,18 @@ export default function TeamWizardDialog({
 
   const defaultValues: WizardValues = {
     mode: "add",
+    id_equipo: 0,
     isExternal: false,
     team_nrc_global_id: undefined,
     nombre_equipo: "",
     videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "" },
     integrantes: [{
+      id_integrante: undefined,
       nombre: "",
       apellido: "",
       correo: "",
       codigo_estudiantil: "",
-      nrcIds: [] // ✅ Cambio: array vacío
+      nrcIds: []
     }],
   };
   const methods = useForm<WizardValues>({
@@ -341,14 +366,13 @@ export default function TeamWizardDialog({
     mode: "onBlur",
   });
 
-  const { control, watch, handleSubmit, reset, formState } = methods;
+  const { control, watch, reset, formState } = methods;
   const { errors } = formState;
 
   const { fields, append, remove } = useFieldArray({ control, name: "integrantes" });
   const mode = watch("mode");
   const isExternal = watch("isExternal");
 
-  // Email del primer integrante bloqueado en edición
   const primaryEmailLocked = useMemo(() => {
     if (mode !== "edit") return undefined;
     const mem = watch("integrantes");
@@ -363,20 +387,18 @@ export default function TeamWizardDialog({
         reset(defaultValues);
       }
       setStep(1);
-      setFiles([]);
+      setGalleryFiles([]);
+      setLogoFile(null);
       setEditingIndex(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  /** Paso 1 → Paso 2 (validaciones de equipo+juego) */
   const nextFromStep1 = async () => {
     const vals = methods.getValues();
 
-    // dispare validación de estos campos visibles
-    await methods.trigger(["nombre_equipo", "videojuego.nombre", "videojuego.descripcion", "videojuego.video_demo_url"]);
+    await methods.trigger(["nombre_equipo", "videojuego.nombre", "videojuego.descripcion"]);
 
-    if (errors?.nombre_equipo || errors?.videojuego?.nombre || errors?.videojuego?.descripcion || errors?.videojuego?.video_demo_url) {
+    if (errors?.nombre_equipo || errors?.videojuego?.nombre || errors?.videojuego?.descripcion) {
       return;
     }
 
@@ -385,15 +407,10 @@ export default function TeamWizardDialog({
       return;
     }
 
-    if (files.length > 4) {
-      toast.error("Máximo 4 archivos");
-      return;
-    }
-
     try {
       setBusy(true);
       const exists = await checkGameNameUnique(apiBaseUrl, vals.videojuego.nombre);
-      if (exists) {
+      if (exists && (mode !== "edit" || vals.videojuego.nombre !== (initialData?.videojuego?.nombre || ""))) {
         toast.error("El nombre del videojuego ya está en uso.");
         return;
       }
@@ -405,475 +422,241 @@ export default function TeamWizardDialog({
     }
   };
 
-  /** Guardar (Paso 2) */
-  const onSubmit = handleSubmit(async (data) => {
-    const validatedData = data as unknown as WizardValues;
-    setBusy(true);
-    try {
-      // Validación completa
-      WizardSchema.parse(validatedData);
+  const nextFromStep2 = async () => {
+    await methods.trigger(["integrantes"]);
+    const vals = methods.getValues();
+    if ((errors as any)?.integrantes) return;
+    if (!vals.integrantes || vals.integrantes.length === 0) {
+      toast.error("Agrega al menos un miembro");
+      return;
+    }
+    setStep(3);
+  };
 
-      if (!validatedData.isExternal && validatedData.integrantes.length > 0) {
-        const emails = validatedData.integrantes.map((m) => m.correo);
-        // ✅ En modo edición, excluir el email original del primer miembro
-        const excludeEmails = validatedData.mode === "edit" && primaryEmailLocked ? [primaryEmailLocked] : [];
-        const dup = await findUsedEmails(apiBaseUrl, emails, excludeEmails);
-        if (dup.length) {
-          toast.error(`Correo(s) ya usados: ${dup.join(", ")}`);
-          return;
+  const handleLogoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (f.size > MAX_BYTES) {
+      toast.error("La imagen debe pesar menos de 5 MB");
+      e.target.value = "";
+      return;
+    }
+    setSelectedLogoFile(f);
+    setCropperOpen(true);
+    e.target.value = "";
+  };
+
+  const handleCroppedLogo = (file: File) => {
+    setLogoFile(file);
+  };
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview(null);
+      return;
+    }
+    const u = URL.createObjectURL(logoFile);
+    setLogoPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [logoFile]);
+
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    if (!newFiles.length) return;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    for (const f of newFiles) {
+      if (!f.type.startsWith("image/")) {
+        toast.error("Solo se permiten imágenes");
+        e.target.value = "";
+        return;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error("Cada imagen debe ser menor a 5 MB");
+        e.target.value = "";
+        return;
+      }
+    }
+
+    const combined = [...galleryFiles, ...newFiles];
+    if (combined.length > 5) {
+      toast.error("Máximo 5 imágenes");
+      e.target.value = "";
+      return;
+    }
+
+    setGalleryFiles(combined);
+    e.target.value = "";
+  };
+
+  const handleDeleteGallery = (index: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    const urls = galleryFiles.map((f) => URL.createObjectURL(f));
+    setGalleryPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [galleryFiles]);
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (step === 3) {
+      await onSubmit();
+    } else if (step === 1) {
+      await nextFromStep1();
+    } else if (step === 2) {
+      await nextFromStep2();
+    }
+  };
+
+  const watchedIntegrantes = useWatch({ control, name: "integrantes" });
+
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        reset({ ...defaultValues, ...initialData });
+      } else {
+        reset(defaultValues);
+      }
+      setStep(1);
+      setGalleryFiles([]);
+      setLogoFile(null);
+      setEditingIndex(0);
+    }
+  }, [open]);
+
+
+  useEffect(() => {
+    if (!open || !initialData) return;
+    const currentMode = methods.getValues("mode") ?? initialData.mode;
+    if (currentMode !== "edit") return;
+
+    if ((!safeNrcs || safeNrcs.length === 0) && (!nrcActivos || nrcActivos.length === 0)) return;
+
+    const normalizeCandidate = (candidate: any) => {
+      if (candidate == null) return "";
+      if (typeof candidate === "object") {
+        return String(candidate.id_nrc ?? candidate.id ?? candidate.code ?? candidate.codigo ?? candidate.codeStr ?? "");
+      }
+      return String(candidate);
+    };
+
+    const findSafeId = (candidate: any): number | undefined => {
+      const str = normalizeCandidate(candidate).trim();
+      if (!str) return undefined;
+
+      const matchFromActivos = (nrcActivos || []).find((n: any) => {
+        const vals = [
+          n?.id_nrc,
+          n?.id,
+          n?.code,
+          n?.codigo,
+          n?.codeStr,
+          n?.codigo_nrc,
+        ].map((v: any) => (v === undefined || v === null ? "" : String(v).trim()));
+        return vals.includes(str) || vals.includes(String(Number(str)));
+      });
+      if (matchFromActivos) {
+        const codeVal = matchFromActivos.code ?? matchFromActivos.codigo ?? matchFromActivos.id_nrc ?? matchFromActivos.id;
+        const num = Number(codeVal);
+        if (Number.isFinite(num)) return num;
+        const fallbackId = matchFromActivos.id ?? matchFromActivos.id_nrc;
+        if (fallbackId != null) {
+          const found = safeNrcs.find(s => String(s.id) === String(fallbackId) || s.codeStr === String(fallbackId));
+          if (found) return found.id;
         }
       }
 
-      if (files.length > 4) throw new Error("Máximo 4 archivos");
-      const uploadedUrls = files.length ? await uploadFilesToAzure(files) : [];
+      const foundSafe =
+        safeNrcs.find((s) => s.codeStr === str || String(s.id) === str) ||
+        safeNrcs.find((s) => Number(s.id) === Number(str));
+      if (foundSafe) return foundSafe.id;
 
-      const payload = buildPayload(validatedData, uploadedUrls, nrcOptions, primaryEmailLocked);
-      const url = validatedData.mode === "add" ? `${apiBaseUrl}/teams` : `${apiBaseUrl}/teams/update`;
-      const method = validatedData.mode === "add" ? "POST" : "PATCH";
+      return undefined;
+    };
 
-      const res = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    (initialData.integrantes || []).forEach((member: any, idx: number) => {
+      const raw = Array.isArray(member.nrcs) && member.nrcs.length > 0
+        ? member.nrcs
+        : Array.isArray(member.nrcIds)
+          ? member.nrcIds
+          : [];
+      const ids = (raw || [])
+        .map(findSafeId)
+        .filter((v: any): v is number => v !== undefined);
+      methods.setValue(`integrantes.${idx}.nrcIds`, ids.length ? ids : []);
+    });
 
-      if (!(validatedData.mode === "add" ? res.status === 201 : res.ok)) {
-        const err = await res.json().catch(() => ({}));
-        const msg = (err as any)?.message;
-        throw new Error(
-          typeof msg === "string" ? msg :
-            Array.isArray(msg) ? msg.join(", ") :
-              msg && typeof msg === "object" ? Object.values(msg).join(", ") :
-                `Error ${res.status}`
-        );
-      }
-
-      toast.success(validatedData.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
-      onOpenChange(false);
-      onSuccess();
-    } catch (e: any) {
-      toast.error("Error al guardar", { description: e?.message || "Error inesperado" });
-    } finally {
-      setBusy(false);
+    const initialTeam = initialData.team_nrc_global_id ?? initialData.team_nrc_global_id ?? methods.getValues("team_nrc_global_id");
+    if (initialTeam) {
+      const resolved = findSafeId(initialTeam) ?? (Number(initialTeam) || undefined);
+      if (resolved !== undefined) methods.setValue("team_nrc_global_id", resolved);
+    } else if (initialData.integrantes && initialData.integrantes.length > 0) {
+      const first = initialData.integrantes[0];
+      const firstRaw = Array.isArray(first.nrcIds) && first.nrcIds.length > 0 ? first.nrcIds[0] : (Array.isArray(first.nrcIds) && first.nrcIds.length > 0 ? first.nrcIds[0] : undefined);
+      const resolvedFirst = findSafeId(firstRaw);
+      if (resolvedFirst !== undefined) methods.setValue("team_nrc_global_id", resolvedFirst);
     }
-  });
+  }, [open, safeNrcs, nrcActivos, initialData, methods]);
+
+  const onSubmit = methods.handleSubmit((data: any) =>
+    submitTeam(data, {
+      methods,
+      setBusy,
+      apiBaseUrl,
+      initialData,
+      logoFile,
+      galleryFiles,
+      nrcOptions,
+      primaryEmailLocked,
+      uploadFilesToAzure,
+      findUsedEmails,
+      buildPayload,
+      toast,
+      onOpenChange,
+      onSuccess,
+    } as SubmitCtx)
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl">
         <FormProvider {...methods}>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle>{methods.watch("mode") === "add" ? "Registrar equipo" : "Editar equipo"}</DialogTitle>
-            </DialogHeader>
-
-            {/* indicador 2 pasos */}
-            <div className="flex items-center gap-2 text-xs">
-              {[1, 2].map((i) => (
-                <div key={i} className={`h-1 rounded w-full ${i <= step ? "bg-primary" : "bg-muted"}`} />
-              ))}
-            </div>
-
-            {/* PASO 1: Equipo + Videojuego */}
-            {step === 1 && (
-              <div className="space-y-4">
-                <StepHeader step={1} total={2} title="Datos del equipo y del videojuego" />
-                <div className="grid grid-cols-1 gap-3">
-                  {/* Tipo de equipo */}
-                  <div className="flex flex-col gap-1">
-                    <Label>Tipo de equipo</Label>
-                    <Select
-                      value={isExternal ? "colegio" : "uninorte"}
-                      onValueChange={(v) => methods.setValue("isExternal", v === "colegio")}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="uninorte">Uninorte</SelectItem>
-                        <SelectItem value="colegio">Colegio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Equipo */}
-                  <div className="flex flex-col gap-1">
-                    <Label>Nombre del equipo</Label>
-                    <Input
-                      {...methods.register("nombre_equipo")}
-                      aria-invalid={!!errors?.nombre_equipo}
-                      placeholder="Ej: Pixel Ninjas"
-                    />
-                    <FieldError message={(errors as any)?.nombre_equipo?.message} />
-                  </div>
-
-                  {/* NRC global si colegio */}
-                  {isExternal && (
-                    <div className="flex flex-col gap-1">
-                      <Label>NRC (global equipo)</Label>
-                      <Select
-                        value={(() => {
-                          const v = methods.watch("team_nrc_global_id");
-                          return typeof v === "number" ? String(v) : "";
-                        })()}
-                        onValueChange={(value) => methods.setValue("team_nrc_global_id", parseInt(value, 10))}
-                        disabled={isPageLoading}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            isPageLoading
-                              ? "Cargando NRCs..."
-                              : safeNrcs.length
-                                ? "Selecciona un NRC"
-                                : "No hay NRCs disponibles"
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {safeNrcs.length === 0 ? (
-                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
-                            </div>
-                          ) : (
-                            safeNrcs.map((n) => (
-                              <SelectItem key={n.id} value={String(n.id)}>
-                                {n.label}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FieldError message={(errors as any)?.team_nrc_global_id?.message} />
-                    </div>
-                  )}
-
-                  {/* Videojuego */}
-                  <div className="flex flex-col gap-1">
-                    <Label>Nombre del videojuego</Label>
-                    <Input
-                      {...methods.register("videojuego.nombre")}
-                      aria-invalid={!!errors?.videojuego?.nombre}
-                      placeholder="Ej: Cyber Runner"
-                    />
-                    <FieldError message={(errors as any)?.videojuego?.nombre?.message} />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <Label>Descripción</Label>
-                    <textarea
-                      className="p-2 border rounded-md"
-                      rows={4}
-                      {...methods.register("videojuego.descripcion")}
-                      aria-invalid={!!errors?.videojuego?.descripcion}
-                      placeholder="Breve descripción del juego…"
-                    />
-                    <FieldError message={(errors as any)?.videojuego?.descripcion?.message} />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <Label>Video demo (YouTube) – opcional</Label>
-                    <Input
-                      placeholder="https://youtu.be/..."
-                      {...methods.register("videojuego.video_demo_url")}
-                      aria-invalid={!!errors?.videojuego?.video_demo_url}
-                    />
-                    <FieldError message={(errors as any)?.videojuego?.video_demo_url?.message} />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <Label>Archivos (opcional, máximo 4)</Label>
-                    <Input
-                      type="file"
-                      multiple={true} // 👈 asegúrate de pasarlo explícitamente
-                      accept="image/*,video/*" // opcional: restringe tipos
-                      onChange={(e) => {
-                        const newFiles = Array.from(e.target.files || []);
-                        const combined = [...files, ...newFiles];
-                        if (combined.length > 4) {
-                          toast.error("Máximo 4 archivos");
-                          return;
-                        }
-                        setFiles(combined);
-                      }}
-                    />
-                    <div className="text-xs text-muted-foreground">
-                      {files.length
-                        ? `${files.length} archivo(s) seleccionados`
-                        : "Puedes subir hasta 4 archivos"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* PASO 2: Miembros (una tarjeta abierta a la vez) */}
-            {step === 2 && (
-              <div className="space-y-4">
-                <StepHeader
-                  step={2}
-                  total={2}
-                  title="Miembros"
-                  cantidad={fields.length}
-                  subtitle={
-                    isExternal
-                      ? "Colegio: el NRC se tomó del paso 1"
-                      : "Uninorte: correo @uninorte.edu.co y NRC obligatorio por miembro"
-                  }
-                />
-
-                {/* Contenedor con scroll si hay más de 4 miembros */}
-                <div className={`space-y-3 ${fields.length > 4 ? "max-h-[420px] overflow-y-auto pr-2" : ""}`}>
-                  {fields.map((f, idx) => {
-                    const isOpen = editingIndex === idx;
-                    const member = methods.getValues(`integrantes.${idx}`);
-                    const memErrors = (errors as any)?.integrantes?.[idx] || {};
-
-                    return (
-                      <div key={f.id} className="rounded-md border bg-background">
-                        {/* Header compacto */}
-                        <div className="flex items-center justify-between p-3">
-                          <div className="text-sm">
-                            <div className="font-medium flex items-center gap-2">
-                              <span className="mr-2 text-muted-foreground">Miembro Nº {idx + 1}</span>
-                              {member?.nombre || "—"} {member?.apellido || ""}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {member?.correo || "correo no definido"}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={isOpen ? "secondary" : "outline"}
-                              onClick={() => setEditingIndex(isOpen ? null : idx)}
-                            >
-                              <Pencil className="w-4 h-4 mr-1" />
-                              {isOpen ? "Cerrar" : "Editar"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="text-red-500 hover:text-red-600"
-                              onClick={() => {
-                                remove(idx);
-                                setEditingIndex((prev) => {
-                                  if (prev === null) return null;
-                                  if (prev === idx) return null;
-                                  return prev > idx ? prev - 1 : prev;
-                                });
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Quitar
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Formulario del miembro (solo si está abierto) */}
-                        {isOpen && (
-                          <div className="p-3 pt-0 space-y-2">
-                            {/* Nombre + Apellido (responsive) */}
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <div className="flex flex-col gap-1 sm:w-1/2">
-                                <Label>Nombre</Label>
-                                <Input
-                                  {...methods.register(`integrantes.${idx}.nombre` as const)}
-                                  aria-invalid={!!memErrors?.nombre}
-                                />
-                                <FieldError message={memErrors?.nombre?.message} />
-                              </div>
-                              <div className="flex flex-col gap-1 sm:w-1/2">
-                                <Label>Apellido</Label>
-                                <Input
-                                  {...methods.register(`integrantes.${idx}.apellido` as const)}
-                                  aria-invalid={!!memErrors?.apellido}
-                                />
-                                <FieldError message={memErrors?.apellido?.message} />
-                              </div>
-                            </div>
-
-                            {/* Correo + Código en la misma línea */}
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <div className="flex flex-col gap-1 sm:w-2/3">
-                                <Label>
-                                  Correo{" "}
-                                  {methods.watch("mode") === "edit" && idx === 0 ? "(bloqueado)" : ""}
-                                </Label>
-                                <Input
-                                  {...methods.register(`integrantes.${idx}.correo` as const)}
-                                  disabled={methods.watch("mode") === "edit" && idx === 0}
-                                  aria-invalid={!!memErrors?.correo}
-                                  placeholder={isExternal ? "cualquier correo válido" : "usuario@uninorte.edu.co"}
-                                />
-                                <FieldError message={memErrors?.correo?.message} />
-                              </div>
-                              {!isExternal && (
-                                <div className="flex flex-col gap-1 sm:w-1/3">
-                                  <Label>Código Estudiantil</Label>
-                                  <Input
-                                    {...methods.register(`integrantes.${idx}.codigo_estudiantil` as const)}
-                                    aria-invalid={!!memErrors?.codigo_estudiantil}
-                                    inputMode="numeric"
-                                    placeholder="1234567890"
-                                    onInput={(e) => {
-                                      const input = e.currentTarget;
-                                      input.value = input.value.replace(/\D/g, "");
-                                    }}
-                                  />
-                                  <FieldError message={memErrors?.codigo_estudiantil?.message} />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* ✅ NRC SELECTOR CORREGIDO - Solo para Uninorte */}
-                            {!isExternal && (
-                              <div className="flex flex-col gap-1">
-                                <Label>NRCs del estudiante</Label>
-
-                                {/* Selector de NRC */}
-                                <Select
-                                  onValueChange={(selectedCode) => {
-                                    if (!selectedCode) return;
-
-                                    const currentNrcIds = member.nrcIds || [];
-                                    const selectedNrcId = safeNrcs.find(n => n.codeStr === selectedCode)?.id;
-
-                                    // Evitar duplicados
-                                    if (selectedNrcId && !currentNrcIds.includes(selectedNrcId)) {
-                                      methods.setValue(
-                                        `integrantes.${idx}.nrcIds`,
-                                        [...currentNrcIds, selectedNrcId]
-                                      );
-                                    }
-                                  }}
-                                  disabled={isPageLoading}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue
-                                      placeholder={
-                                        isPageLoading
-                                          ? "Cargando NRCs..."
-                                          : safeNrcs.length
-                                            ? "Selecciona NRCs"
-                                            : "No hay NRCs disponibles"
-                                      }
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {safeNrcs.length === 0 ? (
-                                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                        {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
-                                      </div>
-                                    ) : (
-                                      safeNrcs
-                                        // ✅ Filtrar NRCs ya seleccionados
-                                        .filter(n => !(member.nrcIds || []).includes(n.id))
-                                        .map((n) => (
-                                          <SelectItem key={n.id} value={n.codeStr}>
-                                            {n.label}
-                                          </SelectItem>
-                                        ))
-                                    )}
-                                  </SelectContent>
-                                </Select>
-
-                                {/* Chips de NRCs seleccionados */}
-                                {member.nrcIds && member.nrcIds.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 pt-2">
-                                    {member.nrcIds.map((nrcId) => {
-                                      const nrcInfo = safeNrcs.find(n => n.id === nrcId);
-                                      if (!nrcInfo) return null;
-
-                                      return (
-                                        <div
-                                          key={nrcId}
-                                          className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 transition"
-                                        >
-                                          <span>{nrcInfo.codeStr}</span>
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10"
-                                            onClick={() => {
-                                              const currentIds = member.nrcIds || [];
-                                              methods.setValue(
-                                                `integrantes.${idx}.nrcIds`,
-                                                currentIds.filter((id) => id !== nrcId)
-                                              );
-                                            }}
-                                          >
-                                            ✕
-                                          </Button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                                <FieldError message={memErrors?.nrcIds?.message} />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Botón agregar miembro */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (fields.length >= 10) {
-                        toast.error("Máximo 10 miembros por equipo");
-                        return;
-                      }
-                      const newIdx = fields.length;
-                      append({
-                        nombre: "",
-                        apellido: "",
-                        correo: "",
-                        codigo_estudiantil: "",
-                        nrcIds: [],
-                      });
-                      setTimeout(() => setEditingIndex(newIdx), 0);
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Agregar miembro
-                  </Button>
-
-                  {/* Error global si no hay miembros */}
-                  <FieldError message={(errors as any)?.integrantes?.message} />
-                </div>
-              </div>
-            )}
-
-            <DialogFooter className="mt-2">
-              <div className="flex w-full justify-between">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-                  Cancelar
-                </Button>
-                <div className="space-x-2">
-                  {step > 1 && (
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={busy}>
-                      <ChevronLeft className="w-4 h-4 mr-1" /> Atrás
-                    </Button>
-                  )}
-                  {step === 1 ? (
-                    <Button type="button" onClick={nextFromStep1} disabled={busy}>
-                      {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  ) : (
-                    <Button type="submit" disabled={busy}>
-                      {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      {methods.watch("mode") === "add" ? "Registrar" : "Guardar cambios"}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </DialogFooter>
-          </form>
+          <TeamWizardForm
+            handleFormSubmit={handleFormSubmit}
+            methods={methods}
+            step={step}
+            setStep={setStep}
+            busy={busy}
+            nextFromStep1={nextFromStep1}
+            nextFromStep2={nextFromStep2}
+            fields={fields}
+            append={append}
+            remove={remove}
+            editingIndex={editingIndex}
+            setEditingIndex={setEditingIndex}
+            logoInputRef={logoInputRef}
+            galleryInputRef={galleryInputRef}
+            handleLogoInputChange={handleLogoInputChange}
+            logoPreview={logoPreview}
+            setLogoFile={setLogoFile}
+            selectedLogoFile={selectedLogoFile}
+            cropperOpen={cropperOpen}
+            setCropperOpen={setCropperOpen}
+            handleCroppedLogo={handleCroppedLogo}
+            galleryPreviews={galleryPreviews}
+            handleGalleryChange={handleGalleryChange}
+            handleDeleteGallery={handleDeleteGallery}
+            watchedIntegrantes={watchedIntegrantes}
+            safeNrcs={safeNrcs}
+            isPageLoading={isPageLoading}
+            isExternal={isExternal}
+            toast={toast}
+          />
         </FormProvider>
       </DialogContent>
     </Dialog>
