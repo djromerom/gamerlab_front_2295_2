@@ -185,13 +185,9 @@ function buildPayload(
     return memberObj;
   });
 
-  const uploads = (galleryUploads || []).map(u => ({
-    blobName: u.blobName,
-    filename: u.filename,
-    mimetype: u.mimetype,
-    size: u.size,
-    isPublic: u.isPublic,
-  }));
+  const uploads = (galleryUploads || [])
+    .map(u => u.url)
+    .filter((u): u is string => !!u);
 
   return {
     teamName: data.nombre_equipo,
@@ -203,7 +199,7 @@ function buildPayload(
       repoUrl: (data as any).videojuego?.repo_url || "",
       logoUrl: logoUpload?.blobName || data.videojuego.logo_url || "",
       videoUrl: data.videojuego.video_demo_url || "",
-      uploads,
+      additionalImages: uploads,
     },
   };
 }
@@ -297,7 +293,7 @@ export default function TeamWizardDialog({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            
+
           }
           throw new Error(errorMsg);
         }

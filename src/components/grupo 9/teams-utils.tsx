@@ -107,6 +107,9 @@ export interface TeamFormData {
     nombre: string;
     descripcion: string;
     logo_url?: string;
+    video_demo_url?: string;
+    repo_url?: string;
+    additionalImages?: { url: string }[];
   };
   nrc_info?: {
     id_nrc: number;
@@ -157,10 +160,10 @@ export type SafeNrc = {
 };
 
 export type UploadInfo = {
-  blobName: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  isPublic: boolean;
-  url?: string;
+  blobName?: string;
+  filename?: string;
+  mimetype?: string;
+  size?: number;
+  isPublic?: boolean;
+  url: string;
 };

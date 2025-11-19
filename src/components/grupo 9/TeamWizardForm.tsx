@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCropper } from "@/components/grupo 11/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
-import { toast } from "sonner";
-
+import { useState } from "react";
 
 function FieldError({ message }: { message?: string }) {
     if (!message) return null;
@@ -48,10 +46,7 @@ export default function TeamWizardForm(props: any) {
     toast,
   } = props;
 
-  const [internalIsLoading, setInternalIsLoading] = useState(false);
-
-  const [countcCaracteres, setCountCaracteres] = useState(false);
-  
+  const [ , setInternalIsLoading] = useState(false);
 
   async function resendInvite(email: string) {
     setInternalIsLoading(true);
@@ -456,8 +451,4 @@ export default function TeamWizardForm(props: any) {
       </div>
     </form>
   );
-}
-
-function setInternalIsLoading(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }
