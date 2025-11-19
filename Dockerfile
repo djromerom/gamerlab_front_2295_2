@@ -38,7 +38,7 @@ COPY --from=build /app/dist/ ./
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose the port that nginx listens to (nginx.conf listens on 5173)
-EXPOSE 5173
+EXPOSE 80
 
 # Run nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]
