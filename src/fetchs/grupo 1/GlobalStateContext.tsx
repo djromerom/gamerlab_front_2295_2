@@ -87,6 +87,10 @@ export interface GlobalStateContextType {
   isLoading: boolean;
   error: Error | null;
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
+  
+  // Permiso local para mostrar u ocultar calificaciones (frontend-only)
+  canViewScores: boolean;
+  setCanViewScores: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // 2. Crear el Contexto
@@ -101,6 +105,22 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
+
+  // Permiso local para que estudiantes vean calificaciones (persistido en localStorage)
+  const [canViewScores, setCanViewScores] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem("canViewScores");
+      return raw ? raw === "true" : false;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("canViewScores", String(canViewScores));
+    } catch {}
+  }, [canViewScores]);
 
   const setFiltroMateriaExt = (value: string) => {
     setFiltroMateria(value);
@@ -125,9 +145,77 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // 
+
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
+  // sincronizar entre pestañas
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === "canViewScores") {
+        try {
+          setCanViewScores(e.newValue === "true");
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  // Consultar endpoint /settings/evaluations para obtener permiso y refrescar periódicamente
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/evaluations`;
+
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled =
+          typeof body === "boolean"
+            ? body
+            : body?.studentsCanView ?? body?.evaluationsOpen ?? false;
+        // setCanViewScores(enabled);
+        // console.log( `type of dateEnd ${body.endDate}`,);
+        const dateNow = new Date(); //<<--- date actual 
+        const targetDate = new Date(body.endDate); // <<--- date de finalización obtenido del backend
+
+        if (enabled === false && dateNow >= targetDate) {
+          console.log(enabled,targetDate);
+          setCanViewScores(true);
+        } else if (enabled === true ) {
+          setCanViewScores(true);
+        } else {
+          setCanViewScores(false);
+        }
+        
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    // initial fetch + polling
+    fetchPermission();
+    
+    return () => {
+      controller.abort();
+    };
+  }, [API_BASE_URL, setCanViewScores]); 
+
+  // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
@@ -255,6 +343,10 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     nrcsFiltrados,
     listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
 
+    // Permiso local para ver calificaciones (frontend-only)
+    canViewScores,
+    setCanViewScores,
+
     // Opciones para los filtros
     opcionesFiltroMateria,
     opcionesFiltroNRC,
@@ -273,6 +365,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,
+    canViewScores,
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
   ]);
 

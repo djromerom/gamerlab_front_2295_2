@@ -84,7 +84,7 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
     if (variant === "default") {
         return (
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-                <div className="flex justify-start ml-0 m-4">
+                <div className="flex justify-start ml-0 m-4 min-w-[350px]">
                     <div className="flex justify-between gap-3 rounded-2xl p-0 text-xl border-2 border-border bg-card">
                         <p className="pl-4 p-2 font-semibold text-base text-foreground">Codigo del equipo:</p>
                         <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
@@ -97,7 +97,7 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
     } else if (variant === "title" && userRole === "Estudiante") {
         return (
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">   
-                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px">
+                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px min-w-[350px]">
                     <div className="flex justify-center text-4xl border-b-2  ">
                         <h1 className="font-bold tracking-tighter">Equipo</h1>
                         
