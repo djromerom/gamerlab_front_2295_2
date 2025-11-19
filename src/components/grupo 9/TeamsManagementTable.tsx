@@ -39,7 +39,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
-  const [, setIsLoadingOptions] = useState(false);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
   // filtro (all | external | uninorte)
@@ -143,6 +142,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   };
 
   async function resendInvite(email: string) {
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
@@ -398,6 +398,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
               value={String(idEstadoVideojuego)}
               onValueChange={async (newStatus) => {
                 const numericStatus = parseInt(newStatus, 10);
+                if (internalIsLoading) return;
                 setInternalIsLoading(true);
                 try {
                   await updateTeamStatus(team.id_equipo, numericStatus);
@@ -482,6 +483,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/teams/${deletingId}`, {

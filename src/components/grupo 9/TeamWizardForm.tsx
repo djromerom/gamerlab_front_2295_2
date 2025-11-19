@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCropper } from "@/components/grupo 11/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
-import { toast } from "sonner";
 
 
 function FieldError({ message }: { message?: string }) {
@@ -51,6 +50,7 @@ export default function TeamWizardForm(props: any) {
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
   async function resendInvite(email: string) {
+    if (internalIsLoading) return; // prevent multiple petitions
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
@@ -450,8 +450,4 @@ export default function TeamWizardForm(props: any) {
       </div>
     </form>
   );
-}
-
-function setInternalIsLoading(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }
