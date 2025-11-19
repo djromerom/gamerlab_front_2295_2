@@ -8,6 +8,7 @@ import {
   FileUser,
   Gavel,
   ChartLine,
+  Sliders,
   Users,
 } from "lucide-react";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -41,6 +42,7 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/criterios",
           icon: BookCheck,
         },
+        { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
       ],
     },
     {
