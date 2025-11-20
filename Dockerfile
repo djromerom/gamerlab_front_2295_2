@@ -32,7 +32,9 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy built files from previous stage
-COPY --from=build /app/dist/ ./
+COPY --from=build /app/.env .
+COPY --from=build /app/dist/ .
+
 
 # Expose the port that nginx listens to (nginx.conf listens on 5173)
 EXPOSE 80
