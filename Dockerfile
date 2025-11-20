@@ -33,6 +33,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy built Angular files from the previous stage
+COPY --from=build /project/.env .
 COPY --from=build /project/dist/ .
 
 # Copy a custom Nginx configuration
