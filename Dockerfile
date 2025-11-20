@@ -20,9 +20,6 @@ ARG VITE_SITE_KEY
 RUN echo "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND" >> .env && \
     echo "VITE_SITE_KEY=$VITE_SITE_KEY" >> .env
 
-RUN echo "Received backend: ${VITE_ENDPOINT_BACKEND:0:20}..." && \
-    echo "Received sitekey: ${VITE_SITE_KEY:0:10}..."
-
 # Copy the rest of the source code and build
 COPY . .
 RUN npm run build
