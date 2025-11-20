@@ -34,9 +34,6 @@ RUN rm -rf ./*
 # Copy built files from previous stage
 COPY --from=build /app/dist/ ./
 
-# Copy custom nginx configuration if exists
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 # Expose the port that nginx listens to (nginx.conf listens on 5173)
 EXPOSE 80
 
