@@ -529,13 +529,34 @@ export const TeamsManagementTable: React.FC<Props> = ({
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
           <div className="flex items-center gap-2 w-full">
-            <h1 className="text-lg font-medium truncate">Equipos Inscritos</h1>
+            <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8" disabled={showLoader}>
-                    Filtro
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 flex items-center justify-center"
+                    disabled={showLoader}
+                    aria-label="Filtros"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="2 0 20 20"
+                      strokeWidth={2.5}
+                      stroke="currentColor"
+                      className="w-6 h-6 block m-auto"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z"
+                        opacity="0.99"
+                      />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
