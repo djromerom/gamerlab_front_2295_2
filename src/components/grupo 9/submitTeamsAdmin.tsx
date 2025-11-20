@@ -148,6 +148,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         repo_url: "",
         logo_url: "",
         video_demo_url: "",
+        additionalImages: [],
         ...(initialData?.videojuego || {}),
       };
 

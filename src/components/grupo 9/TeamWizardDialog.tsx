@@ -357,7 +357,7 @@ export default function TeamWizardDialog({
     isExternal: false,
     team_nrc_global_id: undefined,
     nombre_equipo: "",
-    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "" },
+    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "", additionalImages: [] },
     integrantes: [{
       id_integrante: undefined,
       nombre: "",
@@ -390,6 +390,7 @@ export default function TeamWizardDialog({
     if (open) {
       if (initialData) {
         reset({ ...defaultValues, ...initialData });
+        console.log("inic",initialData.videojuego?.additionalImages || []);
       } else {
         reset(defaultValues);
       }
@@ -475,6 +476,7 @@ export default function TeamWizardDialog({
   }, [logoFile]);
 
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
     if (!newFiles.length) return;
@@ -668,6 +670,7 @@ export default function TeamWizardDialog({
             isPageLoading={isPageLoading}
             isExternal={isExternal}
             toast={toast}
+            initialData={initialData}
           />
         </FormProvider>
       </DialogContent>

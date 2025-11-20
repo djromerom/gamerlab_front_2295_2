@@ -44,6 +44,7 @@ export default function TeamWizardForm(props: any) {
     isPageLoading,
     isExternal,
     toast,
+    initialData,
   } = props;
 
   const [, setInternalIsLoading] = useState(false);
@@ -310,8 +311,8 @@ export default function TeamWizardForm(props: any) {
                 {galleryPreviews.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {(() => {
-                      const existingGallery: string[] = methods.watch("videojuego.gallery_urls") || [];
-                      const hasExisting = (existingGallery?.length || 0) > 0;
+                      const existingGallery: string[] = methods.watch("videojuego.additionalImages") ?? methods.getValues("videojuego.additionalImages") ?? [];
+                      const hasExisting = existingGallery.length > 0;
                       const hasNew = (galleryPreviews?.length || 0) > 0;
 
                       if (!hasExisting && !hasNew) {
@@ -332,11 +333,10 @@ export default function TeamWizardForm(props: any) {
                                     size="icon"
                                     className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40"
                                     onClick={() => {
-                                      // eliminar de la lista existente en el form y marcar para borrado en el backend
-                                      const current: string[] = methods.getValues("videojuego.gallery_urls") || [];
+                                      const current: string[] = methods.getValues("videojuego.additionalImages") || [];
                                       const urlToRemove = current[idx];
                                       const next = current.filter((_, i) => i !== idx);
-                                      methods.setValue("videojuego.gallery_urls", next);
+                                      methods.setValue("videojuego.additionalImages", next);
                                       const removed: string[] = methods.getValues("videojuego._remove_gallery") || [];
                                       methods.setValue("videojuego._remove_gallery", [...removed, urlToRemove]);
                                     }}
@@ -501,14 +501,16 @@ export default function TeamWizardForm(props: any) {
           )}
 
           {step === 1 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); console.log("aditional", methods.watch("videojuego.additionalImages"), methods.watch("videojuego.logo_url")); }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+
             </Button>
           ) : step === 2 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2(); }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2();  }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+              
             </Button>
           ) : (
             <Button type="submit" className="w-full sm:w-auto" disabled={busy}>

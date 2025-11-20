@@ -41,10 +41,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
-  // filtro (all | external | uninorte)
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
 
-  // Responsive header: detectar móvil para mostrar título + dropdown + agregar
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
   });
@@ -65,7 +63,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   useEffect(() => {
     const load = async () => {
-      //setIsLoadingOptions(true);
       try {
         const res = await fetch(API_ENDPOINT, {
           method: "GET",
@@ -102,9 +99,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         console.log("Error fetching subjects:", err);
         setMateriasOptions([]);
 
-      } finally {
-        //setIsLoadingOptions(false);
-      }
+      } 
     };
     load();
   }, [API_ENDPOINT]);
@@ -130,7 +125,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
     return res.json().catch(() => null);
   };
-  
+
   const getStatusBadge = (statusId: number) => {
     const map = {
       1: { variant: "default" as const, text: "Confirmado" },
@@ -269,7 +264,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                                 (materia as any)?.name ??
                                 "Materia desconocida";
 
-                              // clave para deduplicar (preferir id_nrc si viene, si no usar código + materia)
                               const nrcKey = String(nrc.id_nrc ?? `${nrc.codigo}-${nrc.id_materia}`);
                               if (shownNrcs.has(nrcKey)) return null;
                               shownNrcs.add(nrcKey);
@@ -334,7 +328,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
-        // estado no iniciado: mostrar indicador ligero
         if (cached === undefined || cached === null) {
           return (
             <div className="flex items-center gap-2">
@@ -454,6 +447,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         descripcion: "",
         logo_url: "",
         video_demo_url: "",
+        additionalImages: [],
       },
       integrantes: [
         {

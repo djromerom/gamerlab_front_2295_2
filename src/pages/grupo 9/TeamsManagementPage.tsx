@@ -113,6 +113,8 @@ const TeamsManagementPage = () => {
         }
       );
 
+      console.log("Fetch teams response:", res);
+
       if (!res.ok) {
         if (res.status === 404) {
           console.warn("Teams endpoint not found, using mock data");
@@ -199,6 +201,7 @@ const TeamsManagementPage = () => {
             id_equipo: vg?.teamId ?? t.id,
             activo: vg?.isActive ?? vg?.activo ?? true,
             video_demo_url: vg?.videoUrl ?? vg?.video_demo_url ?? "",
+            additionalImages: vg?.additionalImages ?? [],
           },
           nrc_info,
           materia_info,
