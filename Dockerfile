@@ -17,7 +17,7 @@ RUN npm ci --silent
 ARG VITE_ENDPOINT_BACKEND
 ARG VITE_SITE_KEY
 
-RUN echo "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND" >> .env && \
+RUN echo "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND" > .env && \
     echo "VITE_SITE_KEY=$VITE_SITE_KEY" >> .env
 
 # Copy the rest of the source code and build
