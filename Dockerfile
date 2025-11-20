@@ -17,6 +17,9 @@ RUN npm ci --silent
 ARG VITE_ENDPOINT_BACKEND
 ARG VITE_SITE_KEY
 
+RUN echo "Received backend: ${VITE_ENDPOINT_BACKEND:0:20}..." && \
+    echo "Received sitekey: ${VITE_SITE_KEY:0:10}..."
+
 # Write a simple .env file consumed at build time by Vite
 RUN printf "VITE_ENDPOINT_BACKEND=%s\nVITE_SITE_KEY=%s\n" "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" > .env || true
 
