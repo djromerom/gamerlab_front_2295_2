@@ -7,9 +7,9 @@ import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Penci
 import { useState } from "react";
 
 function FieldError({ message }: { message?: string }) {
-    if (!message) return null;
-    return <p className="text-sm text-destructive mt-1">{message}</p>;
-  }
+  if (!message) return null;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
+}
 
 const apiBaseUrl = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
@@ -46,7 +46,7 @@ export default function TeamWizardForm(props: any) {
     toast,
   } = props;
 
-  const [ , setInternalIsLoading] = useState(false);
+  const [, setInternalIsLoading] = useState(false);
 
   async function resendInvite(email: string) {
     setInternalIsLoading(true);
@@ -101,14 +101,11 @@ export default function TeamWizardForm(props: any) {
   return (
     <form
       onSubmit={async (e) => {
-        // forward to parent handler
         if (typeof handleFormSubmit === "function") {
-          // prevent default to avoid double submit if parent already handles it
           e.preventDefault();
           await handleFormSubmit(e);
         }
 
-        // si estamos en modo "add", reenviar confirmación al primer integrante (si existe)
         try {
           if (methods.watch("mode") === "add") {
             const firstEmail = ((methods.getValues("integrantes") || [])[0]?.correo || "").toLowerCase().trim();
@@ -117,11 +114,9 @@ export default function TeamWizardForm(props: any) {
             }
           }
         } catch (err) {
-          // swallow - toast ya maneja errores
         }
       }}
       className="space-y-4 pt-8 sm:pt-0 max-h-[90vh] sm:max-h-[auto] overflow-auto p-4 sm:p-0"
-      // pt-8 hace espacio para la X superior en mobile
     >
       {/* indicador 3 pasos */}
       <div className="relative z-10 flex items-center gap-2 text-xs pr-4 sm:pr-6">
@@ -152,18 +147,58 @@ export default function TeamWizardForm(props: any) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-col gap-1">
-              <Label>Tipo de equipo</Label>
-              <Select
-                value={methods.watch("isExternal") ? "colegio" : "uninorte"}
-                onValueChange={(v) => methods.setValue("isExternal", v === "colegio")}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="uninorte">Uninorte</SelectItem>
-                  <SelectItem value="colegio">Colegio</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-1 justify-between align-baseline sm:flex-row sm:items-end">
+
+              <div className="flex-1 space-y-3 mt-3 sm:mt-0">
+                <div className="flex flex-col gap-1">
+                  <Label>Tipo de equipo</Label>
+                  <Select
+                    value={methods.watch("isExternal") ? "colegio" : "uninorte"}
+                    onValueChange={(v) => methods.setValue("isExternal", v === "colegio")}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uninorte">Uninorte</SelectItem>
+                      <SelectItem value="colegio">Colegio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3 mt-3 sm:mt-0">
+                {/* NRC global si es colegio */}
+                {methods.watch("isExternal") && (
+                  <div className="flex flex-col gap-1">
+                    <Label>NRC (global equipo)</Label>
+                    <Select
+                      value={(() => {
+                        const v = methods.watch("team_nrc_global_id");
+                        return typeof v === "number" ? String(v) : "";
+                      })()}
+                      onValueChange={(value) => methods.setValue("team_nrc_global_id", value ? parseInt(value, 10) : undefined)}
+                      disabled={isPageLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isPageLoading ? "Cargando NRCs..." : safeNrcs.length ? "Selecciona un NRC" : "No hay NRCs disponibles"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {safeNrcs.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
+                          </div>
+                        ) : (
+                          safeNrcs.map((n: any) => (
+                            <SelectItem key={n.id} value={String(n.id)}>
+                              {n.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FieldError message={(methods.formState.errors as any)?.team_nrc_global_id?.message} />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -182,38 +217,7 @@ export default function TeamWizardForm(props: any) {
                 <FieldError message={(methods.formState.errors as any)?.videojuego?.nombre?.message} />
               </div>
 
-              {/* NRC global si es colegio */}
-              {methods.watch("isExternal") && (
-                <div className="flex flex-col gap-1">
-                  <Label>NRC (global equipo)</Label>
-                  <Select
-                    value={(() => {
-                      const v = methods.watch("team_nrc_global_id");
-                      return typeof v === "number" ? String(v) : "";
-                    })()}
-                    onValueChange={(value) => methods.setValue("team_nrc_global_id", value ? parseInt(value, 10) : undefined)}
-                    disabled={isPageLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isPageLoading ? "Cargando NRCs..." : safeNrcs.length ? "Selecciona un NRC" : "No hay NRCs disponibles"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {safeNrcs.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
-                        </div>
-                      ) : (
-                        safeNrcs.map((n: any) => (
-                          <SelectItem key={n.id} value={String(n.id)}>
-                            {n.label}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FieldError message={(methods.formState.errors as any)?.team_nrc_global_id?.message} />
-                </div>
-              )}
+
             </div>
 
             <div className="flex flex-col gap-1">
@@ -223,7 +227,7 @@ export default function TeamWizardForm(props: any) {
                 <FieldError message={(methods.formState.errors as any)?.videojuego?.descripcion?.message} />
                 <div className="text-xs text-muted-foreground">{methods.watch("videojuego.descripcion")?.length || 0}/300</div>
               </div>
-              
+
             </div>
 
             <div className="flex flex-col gap-1">
@@ -245,16 +249,36 @@ export default function TeamWizardForm(props: any) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  {logoPreview ? (
-                    <div className="relative inline-block w-full sm:w-32 md:w-32">
-                      <img src={logoPreview} alt="Logo preview" className="rounded-md border object-cover w-full h-full" />
-                      <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 z-40" onClick={() => setLogoFile(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No hay logo seleccionado.</p>
-                  )}
+                  {(() => {
+                    const existingLogoUrl = methods.watch("videojuego.logo_url");
+                    const src = logoPreview || existingLogoUrl;
+                    return src ? (
+                      <div className="relative inline-block w-full sm:w-32 md:w-32">
+                        <img src={src} alt="Logo preview" className="rounded-md border object-cover w-full h-full" />
+                        {logoPreview ? (
+                          <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 z-40" onClick={() => setLogoFile(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 z-40"
+                            onClick={() => {
+                              setLogoFile?.(null);
+                              methods.setValue("videojuego.logo_url", "");
+                              methods.setValue("videojuego._remove_logo", true);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No hay logo seleccionado.</p>
+                    );
+                  })()}
                   <div className="text-xs text-muted-foreground mt-2">Se abrirá un recortador para ajustar a 1:1</div>
                 </div>
               </div>
@@ -285,16 +309,61 @@ export default function TeamWizardForm(props: any) {
 
                 {galleryPreviews.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {galleryPreviews.map((src: string, idx: number) => (
-                      <div key={`${src}-${idx}`} className="relative group">
-                        <div className="aspect-[6/3] overflow-hidden rounded-lg border">
-                          <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
-                        </div>
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                    {(() => {
+                      const existingGallery: string[] = methods.watch("videojuego.gallery_urls") || [];
+                      const hasExisting = (existingGallery?.length || 0) > 0;
+                      const hasNew = (galleryPreviews?.length || 0) > 0;
+
+                      if (!hasExisting && !hasNew) {
+                        return <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>;
+                      }
+                      return (
+                        <>
+                          {hasExisting && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                              {existingGallery.map((src: string, idx: number) => (
+                                <div key={`existing-${src}-${idx}`} className="relative group">
+                                  <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                                    <img src={src} alt={`Existing ${idx + 1}`} className="h-full w-full object-cover" />
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40"
+                                    onClick={() => {
+                                      // eliminar de la lista existente en el form y marcar para borrado en el backend
+                                      const current: string[] = methods.getValues("videojuego.gallery_urls") || [];
+                                      const urlToRemove = current[idx];
+                                      const next = current.filter((_, i) => i !== idx);
+                                      methods.setValue("videojuego.gallery_urls", next);
+                                      const removed: string[] = methods.getValues("videojuego._remove_gallery") || [];
+                                      methods.setValue("videojuego._remove_gallery", [...removed, urlToRemove]);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {hasNew && (
+                            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${hasExisting ? "pt-3" : ""}`}>
+                              {galleryPreviews.map((src: string, idx: number) => (
+                                <div key={`new-${src}-${idx}`} className="relative group">
+                                  <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                                    <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                                  </div>
+                                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>

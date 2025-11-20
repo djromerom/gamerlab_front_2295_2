@@ -56,6 +56,7 @@ export interface VideojuegoData {
   // Campos opcionales recibidos por el nuevo backend
   video_demo_url?: string;
   repo_url?: string;
+  additionalImages?: { url: string }[];
 }
 
 export interface NrcInfo {

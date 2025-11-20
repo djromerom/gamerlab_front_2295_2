@@ -235,6 +235,7 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       descripcion: team.videojuego.descripcion,
       logo_url: team.videojuego.logo_url,
       video_demo_url: (team as any).videojuego?.video_demo_url || "",
+      additionalImages: team.videojuego.additionalImages || [],
     },
     integrantes,
   };

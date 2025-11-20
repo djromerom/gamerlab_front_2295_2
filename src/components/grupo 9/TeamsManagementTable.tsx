@@ -39,7 +39,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
-  const [, setIsLoadingOptions] = useState(false);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
   // filtro (all | external | uninorte)
@@ -131,27 +130,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
     return res.json().catch(() => null);
   };
-
-  const getTeamStatus = async (teamId: number) => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/teams/${teamId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "Error obteniendo estado del videojuego.");
-      }
-
-      return res.json().catch(() => null);
-    } catch (e: any) {
-      console.error("Network error getting team status:", e);
-      throw new Error(e?.message || "Error de red al obtener el estado del videojuego.");
-    }
-  };
-
+  
   const getStatusBadge = (statusId: number) => {
     const map = {
       1: { variant: "default" as const, text: "Confirmado" },
