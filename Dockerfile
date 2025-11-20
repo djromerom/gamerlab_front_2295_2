@@ -35,6 +35,8 @@ RUN rm -rf ./*
 COPY --from=build /app/.env .
 COPY --from=build /app/dist/ .
 
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 
 # Expose the port that nginx listens to (nginx.conf listens on 5173)
 EXPOSE 80
