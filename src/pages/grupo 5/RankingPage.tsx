@@ -1,9 +1,10 @@
 "use client";
 
 import NavBar from "@/components/grupo 5/NavBar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 type Team = {
   id: number;
@@ -99,16 +100,17 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
-const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
+// const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [fairEnded, setFairEnded] = useState(false);
+  // const [fairEnded, setFairEnded] = useState(false);
+  const { canViewScores } = useGlobalState()
+  
 
-  useEffect(() => { //
-      setFairEnded(FAIR_ENDED);
-  }, []);
+  // console.log("fairEnded:", fairEnded);
+  console.log("canViewScores from global state:", canViewScores);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -151,6 +153,7 @@ export default function PodioGamer() {
     };
   }, []);
 
+
   return (
     <>
       <NavBar />
@@ -166,8 +169,9 @@ export default function PodioGamer() {
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
             Ranking de videojuegos
+
           </h1>
-          {!fairEnded ? (
+          {!canViewScores ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
                 <div className="gradient-border-inner"></div>
