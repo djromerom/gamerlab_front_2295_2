@@ -117,7 +117,23 @@ export default function TeamWizardForm(props: any) {
 
         console.log("DEBUG SUBMIT IMG:", { existingUrls, removed, remainingExisting, newUrls, finalUrls });
 
-        await handleFormSubmit(e);
+        try {
+          // Enviar el formulario (backend)
+          const result = await handleFormSubmit(e);
+
+          // Si estamos en modo "add", enviar confirmación al primer miembro
+          if (result?.ok) {
+            if (methods.getValues("mode") === "add") {
+              const email = methods.getValues("integrantes.0.correo");
+              if (email) await resendInvite(email);
+            }
+          } else {
+            toast.error(`No se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
+          }
+        } catch (err) {
+
+          console.error("Error al registrar el equipo:", err);
+        }
       }}
       className="space-y-4 pt-8 sm:pt-0 max-h-[90vh] sm:max-h-[auto] overflow-auto p-4 sm:p-0"
     >
@@ -509,10 +525,10 @@ export default function TeamWizardForm(props: any) {
 
             </Button>
           ) : step === 2 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2();  }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2(); }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-              
+
             </Button>
           ) : (
             <Button type="submit" className="w-full sm:w-auto" disabled={busy}>
