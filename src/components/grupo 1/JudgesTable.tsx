@@ -26,7 +26,7 @@ import { UserCheck, UserX, AlertCircle, Loader2 } from "lucide-react";
 // No necesitamos JuradoConInfoAdicional si la interfaz Jurados en GlobalStateContext ya incluye correo opcionalmente.
 
 const TablaPorJurado = () => {
-  console.log("Renderizando TablaPorJurado - INICIO")
+  
   const {
     listaVideojuegos, // Usaremos la lista completa para buscar detalles de los videojuegos asignados
     listaJurados,
@@ -41,11 +41,11 @@ const TablaPorJurado = () => {
     listaVideojuegosFiltrados,
   } = useGlobalState();
 
-  console.log("TablaPorJurado - isLoading:", isLoading);
-  console.log("TablaPorJurado - error:", error);
-  console.log("TablaPorJurado - listaJurados:", listaJurados);
-  console.log("TablaPorJurado - listaVideojuegos:", listaVideojuegos);
-  console.log("TablaPorJurado - listaVideojuegosFiltrados:", listaVideojuegosFiltrados);
+  
+  
+  
+  
+  
 
 
   if (isLoading && (!listaJurados || listaJurados.length === 0)) {
@@ -108,7 +108,7 @@ const TablaPorJurado = () => {
 
 
   const juradoCards = listaJurados.map((jurado: JuradoData) => {
-    //console.log(`TablaPorJurado - Procesando jurado: ${jurado.nombre}`, jurado);
+    //
 
     // --- LÓGICA PARA DETERMINAR LOS VIDEOJUEGOS BASE A MOSTRAR ---
     let nombresBaseVideojuegos: string[] = [];
@@ -148,10 +148,10 @@ const TablaPorJurado = () => {
       })
       .filter(vj => vj !== null) as (VideojuegoData & { calificadoPorEsteJurado: boolean })[];
 
-    //console.log(`TablaPorJurado - Videojuegos para ${jurado.nombre} (fuente: ${fuenteVideojuegos}):`, videojuegosParaEsteJurado);
+    //
 
     if (videojuegosParaEsteJurado.length === 0) {
-      //console.log(`TablaPorJurado - Jurado ${jurado.nombre} no tiene videojuegos (fuente: ${fuenteVideojuegos}) que coincidan con filtros.`);
+      //
       let mensajeNoJuegos = "No hay videojuegos que coincidan con los filtros actuales para este jurado.";
       if (fuenteVideojuegos === "ninguno") {
         mensajeNoJuegos = "Este jurado no tiene videojuegos asignados ni evaluados.";
@@ -174,7 +174,7 @@ const TablaPorJurado = () => {
       );
     }
 
-    //console.log(`TablaPorJurado - Jurado ${jurado.nombre} TIENE videojuegos (fuente: ${fuenteVideojuegos}), renderizando tabla.`);
+    //
     let descripcionFuente = "";
     if (fuenteVideojuegos === "asignados") {
         descripcionFuente = `Mostrando ${videojuegosParaEsteJurado.length} de ${jurado.videojuegosAsignados.length} videojuego(s) asignado(s) (filtrados).`;
@@ -239,7 +239,7 @@ const TablaPorJurado = () => {
   );
 
   if (!contenidoVisible && listaJurados.length > 0) {
-    console.log("TablaPorJurado - Retornando: Todos los jurados filtrados o sin juegos, mostrando mensaje general.");
+    
     return (
         <Card className="mt-4">
             <CardContent className="pt-6">
@@ -251,7 +251,7 @@ const TablaPorJurado = () => {
     );
   }
 
-  console.log("TablaPorJurado - Retornando: JSX principal con las cards de los jurados.");
+  
   return (
     <div className="space-y-6">
       {juradoCards} {/* .filter(Boolean) no es necesario si el map siempre devuelve una Card */}

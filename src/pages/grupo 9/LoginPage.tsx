@@ -28,8 +28,15 @@ export default function LoginPage() {
     };
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Redirect to home if user is already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/inicio", { replace: true });
+    }
+  }, [user, loading, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +59,29 @@ export default function LoginPage() {
       setIsSubmitting(false);
     }
   };
+
+  const outlookLogin = () => {
+    window.location.href = `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/outlook-login`;
+  }
+
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
+        <div
+          className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float"
+          style={{
+            backgroundImage: "url('/background.webp')",
+          }}
+        ></div>
+        <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4">
+          <div className="text-white text-xl animate-pulse">
+            Verificando autenticación...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
@@ -99,7 +129,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="correo@uninorte.edu.co"
+                    placeholder="Ingresa tu correo"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -113,7 +143,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={show ? "text" : "password"}
-                      placeholder="miContraseña123!"
+                      placeholder="********"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -146,6 +176,24 @@ export default function LoginPage() {
                     </Button>
                   )}
                 </div>
+                <CardDescription className="text-sm sm:text-[15px] mt-2">
+                   Si eres usuario Uninorte, puedes:
+                </CardDescription>
+               
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full mt-2 cursor-pointer"
+                  onClick={outlookLogin}
+                  disabled={isSubmitting}
+                >
+                  <img
+                    src="/assets/Microsoft_icon.svg"
+                    alt="Microsoft Icon"
+                    className="h-5 w-5"
+                  />
+                  Iniciar Sesión con Outlook
+                </Button>
               </div>
             </form>
           </CardContent>
