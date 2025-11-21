@@ -143,11 +143,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "No se pudo reenviar el correo");
+        throw new Error(err?.message || "No se pudo reenviar el correo de confirmación.");
       }
-      toast.success("Correo de confirmación reenviado");
+      toast.success("Correo de confirmación reenviado a " + email);
     } catch (e: any) {
-      toast.error(e?.message || "Error al reenviar");
+      toast.error(e?.message || "Error al reenviar a " + email);
     } finally {
       setInternalIsLoading(false);
     }

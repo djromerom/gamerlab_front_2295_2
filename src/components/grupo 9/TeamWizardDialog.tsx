@@ -185,15 +185,10 @@ function buildPayload(
     return memberObj;
   });
 
-  const uploads = (galleryUploads || [])
-    .map(u => u.url)
-    .filter((u): u is string => !!u);
 
-    // ya viene reconstruido desde el form; como respaldo, combinamos por si acaso
   const existingRaw = data?.videojuego?.additionalImages ?? [];
   const existingUrls: string[] = (existingRaw || []).map((it: any) => (typeof it === "string" ? it : it?.url)).filter(Boolean);
 
-  // Access internal form-only key safely via `any` to avoid TS errors
   const removed: string[] = Array.isArray((data as any)?.videojuego?._remove_gallery) ? (data as any).videojuego._remove_gallery : [];
   const remainingExisting = existingUrls.filter(u => !removed.includes(u));
 
