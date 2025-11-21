@@ -93,8 +93,10 @@ export interface GlobalStateContextType {
   setCanViewScores: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-// 2. Crear el Contexto
+// 2. Crear los Contextos
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
+
+// Contexto ligero para permisos/UI que suelen provocar rerenders en consumidores si van juntos
 
 // 3. Crear el Componente Proveedor
 interface GlobalStateProviderProps {
@@ -105,23 +107,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
-
-  // Permiso local para que estudiantes vean calificaciones (persistido en localStorage)
-  const [canViewScores, setCanViewScores] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem("canViewScores");
-      return raw ? raw === "true" : false;
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("canViewScores", String(canViewScores));
-    } catch {}
-  }, [canViewScores]);
-
+  // const [canViewScores, setCanViewScores] = useState<boolean | null>(null);
   const setFiltroMateriaExt = (value: string) => {
     setFiltroMateria(value);
     setFiltroNRC("Todos"); // Resetea el filtro de NRC si se selecciona "Todas"
@@ -150,18 +136,26 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
-  // sincronizar entre pestañas
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === "canViewScores") {
-        try {
-          setCanViewScores(e.newValue === "true");
-        } catch {}
-      }
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
+  // Permiso local para que estudiantes vean calificaciones (persistido en localStorage)
+  const [canViewScores, setCanViewScores] = useState<boolean>(false);
+
+  // useEffect(() => {
+  //   try {
+  //     localStorage.setItem("canViewScores", String(canViewScores));
+  //   } catch {}
+  // }, [canViewScores]);
+  // // sincronizar entre pestañas
+  // useEffect(() => {
+  //   const handler = (e: StorageEvent) => {
+  //     if (e.key === "canViewScores") {
+  //       try {
+  //         setCanViewScores(e.newValue === "true");
+  //       } catch {}
+  //     }
+  //   };
+  //   window.addEventListener("storage", handler);
+  //   return () => window.removeEventListener("storage", handler);
+  // }, []);
 
   // Consultar endpoint /settings/evaluations para obtener permiso y refrescar periódicamente
   useEffect(() => {
@@ -182,38 +176,27 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
           return;
         }
         const body = await res.json();
-        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
-        const enabled =
-          typeof body === "boolean"
-            ? body
-            : body?.studentsCanView ?? body?.evaluationsOpen ?? false;
-        // setCanViewScores(enabled);
-        // console.log( `type of dateEnd ${body.endDate}`,);
-        const dateNow = new Date(); //<<--- date actual 
-        const targetDate = new Date(body.endDate); // <<--- date de finalización obtenido del backend
 
-        if (enabled === false && dateNow >= targetDate) {
-          console.log(enabled,targetDate);
-          setCanViewScores(true);
-        } else if (enabled === true ) {
-          setCanViewScores(true);
-        } else {
-          setCanViewScores(false);
-        }
-        
+        console.log("Fetched evaluation settings:", body);
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.evaluationsOpen ?? false;
+
+        // tu lógica de fecha...
+        const now = new Date();
+        const target = body?.endDate ? new Date(body.endDate) : null;
+        const newVal = (enabled === false && target && now >= target) ? true : Boolean(enabled);
+
+        setCanViewScores(prev => (prev === newVal ? prev : newVal));
+
 
       } catch (err: any) {
         if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
       }
     };
 
-    // initial fetch + polling
     fetchPermission();
     
-    return () => {
-      controller.abort();
-    };
-  }, [API_BASE_URL, setCanViewScores]); 
+  }, []); 
 
   // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
@@ -369,11 +352,13 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
   ]);
 
+  // Memoizar solo el valor de permisos para que consumidores que solo lean permisos
+  // no se vean re-renderizados cuando cambian los datos pesados del contexto global.
+
   return (
-    // Asumo que GlobalStateContext está definido más arriba
-    <GlobalStateContext.Provider value={contextValue}>
-      {children}
-    </GlobalStateContext.Provider>
+      <GlobalStateContext.Provider value={contextValue}>
+        {children}
+      </GlobalStateContext.Provider>
   );
 }
 
