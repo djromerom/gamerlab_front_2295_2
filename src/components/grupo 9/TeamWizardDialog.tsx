@@ -213,14 +213,6 @@ function buildPayload(
   delete videogamePayload._remove_gallery;
   delete videogamePayload._remove_logo;
 
-  console.log("DEBUG buildPayload:", {
-    existingUrls,
-    removed,
-    remainingExisting,
-    newUrls,
-    finalUrls
-  });
-
   return {
     teamName: data.nombre_equipo,
     isExternal: data.isExternal,
@@ -346,7 +338,6 @@ export default function TeamWizardDialog({
         }
         setNrcActivos(nrcOptionsArray);
       } catch (err) {
-        console.error("Error fetching subjects:", err);
         setNrcActivos([]);
       } finally {
         setIsPageLoading(false);
@@ -415,7 +406,6 @@ export default function TeamWizardDialog({
     if (open) {
       if (initialData) {
         reset({ ...defaultValues, ...initialData });
-        console.log("inic", initialData.videojuego?.additionalImages || []);
       } else {
         reset(defaultValues);
       }

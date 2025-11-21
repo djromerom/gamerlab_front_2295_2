@@ -115,8 +115,6 @@ export default function TeamWizardForm(props: any) {
         methods.setValue("videojuego.additionalImages", finalUrls, { shouldDirty: true });
         methods.setValue("videojuego._remove_gallery", [], { shouldDirty: false });
 
-        console.log("DEBUG SUBMIT IMG:", { existingUrls, removed, remainingExisting, newUrls, finalUrls });
-
         try {
           // Enviar el formulario (backend)
           const result = await handleFormSubmit(e);
@@ -131,8 +129,7 @@ export default function TeamWizardForm(props: any) {
             toast.error(`No se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
           }
         } catch (err) {
-
-          console.error("Error al registrar el equipo:", err);
+          console.error("Error submitting form:", err);
         }
       }}
       className="space-y-4 pt-8 sm:pt-0 max-h-[90vh] sm:max-h-[auto] overflow-auto p-4 sm:p-0"

@@ -113,11 +113,9 @@ const TeamsManagementPage = () => {
         }
       );
 
-      console.log("Fetch teams response:", res);
 
       if (!res.ok) {
         if (res.status === 404) {
-          console.warn("Teams endpoint not found, using mock data");
           setTeamsData(null);
           return;
         }
@@ -238,7 +236,6 @@ const TeamsManagementPage = () => {
           },
         };
       } else {
-        console.warn("API response doesn't have expected structure:", apiResponse);
         dataRespond = {
           data: [],
           metadata: {

@@ -76,13 +76,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            console.log(e);
           }
           throw new Error(errorMsg);
         }
         const apiResponseObject = await res.json();
 
-        console.log("API Response for subjects:", apiResponseObject);
 
         const materiasData: MateriaInfo[] = apiResponseObject.data.map((materia: any) => ({
           id: materia.id ?? materia.id_materia,
@@ -92,11 +90,9 @@ export const TeamsManagementTable: React.FC<Props> = ({
         }));
 
         setMateriasOptions(materiasData);
-        console.log("Fetched subjects:", materiasData);
 
       } catch (err) {
         console.error("Error fetching subjects:", err);
-        console.log("Error fetching subjects:", err);
         setMateriasOptions([]);
 
       } 
@@ -391,9 +387,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 setInternalIsLoading(true);
                 try {
                   await updateTeamStatus(team.id_equipo, numericStatus);
-                  console.log("Estado anterior:", team.videojuego.id_estado_videojuego);
-                  console.log("Estado actualizado en el backend");
-                  console.log("Nuevo estado:", team.videojuego.id_estado_videojuego);
                   toast.success(
                     `Estado cambiado a ${estadoOptions.find(
                       (o) => o.id_estado === numericStatus
