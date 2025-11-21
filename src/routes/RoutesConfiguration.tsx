@@ -170,6 +170,11 @@ const routes: RouteConfig[] = [
     element: <EditTeamPage />,
     roles: ["Estudiante"],
   },
+  {
+    path: "/configuracion-evento",
+    element: <EventConfigurationPage />,
+    roles: ["Administrador"],
+  }
 ];
 
 const RoutesConfiguration: React.FC = () => {

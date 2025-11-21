@@ -36,11 +36,8 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
-        {
-          name: "Criterios de Calificación",
-          url: "/criterios",
-          icon: BookCheck,
-        },
+        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck,},
+        { name: "Configuracion de Evento", url: "/configuracion-evento", icon: FileUser }
       ],
     },
     {
