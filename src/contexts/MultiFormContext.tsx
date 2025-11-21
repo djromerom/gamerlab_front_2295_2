@@ -18,7 +18,7 @@ export const useMultiForm = () => {
 
 export const MultiFormProvider = ({ children }: { children: ReactNode }) => {
   const [step, setStep] = useState(0);
-  const next = () => setStep((s) => Math.min(s + 1, 2));
+  const next = () => setStep((s) => Math.min(s + 1, 3));
   const back = () => setStep((s) => Math.max(s - 1, 0));
   const reset = () => setStep(0);
 

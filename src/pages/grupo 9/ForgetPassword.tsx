@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ButtonLoading } from "./ButtonLoading";
 
 export default function ForgetPassword() {
@@ -13,6 +13,8 @@ export default function ForgetPassword() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const handleRequestResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -31,6 +33,12 @@ export default function ForgetPassword() {
                 setError('No se pudo enviar el correo de restablecimiento de contraseña. Por favor, verifica el correo ingresado.');
                 throw new Error('Error al enviar el correo de restablecimiento de contraseña.');
             }
+            setSuccess('Correo de restablecimiento de contraseña enviado exitosamente. Por favor, revisa tu bandeja de entrada. Redireccionando al login... 😎');
+
+            setTimeout(() => {
+                navigate("/login")
+            }, 4000)
+
         } catch (err: unknown) {
           if (err instanceof Error) {
             setError(err.message);
@@ -77,8 +85,6 @@ export default function ForgetPassword() {
                         <div className="absolute flex justify-center items-center h-full px-[10px] border-r-2">
                             <Mail size={16} />
                         </div>
-                        
-                    
                         <Input
                             id="email"
                             type="email"
@@ -93,6 +99,11 @@ export default function ForgetPassword() {
                     {error && (
                         <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2">
                             {error}
+                        </p>
+                    )}
+                    {success && (
+                        <p className="text-green-600 text-xs sm:text-sm mt-1 sm:mt-2">
+                            {success}
                         </p>
                     )}
                     <div className="w-full mt-2 sm:mt-4">

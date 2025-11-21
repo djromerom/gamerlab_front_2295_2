@@ -6,6 +6,7 @@ export interface ApiCriterion {
   }
   
 export interface UiCriterion extends ApiCriterion {
-    scoreInput: string;
+    score: string | number;
     maxScore: number;
   }
+

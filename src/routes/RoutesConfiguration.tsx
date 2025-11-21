@@ -6,6 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
+import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
 import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
@@ -24,11 +25,15 @@ import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
 import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import { ManualAssignmentPage } from "@/pages/grupo 12/ManualAssignment";
+import SchoolRate from "@/pages/grupo 8/SchoolRate";
+import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 
 type Role =
   | "Profesor"
@@ -45,6 +50,7 @@ interface RouteConfig {
 
 const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
+  { path: "/auth-error", element: <AuthErrorPage /> },
   {
     path: "/profesor",
     element: <ProfessorPage />,
@@ -56,10 +62,10 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  {
-    path: "/registro-equipo",
+  { // Disabled temporarily
+     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-  },
+   },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -75,6 +81,10 @@ const routes: RouteConfig[] = [
   {
     path: "/informacion",
     element: <InformationPage />,
+  },
+  {
+    path: "/ediciones-pasadas",
+    element: <FeriasPasadas />,
   },
   {
     path: "/contribuidores",
@@ -114,6 +124,11 @@ const routes: RouteConfig[] = [
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
+    path: "/equipos-inscritos",
+    element: <TeamsManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
     roles: ["Jurado"],
@@ -123,8 +138,18 @@ const routes: RouteConfig[] = [
     element: <RatePage />,
     roles: ["Jurado"],
   },
+  {
+    path: "/colegios-calificar",
+    element: <PendingSchoolGradesPage />,
+    roles: ["Profesor"],
+  },
+  {
+    path: "/colegios-calificar/:id",
+    element: <SchoolRate />,
+    roles: ["Profesor"],
+  },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
-
+  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -143,7 +168,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />, 
+    element: <HomeTeacherPage />,
     roles: ["Profesor"],
   },
   {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { CheckCircle, AlertCircle, Loader2, KeyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +33,6 @@ type Status =
     | "success"
     | "error";
 
-
-
 export default function ResetPassword() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,6 +41,8 @@ export default function ResetPassword() {
     const [message, setMessage] = useState<string>("Verificando el enlace...");
     const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
     const [currentToken, setCurrentToken] = useState<string | null>(null);
+    const [show, setShow] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -153,9 +154,9 @@ export default function ResetPassword() {
             }
 
             setStatus("success");
-            const successMessage = "¡Contraseña establecida con éxito! Serás redirigido a iniciar sesión.";
+            const successMessage = "¡Contraseña establecida con éxito! Serás redirigido a Iniciar Sesión.";
             setMessage(successMessage);
-            toast.success("Contraseña establecida.");
+            toast.success("Contraseña Establecida.");
 
             setTimeout(() => {
                 navigate("/login");
@@ -220,7 +221,7 @@ export default function ResetPassword() {
                             </div>
                             <Input
                                 id="resetPassword"
-                                type="password"
+                                type={show ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => {setPassword(e.target.value)}}
                                 placeholder="Ingresar contraseña"
@@ -230,8 +231,13 @@ export default function ResetPassword() {
                                 aria-invalid={!!errors.password}
                                 aria-describedby={
                                     errors.password ? "password-error" : undefined
-                                }    
+                                }
                             />
+                            <button type="button"
+                                  onClick={() => setShow(!show)}
+                                  className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                                    {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                             {errors.password && (
                                 <p id="password-error" className="text-xs text-red-500">
                                 {errors.password}
@@ -245,7 +251,7 @@ export default function ResetPassword() {
                             
                             <Input
                                 id="confirmResetPassword"
-                                type="password"
+                                type={showConfirm ? "text" : "password"}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 disabled={status === "submitting_password"}
@@ -253,6 +259,11 @@ export default function ResetPassword() {
                                 required
                                 className="w-full h-full pl-[45px] m-0"
                             />
+                            <button type="button"
+                                  onClick={() => setShowConfirm(!showConfirm)}
+                                  className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                             {errors.confirmPassword && (
                                 <p id="confirmPassword-error" className="text-xs text-red-500">
                                 {errors.confirmPassword}
@@ -327,7 +338,7 @@ export default function ResetPassword() {
                             href="/login"
                             className="text-blue-600 hover:underline dark:text-blue-400 font-medium cursor-pointer"
                             >
-                                Iniciar sesión
+                                Iniciar Sesión
                             </a>
                         </p>
                     </div>

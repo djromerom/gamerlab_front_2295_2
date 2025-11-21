@@ -65,7 +65,7 @@ export const JuryManagementTable: React.FC<Props> = ({
   onLimitChange,
   refreshData,
 }) => {
-  // console.log("data", data);
+  // 
   // <-- Recibe isLoading
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -317,7 +317,7 @@ export const JuryManagementTable: React.FC<Props> = ({
   };
 
   const handleResendEmail = async (jurorId: string) => {
-    console.log("Reenviando correo de expiración para jurado:", jurorId);
+    
     setInternalIsLoading(true);
     try {
       const response = await customFetch(

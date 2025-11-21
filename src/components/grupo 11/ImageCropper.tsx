@@ -125,7 +125,7 @@ export function ImageCropper({
 
         <div className="py-4">
           {imgSrc && (
-            <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} aspect={1} circularCrop={false}>
+            <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} aspect={1} circularCrop={true}>
               <img
                 ref={imgRef}
                 src={imgSrc || "/placeholder.svg"}
@@ -136,7 +136,7 @@ export function ImageCropper({
               />
             </ReactCrop>
           )}
-          <p className="text-sm text-muted-foreground mt-2">Ajusta la imagen para que quede cuadrada (1:1)</p>
+          <p className="text-sm text-muted-foreground mt-2">Ajusta la imagen para que quede circular</p>
         </div>
 
         <DialogFooter>

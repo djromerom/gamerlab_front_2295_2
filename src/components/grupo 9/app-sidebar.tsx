@@ -8,7 +8,8 @@ import {
   FileUser,
   Gavel,
   ChartLine,
-  WrapText
+  WrapText,
+  Users,
 } from "lucide-react";
 import { NavUser } from "@/components/grupo 9/nav-user";
 import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
@@ -35,6 +36,7 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
+        { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
         {
           name: "Criterios de Calificación",
           url: "/criterios",
@@ -67,7 +69,19 @@ const MENU: Record<Role, MenuItem[]> = {
   Profesor: [
     {
       title: "Proyectos",
-      items: [{ name: "Calificaciones", url: "/home-profesor", icon: Binary }],
+      items: [
+        {
+          name: "Calificaciones",
+          url: "/home-profesor",
+          icon: Binary
+        },
+        {
+          name: "Colegios por Evaluar",
+          url: "/colegios-calificar",
+          icon: Binary
+        }
+      ],
+
     },
   ],
   Estudiante: [
@@ -75,7 +89,7 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Información",
       items: [
         {
-          name: "Mis calificaciones",
+          name: "Mis Calificaciones",
           url: "/mi-equipo",
           icon: LibraryBig,
         },
