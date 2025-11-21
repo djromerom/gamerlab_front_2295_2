@@ -27,13 +27,23 @@ export default function CardTeamVideogame ({ infoEquipo, infoEditEquipo, setEdit
                             {infoEquipo.description}
                         </p>
                     </div>
-                    <div className="flex justify-center items-center w-full space-x-5 border-t-1 p-5">
-                        <a href={infoEquipo.repoUrl} target="_blank">
-                            <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
-                        </a>
-                        <a href={infoEquipo.videoUrl} target="_blank">
-                            <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
-                        </a>
+                    <div className="flex justify-center items-center w-full space-x-5 p-5">
+                        {
+                            infoEquipo.repoUrl &&
+                            (
+                                <a href={infoEquipo.repoUrl} target="_blank">
+                                    <FaGithubAlt size={25} className="cursor-pointer hover:text-[#6e5494]" />
+                                </a>
+                            )
+                        }
+                        {
+                            infoEquipo.videoUrl &&
+                            (
+                                <a href={infoEquipo.videoUrl} target="_blank">
+                                    <FaYoutube size={25} className="cursor-pointer hover:text-[#FF0000]"/>
+                                </a>
+                            )
+                        }
                     </div>
                 </div>
                 <Button className="w-full cursor-pointer" onClick={()=>setEdit(true)}>

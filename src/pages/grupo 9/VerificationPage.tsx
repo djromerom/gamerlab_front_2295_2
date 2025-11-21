@@ -31,16 +31,27 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
+const emailSchema = z
+  .object({
+    email: z
+      .string()
+      .email("El correo electrónico no es válido"),
+  });
+
 type Status =
   | "loading_token_verification"
   | "awaiting_password"
   | "submitting_password"
   | "success"
+  | "expired_error"
+  | "resend_email"
+  | "submitting_email"
   | "error";
 
 export function VerifyEmailPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>("loading_token_verification");
   const [message, setMessage] = useState<string>("Verificando el enlace...");
@@ -69,6 +80,12 @@ export function VerifyEmailPage() {
       const data = await response.json();
 
       if (!response.ok || !data.isValid) {
+        if (data.message.includes("expired")) {
+          setStatus("expired_error");
+          setMessage("El enlace de verificación ha expirado. Solicita uno nuevo.");
+          toast.error("El enlace de verificación ha expirado.");
+          return;
+        }
         setStatus("error");
         setMessage("El enlace de verificación es inválido, ha expirado o ya fue utilizado.");
         toast.error(data.message || "Error en la verificación del enlace.");
@@ -109,6 +126,56 @@ export function VerifyEmailPage() {
     }
   }, [searchParams, verifyToken]);
 
+  const handleResendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const validationResult = emailSchema.safeParse({email});
+
+    if (!validationResult.success) {
+      const fieldErrors: Record<string, string> = {};
+      validationResult.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    try {
+      setStatus("submitting_email");
+      setMessage("Reenviando correo de verificación...");
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/resend-confirmation`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email }),
+        }
+      );
+      
+      if (response.status !== 200) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al reenviar el correo");
+      }
+      
+      setStatus("success");
+      const successMessage =
+        "Correo reenviado correctamente. Serás redirigido a nuestra página principal.";
+      setMessage(successMessage);
+      toast.success("Correo reenviado correctamente.");
+
+      setTimeout(() => {
+        navigate("/");
+      }, 3000);
+    } catch (err: any) {
+      setStatus("error");
+      setMessage(err.message || "Error al reenviar el correo de confirmación");
+      toast.error(err.message || "Error al reenviar el correo de confirmación");
+    }
+  };
 
   const handleSetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +261,34 @@ export function VerifyEmailPage() {
             </Alert>
           </div>
         );
+      case "expired_error":
+          return (
+          <div className="py-3">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error de Verificación</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+              <div className="mt-4 space-y-1">
+                <Button
+                  onClick={() => navigate("/login")}
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  Ir a Iniciar Sesión
+                </Button>
+                <Button
+                  onClick={() => setStatus("resend_email")}
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  Reenviar Enlace de Verificación
+                </Button>
+              </div>
+            </Alert>
+          </div>
+        );
       case "error":
         return (
           <div className="py-3">
@@ -214,6 +309,52 @@ export function VerifyEmailPage() {
             </Alert>
           </div>
         );
+      case "resend_email":
+      case "submitting_email":
+        return (
+          <form onSubmit={handleResendEmail} className="space-y-4 pb-3">  
+            <div className="space-y-2">
+              <Label
+                htmlFor="email"
+                className="text-gray-800 dark:text-gray-200"
+              >
+                Email de confirmación
+              </Label>
+              <Input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Ingresa tu correo"
+                className={errors.confirmEmail ? "border-red-500" : ""}
+                disabled={status === "submitting_email"}
+                aria-invalid={!!errors.confirmEmail}
+                aria-describedby={
+                  errors.confirmEmail ? "confirmEmail-error" : undefined
+                }
+              />
+              {errors.confirmEmail && (
+                <p id="confirmEmail-error" className="text-xs text-red-500">
+                  {errors.confirmEmail}
+                </p>
+              )}
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-[#B3C7FF] hover:bg-[#8a70ff] cursor-pointer"
+              disabled={status === "submitting_email"}
+            >
+              {status === "submitting_email" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Estableciendo...
+                </>
+              ) : (
+                "Reenviar correo de confirmación"
+              )}
+            </Button>
+          </form>
+        )
       case "success":
         return (
           <div className="py-3">
@@ -352,9 +493,11 @@ export function VerifyEmailPage() {
         ? "Verificando tu enlace..."
         : status === "success"
           ? "Proceso completado."
-          : status === "error"
+          : status === "error" || status === "expired_error"
             ? "No se pudo completar la verificación."
-            : "Confirmando tu cuenta...";
+            : status === "resend_email"
+              ? "Escribe tu correo para reenviar el correo de confirmación."
+              : "Confirmando tu cuenta...";
 
 
   return (

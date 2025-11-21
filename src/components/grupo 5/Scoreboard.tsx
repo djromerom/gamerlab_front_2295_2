@@ -28,8 +28,6 @@ export default function Scoreboard() {
           headers: { "Content-Type": "application/json" },
         })
 
-        // console.log("Fetch response status:", res.url, res.status)
-
         if (!res.ok) {
           alert("Error fetching ratings")
           setRawRatingsAll([])
@@ -37,8 +35,6 @@ export default function Scoreboard() {
           return
         }
         const data = await res.json()
-
-        // console.log("Fetched ratings data:", data)
 
         if (!data || !data.data || !Array.isArray(data.data)) {
           setRawRatingsAll([])

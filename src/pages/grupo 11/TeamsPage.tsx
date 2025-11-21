@@ -20,7 +20,7 @@ export interface Team {
   gameName: string;
   teamName: string;
   teamCode: string;
-  userId: string;
+  userId?: string;
   status: TeamStatus;
   video?: string;
   repo?: string;
@@ -51,8 +51,8 @@ export default function TeamsPage() {
   const mapStatusToString = (status: any): string => {
     if (typeof status === 'number') {
       switch (status) {
-        case 1: return "pendiente";
-        case 2: return "confirmado";
+        case 1: return "confirmado";
+        case 2: return "pendiente";
         case 3: return "expirado";
         default: return "pendiente";
       }
@@ -181,8 +181,8 @@ export default function TeamsPage() {
           
           // Debug temporal: verificar estructura de los datos  
           if (team.id === 1) {
-            console.log("🔍 Estructura completa del team:", team);
-            console.log("🔍 Miembros del equipo:", teamMembers);
+            
+            
           }
           
           // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
@@ -195,6 +195,7 @@ export default function TeamsPage() {
             status: mappedStatus as TeamStatus || "pendiente",
             video: videogame.videoUrl || videogame.video_url,
             repo: videogame.repoUrl || videogame.repo_url,
+            teamCode: team.teamCode || team.code || "",
             members: teamMembers.map((m: any) => {
               // Probar diferentes nombres de campos para nombre y apellido
               const firstName = m.firstName || m.nombre || m.first_name || '';
@@ -203,8 +204,8 @@ export default function TeamsPage() {
               
               // Debug para el primer miembro del primer equipo
               if (team.id === 1 && teamMembers.indexOf(m) === 0) {
-                console.log("🔍 Estructura del primer miembro:", m);
-                console.log("🔍 Nombre completo construido:", fullName);
+                
+                
               }
               
               return fullName || 'Sin nombre';

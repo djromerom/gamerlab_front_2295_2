@@ -13,6 +13,7 @@ interface Subject {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  abrevName: string;
 }
 
 interface PaginatedSubjects {

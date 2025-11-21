@@ -5,6 +5,7 @@ import { Input } from "../ui/input"
 import { toast } from "sonner"
 
 import { TeamMembersProps } from "@/types/teamMembers";
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function FormEditMembers ({ 
     setStudents,
@@ -19,6 +20,7 @@ export default function FormEditMembers ({
     updateStudentBasics,
     handleSaveNrcs
  }: TeamMembersProps) {
+    const { user } = useAuth();
     return (
         <Dialog open={!!editStudent} onOpenChange={open => !open && setEditStudent(null)}>
             <DialogContent className="max-w-md w-full">
@@ -59,7 +61,7 @@ export default function FormEditMembers ({
                             onChange={(e) => setEditEmail(e.target.value)}
                             placeholder="usuario@uninorte.edu.co"
                             // Si este estudiante es el principal y debe bloquearse:
-                            // disabled={editStudent?.isLeader === true}
+                            disabled={user?.email === editStudent?.email}
                         />
                     </div>
 
@@ -167,25 +169,27 @@ export default function FormEditMembers ({
                             }
                             try {
                                 // 1) Actualiza datos básicos
-                                if (editStudent) {
-                                await updateStudentBasics({
-                                    id: editStudent.id,
-                                    email: editEmail.trim(),
-                                });
-
-                                // refresca en memoria local
-                                setStudents(prev =>
-                                    prev.map(s =>
-                                    s.id === editStudent.id
-                                    ? {
-                                        ...s,
-                                        name: `${editFirstName.trim()} ${editLastName.trim()}`,
-                                        firstName: editFirstName.trim(),
-                                        lastName: editLastName.trim(),
-                                        email: editEmail.trim(),
-                                        studentCode: editStudentCode.trim(),
+                                if (editStudent && user) {
+                                    if (editStudent.email !== user.email) {
+                                        await updateStudentBasics({
+                                            id: editStudent.id,
+                                            email: editEmail.trim(),
+                                        });
                                     }
-                                    : s));
+
+                                    // refresca en memoria local
+                                    setStudents(prev =>
+                                        prev.map(s =>
+                                        s.id === editStudent.id
+                                        ? {
+                                            ...s,
+                                            name: `${editFirstName.trim()} ${editLastName.trim()}`,
+                                            firstName: editFirstName.trim(),
+                                            lastName: editLastName.trim(),
+                                            email: editEmail.trim(),
+                                            studentCode: editStudentCode.trim(),
+                                        }
+                                        : s));
                                     }
                                     // 2) Actualiza NRCs
                                 handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);

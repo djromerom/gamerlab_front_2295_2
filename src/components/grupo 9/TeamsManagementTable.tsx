@@ -1,64 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreVertical,
-  Plus,
-  Loader2,
-  Users,
-  ChevronDown,
-  MailCheck,
-  MailWarning,
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TeamRowData, Props, NrcInfo, MateriaInfo } from "./teams-utils";
+import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
+import type { WizardValues } from "./validationTeamsAdmin";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 
-import {
-  TeamRowData,
-  Props,
-  EstadoVideojuego,
-  NrcInfo,
-  MateriaInfo,
-} from "./teams-utils";
-
-import TeamWizardDialog, {
-  WizardValues,
-  toInitialValuesFromTeam,
-} from "./TeamWizardDialog";
 
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
@@ -71,87 +26,126 @@ export const TeamsManagementTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  statusEmailLeader,
 }) => {
+
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardInitial, setWizardInitial] = useState<
-    Partial<WizardValues> | undefined
-  >(undefined);
+  const [wizardInitial, setWizardInitial] = useState<Partial<WizardValues> | undefined>(undefined);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const [expandedMembers, setExpandedMembers] = useState<Set<number>>(
-    new Set()
-  );
 
-  const [estadosVideojuego, setEstadosVideojuego] = useState<
-    EstadoVideojuego[]
-  >([]);
-  const [nrcOptions, setNrcOptions] = useState<NrcInfo[]>([]);
+  const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
+
+  // filtro (all | external | uninorte)
+  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+
+  // Responsive header: detectar móvil para mostrar título + dropdown + agregar
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    try { return window.innerWidth < 768; } catch { return false; }
+  });
+  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [handleResize]);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
 
+  const safeFecha = (team: TeamRowData) => team?.fecha_registro ?? new Date().toISOString();
+
+
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/subjects`;
+
   useEffect(() => {
     const load = async () => {
-      setIsLoadingOptions(true);
+      //setIsLoadingOptions(true);
       try {
-        // TODO: reemplazar por fetch reales a tu API
-        await new Promise((r) => setTimeout(r, 300));
-        setEstadosVideojuego([
-          { id_estado: 1, estado: "confirmado", activo: true },
-          { id_estado: 2, estado: "pendiente", activo: true },
-          { id_estado: 3, estado: "rechazado", activo: true }
-        ]);
-        setNrcOptions([
-          { id_nrc: 1, codigo: 12345, id_materia: 1, id_profesor: "prof_001" },
-          { id_nrc: 2, codigo: 12346, id_materia: 1, id_profesor: "prof_001" },
-          { id_nrc: 3, codigo: 12347, id_materia: 2, id_profesor: "prof_002" },
-        ]);
-        setMateriasOptions([
-          {
-            id_materia: 1,
-            nombre: "Programación de Videojuegos",
-            codigo: "PROG001",
-            semestre: 6,
-          },
-          {
-            id_materia: 2,
-            nombre: "Desarrollo de Software",
-            codigo: "DES001",
-            semestre: 5,
-          },
-        ]);
+        const res = await fetch(API_ENDPOINT, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+          try {
+            const errorBody = await res.json();
+            errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
+          } catch (e) {
+            console.log(e);
+          }
+          throw new Error(errorMsg);
+        }
+        const apiResponseObject = await res.json();
+
+        console.log("API Response for subjects:", apiResponseObject);
+
+        const materiasData: MateriaInfo[] = apiResponseObject.data.map((materia: any) => ({
+          id: materia.id ?? materia.id_materia,
+          name: materia.name ?? materia.nombre,
+          code: materia.code ?? materia.codigo,
+          semester: materia.semester ?? materia.semestre,
+        }));
+
+        setMateriasOptions(materiasData);
+        console.log("Fetched subjects:", materiasData);
+
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
+        console.log("Error fetching subjects:", err);
+        setMateriasOptions([]);
+
       } finally {
-        setIsLoadingOptions(false);
+        //setIsLoadingOptions(false);
       }
     };
     load();
-  }, []);
+  }, [API_ENDPOINT]);
 
-  const toggleMembersExpansion = (teamId: number) => {
-    const s = new Set(expandedMembers);
-    s.has(teamId) ? s.delete(teamId) : s.add(teamId);
-    setExpandedMembers(s);
+  const updateTeamStatus = async (teamId: number, status: number) => {
+
+    const body = {
+      videogame: {
+        videogameStatusId: status,
+      },
+    };
+
+    const res = await fetch(`${apiBaseUrl}/teams/${teamId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.message || "Error actualizando el equipo.");
+    }
+    // opcional: devolver body si el backend retorna el equipo actualizado
+    return res.json().catch(() => null);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (statusId: number) => {
     const map = {
-      confirmado: { variant: "default" as const, text: "Confirmado" },
-      pendiente: { variant: "secondary" as const, text: "Pendiente" },
-      rechazado: { variant: "destructive" as const, text: "Rechazado" },
+      1: { variant: "default" as const, text: "Confirmado" },
+      2: { variant: "secondary" as const, text: "Pendiente" },
+      3: { variant: "destructive" as const, text: "Rechazado" },
     };
-    const c = (map as any)[status] || map.pendiente;
+    const c = (map as any)[statusId] || map[2];
     return <Badge variant={c.variant}>{c.text}</Badge>;
   };
 
   async function resendInvite(email: string) {
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/auth/resend-invite`, {
+      const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -169,184 +163,285 @@ export const TeamsManagementTable: React.FC<Props> = ({
     }
   }
 
+
   const columnsToDisplay = [
     {
       key: "teamInfo",
       label: "Equipo",
-      renderCell: (team: TeamRowData) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={team.videojuego.logo_url} alt={team.nombre_equipo} />
-            <AvatarFallback>{team.nombre_equipo.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{team.nombre_equipo}</div>
-            <div className="text-sm text-muted-foreground">
-              {team.videojuego.nombre}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "members",
-      label: "Miembros",
       renderCell: (team: TeamRowData) => {
-        const isExpanded = expandedMembers.has(team.id_equipo);
+        const logo = team.videojuego?.logo_url ?? "";
+        const videojuegoNombre = team.videojuego?.nombre ?? "—";
+        const equipoNombre = team.nombre_equipo ?? "Equipo";
+
         return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleMembersExpansion(team.id_equipo)}
-                className="h-6 px-2 text-xs"
-              >
-                <Users className="w-3 h-3 mr-1" />
-                {team.integrantes.length} miembro
-                {team.integrantes.length !== 1 ? "s" : ""}
-                <ChevronDown
-                  className={`w-3 h-3 ml-1 ${isExpanded ? "rotate-180" : ""}`}
-                />
-              </Button>
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              {logo ? (
+                <AvatarImage src={logo} alt={equipoNombre} />
+              ) : (
+                <AvatarFallback>{equipoNombre.charAt(0) ?? "?"}</AvatarFallback>
+              )}
+            </Avatar>
+            <div>
+              <div className="font-medium">{equipoNombre}</div>
+              <div className="text-sm text-muted-foreground">{videojuegoNombre}</div>
             </div>
-            {isExpanded && (
-              <div className="ml-4 space-y-1 max-h-32 overflow-y-auto">
-                {team.integrantes.map((integrante) => (
-                  <div
-                    key={integrante.id_integrante}
-                    className="text-xs bg-muted/50 p-2 rounded"
-                  >
-                    <div className="font-medium">
-                      {integrante.nombre} {integrante.apellido}
-                    </div>
-                    <div className="text-muted-foreground">
-                      {integrante.correo}
-                    </div>
-                    <div className="text-muted-foreground">
-                      Código: {integrante.codigo_estudiantil}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         );
       },
     },
     {
-      key: "academicInfo",
-      label: "Información Académica",
-      renderCell: (team: TeamRowData) => (
-        <div className="text-sm space-y-1">
-          {team.nrc_info && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium">NRC:</span>
-              <Badge variant="default">{team.nrc_info.codigo}</Badge>
-            </div>
-          )}
-          {team.materia_info && (
+      key: "memberInfo",
+      label: "Información miembros",
+      renderCell: (team: TeamRowData) => {
+        const isOpen = openInfoTeamId === team.id_equipo;
+        const logo = team.videojuego?.logo_url ?? "";
+        const videojuegoNombre = team.videojuego?.nombre ?? "—";
+        const equipoNombre = team.nombre_equipo ?? "Equipo";
+        const members = team.integrantes ?? [];
+        const tipoEquipo = (team as any).isExternal === true ? "Externo" : "Uninorte";
+
+        return (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setOpenInfoTeamId(team.id_equipo)}
+            >
+              <Users className="w-3 h-3 mr-1" />
+              Ver {members.length} miembro{members.length !== 1 ? "s" : ""} y datos académicos
+            </Button>
+
             <div>
-              <span className="font-medium">Materia:</span>{" "}
-              {team.materia_info.nombre}
+              <Badge variant={tipoEquipo === "Externo" ? "outline" : "outline"} className="mr-1">
+                {tipoEquipo}
+              </Badge>
             </div>
-          )}
-          <div className="text-xs text-muted-foreground">
-            Edición: {team.id_edicion}
-          </div>
-        </div>
-      ),
+
+            <Dialog open={isOpen} onOpenChange={(open) => !open && setOpenInfoTeamId(null)}>
+              <DialogContent className="max-w-lg w-full">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <Avatar className="w-9 h-9">
+                      {logo ? (
+                        <AvatarImage src={logo} alt={equipoNombre} />
+                      ) : (
+                        <AvatarFallback>{equipoNombre.charAt(0) ?? "?"}</AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{equipoNombre}</span>
+                      <span className="text-xs text-muted-foreground">{videojuegoNombre}</span>
+                    </div>
+                  </DialogTitle>
+                  <DialogDescription>Detalles de miembros y datos académicos</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+
+                  {/* NRCs Asociados */}
+                  <div className="rounded-lg border">
+                    <div className="px-3 py-2 text-sm font-medium border-b">
+                      NRCs Asociados
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-3">
+                      {/* badges inline, wrapables y con espacio entre ellas */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {(() => {
+                          const shownNrcs = new Set<string>();
+                          return members
+                            .flatMap((integrante) =>
+                              (integrante.nrcs ?? []).map((nrc: NrcInfo) => ({
+                                nrc,
+                                integranteId:
+                                  integrante.id_integrante ??
+                                  `member-${Math.random().toString(36).slice(2, 7)}`,
+                              }))
+                            )
+                            .map(({ nrc, integranteId }) => {
+                              const materia = materiasOptions.find(
+                                (m) =>
+                                  (m as any).id_materia === nrc.id_materia ||
+                                  (m as any).id === nrc.id_materia
+                              );
+                              const materiaNombre =
+                                (materia as any)?.nombre ??
+                                (materia as any)?.name ??
+                                "Materia desconocida";
+
+                              // clave para deduplicar (preferir id_nrc si viene, si no usar código + materia)
+                              const nrcKey = String(nrc.id_nrc ?? `${nrc.codigo}-${nrc.id_materia}`);
+                              if (shownNrcs.has(nrcKey)) return null;
+                              shownNrcs.add(nrcKey);
+
+                              const key = `${team.id_equipo}-${integranteId}-${nrcKey}`;
+                              return (
+                                <Badge key={key} className="text-xs">
+                                  <b className="px-1">
+                                    {nrc.codigo} - {materiaNombre}
+                                  </b>
+                                </Badge>
+                              );
+                            });
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Miembros */}
+                  <div className="rounded-lg border">
+                    <div className="px-3 py-2 text-sm font-medium border-b">
+                      Miembros ({members.length})
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-3 space-y-2">
+                      {members.map((integrante) => (
+                        <div
+                          key={integrante.id_integrante}
+                          className="text-xs bg-muted/50 p-2 rounded"
+                        >
+                          <div className="font-medium">
+                            {integrante.nombre} {integrante.apellido}
+                          </div>
+                          <div className="text-muted-foreground">{integrante.correo}</div>
+                          {integrante.codigo_estudiantil && (
+                            <div className="text-muted-foreground">
+                              Código: {integrante.codigo_estudiantil}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenInfoTeamId(null)}>
+                    Cerrar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      },
     },
+
     {
       key: "emailConfirm",
-      label: "Confirmación",
+      label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
         const primaryEmail = team.integrantes?.[0]?.correo;
-        const confirmed =
-          (team as any).owner_email_confirmed ??
-          (team as any).email_confirmed ??
-          false;
+        statusEmailLeader = statusEmailLeader ?? (() => null);
+        const cached = statusEmailLeader(primaryEmail);
+
+        // estado no iniciado: mostrar indicador ligero
+        if (cached === undefined || cached === null) {
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">No consultado</Badge>
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          );
+        }
+
+        const rawLabel = cached?.confirmationStatus?.status ?? "No consultado";
+        const label = String(rawLabel);
+
+        const s = String(label).trim();
+        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalizar
+
+        const showResend = norm === "Pendiente" || norm === "Expirado";
+        const variant =
+          norm === "Confirmado" ? "default" : norm === "Pendiente" ? "secondary" : "destructive";
+
         return (
           <div className="flex items-center gap-2">
-            {confirmed ? (
-              <Badge variant="default" className="gap-1">
-                <MailCheck className="w-3 h-3" /> Confirmado
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <MailWarning className="w-3 h-3" /> Pendiente
-              </Badge>
-            )}
-            {!confirmed && primaryEmail && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7"
-                onClick={() => resendInvite(primaryEmail)}
-                disabled={internalIsLoading}
-              >
-                Reenviar correo
-              </Button>
-            )}
+            <Badge variant={variant as any}>{norm}</Badge>
+
+            <div className="flex items-center gap-2">
+              {showResend && primaryEmail && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => primaryEmail && resendInvite(primaryEmail)}
+                  disabled={!primaryEmail || internalIsLoading}
+                >
+                  Reenviar correo
+                </Button>
+              )}
+            </div>
           </div>
         );
       },
     },
     {
       key: "status",
-      label: "Estado",
-      renderCell: (team: TeamRowData) => (
-        <div className="space-y-2">
-          <div>{getStatusBadge(team.estado_nombre)}</div>
-          <Select
-            value={team.estado_nombre}
-            onValueChange={async (newStatus) => {
-              setInternalIsLoading(true);
-              try {
-                const res = await fetch(
-                  `${apiBaseUrl}/teams/${team.id_equipo}/status`,
-                  {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ estado: newStatus }),
-                  }
-                );
-                if (!res.ok) {
-                  const err = await res.json().catch(() => ({}));
-                  throw new Error(err?.message || "Error al cambiar el estado.");
+      label: "Estado Videojuego",
+      renderCell: (team: TeamRowData) => {
+        const idEstadoVideojuego = team.videojuego?.id_estado_videojuego ?? 2;
+
+        // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
+        const estadoOptions = [
+          { id_estado: 1, estado: "Confirmado" },
+          { id_estado: 2, estado: "Pendiente" },
+          { id_estado: 3, estado: "Rechazado" },
+        ];
+
+        return (
+          <div className="space-y-2">
+            {/* Mostrar badge basado en el id real del videojuego */}
+            <div>{getStatusBadge(idEstadoVideojuego)}</div>
+
+            <Select
+              value={String(idEstadoVideojuego)}
+              onValueChange={async (newStatus) => {
+                const numericStatus = parseInt(newStatus, 10);
+                if (internalIsLoading) return;
+                setInternalIsLoading(true);
+                try {
+                  await updateTeamStatus(team.id_equipo, numericStatus);
+                  console.log("Estado anterior:", team.videojuego.id_estado_videojuego);
+                  console.log("Estado actualizado en el backend");
+                  console.log("Nuevo estado:", team.videojuego.id_estado_videojuego);
+                  toast.success(
+                    `Estado cambiado a ${estadoOptions.find(
+                      (o) => o.id_estado === numericStatus
+                    )?.estado || numericStatus}.`
+                  );
+                  refreshData();
+                } catch (err: any) {
+                  showError(err?.message || "Error al cambiar el estado.");
+                } finally {
+                  setInternalIsLoading(false);
                 }
-                toast.success(`Estado cambiado a ${newStatus}.`);
-                refreshData();
-              } catch (err: any) {
-                showError(err.message || "Error al cambiar el estado.");
-              } finally {
-                setInternalIsLoading(false);
-              }
-            }}
-            disabled={internalIsLoading}
-          >
-            <SelectTrigger className="w-full h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {estadosVideojuego.map((estado) => (
-                <SelectItem key={estado.id_estado} value={estado.estado}>
-                  {estado.estado}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ),
+              }}
+              disabled={internalIsLoading}
+            >
+              <SelectTrigger className="w-full h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {estadoOptions.map((estado) => (
+                  <SelectItem key={estado.id_estado} value={String(estado.id_estado)}>
+                    {estado.estado}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      },
     },
     {
       key: "createdAt",
       label: "Fecha de Registro",
       renderCell: (team: TeamRowData) => (
         <div className="text-sm">
-          <div>{new Date(team.fecha_registro).toLocaleDateString()}</div>
+          <div>{new Date(safeFecha(team)).toLocaleDateString()}</div>
           <div className="text-muted-foreground text-xs">
-            {new Date(team.fecha_registro).toLocaleTimeString()}
+            {new Date(safeFecha(team)).toLocaleTimeString()}
           </div>
         </div>
       ),
@@ -388,6 +483,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/teams/${deletingId}`, {
@@ -411,38 +507,150 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${
-        showLoader ? "opacity-75" : ""
-      }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
+        }`}
     >
-      {/* Header */}
+      {/* Header (responsive): título visible junto al filtro desplegable y botón Agregar en móvil) */}
       <div className="flex justify-between items-center mb-6 px-4">
-        <h1 className="text-xl font-medium">Equipos Inscritos</h1>
+        {isMobile ? (
+          <div className="flex items-center gap-2 w-full">
+            <h1 className="text-lg font-medium truncate">Equipos Inscritos</h1>
 
-        {/* Botón Agregar -> abre el Wizard */}
-        <Button
-          variant="outline"
-          className="bg-card hover:bg-accent text-foreground"
-          disabled={showLoader}
-          onClick={handleOpenAdd}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Agregar
-        </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8" disabled={showLoader}>
+                    Filtro
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "all") return;
+                      setExternalFilter("all");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Todos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "external") return;
+                      setExternalFilter("external");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Externos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (externalFilter === "uninorte") return;
+                      setExternalFilter("uninorte");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Uninorte
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-        {/* Wizard (add/edit) */}
-        <TeamWizardDialog
-          open={wizardOpen}
-          onOpenChange={setWizardOpen}
-          apiBaseUrl={apiBaseUrl}
-          nrcOptions={nrcOptions}
-          materiasOptions={materiasOptions}
-          initialData={wizardInitial}
-          onSuccess={() => {
-            onPageChange(1);
-            refreshData();
-          }}
-        />
-      </div>
+              <Button
+                variant="outline"
+                className="bg-card hover:bg-accent text-foreground"
+                disabled={showLoader}
+                onClick={handleOpenAdd}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Agregar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-6">
+              <div>
+                <h1 className="text-xl font-medium">Equipos Inscritos</h1>
+              </div>
+
+              {/* Filtro externo / uninorte — fila de 3 botones */}
+              <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
+                <Button
+                  size="sm"
+                  variant={externalFilter === "all" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "all") return;
+                    setExternalFilter("all");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "all"}
+                >
+                  Todos
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant={externalFilter === "external" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "external") return;
+                    setExternalFilter("external");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "external"}
+                >
+                  Externos
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "uninorte") return;
+                    setExternalFilter("uninorte");
+                    try { onPageChange(1); } catch (e) { }
+                  }}
+                  disabled={showLoader}
+                  aria-pressed={externalFilter === "uninorte"}
+                >
+                  Uninorte
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Botón Agregar -> abre el Wizard */}
+              <Button
+                variant="outline"
+                className="bg-card hover:bg-accent text-foreground"
+                disabled={showLoader}
+                onClick={handleOpenAdd}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Agregar
+              </Button>
+
+              {/* Wizard (add/edit) */}
+              {/* (TeamWizardDialog moved below so it's available en mobile también) */}
+            </div>
+          </>
+        )}
+      </div> {/* end header */}
+
+      {/* TeamWizardDialog debe montarse siempre (móvil y desktop) */}
+      <TeamWizardDialog
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        apiBaseUrl={apiBaseUrl}
+        nrcOptions={nrcOptions}
+        materiasOptions={materiasOptions}
+        initialData={wizardInitial}
+        onSuccess={() => {
+          onPageChange(1);
+          refreshData();
+        }}
+      />
 
       {/* Tabla */}
       <Card className="rounded-lg overflow-hidden bg-card">
@@ -479,106 +687,118 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              teams?.map((team) => (
-                <TableRow key={team.id_equipo}>
-                  {columnsToDisplay.map(({ key, renderCell }) => (
-                    <TableCell key={key}>{renderCell(team)}</TableCell>
-                  ))}
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-8 w-8 p-0 cursor-pointer"
-                          disabled={internalIsLoading}
-                        >
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleOpenEdit(team)}
-                          disabled={internalIsLoading}
-                          className="cursor-pointer"
-                        >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setDeletingId(team.id_equipo);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
-                          disabled={internalIsLoading}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+              // aplicar filtro cliente por isExternal
+              (() => {
+                const filteredTeams = teams?.filter((team) => {
+                  if (!team) return false;
+                  const isExt = (team as any).isExternal === true;
+                  if (externalFilter === "all") return true;
+                  if (externalFilter === "external") return isExt;
+                  return !isExt; // uninorte
+                }) ?? [];
+
+                return filteredTeams.map((team) => (
+                  <TableRow key={team.id_equipo}>
+                    {columnsToDisplay.map(({ key, renderCell }) => (
+                      <TableCell key={key}>{renderCell(team)}</TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleOpenEdit(team)}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingId(team.id_equipo);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-500 focus:text-red-600 focus:bg-red-100 cursor-pointer"
+                            disabled={internalIsLoading}
+                          >
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ));
+              })()
             )}
           </TableBody>
         </Table>
 
         {/* Paginación */}
-        {paginationMeta && paginationMeta.totalItems > 0 && (
-          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-            <div className="flex items-center gap-2">
-              <span>Filas por página</span>
-              <Select
-                value={paginationMeta.itemsPerPage.toString()}
-                onValueChange={(value) => onLimitChange(parseInt(value, 10))}
-                disabled={showLoader}
-              >
-                <SelectTrigger className="w-[70px] cursor-pointer">
-                  <SelectValue placeholder={paginationMeta.itemsPerPage} />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 10, 15, 20].map((n) => (
-                    <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {(() => {
+          const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
+          const currentPage = paginationMeta?.currentPage ?? 1;
+          const totalPages = paginationMeta?.totalPages ?? 0;
 
-            <div className="flex items-center gap-4">
-              <span>
-                Página{" "}
-                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
-                de {paginationMeta.totalPages}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  onClick={() => onPageChange(paginationMeta.currentPage - 1)}
-                  disabled={paginationMeta.currentPage === 1 || showLoader}
-                  variant="outline"
-                  size="icon"
-                  className="cursor-pointer"
+          // Siempre renderizamos la barra de paginación (pero acciones deshabilitadas si no hay páginas)
+          return (
+            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+              <div className="flex items-center gap-2">
+                <span>Filas</span>
+                <Select
+                  value={String(itemsPerPage)}
+                  onValueChange={(value) => onLimitChange(parseInt(value, 10))}
+                  disabled={showLoader}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={() => onPageChange(paginationMeta.currentPage + 1)}
-                  disabled={
-                    paginationMeta.currentPage === paginationMeta.totalPages ||
-                    paginationMeta.totalPages === 0 ||
-                    showLoader
-                  }
-                  variant="outline"
-                  size="icon"
-                  className="cursor-pointer"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <SelectTrigger className="w-[70px] cursor-pointer">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20].map((n) => (
+                      <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <span>
+                  {totalPages > 0 ? currentPage : 0} de {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1 || totalPages === 0 || showLoader}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages || totalPages === 0 || showLoader}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Card>
 
       {/* Eliminar */}
@@ -618,3 +838,4 @@ export const TeamsManagementTable: React.FC<Props> = ({
     </div>
   );
 };
+

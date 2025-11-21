@@ -6,8 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
         VITE_ENDPOINT_BACKEND: ${VITE_ENDPOINT_BACKEND}
         VITE_SITE_KEY: ${VITE_SITE_KEY}
     image: gamerlab-frontend:latest
