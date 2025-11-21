@@ -85,17 +85,46 @@ export default function TeamsPage() {
     return "pendiente"; // fallback por defecto
   };
 
-  useEffect(() => {
-    async function fetchTeams() {
-      setLoading(true);
+  const fetchTeams = async () => {
+    setLoading(true);
+    
+    try {
+      // Intentar obtener equipos desde el endpoint de teams primero
+      let rawData = [];
+      let videogamesData = [];
       
       try {
-        // Intentar obtener equipos desde el endpoint de teams primero
-        let rawData = [];
-        let videogamesData = [];
+        const teamsRes = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (teamsRes.ok) {
+          rawData = await teamsRes.json();
+        } else {
+          throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
+        }
+      } catch (teamsError) {
         
+        // Fallback: obtener desde videogames y luego equipos por separado
+        const videogamesRes = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        
+        videogamesData = await videogamesRes.json();
+        
+        // Ahora intentamos obtener información de equipos para el campo isExternal
         try {
-          const teamsRes = await customFetch(
+          const teamsInfoRes = await customFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
             {
               method: "GET",
@@ -103,130 +132,101 @@ export default function TeamsPage() {
               headers: { "Content-Type": "application/json" },
             }
           );
-
-          if (teamsRes.ok) {
-            rawData = await teamsRes.json();
-          } else {
-            throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
-          }
-        } catch (teamsError) {
           
-          // Fallback: obtener desde videogames y luego equipos por separado
-          const videogamesRes = await customFetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-          
-          videogamesData = await videogamesRes.json();
-          
-          // Ahora intentamos obtener información de equipos para el campo isExternal
-          try {
-            const teamsInfoRes = await customFetch(
-              `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
-              {
-                method: "GET",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-              }
-            );
+          if (teamsInfoRes.ok) {
+            const teamsInfo = await teamsInfoRes.json();
             
-            if (teamsInfoRes.ok) {
-              const teamsInfo = await teamsInfoRes.json();
-              
-              // Mapear videogames con información de equipos
-              rawData = videogamesData.map((videogame: any) => {
-                const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
-                return {
-                  ...videogame,
-                  isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
-                  teamName: teamInfo?.teamName || "Sin equipo",
-                  confirmId: teamInfo?.confirmId || videogame.status
-                };
-              });
-            } else {
-              // Si tampoco funciona, usar solo datos de videogames sin isExternal
-              rawData = videogamesData.map((videogame: any) => ({
+            // Mapear videogames con información de equipos
+            rawData = videogamesData.map((videogame: any) => {
+              const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
+              return {
                 ...videogame,
-                isExternal: false, // fallback
-                teamName: "Sin equipo"
-              }));
-            }
-          } catch (teamInfoError) {
+                isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
+                teamName: teamInfo?.teamName || "Sin equipo",
+                confirmId: teamInfo?.confirmId || videogame.status
+              };
+            });
+          } else {
+            // Si tampoco funciona, usar solo datos de videogames sin isExternal
             rawData = videogamesData.map((videogame: any) => ({
               ...videogame,
-              isExternal: false,
+              isExternal: false, // fallback
               teamName: "Sin equipo"
             }));
           }
+        } catch (teamInfoError) {
+          rawData = videogamesData.map((videogame: any) => ({
+            ...videogame,
+            isExternal: false,
+            teamName: "Sin equipo"
+          }));
         }
-
-        // Los miembros ya vienen incluidos en los datos de teams desde el backend
-        
-        const data: Team[] = rawData.map((item: any) => {
-          // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
-          let fallbackImages: string[] = [];
-          
-          // Determinar si los datos vienen del endpoint de teams o videogames
-          const isFromTeamsEndpoint = item.videogame !== undefined;
-          const team = isFromTeamsEndpoint ? item : item;
-          const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
-          const likeCount = videogame.likes;
-          
-          // Determinar el estado del equipo
-          const statusField = team.confirmId || team.status || videogame.status;
-          const mappedStatus = mapStatusToString(statusField);
-          
-          // Obtener integrantes que ya vienen incluidos en los datos del equipo
-          const teamMembers = team.members || [];
-          
-          // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
-          const isExternal = Boolean(team.isExternal || team.externo);
-          
-          return {
-            id: team.id,
-            gameName: videogame.name || team.teamName || "Sin nombre",
-            teamName: team.teamName || "Sin equipo", 
-            status: mappedStatus as TeamStatus || "pendiente",
-            video: videogame.videoUrl || videogame.video_url,
-            repo: videogame.repoUrl || videogame.repo_url,
-            teamCode: team.teamCode || team.code || "",
-            members: teamMembers.map((m: any) => {
-              // Probar diferentes nombres de campos para nombre y apellido
-              const firstName = m.firstName || m.nombre || m.first_name || '';
-              const lastName = m.lastName || m.apellido || m.last_name || '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              
-              // Debug para el primer miembro del primer equipo
-              if (team.id === 1 && teamMembers.indexOf(m) === 0) {
-                
-                
-              }
-              
-              return fullName || 'Sin nombre';
-            }),
-            description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
-            logo: videogame.logoUrl || videogame.logo_url,
-            additionalImages: videogame.additionalImages || fallbackImages,
-            isExternal: isExternal,
-            likes: likeCount || 0,
-          };
-        });
-        
-        // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
-        const teamsToShow = data.filter(team => team.status !== "expirado");
-        
-        setTeams(teamsToShow);
-      } catch (error) {
-        setTeams([]);
-      } finally {
-        setLoading(false);
       }
+
+      // Los miembros ya vienen incluidos en los datos de teams desde el backend
+      
+      const data: Team[] = rawData.map((item: any) => {
+        // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
+        let fallbackImages: string[] = [];
+        
+        // Determinar si los datos vienen del endpoint de teams o videogames
+        const isFromTeamsEndpoint = item.videogame !== undefined;
+        const team = isFromTeamsEndpoint ? item : item;
+        const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
+        const likeCount = videogame.likes;
+        
+        // Determinar el estado del equipo
+        const statusField = team.confirmId || team.status || videogame.status;
+        const mappedStatus = mapStatusToString(statusField);
+        
+        // Obtener integrantes que ya vienen incluidos en los datos del equipo
+        const teamMembers = team.members || [];
+        
+        // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
+        const isExternal = Boolean(team.isExternal || team.externo);
+        
+        return {
+          id: team.id,
+          gameName: videogame.name || team.teamName || "Sin nombre",
+          teamName: team.teamName || "Sin equipo", 
+          status: mappedStatus as TeamStatus || "pendiente",
+          video: videogame.videoUrl || videogame.video_url,
+          repo: videogame.repoUrl || videogame.repo_url,
+          teamCode: team.teamCode || team.code || "",
+          members: teamMembers.map((m: any) => {
+            // Probar diferentes nombres de campos para nombre y apellido
+            const firstName = m.firstName || m.nombre || m.first_name || '';
+            const lastName = m.lastName || m.apellido || m.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            // Debug para el primer miembro del primer equipo
+            if (team.id === 1 && teamMembers.indexOf(m) === 0) {
+              
+              
+            }
+            
+            return fullName || 'Sin nombre';
+          }),
+          description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
+          logo: videogame.logoUrl || videogame.logo_url,
+          additionalImages: videogame.additionalImages || fallbackImages,
+          isExternal: isExternal,
+          likes: likeCount || 0,
+        };
+      });
+      
+      // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
+      const teamsToShow = data.filter(team => team.status !== "expirado");
+      
+      setTeams(teamsToShow);
+    } catch (error) {
+      setTeams([]);
+    } finally {
+      setLoading(false);
     }
-    
+  };
+
+  useEffect(() => {
     fetchTeams();
   }, []);
 
@@ -304,7 +304,7 @@ export default function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} />
+                <TeamCard key={team.id} team={team} onRefresh={fetchTeams} />
               ))}
             </div>
           )}
@@ -349,9 +349,10 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
 
 interface TeamCardProps {
   team: Team;
+  onRefresh: () => void;
 }
 
-function TeamCard({ team }: TeamCardProps) {
+function TeamCard({ team, onRefresh }: TeamCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const getStatusInfo = (status: TeamStatus) => {
@@ -418,7 +419,7 @@ function TeamCard({ team }: TeamCardProps) {
       </motion.div>
 
       {isOpen && (
-        <GameDetailModal team={team} onClose={() => setIsOpen(false)} />
+        <GameDetailModal team={team} onClose={() => setIsOpen(false)} onRefresh={onRefresh} />
       )}
     </>
   );
@@ -582,9 +583,10 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
 interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
-function GameDetailModal({ team, onClose }: GameDetailModalProps) {
+function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
   const customFetch = useFetch();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(team.likes || 0);
@@ -595,6 +597,11 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
     const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
     setIsLiked(likedGames.includes(team.id));
   }, [team.id]);
+
+  const handleClose = () => {
+    onRefresh(); // Refresh the teams data to get updated like counts
+    onClose(); // Close the modal
+  };
   
   const toggleLike = async () => {
     if (isTogglingLike) return; // Prevent multiple simultaneous requests
@@ -621,14 +628,14 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
           likedGames.push(team.id);
           setIsLiked(true);
           setLikesCount(prev => prev + 1);
+          localStorage.setItem('likedGames', JSON.stringify(likedGames));
         } else {
           // Remove from liked games
           const updatedLikedGames = likedGames.filter((id: number) => id !== team.id);
-          localStorage.setItem('likedGames', JSON.stringify(updatedLikedGames));
           setIsLiked(false);
           setLikesCount(prev => prev - 1);
+          localStorage.setItem('likedGames', JSON.stringify(updatedLikedGames));
         }
-        localStorage.setItem('likedGames', JSON.stringify(likedGames));
         
         // Update likes count from server response if available
         if (data.likeCount !== undefined) {
@@ -663,7 +670,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
         >
           {/* Botón X de cerrar - Oculto en móvil */}
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
@@ -778,7 +785,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                   
                   {/* Botón Cerrar - Solo visible en móvil */}
                   <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
                   >
                     Cerrar
