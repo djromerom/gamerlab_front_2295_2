@@ -1,17 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
+import { useAuth } from "@/contexts/AuthContext";
 import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
+import { toast } from "sonner";
 
 export type TeamStatus = "pendiente" | "confirmado" | "expirado";
 
@@ -29,6 +31,7 @@ export interface Team {
   logo?: string;
   additionalImages?: string[];
   isExternal?: boolean;
+  likes?: number;
 }
 
 export default function TeamsPage() {
@@ -93,7 +96,7 @@ export default function TeamsPage() {
         
         try {
           const teamsRes = await customFetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
             {
               method: "GET",
               credentials: "include",
@@ -123,7 +126,7 @@ export default function TeamsPage() {
           // Ahora intentamos obtener información de equipos para el campo isExternal
           try {
             const teamsInfoRes = await customFetch(
-              `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
+              `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
               {
                 method: "GET",
                 credentials: "include",
@@ -171,6 +174,7 @@ export default function TeamsPage() {
           const isFromTeamsEndpoint = item.videogame !== undefined;
           const team = isFromTeamsEndpoint ? item : item;
           const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
+          const likeCount = videogame.likes;
           
           // Determinar el estado del equipo
           const statusField = team.confirmId || team.status || videogame.status;
@@ -178,12 +182,6 @@ export default function TeamsPage() {
           
           // Obtener integrantes que ya vienen incluidos en los datos del equipo
           const teamMembers = team.members || [];
-          
-          // Debug temporal: verificar estructura de los datos  
-          if (team.id === 1) {
-            
-            
-          }
           
           // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
           const isExternal = Boolean(team.isExternal || team.externo);
@@ -214,6 +212,7 @@ export default function TeamsPage() {
             logo: videogame.logoUrl || videogame.logo_url,
             additionalImages: videogame.additionalImages || fallbackImages,
             isExternal: isExternal,
+            likes: likeCount || 0,
           };
         });
         
@@ -404,7 +403,15 @@ function TeamCard({ team }: TeamCardProps) {
             <div className="flex flex-col justify-center space-y-1 flex-1 pr-16">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
               <p>Equipo: {team.teamName}</p>
-              <p className={`${color} font-semibold`}>{text}</p>
+              <div className="flex items-center justify-between">
+                <p className={`${color} font-semibold`}>{text}</p>
+                {team.likes !== undefined && (
+                  <div className="flex items-center gap-1 text-red-400">
+                    <Heart size={20} fill="currentColor" />
+                    <span className="text-sm font-bold">{team.likes}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -578,6 +585,67 @@ interface GameDetailModalProps {
 }
 
 function GameDetailModal({ team, onClose }: GameDetailModalProps) {
+  const customFetch = useFetch();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(team.likes || 0);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  // Check if the game is already liked on component mount
+  useEffect(() => {
+    const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
+    setIsLiked(likedGames.includes(team.id));
+  }, [team.id]);
+  
+  const toggleLike = async () => {
+    if (isTogglingLike) return; // Prevent multiple simultaneous requests
+    
+    setIsTogglingLike(true);
+    
+    try {
+      const response = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like/${!isLiked}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (response.status === 201 || response.status === 200) {
+        const data = await response.json();
+        
+        // Update localStorage
+        const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
+        if (!isLiked) {
+          // Add to liked games
+          likedGames.push(team.id);
+          setIsLiked(true);
+          setLikesCount(prev => prev + 1);
+        } else {
+          // Remove from liked games
+          const updatedLikedGames = likedGames.filter((id: number) => id !== team.id);
+          localStorage.setItem('likedGames', JSON.stringify(updatedLikedGames));
+          setIsLiked(false);
+          setLikesCount(prev => prev - 1);
+        }
+        localStorage.setItem('likedGames', JSON.stringify(likedGames));
+        
+        // Update likes count from server response if available
+        if (data.likeCount !== undefined) {
+          setLikesCount(data.likeCount);
+        }
+      } else {
+        console.error('Failed to toggle like:', response.status);
+        toast.error("Error al procesar el like. Intenta de nuevo.");
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setIsTogglingLike(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -636,10 +704,33 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                       </div>
                     )}
                   </div>
+                </div>       
+                <div className="flex row gap-5">
+                  <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
+                    {team.gameName}
+                  </h2>
+                  {/* Like Button */}
+                  <div className="flex items-center mb-4">
+                    <button
+                      onClick={toggleLike}
+                      disabled={isTogglingLike}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                        isLiked 
+                          ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30' 
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30'
+                      } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <Heart 
+                        size={20} 
+                        fill={isLiked ? "currentColor" : "none"} 
+                        className={`transition-all duration-300 ${isTogglingLike ? 'animate-pulse' : ''}`}
+                      />
+                      <span className="font-medium">
+                        {isTogglingLike ? '...' : likesCount}
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
-                  {team.gameName}
-                </h2>
                 <p className="text-sm text-gray-400 mb-3">
                   Equipo:{" "}
                   <span className="text-white font-semibold">
