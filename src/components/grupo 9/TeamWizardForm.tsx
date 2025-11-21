@@ -44,7 +44,6 @@ export default function TeamWizardForm(props: any) {
     isPageLoading,
     isExternal,
     toast,
-    initialData,
   } = props;
 
   const [, setInternalIsLoading] = useState(false);
@@ -102,20 +101,23 @@ export default function TeamWizardForm(props: any) {
   return (
     <form
       onSubmit={async (e) => {
-        if (typeof handleFormSubmit === "function") {
-          e.preventDefault();
-          await handleFormSubmit(e);
-        }
+        e.preventDefault();
 
-        try {
-          if (methods.watch("mode") === "add") {
-            const firstEmail = ((methods.getValues("integrantes") || [])[0]?.correo || "").toLowerCase().trim();
-            if (firstEmail) {
-              await resendInvite(firstEmail);
-            }
-          }
-        } catch (err) {
-        }
+        const existingRaw = methods.getValues("videojuego.additionalImages") || [];
+        const existingUrls: string[] = (existingRaw || []).map((it: any) => (typeof it === "string" ? it : it?.url)).filter(Boolean);
+        const removed: string[] = methods.getValues("videojuego._remove_gallery") || [];
+        const remainingExisting = existingUrls.filter(u => !removed.includes(u));
+
+        const newUrls: string[] = (props.galleryUploads || []).map((u: any) => u?.url).filter(Boolean);
+
+        const finalUrls = Array.from(new Set([...remainingExisting, ...newUrls]));
+
+        methods.setValue("videojuego.additionalImages", finalUrls, { shouldDirty: true });
+        methods.setValue("videojuego._remove_gallery", [], { shouldDirty: false });
+
+        console.log("DEBUG SUBMIT IMG:", { existingUrls, removed, remainingExisting, newUrls, finalUrls });
+
+        await handleFormSubmit(e);
       }}
       className="space-y-4 pt-8 sm:pt-0 max-h-[90vh] sm:max-h-[auto] overflow-auto p-4 sm:p-0"
     >
@@ -308,66 +310,66 @@ export default function TeamWizardForm(props: any) {
                   </div>
                 </div>
 
-                {galleryPreviews.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {(() => {
-                      const existingGallery: string[] = methods.watch("videojuego.additionalImages") ?? methods.getValues("videojuego.additionalImages") ?? [];
-                      const hasExisting = existingGallery.length > 0;
-                      const hasNew = (galleryPreviews?.length || 0) > 0;
+                {(() => {
+                  // 1) existentes del form (no las mutamos)
+                  const existingRaw = methods.getValues("videojuego.additionalImages") ?? methods.watch("videojuego.additionalImages") ?? [];
+                  const existingUrls: string[] = (existingRaw || [])
+                    .map((it: any) => (typeof it === "string" ? it : it?.url))
+                    .filter(Boolean);
+                  // 2) marcadas para eliminar
+                  const removedUrls: string[] = methods.watch("videojuego._remove_gallery") ?? [];
+                  // 3) mostrar solo las no eliminadas
+                  const visibleExisting = existingUrls.filter((u) => !removedUrls.includes(u));
+                  const hasExisting = visibleExisting.length > 0;
+                  const hasNew = (galleryPreviews?.length || 0) > 0;
 
-                      if (!hasExisting && !hasNew) {
-                        return <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>;
-                      }
-                      return (
-                        <>
-                          {hasExisting && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                              {existingGallery.map((src: string, idx: number) => (
-                                <div key={`existing-${src}-${idx}`} className="relative group">
-                                  <div className="aspect-[6/3] overflow-hidden rounded-lg border">
-                                    <img src={src} alt={`Existing ${idx + 1}`} className="h-full w-full object-cover" />
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40"
-                                    onClick={() => {
-                                      const current: string[] = methods.getValues("videojuego.additionalImages") || [];
-                                      const urlToRemove = current[idx];
-                                      const next = current.filter((_, i) => i !== idx);
-                                      methods.setValue("videojuego.additionalImages", next);
-                                      const removed: string[] = methods.getValues("videojuego._remove_gallery") || [];
-                                      methods.setValue("videojuego._remove_gallery", [...removed, urlToRemove]);
-                                    }}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
+                  if (!hasExisting && !hasNew) {
+                    return <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>;
+                  }
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {hasExisting && visibleExisting.map((src: string, idx: number) => (
+                        <div key={`existing-${src}-${idx}`} className="relative group">
+                          <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                            <img src={src} alt={`Existing ${idx + 1}`} className="h-full w-full object-cover" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40"
+                            onClick={() => {
+                              // no mutar additionalImages; solo marcar para eliminar
+                              const toRemove = visibleExisting[idx];
+                              const removed = methods.getValues("videojuego._remove_gallery") || [];
+                              if (!removed.includes(toRemove)) {
+                                methods.setValue("videojuego._remove_gallery", [...removed, toRemove], { shouldDirty: true });
+                              }
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      {hasNew && (
+                        <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${hasExisting ? "pt-3" : ""}`}>
+                          {galleryPreviews.map((src: string, idx: number) => (
+                            <div key={`new-${src}-${idx}`} className="relative group">
+                              <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                                <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                              </div>
+                              <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
+                                <X className="h-3 w-3" />
+                              </Button>
                             </div>
-                          )}
-                          {hasNew && (
-                            <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${hasExisting ? "pt-3" : ""}`}>
-                              {galleryPreviews.map((src: string, idx: number) => (
-                                <div key={`new-${src}-${idx}`} className="relative group">
-                                  <div className="aspect-[6/3] overflow-hidden rounded-lg border">
-                                    <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
-                                  </div>
-                                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>
-                )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

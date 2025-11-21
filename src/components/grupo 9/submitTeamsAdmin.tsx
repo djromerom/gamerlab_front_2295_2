@@ -158,9 +158,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       if (changed(curVg.repoUrl, origVg.repo_url)) vgPatch.repoUrl = curVg.repoUrl;
       if (changed(curVg.logoUrl, origVg.logo_url)) vgPatch.logoUrl = curVg.logoUrl;
       if (changed(curVg.videoUrl, origVg.video_demo_url)) vgPatch.videoUrl = curVg.videoUrl;
-      if ((galleryUploads?.length || 0) > 0) {
-        vgPatch.uploads = galleryUploads.map(() => ({}));
-      }
+      if (changed(curVg.additionalImages, origVg.additionalImages)) vgPatch.additionalImages = curVg.additionalImages;
       if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
 
       const membersPatch: any[] = [];

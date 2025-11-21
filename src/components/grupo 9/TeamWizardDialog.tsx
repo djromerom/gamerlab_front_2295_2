@@ -189,18 +189,43 @@ function buildPayload(
     .map(u => u.url)
     .filter((u): u is string => !!u);
 
+    // ya viene reconstruido desde el form; como respaldo, combinamos por si acaso
+  const existingRaw = data?.videojuego?.additionalImages ?? [];
+  const existingUrls: string[] = (existingRaw || []).map((it: any) => (typeof it === "string" ? it : it?.url)).filter(Boolean);
+
+  // Access internal form-only key safely via `any` to avoid TS errors
+  const removed: string[] = Array.isArray((data as any)?.videojuego?._remove_gallery) ? (data as any).videojuego._remove_gallery : [];
+  const remainingExisting = existingUrls.filter(u => !removed.includes(u));
+
+  const newUrls: string[] = (galleryUploads || []).map((g) => g.url).filter(Boolean);
+
+  const finalUrls: string[] = Array.from(new Set([...remainingExisting, ...newUrls]));
+
+  const videogamePayload: any = {
+    vgName: data.videojuego?.nombre,
+    description: data.videojuego?.descripcion,
+    repoUrl: data.videojuego?.repo_url ?? null,
+    logoUrl: logoUpload?.url ?? data.videojuego?.logo_url,
+    additionalImages: finalUrls, // string[]
+    videoUrl: data.videojuego?.video_demo_url ?? data.videojuego?.video_demo_url ?? null,
+  };
+  
+  delete videogamePayload._remove_gallery;
+  delete videogamePayload._remove_logo;
+
+  console.log("DEBUG buildPayload:", {
+    existingUrls,
+    removed,
+    remainingExisting,
+    newUrls,
+    finalUrls
+  });
+
   return {
     teamName: data.nombre_equipo,
     isExternal: data.isExternal,
     members,
-    videogame: {
-      vgName: data.videojuego.nombre,
-      description: data.videojuego.descripcion,
-      repoUrl: (data as any).videojuego?.repo_url || "",
-      logoUrl: logoUpload?.blobName || data.videojuego.logo_url || "",
-      videoUrl: data.videojuego.video_demo_url || "",
-      additionalImages: uploads,
-    },
+    videogame: videogamePayload,
   };
 }
 
@@ -390,7 +415,7 @@ export default function TeamWizardDialog({
     if (open) {
       if (initialData) {
         reset({ ...defaultValues, ...initialData });
-        console.log("inic",initialData.videojuego?.additionalImages || []);
+        console.log("inic", initialData.videojuego?.additionalImages || []);
       } else {
         reset(defaultValues);
       }
@@ -670,7 +695,6 @@ export default function TeamWizardDialog({
             isPageLoading={isPageLoading}
             isExternal={isExternal}
             toast={toast}
-            initialData={initialData}
           />
         </FormProvider>
       </DialogContent>
