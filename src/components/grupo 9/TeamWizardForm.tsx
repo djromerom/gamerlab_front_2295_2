@@ -46,7 +46,7 @@ export default function TeamWizardForm(props: any) {
     toast,
   } = props;
 
-  const [, setInternalIsLoading] = useState(false);
+  const [internalIsLoading, setInternalIsLoading] = useState(false);
 
   async function resendInvite(email: string) {
     if (internalIsLoading) return; // prevent multiple petitions
