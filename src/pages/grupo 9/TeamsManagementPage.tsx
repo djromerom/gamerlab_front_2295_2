@@ -23,6 +23,17 @@ const TeamsManagementPage = () => {
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const statusEmailLeader = useCallback(async (email: string): Promise<TeamConfirmationStatusResponse> => {
+    if (internalIsLoading) {
+      return {
+        confirmationStatus: {
+          id: 0,
+          status: "No consultado",
+          createdAt: "",
+          updatedAt: "",
+          isActive: false,
+        },
+      };
+    } // prevent multiple petitions
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${API_ENDPOINT}/teams/leader/${encodeURIComponent(email)}/status`, {

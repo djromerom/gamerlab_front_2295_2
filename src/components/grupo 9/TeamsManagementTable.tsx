@@ -133,6 +133,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   };
 
   async function resendInvite(email: string) {
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
@@ -384,6 +385,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
               value={String(idEstadoVideojuego)}
               onValueChange={async (newStatus) => {
                 const numericStatus = parseInt(newStatus, 10);
+                if (internalIsLoading) return;
                 setInternalIsLoading(true);
                 try {
                   await updateTeamStatus(team.id_equipo, numericStatus);
@@ -466,6 +468,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
+    if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/teams/${deletingId}`, {

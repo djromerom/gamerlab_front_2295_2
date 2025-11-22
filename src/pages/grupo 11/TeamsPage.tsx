@@ -20,7 +20,7 @@ export interface Team {
   gameName: string;
   teamName: string;
   teamCode: string;
-  userId: string;
+  userId?: string;
   status: TeamStatus;
   video?: string;
   repo?: string;
@@ -195,6 +195,7 @@ export default function TeamsPage() {
             status: mappedStatus as TeamStatus || "pendiente",
             video: videogame.videoUrl || videogame.video_url,
             repo: videogame.repoUrl || videogame.repo_url,
+            teamCode: team.teamCode || team.code || "",
             members: teamMembers.map((m: any) => {
               // Probar diferentes nombres de campos para nombre y apellido
               const firstName = m.firstName || m.nombre || m.first_name || '';

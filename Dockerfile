@@ -17,8 +17,8 @@ RUN npm ci --silent
 ARG VITE_ENDPOINT_BACKEND
 ARG VITE_SITE_KEY
 
-# Write a simple .env file consumed at build time by Vite
-RUN printf "VITE_ENDPOINT_BACKEND=%s\nVITE_SITE_KEY=%s\n" "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" > .env || true
+RUN echo "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND" > .env && \
+    echo "VITE_SITE_KEY=$VITE_SITE_KEY" >> .env
 
 # Copy the rest of the source code and build
 COPY . .
@@ -32,13 +32,14 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy built files from previous stage
-COPY --from=build /app/dist/ ./
+COPY --from=build /app/.env .
+COPY --from=build /app/dist/ .
 
-# Copy custom nginx configuration if exists
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+
 # Expose the port that nginx listens to (nginx.conf listens on 5173)
-EXPOSE 5173
+EXPOSE 80
 
 # Run nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]

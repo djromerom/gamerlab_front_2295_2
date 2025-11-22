@@ -64,8 +64,16 @@ jobs:
             
         - name: Log in to Docker Hub
           run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+        - name: Debug secrets
+          run: |
+                echo "Backend length: ${#VITE_ENDPOINT_BACKEND}"
+                echo "SiteKey length: ${#VITE_SITE_KEY}"
+                echo "Backend (masked): ${VITE_ENDPOINT_BACKEND:0:10}..."
+        - name: Clean Docker cache
+          run: docker system prune -f
         - name: build image
-          run: docker build  --build-arg VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP }} --build-arg VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEST_TEMP }} -f Dockerfile -t arkadfront-test-image . || { echo "Docker build failed"; exit 1; }
+          run: docker build  --build-arg VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP }} --build-arg VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEMP }} -f Dockerfile -t arkadfront-test-image . || { echo "Docker build failed"; exit 1; }
         - name: Debug values
           run: |
               echo "Username defined: ${{ secrets.DOCKERHUB_USERNAME != '' }}"

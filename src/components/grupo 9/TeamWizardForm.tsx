@@ -49,6 +49,7 @@ export default function TeamWizardForm(props: any) {
   const [, setInternalIsLoading] = useState(false);
 
   async function resendInvite(email: string) {
+    if (internalIsLoading) return; // prevent multiple petitions
     setInternalIsLoading(true);
     try {
       const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
