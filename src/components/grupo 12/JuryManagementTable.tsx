@@ -1,85 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreVertical,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, LibrarySquareIcon, UserPen, BoxSelect } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectScrollDownButton, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { JurorRowData, Props, JurorFormData } from "./utils"; // Adjust path if needed
+import { juryManagement } from "@/hooks/juryManagement";
 
-export const JuryManagementTable: React.FC<Props> = ({
-  jurors,
-  paginationMeta,
-  apiBaseUrl,
-  isDataLoading = false,
-  onPageChange,
-  onLimitChange,
-  refreshData,
-}) => {
+export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
   // 
   // <-- Recibe isLoading
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newJuror, setNewJuror] = useState<JurorFormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-  });
+  const [newJuror, setNewJuror] = useState<JurorFormData>({ firstName: "", lastName: "", email: "" });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingJuror, setEditingJuror] = useState<JurorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
+  const [loading, setLoading] = useState(false)
+  const [teams, setTeams] = useState(null)
+  const [valueFormAsignTeam, setValueFormAsignTeam] = useState({id: "", teamCode: "", name: "", videogame: ""})
+  
+  useEffect(() => {
 
+    const arrayTeams = async () => {
+      try {
+        const data: any = await juryManagement.getTeams();
+        const getTeams:[{ id: string, teamCode: string, name:string, videogame: string }] | null  = [data.map((team) => {
+            return { id: team.id, teamCode: team.teamCode, name: team.teamName, videogame: team.videogame.name }
+          })]
+          setTeams(getTeams)
+      }catch (error) {
+        toast.error(error, {id: 111})
+      }
+    }
+    arrayTeams()
+}, []);
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isDataLoading || internalIsLoading;
 
@@ -196,6 +162,107 @@ export const JuryManagementTable: React.FC<Props> = ({
         </Dialog>
       ),
     },
+    {
+      key: "manualAssigment",
+      label: "Asignar equipo",
+      renderCell: (juror: JurorRowData) => (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+                variant={"home"}
+                size="sm"
+            >
+                Asignar equipo
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Asignar equipo a {juror.firstName}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-3 mt-2">
+              <div className="flex w-full relative">
+                <select
+                  className="
+                    w-full appearance-none rounded-lg 
+                    border border-gray-300
+                    bg-white dark:bg-transparent 
+                    text-gray-900 dark:text-gray-100
+                    px-4 py-2 pr-10 text-sm shadow-sm 
+                    transition 
+                    cursor-pointer
+                  "
+                  defaultValue={""}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const result = teams?.[0].find(team => team.name === value);
+                    setValueFormAsignTeam(result)
+                  }}
+                >
+                  <option value="" disabled className="bg-white dark:bg-[#120e21]">
+                    Seleccione un equipo...
+                  </option>
+                  {teams ? teams[0].map((team, index) => (
+                    <option key={index} value={team.name} className="bg-white dark:bg-[#120e21]">
+                      {team.name}
+                    </option>
+                  )) || (
+                    <option value="opcion1" className="bg-white dark:bg-[#120e21]">
+                      No hay equipos
+                    </option>
+                  ) : []}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
+                  ▼
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center w-full gap-2">
+                  <Input
+                    placeholder="Team code"
+                    disabled
+                    value={valueFormAsignTeam?.teamCode || ""}
+                    // onChange={(e) =>
+                    //     setNuevoEquipo({
+                    //         ...nuevoEquipo,
+                    //         id: e.target.value,
+                    //     })
+                    // }
+                  />
+                  <Input
+                    placeholder="Nombre del videojuego"
+                    disabled
+                    value={valueFormAsignTeam?.videogame || ""}
+                    // onChange={(e) =>
+                    //     setNuevoEquipo({
+                    //         ...nuevoEquipo,
+                    //         nombre: e.target.value,
+                    // })}
+                  />
+              </div>
+              <Button
+                variant={"home"}
+                onClick={async ()=>{
+                  const res = await juryManagement.manualAssignment(juror.id, valueFormAsignTeam.id)
+                  toast.message(res.message)
+                  if (res.success) {
+                    setTimeout(() => {
+                    window.location.reload();
+                  }, 500) 
+                  }
+                }}
+                className="w-full"
+              >
+                Asignar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    }
   ];
 
   // --- Funciones handleAdd, handleOpenEdit, handleSaveEdit, handleOpenDelete, handleConfirmDelete ---
@@ -341,120 +408,157 @@ export const JuryManagementTable: React.FC<Props> = ({
     }
   };
 
+  const automaticAssignment = async () => {
+    try {
+      if (loading) {
+        toast.loading('Asignando equipos', {id: 111})
+      }
+      const response = await juryManagement.automaticAssignment()
+      if (response.success) {
+        setLoading(false)
+        toast.success(response.message)
+        setTimeout(() => {
+          window.location.reload();
+        }, 500) 
+      } else {
+        setLoading(false)
+        toast.error(response.message)
+      }
+    } catch (error) {
+      setLoading(false)
+      toast.error(error, {id: 111})
+    }
+  }
+
   return (
     // Añade un contenedor div si data es null para mantener la estructura
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${
+      className={`bg-background text-foreground min-h-screen min-w-[350px] p-4 ${
         showLoader ? "opacity-75" : ""
       }`}
     >
       {/* Encabezado (Título y Botón Agregar) */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Jurados</h1>
+        <div className="flex gap-2">
+          <Button
+              variant="default"
+              disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
+              className="flex justify-center items-center cursor-pointer"
+              onClick={() => {setLoading(true); automaticAssignment()}}
+              
+          >
+            <UserPen className="h-4 w-4" />
+            <p className="hidden lg:flex">
+              Asignar a todos
+            </p>
+          </Button>
 
-        {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
-              disabled={showLoader} // <-- Deshabilitar si no hay data O si está cargando
-            >
-              <Plus className="mr-2 h-4 w-4" /> Agregar
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleAdd}>
-              <DialogHeader>
-                <DialogTitle>Agregar Nuevo Jurado</DialogTitle>
-                <DialogDescription>
-                  Complete los datos del nuevo jurado.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4 px-6">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="add-firstName" className="text-right">
-                    Nombres
-                  </Label>
-                  <Input
-                    id="add-firstName"
-                    value={newJuror.firstName}
-                    onChange={(e) =>
-                      setNewJuror((prev) => ({
-                        ...prev,
-                        firstName: e.target.value,
-                      }))
-                    }
-                    className="col-span-3"
-                    required
-                    disabled={internalIsLoading}
-                  />
+          {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex justify-center cursor-pointer"
+                disabled={showLoader} // <-- Deshabilitar si no hay data O si está cargando
+              >
+                <Plus className="h-4 w-4" />
+                <UserIcon className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={handleAdd}>
+                <DialogHeader>
+                  <DialogTitle>Agregar Nuevo Jurado</DialogTitle>
+                  <DialogDescription>
+                    Complete los datos del nuevo jurado.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4 px-6">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add-firstName" className="text-right">
+                      Nombres
+                    </Label>
+                    <Input
+                      id="add-firstName"
+                      value={newJuror.firstName}
+                      onChange={(e) =>
+                        setNewJuror((prev) => ({
+                          ...prev,
+                          firstName: e.target.value,
+                        }))
+                      }
+                      className="col-span-3"
+                      required
+                      disabled={internalIsLoading}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add-lastName" className="text-right">
+                      Apellidos
+                    </Label>
+                    <Input
+                      id="add-lastName"
+                      value={newJuror.lastName}
+                      onChange={(e) =>
+                        setNewJuror((prev) => ({
+                          ...prev,
+                          lastName: e.target.value,
+                        }))
+                      }
+                      className="col-span-3"
+                      required
+                      disabled={internalIsLoading}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add-email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="add-email"
+                      type="email"
+                      value={newJuror.email}
+                      onChange={(e) =>
+                        setNewJuror((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      className="col-span-3"
+                      required
+                      disabled={internalIsLoading}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="add-lastName" className="text-right">
-                    Apellidos
-                  </Label>
-                  <Input
-                    id="add-lastName"
-                    value={newJuror.lastName}
-                    onChange={(e) =>
-                      setNewJuror((prev) => ({
-                        ...prev,
-                        lastName: e.target.value,
-                      }))
-                    }
-                    className="col-span-3"
-                    required
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    className="cursor-pointer"
+                    variant="outline"
+                    onClick={() => {
+                      setAddDialogOpen(false);
+                      setNewJuror({ firstName: "", lastName: "", email: "" });
+                    }}
                     disabled={internalIsLoading}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="add-email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="add-email"
-                    type="email"
-                    value={newJuror.email}
-                    onChange={(e) =>
-                      setNewJuror((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="col-span-3"
-                    required
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                    type="submit"
                     disabled={internalIsLoading}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  className="cursor-pointer"
-                  variant="outline"
-                  onClick={() => {
-                    setAddDialogOpen(false);
-                    setNewJuror({ firstName: "", lastName: "", email: "" });
-                  }}
-                  disabled={internalIsLoading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
-                  type="submit"
-                  disabled={internalIsLoading}
-                >
-                  {internalIsLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {internalIsLoading ? "Guardando..." : "Guardar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                  >
+                    {internalIsLoading && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {internalIsLoading ? "Guardando..." : "Guardar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Card de la Tabla */}

@@ -30,7 +30,6 @@ import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
 import ResetPassword from "@/pages/grupo 9/ResetPassword";
-import { ManualAssignmentPage } from "@/pages/grupo 12/ManualAssignment";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
@@ -115,11 +114,6 @@ const routes: RouteConfig[] = [
   {
     path: "/jurados",
     element: <JuryManagementPage />,
-    roles: ["Administrador"],
-  },
-  {
-    path: "/asignacion-jurados",
-    element: <ManualAssignmentPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
