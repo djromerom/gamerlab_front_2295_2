@@ -12,6 +12,9 @@ import { toast } from "sonner";
 export default function GradeWeightsPage() {
 	const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
+	// Edition id used by backend routes. Prefer env var `VITE_EDITION_ID`, fallback to 2 for local testing.
+	const editionId = Number(import.meta.env.VITE_EDITION_ID ?? 0) || 2;
+
 	const [seniorPercent, setSeniorPercent] = useState<string>("60");
 	const [juniorPercent, setJuniorPercent] = useState<string>("40");
 	const [loading, setLoading] = useState(false);
@@ -24,28 +27,30 @@ export default function GradeWeightsPage() {
 	];
 
 	useEffect(() => {
-		// Try load from backend, fall back to localStorage, fallback defaults
 		async function load() {
-			// try backend
 			try {
-				const res = await fetch(`${API_BASE_URL}/settings/grade-weights`, {
+				// Backend expects editionId as route param: GET /settings/weights/:editionId
+				const res = await fetch(`${API_BASE_URL}/settings/weights/${editionId}`, {
 					method: "GET",
-					credentials: "include",
 					headers: { "Content-Type": "application/json" },
 				});
 				if (res.ok) {
 					const data = await res.json();
-					if (typeof data.senior === "number") setSeniorPercent(String(data.senior));
-					if (typeof data.junior === "number") setJuniorPercent(String(data.junior));
+					// If no config exists backend may return null
+					if (data) {
+						if (typeof data.seniorPct === "number") setSeniorPercent(String(data.seniorPct));
+						if (typeof data.juniorPct === "number") setJuniorPercent(String(data.juniorPct));
+					}
+				} else {
+					console.warn(`Could not load weights (status ${res.status})`);
 				}
 			} catch (e) {
-				// ignore backend errors, keep defaults
+				console.error("Error loading grade weights:", e);
 			}
 		}
-
 		load();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [editionId]);
+
 
 	function validSum() {
 		const s = parseFloat(seniorPercent);
@@ -69,12 +74,12 @@ export default function GradeWeightsPage() {
 
 		setLoading(true);
 		try {
-			// call backend and require a successful response before confirming
-			const res = await fetch(`${API_BASE_URL}/settings/grade-weights`, {
+			// call backend (expects editionId + seniorPct/juniorPct) and require a successful response before confirming
+			const res = await fetch(`${API_BASE_URL}/settings/weights`, {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ senior: s, junior: j }),
+				body: JSON.stringify({ editionId, seniorPct: s, juniorPct: j }),
 			});
 
 			if (!res.ok) {
