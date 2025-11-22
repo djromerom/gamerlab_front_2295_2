@@ -16,7 +16,7 @@ const TeamsManagementPage = () => {
     limit: 10,
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
-  const [ , setInternalIsLoading] = useState(false);
+  const [internalIsLoading, setInternalIsLoading] = useState(false);
 
   const [emailConfirmMap, setEmailConfirmMap] = useState<Record<number, TeamConfirmationStatusResponse | null>>({});
 
