@@ -12,44 +12,47 @@ import { toast } from "sonner";
 export default function GradeWeightsPage() {
 	const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
-	// Edition id used by backend routes. Prefer env var `VITE_EDITION_ID`, fallback to 2 for local testing.
-	const editionId = Number(import.meta.env.VITE_EDITION_ID ?? 0) || 2;
 
-	const [seniorPercent, setSeniorPercent] = useState<string>("60");
-	const [juniorPercent, setJuniorPercent] = useState<string>("40");
+	const [seniorPercent, setSeniorPercent] = useState<string>("");
+	const [juniorPercent, setJuniorPercent] = useState<string>("");
 	const [loading, setLoading] = useState(false);
 	const [editing, setEditing] = useState<boolean>(false);
-	const [originalSenior, setOriginalSenior] = useState<string>("60");
-	const [originalJunior, setOriginalJunior] = useState<string>("40");
 
 	const breadcrumbs = [
 		{ label: "Ponderado de calificaciones", href: "/ponderado-calificaciones" },
 	];
 
-	useEffect(() => {
-		async function load() {
-			try {
-				// Backend expects editionId as route param: GET /settings/weights/:editionId
-				const res = await fetch(`${API_BASE_URL}/settings/weights/${editionId}`, {
-					method: "GET",
-					headers: { "Content-Type": "application/json" },
-				});
-				if (res.ok) {
-					const data = await res.json();
-					// If no config exists backend may return null
-					if (data) {
-						if (typeof data.seniorPct === "number") setSeniorPercent(String(data.seniorPct));
-						if (typeof data.juniorPct === "number") setJuniorPercent(String(data.juniorPct));
-					}
+	// load() se extrae para permitir recargar desde otros handlers (p. ej. Cancel)
+	async function load() {
+		try {
+			// GET the weights for the configured edition
+			const res = await fetch(`${API_BASE_URL}/settings/weights`, {
+				method: "GET",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+			});
+			if (res.ok) {
+				const data = await res.json();
+				// If no config exists backend may return null
+				if (data) {
+					if (typeof data.seniorPct === "number") setSeniorPercent(String(data.seniorPct));
+					if (typeof data.juniorPct === "number") setJuniorPercent(String(data.juniorPct));
 				} else {
-					console.warn(`Could not load weights (status ${res.status})`);
+					// no configuration for this edition — keep empty so admin can set
+					setSeniorPercent("");
+					setJuniorPercent("");
 				}
-			} catch (e) {
-				console.error("Error loading grade weights:", e);
+			} else {
+				console.warn(`Could not load weights (status ${res.status})`);
 			}
+		} catch (e) {
+			console.error("Error loading grade weights:", e);
 		}
+	}
+
+	useEffect(() => {
 		load();
-	}, [editionId]);
+	}, []);
 
 
 	function validSum() {
@@ -79,7 +82,7 @@ export default function GradeWeightsPage() {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ editionId, seniorPct: s, juniorPct: j }),
+				body: JSON.stringify({ seniorPct: s, juniorPct: j }),
 			});
 
 			if (!res.ok) {
@@ -100,7 +103,21 @@ export default function GradeWeightsPage() {
 				return;
 			}
 
-			// success confirmed by backend
+			// success confirmed by backend — prefer to read returned object and
+			// reflect persisted values in the UI so they remain after reload.
+			try {
+				const saved = await res.json();
+				if (saved) {
+					if (typeof saved.seniorPct === "number") {
+						setSeniorPercent(String(saved.seniorPct));
+					}
+					if (typeof saved.juniorPct === "number") {
+						setJuniorPercent(String(saved.juniorPct));
+					}
+				}
+			} catch (e) {
+				console.debug("Save response had no JSON body or parsing failed", e);
+			}
 			toast.success("Porcentajes guardados");
 			setEditing(false);
 
@@ -120,21 +137,16 @@ export default function GradeWeightsPage() {
 					{!editing ? (
 						<Button
 							variant="outline"
-							onClick={() => {
-								setOriginalSenior(seniorPercent);
-								setOriginalJunior(juniorPercent);
-								setEditing(true);
-							}}
+							onClick={() => setEditing(true)}
 						>
 							<Pencil className="mr-2 h-4 w-4" /> Editar
 						</Button>
 					) : (
 						<Button
 							variant="ghost"
-							onClick={() => {
-								// cancel edits
-								setSeniorPercent(originalSenior);
-								setJuniorPercent(originalJunior);
+							onClick={async () => {
+								// Cancel: reload persisted values from backend and exit edit mode
+								await load();
 								setEditing(false);
 							}}
 						>
@@ -192,10 +204,9 @@ export default function GradeWeightsPage() {
 								</Button>
 								<Button
 									variant="outline"
-									onClick={() => {
-										// cancel edits
-										setSeniorPercent(originalSenior);
-										setJuniorPercent(originalJunior);
+									onClick={async () => {
+										// Cancel: reload persisted values from backend and exit edit mode
+										await load();
 										setEditing(false);
 									}}
 								>
