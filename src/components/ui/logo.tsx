@@ -22,6 +22,7 @@ export function Logo() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
+              className="cursor-pointer"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
                 {/* Light mode logo */}

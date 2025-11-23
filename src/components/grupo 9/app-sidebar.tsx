@@ -10,6 +10,7 @@ import {
   ChartLine,
   Users,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
 import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
 import {
@@ -121,7 +122,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Logo />
+        <Link to="/">
+          <Logo />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <NavContent menu={MENU[userRole]} />
