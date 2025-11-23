@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { toast } from "sonner";
 
-export type TeamStatus = "pendiente" | "confirmado" | "expirado";
+export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
 export interface Team {
   id: number;
@@ -34,6 +34,7 @@ export interface Team {
   likes?: number;
 }
 
+
 export default function TeamsPage() {
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -42,7 +43,7 @@ export default function TeamsPage() {
       document.documentElement.classList.remove("dark");
     };
   }, []);
-  
+
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,38 +52,37 @@ export default function TeamsPage() {
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   // Función para mapear estados numéricos o strings a los valores correctos
-  const mapStatusToString = (status: any): string => {
+  const mapStatusToString = (status: any): TeamStatus => {
     if (typeof status === 'number') {
       switch (status) {
-        case 1: return "confirmado";
-        case 2: return "pendiente";
-        case 3: return "expirado";
-        default: return "pendiente";
+        case 1: return "CONFIRMADO";
+        case 2: return "PENDIENTE";
+        case 3: return "RECHAZADO";
+        default: return "PENDIENTE";
       }
     }
     if (typeof status === 'string') {
       const lowerStatus = status.toLowerCase();
-      
+
       // Mapeo específico para diferentes strings que puede enviar el backend
       switch (lowerStatus) {
         case "pendiente":
         case "pending":
-          return "pendiente";
+          return "PENDIENTE";
         case "confirmado":
         case "confirmed":
         case "aprobado":
         case "approved":
-          return "confirmado";
-        case "expirado":
-        case "expired":
+          return "CONFIRMADO";
         case "rechazado":
+        case "expired":
         case "rejected":
-          return "expirado";
+          return "RECHAZADO";
         default:
-          return "pendiente";
+          return "PENDIENTE";
       }
     }
-    return "pendiente"; // fallback por defecto
+    return "PENDIENTE"; // fallback por defecto
   };
 
   const fetchTeams = async () => {
@@ -189,7 +189,7 @@ export default function TeamsPage() {
           id: team.id,
           gameName: videogame.name || team.teamName || "Sin nombre",
           teamName: team.teamName || "Sin equipo", 
-          status: mappedStatus as TeamStatus || "pendiente",
+          status: mappedStatus as TeamStatus || "PENDIENTE",
           video: videogame.videoUrl || videogame.video_url,
           repo: videogame.repoUrl || videogame.repo_url,
           teamCode: team.teamCode || team.code || "",
@@ -216,7 +216,7 @@ export default function TeamsPage() {
       });
       
       // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
-      const teamsToShow = data.filter(team => team.status !== "expirado");
+      const teamsToShow = data.filter(team => team.status !== "RECHAZADO");
       
       setTeams(teamsToShow);
     } catch (error) {
@@ -233,12 +233,12 @@ export default function TeamsPage() {
   const filteredTeams = teams.filter((team) => {
     // Filtro de búsqueda por nombre
     const matchesSearch = team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
-    
+      team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+
     // Filtro por tipo de equipo basado en isExternal
-    const matchesType = activeTeamType === "all" ? true : 
+    const matchesType = activeTeamType === "all" ? true :
       (activeTeamType === "externo" ? team.isExternal === true : team.isExternal === false);
-    
+
     return matchesSearch && matchesType;
   });
 
@@ -265,31 +265,28 @@ export default function TeamsPage() {
           <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
             <button
               onClick={() => setActiveTeamType("all")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "all" 
-                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
+                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Todos ({teams.length})
             </button>
             <button
               onClick={() => setActiveTeamType("uninorte")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "uninorte" 
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
+                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Uninorte ({teams.filter(t => !t.isExternal).length})
             </button>
             <button
               onClick={() => setActiveTeamType("externo")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "externo" 
-                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
+                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Externos ({teams.filter(t => t.isExternal).length})
             </button>
@@ -357,11 +354,11 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
 
   const getStatusInfo = (status: TeamStatus) => {
     switch (status) {
-      case "pendiente":
+      case "PENDIENTE":
         return { text: "Pendiente de confirmación", color: "text-purple-400" };
-      case "confirmado":
+      case "CONFIRMADO":
         return { text: "Inscripción completa", color: "text-blue-400" };
-      case "expirado":
+      case "RECHAZADO":
         return { text: "Rechazada", color: "text-red-400" };
       default:
         return { text: "Estado desconocido", color: "text-gray-400" };
@@ -369,6 +366,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
   };
 
   const { text, color } = getStatusInfo(team.status);
+
 
   return (
     <>
@@ -380,14 +378,13 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
       >
         <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
           {/* Badge de tipo de equipo */}
-          <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-            !team.isExternal
+          <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
               : "bg-green-500/20 text-green-300 border border-green-400/30"
-          }`}>
+            }`}>
             {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
-          
+
           <CardContent className="flex space-x-5 py-6 px-8 h-full">
             <div className="flex items-center">
               <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
@@ -437,13 +434,13 @@ const getVideoThumbnail = (videoUrl: string): string => {
     // YouTube - extraer ID del video y generar URL de miniatura
     const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const youtubeMatch = videoUrl.match(youtubeRegex);
-    
+
     if (youtubeMatch && youtubeMatch[1]) {
       const videoId = youtubeMatch[1];
       // Usar miniatura de alta calidad de YouTube
       return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     }
-    
+
     // Para otros servicios de video, usar placeholder
     return '/placeholder.svg';
   } catch (error) {
@@ -453,20 +450,20 @@ const getVideoThumbnail = (videoUrl: string): string => {
 
 function MediaCarousel({ video, images }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   // Crear array con todos los elementos multimedia (solo video e imágenes adicionales, NO el logo)
   const mediaItems = [];
-  
+
   // Agregar video como primer elemento si existe
   if (video) {
     const autoThumbnail = getVideoThumbnail(video);
-    mediaItems.push({ 
-      type: 'video', 
-      src: video, 
+    mediaItems.push({
+      type: 'video',
+      src: video,
       thumbnail: autoThumbnail
     });
   }
-  
+
   // Agregar SOLO las imágenes adicionales (no incluir el logo)
   images.forEach((image) => {
     if (image && image.trim() !== '') {
@@ -545,11 +542,10 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${
-                  index === currentIndex
+                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${index === currentIndex
                     ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
                     : 'opacity-70 hover:opacity-100'
-                }`}
+                  }`}
               >
                 {item.type === 'video' ? (
                   <div className="relative w-full h-full">
@@ -678,9 +674,9 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
 
           {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
           <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
-            <MediaCarousel 
-              video={team.video} 
-              images={team.additionalImages || []} 
+            <MediaCarousel
+              video={team.video}
+              images={team.additionalImages || []}
             />
           </div>
 
@@ -693,7 +689,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
               [&::-webkit-scrollbar-thumb]:rounded-full
               [&::-webkit-scrollbar-thumb]:bg-[#AC7CFF]/50
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
-              
+
               <div className="space-y-4">
                 <div className="flex justify-center mb-2 md:mb-4">
                   <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
@@ -748,7 +744,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
                   Estado:{" "}
                   <span className="capitalize text-gray-200">{team.status}</span>
                 </p>
-                
+
                 <div className="mt-2">
                   <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
                   <p className="text-gray-300 text-sm leading-relaxed mb-3">
@@ -782,7 +778,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
                       Ver repositorio en GitHub
                     </Button>
                   )}
-                  
+
                   {/* Botón Cerrar - Solo visible en móvil */}
                   <button
                     onClick={handleClose}
