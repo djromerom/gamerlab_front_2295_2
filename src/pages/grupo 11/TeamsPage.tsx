@@ -708,16 +708,16 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
                     )}
                   </div>
                 </div>       
-                <div className="flex row gap-5">
+                <div className="flex row justify-between gap-3.5">
                   <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
                     {team.gameName}
                   </h2>
                   {/* Like Button */}
-                  <div className="flex items-center mb-4">
+                  <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
                     <button
                       onClick={toggleLike}
                       disabled={isTogglingLike}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                      className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-300 ${
                         isLiked 
                           ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30' 
                           : 'bg-gray-500/20 text-gray-400 border border-gray-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30'
