@@ -143,7 +143,6 @@ export default function TeamsPage() {
                 ...videogame,
                 isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
                 teamName: teamInfo?.teamName || "Sin equipo",
-                confirmId: teamInfo?.confirmId || videogame.status
               };
             });
           } else {
@@ -176,7 +175,7 @@ export default function TeamsPage() {
         const likeCount = videogame.likes;
         
         // Determinar el estado del equipo
-        const statusField = team.confirmId || team.status || videogame.status;
+        const statusField = team.videogame?.videogameStatusId || videogamesData.find((vg: any) => vg.teamId === team.id)?.videogameStatusId;
         const mappedStatus = mapStatusToString(statusField);
         
         // Obtener integrantes que ya vienen incluidos en los datos del equipo
@@ -189,7 +188,7 @@ export default function TeamsPage() {
           id: team.id,
           gameName: videogame.name || team.teamName || "Sin nombre",
           teamName: team.teamName || "Sin equipo", 
-          status: mappedStatus as TeamStatus || "PENDIENTE",
+          status: mappedStatus,
           video: videogame.videoUrl || videogame.video_url,
           repo: videogame.repoUrl || videogame.repo_url,
           teamCode: team.teamCode || team.code || "",
@@ -198,12 +197,6 @@ export default function TeamsPage() {
             const firstName = m.firstName || m.nombre || m.first_name || '';
             const lastName = m.lastName || m.apellido || m.last_name || '';
             const fullName = `${firstName} ${lastName}`.trim();
-            
-            // Debug para el primer miembro del primer equipo
-            if (team.id === 1 && teamMembers.indexOf(m) === 0) {
-              
-              
-            }
             
             return fullName || 'Sin nombre';
           }),
