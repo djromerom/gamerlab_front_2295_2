@@ -403,15 +403,15 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
               <p>Equipo: {team.teamName}</p>
               <div className="flex items-center justify-between">
                 <p className={`${color} font-semibold`}>{text}</p>
-                {team.likes !== undefined && (
-                  <div className="flex items-center gap-1 text-red-400">
-                    <Heart size={20} fill="currentColor" />
-                    <span className="text-sm font-bold">{team.likes}</span>
-                  </div>
-                )}
               </div>
             </div>
           </CardContent>
+          {team.likes !== undefined && (
+            <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
+              <Heart size={20} fill="currentColor" />
+              <span className="text-sm font-bold">{team.likes}</span>
+            </div>
+          )}
         </Card>
       </motion.div>
 
