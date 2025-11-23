@@ -5,8 +5,6 @@ export interface TeamRowData {
   id_usuario: string;
   id_edicion: number;
   activo: boolean;
-  id_estado_confirmacion: number; 
-  estado_nombre: string; 
   isExternal?: boolean;
   team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
