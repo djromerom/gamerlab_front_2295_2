@@ -13,7 +13,7 @@ import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
@@ -637,19 +637,29 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
+        toast.info("aaa");
       } else {
         console.error('Failed to toggle like:', response.status);
-        toast.error("Error al procesar el like. Intenta de nuevo.");
+        toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
       }
     } catch (error) {
       console.error('Error toggling like:', error);
-      toast.error("Error de conexión. Intenta de nuevo.");
+      toast.error("Error de conexión. Intenta de nuevo.", { id: 1 });
     } finally {
       setIsTogglingLike(false);
     }
   };
 
   return (
+  <>
+    <Toaster
+      richColors={false}
+      toastOptions={{
+        unstyled: true,
+        classNames: {
+          error: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+        },
+      }} />
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
@@ -793,5 +803,6 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }
