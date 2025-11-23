@@ -420,7 +420,7 @@ export default function TeamWizardDialog({
       return;
     }
 
-    if (isExternal && !vals.team_nrc_global_id) {
+    if (isExternal && vals.team_nrc_global_id !== undefined && vals.team_nrc_global_id !== null && String(vals.team_nrc_global_id).trim() === "") {
       toast.error("Selecciona el NRC global para colegios");
       return;
     }
