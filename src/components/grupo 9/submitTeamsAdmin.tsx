@@ -148,6 +148,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         repo_url: "",
         logo_url: "",
         video_demo_url: "",
+        additionalImages: [],
         ...(initialData?.videojuego || {}),
       };
 
@@ -157,9 +158,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       if (changed(curVg.repoUrl, origVg.repo_url)) vgPatch.repoUrl = curVg.repoUrl;
       if (changed(curVg.logoUrl, origVg.logo_url)) vgPatch.logoUrl = curVg.logoUrl;
       if (changed(curVg.videoUrl, origVg.video_demo_url)) vgPatch.videoUrl = curVg.videoUrl;
-      if ((galleryUploads?.length || 0) > 0) {
-        vgPatch.uploads = galleryUploads.map(() => ({}));
-      }
+      if (changed(curVg.additionalImages, origVg.additionalImages)) vgPatch.additionalImages = curVg.additionalImages;
       if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
 
       const membersPatch: any[] = [];
@@ -270,8 +269,6 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       requestBody = patch;
     }
 
-    console.log("Submitting teams payload (stringified):", JSON.stringify(requestBody));
-
     const fetchOpts = {
       method,
       credentials: "include",
@@ -283,26 +280,13 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     try {
       res = await fetch(url, fetchOpts as any);
 
-      // debug logs (headers/body)
-      console.groupCollapsed("Teams API response debug");
-      console.log("url:", url);
-      console.log("request method:", method);
-      console.log("request headers:", fetchOpts.headers);
-      console.log("response status:", res.status, res.statusText);
-      try {
-        res.headers.forEach((value, key) => console.log(key + ":", value));
-      } catch (e) {
-        console.log("Unable to iterate response.headers:", e);
-      }
       const rawText = await res.text().catch(() => "<no body>");
-      console.log("response raw body:", rawText);
       let parsed: any = null;
       try {
         parsed = rawText && rawText !== "<no body>" ? JSON.parse(rawText) : rawText;
       } catch (e) {
         parsed = rawText;
       }
-      console.log("response parsed body:", parsed);
       console.groupEnd();
 
       if (!(data.mode === "add" ? res.status === 201 : res.ok)) {

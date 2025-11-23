@@ -41,10 +41,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
-  // filtro (all | external | uninorte)
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
 
-  // Responsive header: detectar móvil para mostrar título + dropdown + agregar
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
   });
@@ -65,7 +63,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   useEffect(() => {
     const load = async () => {
-      //setIsLoadingOptions(true);
       try {
         const res = await fetch(API_ENDPOINT, {
           method: "GET",
@@ -79,13 +76,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            console.log(e);
           }
           throw new Error(errorMsg);
         }
         const apiResponseObject = await res.json();
 
-        console.log("API Response for subjects:", apiResponseObject);
 
         const materiasData: MateriaInfo[] = apiResponseObject.data.map((materia: any) => ({
           id: materia.id ?? materia.id_materia,
@@ -95,16 +90,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
         }));
 
         setMateriasOptions(materiasData);
-        console.log("Fetched subjects:", materiasData);
 
       } catch (err) {
         console.error("Error fetching subjects:", err);
-        console.log("Error fetching subjects:", err);
         setMateriasOptions([]);
 
-      } finally {
-        //setIsLoadingOptions(false);
-      }
+      } 
     };
     load();
   }, [API_ENDPOINT]);
@@ -125,9 +116,9 @@ export const TeamsManagementTable: React.FC<Props> = ({
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.message || "Error actualizando el equipo.");
+      throw new Error(err?.message || "Error actualizando estado del videojuego.");
     }
-    // opcional: devolver body si el backend retorna el equipo actualizado
+
     return res.json().catch(() => null);
   };
 
@@ -153,11 +144,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "No se pudo reenviar el correo");
+        throw new Error(err?.message || "No se pudo reenviar el correo de confirmación.");
       }
-      toast.success("Correo de confirmación reenviado");
+      toast.success("Correo de confirmación reenviado a " + email);
     } catch (e: any) {
-      toast.error(e?.message || "Error al reenviar");
+      toast.error(e?.message || "Error al reenviar a " + email);
     } finally {
       setInternalIsLoading(false);
     }
@@ -270,7 +261,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                                 (materia as any)?.name ??
                                 "Materia desconocida";
 
-                              // clave para deduplicar (preferir id_nrc si viene, si no usar código + materia)
                               const nrcKey = String(nrc.id_nrc ?? `${nrc.codigo}-${nrc.id_materia}`);
                               if (shownNrcs.has(nrcKey)) return null;
                               shownNrcs.add(nrcKey);
@@ -331,11 +321,10 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = team.integrantes?.[0]?.correo;
+        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
-        // estado no iniciado: mostrar indicador ligero
         if (cached === undefined || cached === null) {
           return (
             <div className="flex items-center gap-2">
@@ -382,7 +371,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
       renderCell: (team: TeamRowData) => {
         const idEstadoVideojuego = team.videojuego?.id_estado_videojuego ?? 2;
 
-        // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
         const estadoOptions = [
           { id_estado: 1, estado: "Confirmado" },
           { id_estado: 2, estado: "Pendiente" },
@@ -391,7 +379,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
         return (
           <div className="space-y-2">
-            {/* Mostrar badge basado en el id real del videojuego */}
             <div>{getStatusBadge(idEstadoVideojuego)}</div>
 
             <Select
@@ -402,9 +389,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 setInternalIsLoading(true);
                 try {
                   await updateTeamStatus(team.id_equipo, numericStatus);
-                  console.log("Estado anterior:", team.videojuego.id_estado_videojuego);
-                  console.log("Estado actualizado en el backend");
-                  console.log("Nuevo estado:", team.videojuego.id_estado_videojuego);
                   toast.success(
                     `Estado cambiado a ${estadoOptions.find(
                       (o) => o.id_estado === numericStatus
@@ -458,6 +442,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         descripcion: "",
         logo_url: "",
         video_demo_url: "",
+        additionalImages: [],
       },
       integrantes: [
         {
@@ -510,17 +495,37 @@ export const TeamsManagementTable: React.FC<Props> = ({
       className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
-      {/* Header (responsive): título visible junto al filtro desplegable y botón Agregar en móvil) */}
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
           <div className="flex items-center gap-2 w-full">
-            <h1 className="text-lg font-medium truncate">Equipos Inscritos</h1>
+            <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8" disabled={showLoader}>
-                    Filtro
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 flex items-center justify-center"
+                    disabled={showLoader}
+                    aria-label="Filtros"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="2 0 20 20"
+                      strokeWidth={2.5}
+                      stroke="currentColor"
+                      className="w-6 h-6 block m-auto"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z"
+                        opacity="0.99"
+                      />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
