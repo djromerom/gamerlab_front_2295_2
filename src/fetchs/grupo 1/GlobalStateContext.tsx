@@ -139,28 +139,11 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Permiso local para que estudiantes vean calificaciones (persistido en localStorage)
   const [canViewScores, setCanViewScores] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   try {
-  //     localStorage.setItem("canViewScores", String(canViewScores));
-  //   } catch {}
-  // }, [canViewScores]);
-  // // sincronizar entre pestañas
-  // useEffect(() => {
-  //   const handler = (e: StorageEvent) => {
-  //     if (e.key === "canViewScores") {
-  //       try {
-  //         setCanViewScores(e.newValue === "true");
-  //       } catch {}
-  //     }
-  //   };
-  //   window.addEventListener("storage", handler);
-  //   return () => window.removeEventListener("storage", handler);
-  // }, []);
 
   // Consultar endpoint /settings/evaluations para obtener permiso y refrescar periódicamente
   useEffect(() => {
     const controller = new AbortController();
-    const endpoint = `${API_BASE_URL}/settings/evaluations`;
+    const endpoint = `${API_BASE_URL}/settings/evaluations-status`;
 
     const fetchPermission = async () => {
       try {
@@ -177,7 +160,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
         }
         const body = await res.json();
 
-        console.log("Fetched evaluation settings:", body);
+   
         // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
         const enabled = typeof body === "boolean" ? body :  body?.evaluationsOpen ?? false;
 

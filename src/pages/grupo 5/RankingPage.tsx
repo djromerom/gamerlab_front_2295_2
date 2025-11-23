@@ -110,7 +110,7 @@ export default function PodioGamer() {
   
 
   // console.log("fairEnded:", fairEnded);
-  console.log("canViewScores from global state:", canViewScores);
+  // console.log("canViewScores from global state:", canViewScores);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");

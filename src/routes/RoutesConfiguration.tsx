@@ -33,6 +33,7 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
 
 type Role =
   | "Profesor"
