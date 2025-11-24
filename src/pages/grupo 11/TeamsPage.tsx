@@ -630,7 +630,6 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
-        toast.info("aaa");
       } else {
         console.error('Failed to toggle like:', response.status);
         toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
