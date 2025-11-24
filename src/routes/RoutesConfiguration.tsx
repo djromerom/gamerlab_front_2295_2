@@ -177,6 +177,7 @@ const routes: RouteConfig[] = [
     element: <GradeWeightsPage />,
     roles: ["Administrador"],
   },
+  {
     path: "/configuracion-evento",
     element: <EventConfigurationPage />,
     roles: ["Administrador"],
