@@ -77,8 +77,11 @@ const MENU: Record<Role, MenuItem[]> = {
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: Binary
-        }
+          icon: BookCheck
+        },
+        { name: "Colegios Evaluados", 
+          url: "/colegios-evaluados", 
+          icon: BookCheck },
       ],
 
     },

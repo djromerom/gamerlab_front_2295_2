@@ -142,6 +142,11 @@ const routes: RouteConfig[] = [
     element: <SchoolRate />,
     roles: ["Profesor"],
   },
+  {
+    path: "/colegios-evaluados",
+    element: <GradedPage />,
+    roles: ["Profesor"],
+  },
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },

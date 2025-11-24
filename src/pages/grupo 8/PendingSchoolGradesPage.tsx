@@ -85,8 +85,6 @@ const PendingSchoolGradesPage: React.FC = () => {
       if (!res.ok) {
         let errorMsg;
         try {
-          //const errorBody = await res.json();
-          //errorMsg = errorBody.message || errorMsg;
           errorMsg = "This feature is coming soon.";
         } catch (e) {
         }
