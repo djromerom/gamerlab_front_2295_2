@@ -151,7 +151,7 @@ export default function Scoreboard() {
   if (canViewScores === null) {
     return <LoadingScreen text="Verificando permisos para ver calificaciones..." />
   }
-
+  
 
   // Permission denied
   if (canViewScores === false) {
