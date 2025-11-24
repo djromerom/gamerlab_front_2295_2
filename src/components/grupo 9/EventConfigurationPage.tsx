@@ -16,14 +16,14 @@ const EventConfigurationPage: React.FC = () => {
                 
             <div className="flex p-2 sm:p-2 sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
                 
-                <h3 className="text-lg font-bold  ">Configuracion del evento</h3>
+                <h3 className="text-lg font-bold  ">Configuración del evento</h3>
                 
             </div>
 
             <div className="md:grid:gap-4:grid-cols-[repeat(auto-fill,minmax(370px,1fr))] min-w-[300px] gap-4 mb-8 grid">
-                <EventSetupCard url="/settings/evaluations-status?open=" title="Evaluacion de Jurados" subtitle="Habilitar notas a los equipos"/>
-                <EventSetupCard url="/settings/public-results?open=" title="Resultados Publicos" subtitle="Mostrar resultados a los participantes"/>
-                <EventSetupCard url="/settings/team-registration?open=" title="Resultados de Equipos" subtitle="Mostrar Calificaciones a los equipos"/>
+                <EventSetupCard url="/settings/evaluations-status?open=" title="Evaluación de Jurados" subtitle="Evaluar Participantes"/>
+                <EventSetupCard url="/settings/show-evaluations?show=" title="Habilitar Calificaciones" subtitle="Resultados de Evaluación"/>
+                <EventSetupCard url="/settings/show-ranking?show=" title="Ranking Público" subtitle="Habilitar Ranking Público"/>
             </div>
             
 

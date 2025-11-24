@@ -8,6 +8,8 @@ import React, {
   useMemo,
 } from 'react';
 
+
+
 // Tus interfaces (asegúrate que coincidan con los datos de tu BD)
 
 export interface VideojuegoData {
@@ -91,6 +93,12 @@ export interface GlobalStateContextType {
   // Permiso local para mostrar u ocultar calificaciones (frontend-only)
   canViewScores: boolean;
   setCanViewScores: React.Dispatch<React.SetStateAction<boolean>>;
+
+  canViewRanking: boolean;
+  setCanViewRanking: React.Dispatch<React.SetStateAction<boolean>>;
+
+  canViewJudges: boolean;
+  setCanViewJudges: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // 2. Crear los Contextos
@@ -107,7 +115,6 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
-  // const [canViewScores, setCanViewScores] = useState<boolean | null>(null);
   const setFiltroMateriaExt = (value: string) => {
     setFiltroMateria(value);
     setFiltroNRC("Todos"); // Resetea el filtro de NRC si se selecciona "Todas"
@@ -136,15 +143,18 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
-  // Permiso local para que estudiantes vean calificaciones (persistido en localStorage)
+  // Permiso local para que los jurados puedan calificar a los equipos
+  const [canViewJudges, setCanViewJudges] = useState<boolean>(false);
   const [canViewScores, setCanViewScores] = useState<boolean>(false);
+  const [canViewRanking, setCanViewRanking] = useState<boolean>(false);
 
+  
 
-  // Consultar endpoint /settings/evaluations para obtener permiso y refrescar periódicamente
-  useEffect(() => {
+  //permiso para que los jurados puedan ver los equipos asignados y calificarlos
+   useEffect(() => {
     const controller = new AbortController();
     const endpoint = `${API_BASE_URL}/settings/evaluations-status`;
-
+    setCanViewJudges(false);
     const fetchPermission = async () => {
       try {
         const res = await fetch(endpoint, {
@@ -165,11 +175,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
         const enabled = typeof body === "boolean" ? body :  body?.evaluationsOpen ?? false;
 
         // tu lógica de fecha...
-        const now = new Date();
-        const target = body?.endDate ? new Date(body.endDate) : null;
-        const newVal = (enabled === false && target && now >= target) ? true : Boolean(enabled);
 
-        setCanViewScores(prev => (prev === newVal ? prev : newVal));
+        setCanViewJudges(enabled);
 
 
       } catch (err: any) {
@@ -180,6 +187,83 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     fetchPermission();
     
   }, []); 
+
+  // Consultar endpoint /settings/evaluations (estudiantes pueden ver calificaciones)
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/show-evaluations`;
+    setCanViewScores(false); // valor por defecto
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+   
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.showEvaluations ?? false;
+
+        // tu lógica de fecha...
+        
+        setCanViewScores(enabled);
+
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    fetchPermission();
+    
+  }, []); 
+
+  // Ranking - permiso para habilitar el ranking publico
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/show-ranking`;
+    setCanViewRanking(false);
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+   
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.showRanking ?? false;
+
+        // tu lógica de fecha...
+
+        setCanViewRanking(enabled);
+
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    fetchPermission();
+    
+  }, []); 
+
 
   // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
@@ -312,7 +396,10 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     // Permiso local para ver calificaciones (frontend-only)
     canViewScores,
     setCanViewScores,
-
+    canViewRanking,
+    setCanViewRanking,
+    canViewJudges,
+    setCanViewJudges,
     // Opciones para los filtros
     opcionesFiltroMateria,
     opcionesFiltroNRC,
@@ -332,6 +419,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,
     canViewScores,
+    canViewRanking,
+    canViewJudges,
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
   ]);
 

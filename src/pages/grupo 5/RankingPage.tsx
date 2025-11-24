@@ -106,8 +106,7 @@ const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
   // const [fairEnded, setFairEnded] = useState(false);
-  const { canViewScores } = useGlobalState()
-  
+  const { canViewRanking } = useGlobalState()
 
   // console.log("fairEnded:", fairEnded);
   // console.log("canViewScores from global state:", canViewScores);
@@ -171,7 +170,7 @@ export default function PodioGamer() {
             Ranking de videojuegos
 
           </h1>
-          {!canViewScores ? (
+          {!canViewRanking ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
                 <div className="gradient-border-inner"></div>
