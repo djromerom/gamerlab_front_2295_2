@@ -180,6 +180,9 @@ export default function GradeWeightsPage() {
 							className="no-spinner"
 							value={seniorPercent}
 							onChange={(e) => setSeniorPercent(e.target.value)}
+							min={0}
+							max={100}
+							title="Ingresa un porcentaje entre 0 y 100"
 							disabled={!editing}
 						/>
                         </div>
@@ -192,6 +195,9 @@ export default function GradeWeightsPage() {
 							className="no-spinner"
 							value={juniorPercent}
 							onChange={(e) => setJuniorPercent(e.target.value)}
+							min={0}
+							max={100}
+							title="Ingresa un porcentaje entre 0 y 100"
 							disabled={!editing}
 						/>
                         </div>
