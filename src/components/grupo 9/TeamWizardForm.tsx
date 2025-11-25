@@ -61,6 +61,143 @@ export default function TeamWizardForm(props: any) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteIdx, setPendingDeleteIdx] = useState<number | null>(null);
   const [isDeletingMember, setIsDeletingMember] = useState(false);
+  const [savingAllMembers, setSavingAllMembers] = useState(false);
+
+  // Generador de códigos estudiantiles (colegio) similar al submitTeamsAdmin
+  const randomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000);
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
+  function buildNrcArray(member: any): string[] {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    const safeList: any[] = Array.isArray(safeNrcs) ? safeNrcs : [];
+    if (isExternalTeam) {
+      const globalId = methods.getValues("team_nrc_global_id");
+      if (!globalId) return [];
+      const match = safeList.find(n => String(n.id) === String(globalId));
+      return [match?.codeStr || String(globalId)];
+    } else {
+      const ids: number[] = Array.isArray(member?.nrcIds) ? member.nrcIds : [];
+      return ids
+        .map(id => {
+          const found = safeList.find(n => n.id === id);
+          return found?.codeStr || String(id);
+        })
+        .filter(Boolean);
+    }
+  }
+
+  function buildMemberPayload(member: any): any {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    // nrc debe ser array de strings (solo propiedad nrc, NO nrcs)
+    let nrcArray = buildNrcArray(member);
+    if (!Array.isArray(nrcArray)) nrcArray = [];
+    nrcArray = nrcArray.map((v) => String(v));
+    return {
+      memberEmail: member.correo?.trim(),
+      memberFirstName: member.nombre?.trim(),
+      memberLastName: member.apellido?.trim(),
+      studentCode: isExternalTeam
+        ? randomStudentCode()
+        : (member.codigo_estudiantil ? String(member.codigo_estudiantil) : undefined),
+      nrc: nrcArray,
+    };
+  }
+
+  async function persistNewMembersAndProceed() {
+    const mode = methods.getValues("mode");
+    if (mode !== "edit") {
+      nextFromStep2();
+      return;
+    }
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+    if (!teamId) {
+      toast.error("No se encontró el ID del equipo");
+      return;
+    }
+    const integrantes = methods.getValues("integrantes") || [];
+    const pendientes = integrantes
+      .map((m: any, i: number) => ({ m, i }))
+      .filter(({ m, i }: any) => i !== 0 && !(m?.id_integrante || m?.id));
+    if (pendientes.length === 0) {
+      nextFromStep2();
+      return;
+    }
+    const isExternalTeam = !!methods.getValues("isExternal");
+    setSavingAllMembers(true);
+    try {
+      for (const { m, i } of pendientes) {
+        if (!m?.nombre || !m?.apellido || !m?.correo) {
+          toast.error(`Completa los datos del miembro ${i + 1}`);
+          setEditingIndex(i);
+          setSavingAllMembers(false);
+          return;
+        }
+        if (isExternalTeam) {
+          const globalId = methods.getValues("team_nrc_global_id");
+          if (!globalId) {
+            toast.error("Selecciona NRC global (colegio)");
+            setSavingAllMembers(false);
+            return;
+          }
+        } else {
+          const nrcIds: number[] = Array.isArray(m.nrcIds) ? m.nrcIds : [];
+          if (nrcIds.length === 0) {
+            toast.error(`Selecciona al menos un NRC para el miembro ${i + 1}`);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+          }
+        }
+        const body = buildMemberPayload(m);
+        const url = `${apiBaseUrl}/teams/${teamId}/add-member`;
+  
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          let msg = "Error agregando miembro";
+          try {
+            const j = await res.json();
+            msg = j?.message || msg;
+          } catch {}
+            toast.error(msg);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+        }
+        const data = await res.json().catch(() => ({}));
+        const newId = data?.member?.id || data?.id || data?.memberId;
+        if (newId) {
+          methods.setValue(`integrantes.${i}.id_integrante`, newId, { shouldDirty: false });
+        }
+      }
+      toast.success("Miembros guardados");
+      nextFromStep2();
+    } catch (e: any) {
+      toast.error(e?.message || "Error guardando miembros");
+    } finally {
+      setSavingAllMembers(false);
+    }
+  }
 
   async function resendInvite(email: string) {
     if (internalIsLoading) return; // prevent multiple petitions
@@ -660,16 +797,23 @@ export default function TeamWizardForm(props: any) {
           )}
 
           {step === 1 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); console.log("aditional", methods.watch("videojuego.additionalImages"), methods.watch("videojuego.logo_url")); }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); /* console log removido para limpieza */ }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
 
             </Button>
           ) : step === 2 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2(); }} className="w-full sm:w-auto" disabled={busy}>
-              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                persistNewMembersAndProceed();
+              }}
+              className="w-full sm:w-auto"
+              disabled={busy || savingAllMembers}
+            >
+              {(busy || savingAllMembers) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-
             </Button>
           ) : (
             <Button type="submit" className="w-full sm:w-auto" disabled={busy}>
