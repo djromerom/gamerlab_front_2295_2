@@ -6,10 +6,10 @@ import { Switch } from "@/components/ui/switch.tsx"
 
 // const url = "/settings/evaluations-status?open="
 
-const EventSetupCard: React.FC<{url: string, title: string, subtitle: string, field?: string}> = ({url, title, subtitle, field}) => {
+const EventSetupCard: React.FC<{value: boolean, url: string, title: string, subtitle: string, field?: string}> = ({value, url, title, subtitle, field}) => {
     // const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [isOpen, setIsOpen] = useState<boolean>(value);
     const [loading, setLoading] = useState<boolean>(false);
 
     

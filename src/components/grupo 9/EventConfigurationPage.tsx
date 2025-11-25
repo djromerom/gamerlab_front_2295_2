@@ -4,9 +4,12 @@ import EventSetupCard from "./EventSetupCard";
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "../grupo 8/boton";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 
 const EventConfigurationPage: React.FC = () => {
+    const {canViewScores, canViewJudges, canViewRanking } = useGlobalState() // Placeholder for actual permission logic
+
     const navigate = useNavigate();
     const breadcrumbs = [
 		{ label: "Configuración", href: "/configuracion-evento" },
@@ -22,9 +25,9 @@ const EventConfigurationPage: React.FC = () => {
             </div>
 
             <div className="grid gap-4 max-[500px]:gap-4 md:grid:gap-4:grid-cols-[repeat(auto-fill,minmax(370px,1fr))] min-w-[200px] mb-8  max-w-full">
-                <EventSetupCard url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Evaluar Participantes"/>
-                <EventSetupCard url="/settings/show-evaluations" title="Habilitar Calificaciones" subtitle="Resultados de Evaluación"/>
-                <EventSetupCard url="/settings/show-ranking" title="Ranking Público" subtitle="Habilitar Ranking Público"/>
+                <EventSetupCard value={canViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Evaluar Participantes"/>
+                <EventSetupCard value={canViewScores} url="/settings/show-evaluations" title="Habilitar Calificaciones" subtitle="Resultados de Evaluación"/>
+                <EventSetupCard value={canViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Habilitar Ranking Público"/>
                 <div className="sm:flex-[0_1_10%] md:mb-6 space-y-2 border-2 rounded-lg overflow-hidden  md:w-full shadow-sm ">
                 <div className="border-b last:border-b-0">
                     <div className="w-full p-4 flex items-center justify-between transition-colors">
