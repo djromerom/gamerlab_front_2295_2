@@ -6,6 +6,17 @@ import { ImageCropper } from "@/components/grupo 11/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="text-sm text-destructive mt-1">{message}</p>;
@@ -47,6 +58,9 @@ export default function TeamWizardForm(props: any) {
   } = props;
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteIdx, setPendingDeleteIdx] = useState<number | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
 
   async function resendInvite(email: string) {
     if (internalIsLoading) return; // prevent multiple petitions
@@ -97,6 +111,84 @@ export default function TeamWizardForm(props: any) {
         {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
       </div>
     );
+  }
+
+  // Abrir diálogo de confirmación
+  function handleAskRemoveMember(idx: number) {
+    if (methods.watch("mode") === "edit" && idx === 0) return; // no se permite líder
+    setPendingDeleteIdx(idx);
+    setDeleteDialogOpen(true);
+  }
+
+  // Confirmar eliminación
+  async function handleConfirmDelete() {
+    if (pendingDeleteIdx === null) return;
+    const idx = pendingDeleteIdx;
+    const mode = methods.getValues("mode");
+
+    // obtener teamId robusto
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+
+    const member = methods.getValues(`integrantes.${idx}`);
+    const memberId = member?.id_integrante ?? member?.id ?? null;
+
+    setIsDeletingMember(true);
+    try {
+      if (mode === "edit") {
+        if (idx === 0) {
+          toast.error("El primer miembro no se puede eliminar en edición");
+          return;
+        }
+        if (!teamId) {
+          toast.error("No se encontró el ID del equipo");
+          return;
+        }
+        if (memberId) {
+          const url = `${apiBaseUrl}/teams/${teamId}/members/${memberId}`;
+          const res = await fetch(url, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          const okStatus = res.ok || res.status === 204;
+          if (!okStatus) {
+            let errMsg = "No se pudo eliminar el miembro";
+            try {
+              const errJson = await res.json();
+              errMsg = errJson?.message || errMsg;
+            } catch {}
+            toast.error(errMsg);
+            return;
+          }
+        } else {
+          toast.info("Miembro sin ID persistido; solo se elimina localmente");
+        }
+      }
+
+      // Eliminar local
+      remove(idx);
+      setEditingIndex((prev: any) => {
+        if (prev === null) return null;
+        if (prev === idx) return null;
+        return prev > idx ? prev - 1 : prev;
+      });
+
+      toast.success("Miembro eliminado");
+    } catch (e: any) {
+      console.error("Error eliminando miembro:", e);
+      toast.error(e?.message || "Error eliminando miembro");
+    } finally {
+      setIsDeletingMember(false);
+      setDeleteDialogOpen(false);
+      setPendingDeleteIdx(null);
+    }
   }
 
   return (
@@ -408,13 +500,38 @@ export default function TeamWizardForm(props: any) {
                       <div className="text-xs text-muted-foreground">{member?.correo || "correo no definido"}</div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="button" size="sm" variant={isOpen ? "secondary" : "outline"} onClick={() => setEditingIndex(isOpen ? null : idx)}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isOpen ? "secondary" : "outline"}
+                        onClick={() => setEditingIndex(isOpen ? null : idx)}
+                      >
                         <Pencil className="w-4 h-4 mr-1" />
                         {isOpen ? "Cerrar" : "Editar"}
                       </Button>
-                      <Button type="button" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { remove(idx); setEditingIndex((prev: any) => { if (prev === null) return null; if (prev === idx) return null; return prev > idx ? prev - 1 : prev; }); }}>
-                        <Trash2 className="w-4 h-4 mr-1" /> Quitar
-                      </Button>
+
+                      {methods.watch("mode") === "edit" && idx === 0 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="text-muted-foreground cursor-not-allowed"
+                          title="El primer miembro no se puede eliminar en edición"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Líder
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleAskRemoveMember(idx)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Quitar
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -506,6 +623,33 @@ export default function TeamWizardForm(props: any) {
       )}
 
       <ImageCropper file={selectedLogoFile} open={cropperOpen} onClose={() => setCropperOpen(false)} onCropComplete={handleCroppedLogo} />
+
+      {/* Confirmación eliminar miembro */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setPendingDeleteIdx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar miembro del equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const m = pendingDeleteIdx !== null ? methods.getValues(`integrantes.${pendingDeleteIdx}`) : null;
+                const nombre = [m?.nombre, m?.apellido].filter(Boolean).join(" ");
+                return (
+                  <>
+                    Se eliminará la información {nombre ? `de ${nombre} ` : ""}del equipo. Esta acción no se puede deshacer.
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingMember}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeletingMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeletingMember && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
         <div className="flex w-full sm:w-auto gap-2 flex-col-reverse sm:flex-row">
