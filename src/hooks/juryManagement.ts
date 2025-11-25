@@ -1,4 +1,5 @@
 import { PaginatedJurors } from "@/components/grupo 12/utils";
+import { toast } from "sonner";
 
 const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
@@ -41,6 +42,32 @@ export const juryManagement = {
                 throw new Error(data.message)
             }
             return data
+            }catch (error) {
+                throw new Error(error)
+        }
+    },
+
+    getTeamsByJuror: async (jurorId) => {
+        try {
+            const res = await fetch(`${API_ENDPOINT}/${jurorId}/teams`, {
+                method: 'GET',
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            })
+            console.log(res)
+            const data = await res.json()
+            console.log(data)
+            if (!res.ok) {
+                throw new Error(data.message)
+            }
+            const getTeams:[[{ id: string, name:string, videogame: string }]] | null  = [data.map((team) => {
+            return { id: team.id, name: team.nombre, videogame: team.videojuego.nombre }
+            })]
+
+            console.log('Estos son lo equipos por jurado', getTeams)
+            console.log('efknfks', getTeams[0])
+            const getListTeams = getTeams[0]
+            return getListTeams
             }catch (error) {
                 throw new Error(error)
         }
@@ -91,6 +118,46 @@ export const juryManagement = {
         return {
             success: true,
             message: 'Asignación exitosa'
+        }
+    },
+
+    deleteAllAssignments: async (setLoading) => {
+        const res = await fetch(`${API_ENDPOINT}/assignments/all`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { "Content-Type": "application/json" },
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+            setLoading(false)
+            toast.error(data.message)
+        }
+        setLoading(false)
+        toast.success(data.message)
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000) 
+    },
+
+    deleteAnAssignment: async (jurorId, teamId) => {
+        const res = await fetch(`${API_ENDPOINT}/assignments`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({jurorId: jurorId, teamId: teamId})
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+            return {
+                success: false,
+                message: data.message
+            }
+        }
+        return {
+            success: true,
+            message: 'La asignación fue eliminada.'
         }
     }
 }

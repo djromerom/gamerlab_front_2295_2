@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, LibrarySquareIcon, UserPen, BoxSelect } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectScrollDownButton, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -29,7 +29,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
   const [loading, setLoading] = useState(false)
   const [teams, setTeams] = useState(null)
-  const [valueFormAsignTeam, setValueFormAsignTeam] = useState({id: "", teamCode: "", name: "", videogame: ""})
+  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", teamCode: "", name: "", videogame: ""})
+  const [teamsByJuror, setTeamsByJuror] = useState([{id: "", name: "", videogame: ""}])
+  const [valueDeleteTeam, setValueDeleteTeam] = useState({id: "", name: "", videogame: ""})
   
   useEffect(() => {
 
@@ -199,7 +201,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   onChange={(e) => {
                     const value = e.target.value
                     const result = teams?.[0].find(team => team.name === value);
-                    setValueFormAsignTeam(result)
+                    setValueFormAssignTeam(result)
                   }}
                 >
                   <option value="" disabled className="bg-white dark:bg-[#120e21]">
@@ -224,7 +226,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   <Input
                     placeholder="Team code"
                     disabled
-                    value={valueFormAsignTeam?.teamCode || ""}
+                    value={valueFormAssignTeam?.teamCode || ""}
                     // onChange={(e) =>
                     //     setNuevoEquipo({
                     //         ...nuevoEquipo,
@@ -235,7 +237,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   <Input
                     placeholder="Nombre del videojuego"
                     disabled
-                    value={valueFormAsignTeam?.videogame || ""}
+                    value={valueFormAssignTeam?.videogame || ""}
                     // onChange={(e) =>
                     //     setNuevoEquipo({
                     //         ...nuevoEquipo,
@@ -246,7 +248,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               <Button
                 variant={"home"}
                 onClick={async ()=>{
-                  const res = await juryManagement.manualAssignment(juror.id, valueFormAsignTeam.id)
+                  const res = await juryManagement.manualAssignment(juror.id, valueFormAssignTeam.id)
                   toast.message(res.message)
                   if (res.success) {
                     setTimeout(() => {
@@ -257,6 +259,95 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                 className="w-full"
               >
                 Asignar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+    },
+    {
+      key: "manualDelete",
+      label: "Quitar un equipo",
+      renderCell: (juror: JurorRowData) => (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+                onClick={async () => {
+                  const teamsByJuror = await juryManagement.getTeamsByJuror(juror.id)
+                  setTeamsByJuror(teamsByJuror)
+                }}
+                variant={"destructive"}
+                size="sm"
+            >
+                <BadgeXIcon/>
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Quitar equipo a {juror.firstName}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-3 mt-2">
+              <div className="flex w-full relative">
+                <select
+                  className="
+                    w-full appearance-none rounded-lg 
+                    border border-gray-300
+                    bg-white dark:bg-transparent 
+                    text-gray-900 dark:text-gray-100
+                    px-4 py-2 pr-10 text-sm shadow-sm 
+                    transition 
+                    cursor-pointer
+                  "
+                  defaultValue={""}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const result = teamsByJuror?.find(team => team.name === value);
+                    setValueDeleteTeam(result)
+                  }}
+                >
+                  <option value="" disabled className="bg-white dark:bg-[#120e21]">
+                    Seleccione un equipo...
+                  </option>
+                  {teamsByJuror ? teamsByJuror.map((team, index) => (
+                    <option key={index} value={team.name} className="bg-white dark:bg-[#120e21]">
+                      {team.name}
+                    </option>
+                  )) || (
+                    <option value="opcion1" className="bg-white dark:bg-[#120e21]">
+                      No hay equipos
+                    </option>
+                  ) : []}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
+                  ▼
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center w-full">
+                  <Input
+                    placeholder="Nombre del videojuego"
+                    disabled
+                    value={valueDeleteTeam?.videogame || ""}
+                  />
+              </div>
+              <Button
+                variant={"destructive"}
+                onClick={async ()=>{
+                  const res = await juryManagement.deleteAnAssignment(juror.id, valueDeleteTeam.id)
+                  toast.message(res.message)
+                  if (res.success) {
+                    setTimeout(() => {
+                    window.location.reload();
+                  }, 500) 
+                  }
+                }}
+                className="w-full"
+              >
+                Quitar
               </Button>
             </div>
           </DialogContent>
@@ -441,6 +532,17 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Jurados</h1>
         <div className="flex gap-2">
+          <Button
+              variant="destructive"
+              disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
+              className="flex justify-center items-center cursor-pointer"
+              onClick={() => {setLoading(true); juryManagement.deleteAllAssignments(setLoading)}}
+              
+          >
+            <p className="hidden lg:flex">
+              Desasignar todos
+            </p>
+          </Button>
           <Button
               variant="default"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
@@ -632,6 +734,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                             Reenviar correo
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem
+                            onClick={() => {}}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            Quitar equipos
+                          </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             setDeletingId(juror.id);
