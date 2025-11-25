@@ -180,8 +180,14 @@ export default function EditBoard() {
         toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
       }
     } catch (error) {
-      toast.error(`Ocurrió un error: ${error}`, { id: 777 })
-      console.error('Los sentimos: ', error)
+      let description = '';
+      if (error instanceof Error && error.message.includes("413")) {
+        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
+      } else {
+        description = error instanceof Error ? error.message : String(error);
+      }
+      toast.error(`Ocurrió un error: ${description}`, { id: 777 });
+      console.error("Error al subir la información del equipo:", error);
     } finally {
       setLoadingForm(false)
     }
