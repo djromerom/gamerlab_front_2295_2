@@ -73,6 +73,24 @@ export const juryManagement = {
         }
     },
 
+    getIncompleteJurors: async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
+                method: 'GET',
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+            })
+            console.log(res)
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.message)
+            }
+            return data
+            }catch (error) {
+                throw new Error(error)
+        }
+    },
+
     automaticAssignment: async () => {
         const res = await fetch(`${API_ENDPOINT}/evaluations-assignment`, {
             method: 'GET',
@@ -123,6 +141,25 @@ export const juryManagement = {
 
     deleteAllAssignments: async (setLoading) => {
         const res = await fetch(`${API_ENDPOINT}/assignments/all`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { "Content-Type": "application/json" },
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+            setLoading(false)
+            toast.error(data.message)
+        }
+        setLoading(false)
+        toast.success(data.message)
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000) 
+    },
+
+    deleteAllAsignmentsByJury: async (juryId, setLoading) => {
+        const res = await fetch(`${API_ENDPOINT}/${juryId}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },

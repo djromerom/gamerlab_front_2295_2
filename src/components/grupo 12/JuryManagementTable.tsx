@@ -29,7 +29,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
   const [loading, setLoading] = useState(false)
   const [teams, setTeams] = useState(null)
-  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", teamCode: "", name: "", videogame: ""})
+  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", name: "", videogame: ""})
   const [teamsByJuror, setTeamsByJuror] = useState([{id: "", name: "", videogame: ""}])
   const [valueDeleteTeam, setValueDeleteTeam] = useState({id: "", name: "", videogame: ""})
   
@@ -37,9 +37,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
 
     const arrayTeams = async () => {
       try {
-        const data: any = await juryManagement.getTeams();
-        const getTeams:[{ id: string, teamCode: string, name:string, videogame: string }] | null  = [data.map((team) => {
-            return { id: team.id, teamCode: team.teamCode, name: team.teamName, videogame: team.videogame.name }
+        const data: any = await juryManagement.getIncompleteJurors();
+        const getTeams:[{ id: string, name:string, videogame: string }] | null  = [data.map((team) => {
+            return { id: team.id, name: team.nombre, videogame: team.videojuego }
           })]
           setTeams(getTeams)
       }catch (error) {
@@ -224,25 +224,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
 
               <div className="flex justify-between items-center w-full gap-2">
                   <Input
-                    placeholder="Team code"
-                    disabled
-                    value={valueFormAssignTeam?.teamCode || ""}
-                    // onChange={(e) =>
-                    //     setNuevoEquipo({
-                    //         ...nuevoEquipo,
-                    //         id: e.target.value,
-                    //     })
-                    // }
-                  />
-                  <Input
                     placeholder="Nombre del videojuego"
                     disabled
                     value={valueFormAssignTeam?.videogame || ""}
-                    // onChange={(e) =>
-                    //     setNuevoEquipo({
-                    //         ...nuevoEquipo,
-                    //         nombre: e.target.value,
-                    // })}
                   />
               </div>
               <Button
@@ -735,7 +719,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                            onClick={() => {}}
+                            onClick={() => {setLoading(true); juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading)}}
                             disabled={internalIsLoading}
                             className="cursor-pointer"
                           >
