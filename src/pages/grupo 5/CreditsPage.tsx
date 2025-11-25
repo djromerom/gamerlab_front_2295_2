@@ -1,5 +1,5 @@
-"use client"
-import { useEffect, useState, useRef } from "react"
+"use client";
+import { useEffect, useState, useRef } from "react";
 import {
   Code,
   Github,
@@ -15,8 +15,11 @@ import {
   Database,
   Camera,
   Calendar,
-} from "lucide-react"
-import NavBar from "@/components/grupo 5/NavBar"
+  PcCase,
+  Container,
+  
+} from "lucide-react";
+import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 
@@ -316,51 +319,55 @@ const glowStyles = `
     background-color: #AC7CFF;
     color: #060312;
   }
-`
+`;
 
 export default function DevelopersCredits() {
-  const [currentTeamSlide, setCurrentTeamSlide] = useState(0)
-  const teamCarouselRef = useRef<HTMLDivElement>(null)
-  const totalTeamSlides = 2 // Total number of team slides
+  const [currentTeamSlide, setCurrentTeamSlide] = useState(0);
+  const teamCarouselRef = useRef<HTMLDivElement>(null);
+  const totalTeamSlides = 2; // Total number of team slides
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   useEffect(() => {
-      document.documentElement.classList.remove("light", "high-contrast");
-      document.documentElement.classList.add("dark");
-      return () => {
-        document.documentElement.classList.remove("dark");
-      };
-    }, []);
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
 
   const nextTeamSlide = () => {
-    setCurrentTeamSlide((prev) => (prev === totalTeamSlides - 1 ? 0 : prev + 1))
-  }
+    setCurrentTeamSlide((prev) =>
+      prev === totalTeamSlides - 1 ? 0 : prev + 1
+    );
+  };
 
   // Update carousel position when currentTeamSlide changes
   useEffect(() => {
     if (teamCarouselRef.current) {
-      teamCarouselRef.current.style.transform = `translateX(-${currentTeamSlide * 100}%)`
+      teamCarouselRef.current.style.transform = `translateX(-${
+        currentTeamSlide * 100
+      }%)`;
     }
-  }, [currentTeamSlide])
+  }, [currentTeamSlide]);
 
   // Auto-advance carousel every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      nextTeamSlide()
-    }, 8000)
-    return () => clearInterval(interval)
-  }, [])
+      nextTeamSlide();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
-    const styleElement = document.createElement("style")
-    styleElement.innerHTML = glowStyles
-    document.head.appendChild(styleElement)
+    const styleElement = document.createElement("style");
+    styleElement.innerHTML = glowStyles;
+    document.head.appendChild(styleElement);
 
     return () => {
-      document.head.removeChild(styleElement)
-    }
-  }, [])
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   // Datos de los desarrolladores agrupados por departamento
   const departments = [
@@ -368,7 +375,8 @@ export default function DevelopersCredits() {
       id: "frontend",
       name: "Frontend",
       icon: <Code className="w-5 h-5" />,
-      description: "Responsables de la interfaz de usuario y experiencia de usuario de la plataforma.",
+      description:
+        "Responsables de la interfaz de usuario y experiencia de usuario de la plataforma.",
     },
     {
       id: "backend",
@@ -392,16 +400,109 @@ export default function DevelopersCredits() {
       id: "devops",
       name: "DevOps",
       icon: <Cpu className="w-5 h-5" />,
-      description: "Responsable de la infraestructura, despliegue y operaciones.",
+      description:
+        "Responsable de la infraestructura, despliegue y operaciones.",
     },
-  ]
+     {
+      id: "fullstacks",
+      name: "FullStacks",
+      icon: <PcCase className="w-5 h-5" />,
+      description:
+        "Desarrolladores encargados tanto del frontend como del backend de la plataforma.",
+    }
+  ];
 
-  const developers = [
+  const developers = [ 
+    {
+      id: 28,
+      name: "Natalia Carpintero",
+      role: "Scrum Master",
+      department: "Backend",
+      version: "2.0",
+      github: "https://github.com/Carpinteron",
+      email: "carpinteron@uninorte.edu.co",
+    },
+    {
+      id: 26,
+      name: "Kevin Torregrosa",
+      role: "Backend Leader",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/MrManini",
+      email: "kjtorregrosa@uninorte.edu.co",
+    },
+    {
+      id: 23,
+      name: "Carlos Arango",
+      role: "Frontend Leader",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/carlosam7",
+      email: "arangocarlos@uninorte.edu.co",
+    },
+    {
+      id: 27,
+      name: "Isabella Arrieta",
+      role: "FullStack Developer",
+      department: "fullstacks",
+      version: "2.0",
+      github: "https://github.com/IsaAJ05",
+      email: "isabellajuliao@uninorte.edu.co",
+    },
+    
+    {
+      id: 29,
+      name: "Sebastian Brito",
+      role: "FullStack Developer",
+      department: "fullstacks",
+      version: "2.0",
+      github: "https://github.com/sbritoa20",
+      email: "sbritoa@uninorte.edu.co",
+    },
+    {
+      id: 21,
+      name: "Andres Monserrat",
+      role: "Frontend Developer",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/andresmonserrat",
+      email: "monserrata@uninorte.edu.co",
+    },
+    {
+      id: 24,
+      name: "Judith Perez",
+      role: "Frontend Developer",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/judithpc23",
+      email: "jiconde@uninorte.edu.co",
+    },
+    {
+      id: 22,
+      name: "Esteban Dadul",
+      role: "Backend Developer",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/edadul",
+      email: "edadul@uninorte.edu.co",
+    },
+    {
+      id: 25,
+      name: "Nicolas Muvdi",
+      role: "Backend Developer",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/muvdi1805",
+      email: "namuvdi@uninorte.edu.co",
+    },
+    
+   
     {
       id: 1,
       name: "Alejandra Valencia",
       role: "Scrum Master",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/alejavalerua",
       email: "alejandrarua@uninorte.edu.co",
     },
@@ -410,6 +511,7 @@ export default function DevelopersCredits() {
       name: "Juan Povea",
       role: "Backend Leader",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/J-Povea21",
       email: "japovea@uninorte.edu.co",
     },
@@ -418,14 +520,16 @@ export default function DevelopersCredits() {
       name: "Jorge Sánchez",
       role: "Frontend Leader",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/jorgeluissanchez",
       email: "jlbarreneche@uninorte.edu.co",
     },
     {
       id: 4,
       name: "Carlos López",
-      role: "UX/UI & Frontend developer", 
+      role: "UX/UI & Frontend developer",
       department: "design",
+      version: "1.0",
       github: "https://github.com/cegallardo0405",
       email: "cegallardo@uninorte.edu.co",
     },
@@ -434,14 +538,16 @@ export default function DevelopersCredits() {
       name: "Yovany Zhu",
       role: "UX/UI & Frontend developer",
       department: "design",
+      version: "1.0",
       github: "https://github.com/yzhuye",
       email: "yzhu@uninorte.edu.co",
     },
     {
       id: 6,
       name: "Jhonatan Romero",
-      role: "Backend developer",
-      department: "backend",
+      role: "Frontend developer",
+      department: "frontend",
+      version: "1.0",
       github: "https://github.com/jhonatanrp05",
       email: "jpachecos@uninorte.edu.co",
     },
@@ -450,6 +556,7 @@ export default function DevelopersCredits() {
       name: "Juan Carrasquilla",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/JuanMicarras",
       email: "jmcarrasquilla@uninorte.edu.co",
     },
@@ -458,6 +565,7 @@ export default function DevelopersCredits() {
       name: "Camilo Navarro",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/NavarroCamilo",
       email: "navarrocamilo@uninorte.edu.co",
     },
@@ -466,6 +574,7 @@ export default function DevelopersCredits() {
       name: "Manuel Yepes",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/amyepes",
       email: "amyepes@uninorte.edu.co",
     },
@@ -474,6 +583,7 @@ export default function DevelopersCredits() {
       name: "Juan Pardo",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/JuanPar063",
       email: "anzolas@uninorte.edu.co",
     },
@@ -482,6 +592,7 @@ export default function DevelopersCredits() {
       name: "Santiago Hoyos",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/santiagohoyos20",
       email: "hoyosjs@uninorte.edu.co",
     },
@@ -490,6 +601,7 @@ export default function DevelopersCredits() {
       name: "Presly Romero",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/PreslyR",
       email: "preslyr@uninorte.edu.co",
     },
@@ -498,6 +610,7 @@ export default function DevelopersCredits() {
       name: "Jesús Cabrera",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/JesusC25",
       email: "jcabrerad@uninorte.edu.co",
     },
@@ -506,6 +619,7 @@ export default function DevelopersCredits() {
       name: "Bernardo Álvarez",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/Bern723",
       email: "abernardo@uninorte.edu.co",
     },
@@ -514,6 +628,7 @@ export default function DevelopersCredits() {
       name: "Keiver Miranda",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/keiver213",
       email: "mkeiver@uninorte.edu.co",
     },
@@ -522,6 +637,7 @@ export default function DevelopersCredits() {
       name: "Sandro Torres",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/sandrotg",
       email: "tsandro@uninorte.edu.co",
     },
@@ -530,6 +646,7 @@ export default function DevelopersCredits() {
       name: "Camilo de la Rosa",
       role: "Devops",
       department: "devops",
+      version: "1.0",
       github: "https://github.com/CamiloDlRM",
       email: "amovillac@uninorte.edu.co",
     },
@@ -538,6 +655,7 @@ export default function DevelopersCredits() {
       name: "María Osorno",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/cosnor",
       email: "osornoc@uninorte.edu.co",
     },
@@ -546,6 +664,7 @@ export default function DevelopersCredits() {
       name: "Alberto Sandoval",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/albertojs7",
       email: "albertojs@uninorte.edu.co",
     },
@@ -554,21 +673,28 @@ export default function DevelopersCredits() {
       name: "Daniel Romero",
       role: "Product manager",
       department: "sa",
+      version: "1.0",
       github: "https://github.com/djromerom",
       email: "djromero@uninorte.edu.co",
     },
-  ]
+    
+  ];
 
-  const [activeDepartment, setActiveDepartment] = useState<string>("all")
+  const [activeDepartment, setActiveDepartment] = useState<string>("all");
+  const [activeVersion, setActiveVersion] = useState<string>("all");
 
   // Función para filtrar desarrolladores por departamento
   const filteredDevelopers =
-    activeDepartment === "all" ? developers : developers.filter((dev) => dev.department === activeDepartment)
+    developers.filter((dev) => {
+      const byDept = activeDepartment === "all" ? true : dev.department === activeDepartment;
+      const byVersion = activeVersion === "all" ? true : dev.version === activeVersion;
+      return byDept && byVersion;
+    });
 
   // Función para contar desarrolladores por departamento
   const getDepartmentCount = (deptId: string) => {
-    return developers.filter((dev) => dev.department === deptId).length
-  }
+    return developers.filter((dev) => dev.department === deptId && (activeVersion === 'all' ? true : dev.version === activeVersion)).length;
+  };
 
   // Tecnologías utilizadas
   const technologies = [
@@ -577,20 +703,37 @@ export default function DevelopersCredits() {
     { name: "Tailwind CSS", icon: <Palette className="w-4 h-4" /> },
     { name: "Nest.js", icon: <Cpu className="w-4 h-4" /> },
     { name: "Vite", icon: <Rocket className="w-4 h-4" /> },
-    { name: "SupaBase", icon: <Database className="w-4 h-4" /> },
+    { name: "PostgreSQL", icon: <Database className="w-4 h-4" /> },
     { name: "Vercel", icon: <Globe className="w-4 h-4" /> },
     { name: "GitHub", icon: <Github className="w-4 h-4" /> },
     { name: "Figma", icon: <Camera className="w-4 h-4" /> },
     { name: "Prisma", icon: <Database className="w-4 h-4" /> },
-  ]
+    { name: "Docker", icon: <Container className="w-4 h-4" /> },
+  ];
 
   // Estadísticas del proyecto
   const projectStats = [
-    { value: "19", label: "Desarrolladores", icon: <Users className="w-6 h-6 text-[#AC7CFF]" /> },
-    { value: "5", label: "Semanas de Desarrollo", icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" /> },
-    { value: "230+", label: "Commits", icon: <Github className="w-6 h-6 text-[#AC7CFF]" /> },
-    { value: "∞", label: "Líneas de Código", icon: <Code className="w-6 h-6 text-[#AC7CFF]" /> },
-  ]
+    {
+      value: "29",
+      label: "Desarrolladores",
+      icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
+    },
+    {
+      value: "5",
+      label: "Semanas de Desarrollo",
+      icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
+    },
+    {
+      value: "999+",
+      label: "Commits",
+      icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
+    },
+    {
+      value: "∞",
+      label: "Líneas de Código",
+      icon: <Code className="w-6 h-6 text-[#AC7CFF]" />,
+    },
+  ];
 
   return (
     <>
@@ -612,16 +755,19 @@ export default function DevelopersCredits() {
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
-                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">Conoce a Nuestro Equipo</h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
+                  Conoce a Nuestro Equipo
+                </h2>
                 <p className="text-gray-300 mb-6">
-                  Detrás de Arkad hay un equipo apasionado de desarrolladores y diseñadores que han
-                  trabajado incansablemente para crear esta experiencia digital. Cada miembro ha aportado su experiencia
-                  y creatividad para hacer posible este proyecto.
+                  Detrás de Arkad hay un equipo apasionado de desarrolladores y
+                  diseñadores que han trabajado incansablemente para crear esta
+                  experiencia digital. Cada miembro ha aportado su experiencia y
+                  creatividad para hacer posible este proyecto.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>19 Desarrolladores</span>
+                    <span>29 Desarrolladores</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Heart className="w-5 h-5 text-[#AC7CFF]" />
@@ -656,6 +802,34 @@ export default function DevelopersCredits() {
               <h2 className="text-2xl font-bold">Nuestro Equipo</h2>
             </div>
 
+            {/* Version selector (prominent) */}
+            <div className="w-full max-w-4xl mb-4">
+              <div className="bg-[#110D20] p-3 rounded-lg flex items-center gap-3">
+                <span className="text-sm text-gray-300 font-medium">Versión:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveVersion("all")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    Todas
+                  </button>
+                  <button
+                    onClick={() => setActiveVersion("1.0")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "1.0" ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    v1
+                  </button>
+                  <button
+                    onClick={() => setActiveVersion("2.0")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    v2
+                  </button>
+                </div>
+                <div className="ml-auto text-sm text-gray-400">Filtra por versión de los desarrolladores</div>
+              </div>
+            </div>
+
             {/* Department Navigation */}
             <div className="mb-8">
               <div className="bg-[#110D20] p-2 rounded-lg flex flex-wrap gap-2">
@@ -667,8 +841,8 @@ export default function DevelopersCredits() {
                       : "text-gray-300 hover:bg-[#1A1428]"
                   }`}
                 >
-                  <Globe className="w-5 h-5"/>
-                  Todos ({developers.length})
+                  <Globe className="w-5 h-5" />
+                  Todos ({developers.filter(d => activeVersion === 'all' ? true : d.version === activeVersion).length})
                 </button>
                 {departments.map((dept) => (
                   <button
@@ -682,7 +856,9 @@ export default function DevelopersCredits() {
                   >
                     <span
                       className={`transition-colors ${
-                        activeDepartment === dept.id ? "text-[#060312]" : "text-[#AC7CFF]"
+                        activeDepartment === dept.id
+                          ? "text-[#060312]"
+                          : "text-[#AC7CFF]"
                       }`}
                     ></span>
                     {dept.icon}
@@ -698,7 +874,12 @@ export default function DevelopersCredits() {
                 <h3 className="text-xl font-bold text-[#AC7CFF] mb-2">
                   {departments.find((d) => d.id === activeDepartment)?.name}
                 </h3>
-                <p className="text-gray-300">{departments.find((d) => d.id === activeDepartment)?.description}</p>
+                <p className="text-gray-300">
+                  {
+                    departments.find((d) => d.id === activeDepartment)
+                      ?.description
+                  }
+                </p>
               </div>
             )}
 
@@ -708,12 +889,26 @@ export default function DevelopersCredits() {
                 <div key={dev.id} className="dev-card">
                   <div className="dev-card-content">
                     <div className="flex flex-col items-center mb-4">
-                      <h3 className="text-xl font-bold text-center">{dev.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-center">
+                          {dev.name}
+                        </h3>
+                        {dev.version && (
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${dev.version === "1.0" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"}`}>
+                            v{dev.version}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[#AC7CFF] text-sm mb-2">{dev.role}</p>
                     </div>
 
                     <div className="flex flex-col gap-2 mt-auto">
-                      <a href={dev.github} target="_blank" rel="noopener noreferrer" className="social-link">
+                      <a
+                        href={dev.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-link"
+                      >
                         <Github className="w-4 h-4" />
                         GitHub
                       </a>
@@ -738,8 +933,9 @@ export default function DevelopersCredits() {
                 </div>
 
                 <p className="text-gray-300 mb-6">
-                  Para crear esta plataforma, utilizamos un stack moderno de tecnologías que nos permitió desarrollar
-                  una experiencia web rápida, interactiva y visualmente atractiva.
+                  Para crear esta plataforma, utilizamos un stack moderno de
+                  tecnologías que nos permitió desarrollar una experiencia web
+                  rápida, interactiva y visualmente atractiva.
                 </p>
 
                 <div className="flex flex-wrap">
@@ -758,7 +954,8 @@ export default function DevelopersCredits() {
                     </div>
                     <h3 className="text-lg font-bold mb-2">Rendimiento</h3>
                     <p className="text-gray-300">
-                      Optimizado para cargar rápidamente y ofrecer una experiencia fluida en todos los dispositivos.
+                      Optimizado para cargar rápidamente y ofrecer una
+                      experiencia fluida en todos los dispositivos.
                     </p>
                   </div>
                   <div className="feature-card">
@@ -767,7 +964,8 @@ export default function DevelopersCredits() {
                     </div>
                     <h3 className="text-lg font-bold mb-2">Diseño</h3>
                     <p className="text-gray-300">
-                      Interfaz moderna con animaciones sutiles y una estética futurista que refleja el espíritu gamer.
+                      Interfaz moderna con animaciones sutiles y una estética
+                      futurista que refleja el espíritu gamer.
                     </p>
                   </div>
                   <div className="feature-card">
@@ -776,14 +974,14 @@ export default function DevelopersCredits() {
                     </div>
                     <h3 className="text-lg font-bold mb-2">Experiencia</h3>
                     <p className="text-gray-300">
-                      Navegación intuitiva y contenido interactivo para mantener a los usuarios comprometidos.
+                      Navegación intuitiva y contenido interactivo para mantener
+                      a los usuarios comprometidos.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
 
           {/* Acknowledgments Section */}
           <div className="w-full max-w-4xl mb-12">
@@ -796,7 +994,8 @@ export default function DevelopersCredits() {
                 </div>
 
                 <p className="text-gray-300 mb-6">
-                  Queremos expresar nuestro sincero agradecimiento a todos los que hicieron posible este proyecto:
+                  Queremos expresar nuestro sincero agradecimiento a todos los
+                  que hicieron posible este proyecto:
                 </p>
 
                 <ul className="space-y-4 text-gray-300">
@@ -805,8 +1004,13 @@ export default function DevelopersCredits() {
                       <span className="text-[#060312] font-bold">1</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">Profesores y Mentores</h4>
-                      <p>Por su guía, conocimientos y apoyo constante durante todo el proceso de desarrollo.</p>
+                      <h4 className="font-semibold text-white">
+                        Profesores y Mentores
+                      </h4>
+                      <p>
+                        Por su guía, conocimientos y apoyo constante durante
+                        todo el proceso de desarrollo.
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -814,8 +1018,13 @@ export default function DevelopersCredits() {
                       <span className="text-[#060312] font-bold">2</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">Departamento de Ingeniería de Sistemas</h4>
-                      <p>Por proporcionar los recursos y el espacio necesario para llevar a cabo este proyecto.</p>
+                      <h4 className="font-semibold text-white">
+                        Departamento de Ingeniería de Sistemas
+                      </h4>
+                      <p>
+                        Por proporcionar los recursos y el espacio necesario
+                        para llevar a cabo este proyecto.
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -823,8 +1032,13 @@ export default function DevelopersCredits() {
                       <span className="text-[#060312] font-bold">3</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">Comunidad de Estudiantes</h4>
-                      <p>Por su entusiasmo, participación y valiosos comentarios durante las fases de este proyecto.</p>
+                      <h4 className="font-semibold text-white">
+                        Comunidad de Estudiantes
+                      </h4>
+                      <p>
+                        Por su entusiasmo, participación y valiosos comentarios
+                        durante las fases de este proyecto.
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -832,8 +1046,13 @@ export default function DevelopersCredits() {
                       <span className="text-[#060312] font-bold">4</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">Comunidad Open Source</h4>
-                      <p>Por las herramientas y bibliotecas que hicieron posible el desarrollo de esta plataforma.</p>
+                      <h4 className="font-semibold text-white">
+                        Comunidad Open Source
+                      </h4>
+                      <p>
+                        Por las herramientas y bibliotecas que hicieron posible
+                        el desarrollo de esta plataforma.
+                      </p>
                     </div>
                   </li>
                 </ul>
@@ -844,15 +1063,17 @@ export default function DevelopersCredits() {
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">
             <p className="text-gray-300 mb-4">
-              Desarrollado con <span className="text-[#AC7CFF]">♥</span> por el equipo de Arkad
+              Desarrollado con <span className="text-[#AC7CFF]">♥</span> por el
+              equipo de Arkad
             </p>
-            <p className="text-gray-400 text-sm">© 2025 Arkad. Todos los derechos reservados.</p>
+            <p className="text-gray-400 text-sm">
+              © 2025 Arkad. Todos los derechos reservados.
+            </p>
           </div>
           <TextSizeControls />
           <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>
     </>
-  )
+  );
 }
-

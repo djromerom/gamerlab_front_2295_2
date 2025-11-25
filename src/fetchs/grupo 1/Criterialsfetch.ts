@@ -17,7 +17,7 @@ export async function fetchCriterionAverages(videogameId:number) {
     //   { criterionId: 2, criterionName: "Gráficos", averageScore: 3.8 },
     //   ...
     // ]
-    console.log('Criterion Averages:', data);
+    
     return data; // Estos son los datos que puedes usar para mostrar y cachear
 
   } catch (error) {

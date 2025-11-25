@@ -13,6 +13,7 @@ interface Subject {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  abrevName: string;
 }
 
 interface PaginatedSubjects {
@@ -34,7 +35,7 @@ const SubjectsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5,
+    limit: 20,
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
 
