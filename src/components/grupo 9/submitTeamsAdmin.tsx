@@ -201,8 +201,11 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         const cur = curMembers[idx];
         const orig = origMembers[idx] || null;
         const id = cur?.id_integrante ?? orig?.id_integrante;
+
         if (id != null) curIdsSet.add(id);
+
         if (id == null && (!orig || orig == null)) {
+
           const newMember: any = {
             memberFirstName: cur.nombre,
             memberLastName: cur.apellido,
@@ -220,6 +223,8 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
           } else {
             newMember.studentCode = makeRandomStudentCodeForPatch();
           }
+
+
           membersPatch.push(newMember);
           continue;
         }
@@ -265,6 +270,8 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         setBusy(false);
         return;
       }
+
+      console.log("PATCH payload:", patch);
 
       requestBody = patch;
     }

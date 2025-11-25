@@ -125,9 +125,8 @@ export default function TeamWizardForm(props: any) {
             if (methods.getValues("mode") === "add") {
               const email = methods.getValues("integrantes.0.correo");
               if (email) await resendInvite(email);
+              toast.success(`Se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
             }
-          } else {
-            toast.error(`No se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
           }
         } catch (err) {
           console.error("Error submitting form:", err);
@@ -436,8 +435,8 @@ export default function TeamWizardForm(props: any) {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex flex-col gap-1 sm:w-2/3">
-                          <Label>Correo {methods.watch("mode") === "edit" && idx === 0 ? "(bloqueado)" : ""}</Label>
-                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} disabled={methods.watch("mode") === "edit" && idx === 0} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
+                          <Label>Correo {idx === 0 ? "(Lider del equipo)" : ""}</Label>
+                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
                           <FieldError message={memErrors?.correo?.message} />
                         </div>
                         {!isExternal && (
