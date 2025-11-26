@@ -2,7 +2,7 @@
 
 
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, use } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HelpCircle } from "lucide-react"
@@ -11,17 +11,140 @@ import Review from "@/components/grupo 5/Review"
 
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
-
+import { useAuth } from "@/contexts/AuthContext"
+import { Team } from "@/pages/grupo 11/TeamsPage";
+import { date } from "zod"
 
 export default function Scoreboard() {
   const [rawRatingsAll, setRawRatingsAll] = useState<number[]>([])
   // obtain permission for viewing student grades.
   const ratingsACRef = useRef<AbortController | null>(null)
   const { canViewScores } = useGlobalState()
-
   const [loading, setLoading] = useState(true)
   const progressBarRef = useRef<HTMLDivElement | null>(null)
+  /*other portion of code to calculate the circle*/ 
+  
+  const [generalGrade, setGeneralGrade] = useState<number>(0);
+  const [seniorGrade, setSeniorGrade] = useState<number>(0);
+  const [juniorGrade, setJuniorGrade] = useState<number>(0);
 
+  const [team, setTeam] = useState<Team | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  const { user, userRole } = useAuth();
+
+  if (userRole === undefined) {
+      return null;
+  } 
+
+  if (userRole !== "Estudiante") {
+      return null;
+  }
+
+
+  // 1. Traer todos los teams
+  useEffect(() => {
+      const fetchData = async () => {
+          try {
+              const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
+                  method: "GET",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" }
+              });
+
+              if (!response.ok) throw new Error("Error fetching teams");
+
+              const data = await response.json();
+              setTeams(data); // guardas todos los equipos
+          } catch (error) {
+              console.error(error);
+          }
+      };
+
+      fetchData();
+  }, []); 
+
+  //   2. Filtrar team cuando user.id YA EXISTE y teams YA ESTÁN CARGADOS
+  useEffect(() => {
+      if (!user?.id || teams.length === 0) return;
+
+      const userTeam = teams.find(t => t.userId === user.id) || null;
+      setTeam(userTeam);
+
+  }, [user?.id, teams]);
+
+  
+  useEffect(() => {
+  if (!team || !canViewScores) {
+    setGeneralGrade(0);
+    setJuniorGrade(0);
+    setSeniorGrade(0);
+    setLoading(false);
+    return;
+  }
+
+  // cancelar petición previa y crear una nueva controller local
+  ratingsACRef.current?.abort();
+  const controller = new AbortController();
+  ratingsACRef.current = controller;
+  setLoading(true);
+
+  (async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/final-score/team/${team.id}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        }
+      );
+
+      if (!response.ok) {
+        console.warn("Error fetching team scores:", response.status);
+        setGeneralGrade(0);
+        setJuniorGrade(0);
+        setSeniorGrade(0);
+        return;
+      }
+
+      const data = await response.json().catch(() => null);
+      const item = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+      const finalScoreVar = item?.finalScore != null ? Number(item.finalScore.toFixed(2)) : 0;
+      const avgJuniorVar = item?.avgJunior != null ? Number(item.avgJunior.toFixed(2)) : 0;
+      const avgSeniorVar = item?.avgSenior != null ? Number(item.avgSenior.toFixed(2)) : 0;
+
+      setGeneralGrade(finalScoreVar);
+      setJuniorGrade(avgJuniorVar);
+      setSeniorGrade(avgSeniorVar);
+      console.log("Fetched team scores:", item);
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        // petición abortada intencionalmente — ignorar
+        return;
+      }
+      console.error("Error fetching team scores:", err);
+      setGeneralGrade(0);
+      setJuniorGrade(0);
+      setSeniorGrade(0);
+    } finally {
+      setLoading(false);
+    }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [team, canViewScores]);
+
+
+  
+  
+  /**
+   * Final portion of code to calculate the circle
+   */
   // Obtain permission for viewing student grades from backend and poll for changes.
   const fetchRatings = useCallback(async () => {
     // si está deshabilitado, limpiar y salir
@@ -33,16 +156,14 @@ export default function Scoreboard() {
     }
 
     // cancelar llamada previa y crear nueva
-    ratingsACRef.current?.abort()
-    ratingsACRef.current = new AbortController()
+    // ratingsACRef.current?.abort()
+    // ratingsACRef.current = new AbortController()
     setLoading(true)
-
     try {
       const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        signal: ratingsACRef.current.signal,
       })
 
       if (!res.ok) {
@@ -50,6 +171,7 @@ export default function Scoreboard() {
         setRawRatingsAll([])
         return
       }
+
 
       const data = await res.json()
       if (!data || !Array.isArray(data.data)) {
@@ -82,23 +204,8 @@ export default function Scoreboard() {
 
  
 
-  const totalRatings = rawRatingsAll.length
-  // Fixed NaN issue: ensure we always have valid numbers
 
-  const averageRatingValue =
-    totalRatings === 0
-      ? 0
-      : rawRatingsAll.reduce(
-          (sum, r) => sum + (Number.isFinite(r) ? r : 0),
-          0
-        ) / totalRatings
-
-
-  const averageRating = averageRatingValue.toFixed(2)
-  let averagePercent = Math.min(
-    100,
-    Math.max(0, (averageRatingValue / 5) * 100)
-  )
+  let averagePercent = Math.min(100,Math.max(0, (generalGrade / 5) * 100));
   const progressPercent = Number.isFinite(averagePercent) ? averagePercent : 0
 
   const renderStars = (rating: number) => {
@@ -140,8 +247,10 @@ export default function Scoreboard() {
 
     return stars
   }
-  // Update progress bar width when progressPercent changes
+  // Update progress bar width
+  // when progressPercent changes
   useEffect(() => {
+    console.log("Updating progress bar to:", progressBarRef.current )
     if (progressBarRef.current) {
       progressBarRef.current.style.width = `${progressPercent.toFixed(0)}%`
     }
@@ -162,7 +271,7 @@ export default function Scoreboard() {
           <CardHeader className="p-4 sm:p-6 pb-2">
             <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Calificaciones no disponibles</CardTitle>
             <CardDescription className="text-xs sm:text-sm text-foreground/50">
-              <p className="text-sm text-foreground/70">No te preocupes, en cuanto estén listas para ser reveladas, aparecerán aquí.... <strong>¡el suspenso es parte del aprendizaje!✨</strong></p>
+              Las calificaciones aún no han sido publicadas. !Proximamente¡
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
@@ -176,13 +285,13 @@ export default function Scoreboard() {
   if (loading) {
     return <LoadingScreen text="Cargando información de calificaciones..." />
   }
-
+  
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+    <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 min-w-[350px]">
         {/* Team code */}
         <TeamCode variant="default" />
         {/* finished teamCode */}
-      <Card className="w-full shadow-sm border min-w-[350px] ">
+      <Card className="w-full shadow-sm border  ">
         <CardHeader className="p-4 sm:p-6 pb-2">
           
           <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
@@ -194,8 +303,7 @@ export default function Scoreboard() {
         <CardContent className="p-3 sm:p-6 pt-2 space-y-3 sm:space-y-4">
           <div className="flex flex-col items-center mb-6 sm:mb-10">
             <div className="relative w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60">
-              <div className="absolute inset-0 rounded-full border-6 sm:border-8 border-gray-100"></div>
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                  <svg className="absolute inset-0 w-full h-full border-accent rounded-full border-0" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#e5e7eb" strokeWidth="6" />
                 <circle
                   cx="50"
@@ -205,21 +313,21 @@ export default function Scoreboard() {
                   stroke="#facc15"
                   strokeWidth="6"
                   strokeDasharray="289.026"
-                  strokeDashoffset={289.026 - (289.026 * (isNaN(Number.parseFloat(averageRating)) ? 0 : Number.parseFloat(averageRating))) / 5}
+                  strokeDashoffset={289.026 - (289.026 * (isNaN(generalGrade) ? 0 : generalGrade) / 5 )}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                 />
               </svg>
               {/* tamaño de estrella */}
               <div className="absolute inset-0 flex flex-col items-center">
-                <span className="text-4xl sm:text-5xl md:text-6xl font-bold pt-8 sm:pt-10 md:pt-10">{averageRating}</span>
-                <div className="flex mt-1 sm:mt-2">{renderStars(isNaN(Number.parseFloat(averageRating)) ? 0 : Number.parseFloat(averageRating))}</div>
+                <span className="text-4xl sm:text-5xl md:text-6xl font-bold pt-8 sm:pt-10 md:pt-10">{generalGrade}</span>
+                <div className="flex mt-1 sm:mt-2">{renderStars(isNaN(generalGrade) ? 0 : generalGrade)}</div>
                 <span className="text-xs sm:text-sm md:text-base text-foreground mt-1">de 5.0</span>
               </div>
             </div>
 
             <div className="text-sm sm:text-base md:text-lg font-semibold text-foreground mt-3 sm:mt-4 flex items-center flex-wrap justify-center gap-1">
-              <span>Basado en {totalRatings} calificaciones</span>
+              <span>Basado en {rawRatingsAll.length} calificaciones</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -235,25 +343,41 @@ export default function Scoreboard() {
             </div>
           </div>
 
+        
 
-          <div className="space-y-2">
-            {/* Progress Bar */}
-            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-              <div className="w-16 sm:w-24 font-semibold text-right flex-shrink-0">Total</div>
-              <div className="flex-1 relative h-3 sm:h-4 bg-gray-400 rounded-full overflow-hidden">
-                
-                <div
-                  ref={progressBarRef}
-                  className="absolute inset-y-0 left-0 rounded-full bg-yellow-400 transition-all duration-500"
-                />
+         <div className="space-y-2">
+            {/* Progress Bars: Total, Junior, Senior */}
+            {[
+              { label: "Total", percent: progressPercent, color: "bg-yellow-400", grade: generalGrade },
+              {
+                label: "Junior",
+                percent: Math.min(100, Math.max(0, (juniorGrade / 5) * 100)),
+                color: "bg-green-400",
+                grade: juniorGrade,
+              },
+              {
+                label: "Senior",
+                percent: Math.min(100, Math.max(0, (seniorGrade / 5) * 100)),
+                color: "bg-blue-400",
+                grade: seniorGrade,
+              },
+            ].map((b) => (
+              <div key={b.label} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className="w-16 sm:w-24 font-semibold text-right flex-shrink-0">{b.label}</div>
+                <div className="flex-1 relative h-3 sm:h-4 bg-gray-400 rounded-full overflow-hidden">
+                  <div
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${b.color}`}
+                    style={{ width: `${b.percent.toFixed(0)}%` }}
+                    aria-hidden
+                  />
+                </div>
+
+                <div className="w-20 sm:w-24 font-semibold text-foreground text-left flex-shrink-0">
+                  <span>{b.percent.toFixed(0)}% ({Number(b.grade).toFixed(2)})</span>
+                </div>
               </div>
-              
-              <div className="w-12 sm:w-14 font-semibold text-foreground text-left flex-shrink-0">
-                <span>{progressPercent.toFixed(0)}%</span>
-              </div>
-            </div>
+            ))}
             {/* *-------------------------------------* */}
-            
           </div>
         </CardContent>
       </Card>
