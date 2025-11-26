@@ -191,6 +191,7 @@ const TeamsManagementPage = () => {
 
         return {
           id_equipo: t.id,
+          teamCode: t.teamCode,
           nombre_equipo: t.teamName ?? t.nombre_equipo ?? "",
           fecha_registro: t.registrationDate ?? t.fecha_registro ?? new Date().toISOString(),
           id_usuario: t.userId ?? t.id_usuario ?? "",
