@@ -15,6 +15,7 @@ export type SubmitCtx = {
   toast: any;
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
+  updateLikes?: () => Promise<void>;
 };
 
 export async function submitTeam(data: any, ctx: SubmitCtx) {
@@ -33,6 +34,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     toast,
     onOpenChange,
     onSuccess,
+    updateLikes,
   } = ctx;
 
   // Helper: generar código para miembros colegio (externos) nuevos sin código
@@ -356,6 +358,21 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     }
 
     toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
+    
+    // Update likes after successful team submission (admin-only feature)
+    if (updateLikes) {
+      console.log("Calling updateLikes function...", { updateLikes: typeof updateLikes });
+      try {
+        await updateLikes();
+        console.log("updateLikes completed successfully");
+      } catch (error) {
+        console.error('Error updating likes after team submission:', error);
+        // Don't fail the whole submission if likes update fails
+      }
+    } else {
+      console.log("No updateLikes function provided");
+    }
+    
     onOpenChange(false);
     onSuccess();
   } catch (e: any) {

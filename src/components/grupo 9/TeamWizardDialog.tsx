@@ -282,6 +282,7 @@ export default function TeamWizardDialog({
   const [editingIndex, setEditingIndex] = useState<number | null>(0);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);
+  const [updateLikesFunction, setUpdateLikesFunction] = useState<(() => Promise<void>) | null>(null);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -627,8 +628,9 @@ export default function TeamWizardDialog({
     }
   }, [open, safeNrcs, nrcActivos, initialData, methods]);
 
-  const onSubmit = methods.handleSubmit((data: any) =>
-    submitTeam(data, {
+  const onSubmit = methods.handleSubmit((data: any) => {
+    console.log("onSubmit called, updateLikesFunction:", { updateLikesFunction: typeof updateLikesFunction });
+    return submitTeam(data, {
       methods,
       setBusy,
       apiBaseUrl,
@@ -643,8 +645,9 @@ export default function TeamWizardDialog({
       toast,
       onOpenChange,
       onSuccess,
-    } as SubmitCtx)
-  );
+      updateLikes: updateLikesFunction || undefined,
+    } as SubmitCtx);
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -680,6 +683,7 @@ export default function TeamWizardDialog({
             isPageLoading={isPageLoading}
             isExternal={isExternal}
             toast={toast}
+            setUpdateLikesFunction={setUpdateLikesFunction}
           />
         </FormProvider>
       </DialogContent>
