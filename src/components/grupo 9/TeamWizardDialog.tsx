@@ -20,6 +20,16 @@ async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
   return exists === true;
 }
 
+async function checkNameTeamUnique(apiBaseUrl: string, teamName: string) {
+  const res = await fetch(`${apiBaseUrl}/teams/name/${encodeURIComponent(teamName)}`);
+  if (!res.ok) throw new Error("No se pudo verificar el nombre del equipo.");
+  const exists = await res.json();
+  return exists === true;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Team Wizard Dialog
+──────────────────────────────────────────────────────────────────── */
 async function findUsedEmails(apiBaseUrl: string, emails: string[], excludeEmails: string[] = []) {
 
   const toCheck = (emails || [])
@@ -175,26 +185,34 @@ function buildPayload(
     return memberObj;
   });
 
-  const uploads = (galleryUploads || []).map(u => ({
-    blobName: u.blobName,
-    filename: u.filename,
-    mimetype: u.mimetype,
-    size: u.size,
-    isPublic: u.isPublic,
-  }));
+
+  const existingRaw = data?.videojuego?.additionalImages ?? [];
+  const existingUrls: string[] = (existingRaw || []).map((it: any) => (typeof it === "string" ? it : it?.url)).filter(Boolean);
+
+  const removed: string[] = Array.isArray((data as any)?.videojuego?._remove_gallery) ? (data as any).videojuego._remove_gallery : [];
+  const remainingExisting = existingUrls.filter(u => !removed.includes(u));
+
+  const newUrls: string[] = (galleryUploads || []).map((g) => g.url).filter(Boolean);
+
+  const finalUrls: string[] = Array.from(new Set([...remainingExisting, ...newUrls]));
+
+  const videogamePayload: any = {
+    vgName: data.videojuego?.nombre,
+    description: data.videojuego?.descripcion,
+    repoUrl: data.videojuego?.repo_url ?? null,
+    logoUrl: logoUpload?.url ?? data.videojuego?.logo_url,
+    additionalImages: finalUrls, // string[]
+    videoUrl: data.videojuego?.video_demo_url ?? data.videojuego?.video_demo_url ?? null,
+  };
+  
+  delete videogamePayload._remove_gallery;
+  delete videogamePayload._remove_logo;
 
   return {
     teamName: data.nombre_equipo,
     isExternal: data.isExternal,
     members,
-    videogame: {
-      vgName: data.videojuego.nombre,
-      description: data.videojuego.descripcion,
-      repoUrl: (data as any).videojuego?.repo_url || "",
-      logoUrl: logoUpload?.blobName || data.videojuego.logo_url || "",
-      videoUrl: data.videojuego.video_demo_url || "",
-      uploads,
-    },
+    videogame: videogamePayload,
   };
 }
 
@@ -229,6 +247,7 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       descripcion: team.videojuego.descripcion,
       logo_url: team.videojuego.logo_url,
       video_demo_url: (team as any).videojuego?.video_demo_url || "",
+      additionalImages: team.videojuego.additionalImages || [],
     },
     integrantes,
   };
@@ -287,7 +306,7 @@ export default function TeamWizardDialog({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            
+
           }
           throw new Error(errorMsg);
         }
@@ -314,7 +333,6 @@ export default function TeamWizardDialog({
         }
         setNrcActivos(nrcOptionsArray);
       } catch (err) {
-        console.error("Error fetching subjects:", err);
         setNrcActivos([]);
       } finally {
         setIsPageLoading(false);
@@ -350,7 +368,7 @@ export default function TeamWizardDialog({
     isExternal: false,
     team_nrc_global_id: undefined,
     nombre_equipo: "",
-    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "" },
+    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "", additionalImages: [] },
     integrantes: [{
       id_integrante: undefined,
       nombre: "",
@@ -402,7 +420,7 @@ export default function TeamWizardDialog({
       return;
     }
 
-    if (isExternal && !vals.team_nrc_global_id) {
+    if (isExternal && vals.team_nrc_global_id !== undefined && vals.team_nrc_global_id !== null && String(vals.team_nrc_global_id).trim() === "") {
       toast.error("Selecciona el NRC global para colegios");
       return;
     }
@@ -410,8 +428,13 @@ export default function TeamWizardDialog({
     try {
       setBusy(true);
       const exists = await checkGameNameUnique(apiBaseUrl, vals.videojuego.nombre);
+      const teamExists = await checkNameTeamUnique(apiBaseUrl, vals.nombre_equipo);
       if (exists && (mode !== "edit" || vals.videojuego.nombre !== (initialData?.videojuego?.nombre || ""))) {
         toast.error("El nombre del videojuego ya está en uso.");
+        return;
+      }
+      if (teamExists && (mode !== "edit" || vals.nombre_equipo !== (initialData?.nombre_equipo || ""))) {
+        toast.error("El nombre del equipo ya está en uso.");
         return;
       }
       setStep(2);
@@ -463,6 +486,7 @@ export default function TeamWizardDialog({
   }, [logoFile]);
 
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
     if (!newFiles.length) return;

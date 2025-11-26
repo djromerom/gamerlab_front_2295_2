@@ -8,9 +8,12 @@ import {
   FileUser,
   Gavel,
   ChartLine,
-  WrapText,
+  Sliders,
   Users,
+  Book,
+  Settings,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
 import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
 import {
@@ -37,11 +40,9 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
-        {
-          name: "Criterios de Calificación",
-          url: "/criterios",
-          icon: BookCheck,
-        },
+        // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
+        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck,},
+        { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings }
       ],
     },
     {
@@ -77,8 +78,11 @@ const MENU: Record<Role, MenuItem[]> = {
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: Binary
-        }
+          icon: Book
+        },
+        { name: "Colegios Evaluados", 
+          url: "/colegios-evaluados", 
+          icon: BookCheck },
       ],
 
     },
@@ -122,7 +126,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Logo />
+        <Link to="/">
+          <Logo />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <NavContent menu={MENU[userRole]} />

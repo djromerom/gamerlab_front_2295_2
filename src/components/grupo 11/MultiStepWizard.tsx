@@ -98,9 +98,6 @@ export default function MultiStepWizard() {
       } else {
         // Upload logo files (files)
         if (data.files && data.files.length > 0) {
-          
-          
-
           for (const file of data.files) {
             const uploadResult = await uploadImage(file);
             const urlResult = await getImageUrl(uploadResult.id);
@@ -124,11 +121,6 @@ export default function MultiStepWizard() {
         }
       }
 
-      // Debug: Ver qué URLs se están enviando
-      
-      
-      
-
       const payload = {
         teamName: data.teamName,
         members: data.members.map((m) => ({
@@ -148,8 +140,6 @@ export default function MultiStepWizard() {
         },
         recaptchaToken: data.recaptcha,
       };
-      
-      
 
       const response = await customFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
@@ -183,8 +173,14 @@ export default function MultiStepWizard() {
       }
     } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
+      let description = "Error inesperado";
+      if (e instanceof Error && e.message.includes("413")) {
+        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
+      } else {
+        description = e instanceof Error ? e.message : String(e);
+      }
       toast.error("Error en el registro", {
-        description: (e as Error).message || "Error inesperado",
+        description: description,
         duration: 5000,
       });
     } finally {

@@ -1,4 +1,3 @@
-// Interfaces basadas en la estructura real de la base de datos
 export interface TeamRowData {
   id_equipo: number;
   nombre_equipo: string;
@@ -6,29 +5,25 @@ export interface TeamRowData {
   id_usuario: string;
   id_edicion: number;
   activo: boolean;
-  id_estado_confirmacion: number; // Estado del equipo, 1:confirmado, 2:pendiente, 3:expirado
-  estado_nombre: string; // Desde estados_confirmacion
-  // Campos opcionales para compatibilidad con el nuevo backend
   isExternal?: boolean;
   team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
   videojuego: VideojuegoData;
-  nrc_info?: NrcInfo; // Información del NRC si aplica
-  materia_info?: MateriaInfo; // Información de la materia si aplica
+  nrc_info?: NrcInfo; 
+  materia_info?: MateriaInfo;
 }
 
 export interface ConfirmationStatus {
   id: number;
-  status: string; // e.g. "PENDIENTE", "CONFIRMADO", "EXPIRADO"
-  createdAt: string; // ISO datetime
-  updatedAt: string; // ISO datetime
+  status: string;
+  createdAt: string;
+  updatedAt: string; 
   isActive: boolean;
 }
 
 export interface TeamConfirmationStatusResponse {
   confirmationStatus: ConfirmationStatus;
 }
-
 
 export interface IntegranteData {
   id_integrante: number;
@@ -40,8 +35,7 @@ export interface IntegranteData {
   activo: boolean;
   creado_en: string;
   actualizado_en: string;
-  // Nuevo: algunos endpoints traen los NRCs anidados dentro del integrante
-  nrcs?: any[]; // formato variable (se mapea en el cliente a NrcInfo cuando se requiere)
+  nrcs?: any[];
 }
 
 export interface VideojuegoData {
@@ -50,12 +44,8 @@ export interface VideojuegoData {
   descripcion: string;
   logo_url: string;
   fecha_registro: string;
-  id_estado_videojuego: number; // estado del videojuego -> 1:Confirmado, 2:pendiente, 3:rechazado
-  id_equipo: number;
-  activo: boolean;
-  // Campos opcionales recibidos por el nuevo backend
-  video_demo_url?: string;
-  repo_url?: string;
+  id_estado_videojuego: number; 
+  additionalImages?: any[];
 }
 
 export interface NrcInfo {
@@ -107,6 +97,9 @@ export interface TeamFormData {
     nombre: string;
     descripcion: string;
     logo_url?: string;
+    video_demo_url?: string;
+    repo_url?: string;
+    additionalImages?: { url: string }[];
   };
   nrc_info?: {
     id_nrc: number;
@@ -143,7 +136,6 @@ interface PaginationMetadata {
   totalPages: number;
 }
 
-// Define an interface for your NRC option objects
 export interface NrcOption {
   code: number | string;
   name?: string;
@@ -157,10 +149,10 @@ export type SafeNrc = {
 };
 
 export type UploadInfo = {
-  blobName: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  isPublic: boolean;
-  url?: string;
+  blobName?: string;
+  filename?: string;
+  mimetype?: string;
+  size?: number;
+  isPublic?: boolean;
+  url: string;
 };

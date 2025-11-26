@@ -1,19 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
+import { useAuth } from "@/contexts/AuthContext";
 import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
+import { toast, Toaster } from "sonner";
 
-export type TeamStatus = "pendiente" | "confirmado" | "expirado";
+export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
 export interface Team {
   id: number;
@@ -29,7 +31,9 @@ export interface Team {
   logo?: string;
   additionalImages?: string[];
   isExternal?: boolean;
+  likes?: number;
 }
+
 
 export default function TeamsPage() {
   useEffect(() => {
@@ -39,7 +43,7 @@ export default function TeamsPage() {
       document.documentElement.classList.remove("dark");
     };
   }, []);
-  
+
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,69 +52,80 @@ export default function TeamsPage() {
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   // Función para mapear estados numéricos o strings a los valores correctos
-  const mapStatusToString = (status: any): string => {
+  const mapStatusToString = (status: any): TeamStatus => {
     if (typeof status === 'number') {
       switch (status) {
-        case 1: return "confirmado";
-        case 2: return "pendiente";
-        case 3: return "expirado";
-        default: return "pendiente";
+        case 1: return "CONFIRMADO";
+        case 2: return "PENDIENTE";
+        case 3: return "RECHAZADO";
+        default: return "PENDIENTE";
       }
     }
     if (typeof status === 'string') {
       const lowerStatus = status.toLowerCase();
-      
+
       // Mapeo específico para diferentes strings que puede enviar el backend
       switch (lowerStatus) {
         case "pendiente":
         case "pending":
-          return "pendiente";
+          return "PENDIENTE";
         case "confirmado":
         case "confirmed":
         case "aprobado":
         case "approved":
-          return "confirmado";
-        case "expirado":
-        case "expired":
+          return "CONFIRMADO";
         case "rechazado":
+        case "expired":
         case "rejected":
-          return "expirado";
+          return "RECHAZADO";
         default:
-          return "pendiente";
+          return "PENDIENTE";
       }
     }
-    return "pendiente"; // fallback por defecto
+    return "PENDIENTE"; // fallback por defecto
   };
 
-  useEffect(() => {
-    async function fetchTeams() {
-      setLoading(true);
+  const fetchTeams = async () => {
+    setLoading(true);
+    
+    try {
+      // Intentar obtener equipos desde el endpoint de teams primero
+      let rawData = [];
+      let videogamesData = [];
       
       try {
-        // Intentar obtener equipos desde el endpoint de teams primero
-        let rawData = [];
-        let videogamesData = [];
-        
-        try {
-          const teamsRes = await customFetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-
-          if (teamsRes.ok) {
-            rawData = await teamsRes.json();
-          } else {
-            throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
+        const teamsRes = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
           }
-        } catch (teamsError) {
-          
-          // Fallback: obtener desde videogames y luego equipos por separado
-          const videogamesRes = await customFetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+        );
+
+        if (teamsRes.ok) {
+          rawData = await teamsRes.json();
+        } else {
+          throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
+        }
+      } catch (teamsError) {
+        
+        // Fallback: obtener desde videogames y luego equipos por separado
+        const videogamesRes = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        
+        videogamesData = await videogamesRes.json();
+        
+        // Ahora intentamos obtener información de equipos para el campo isExternal
+        try {
+          const teamsInfoRes = await customFetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
             {
               method: "GET",
               credentials: "include",
@@ -118,128 +133,105 @@ export default function TeamsPage() {
             }
           );
           
-          videogamesData = await videogamesRes.json();
-          
-          // Ahora intentamos obtener información de equipos para el campo isExternal
-          try {
-            const teamsInfoRes = await customFetch(
-              `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
-              {
-                method: "GET",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-              }
-            );
+          if (teamsInfoRes.ok) {
+            const teamsInfo = await teamsInfoRes.json();
             
-            if (teamsInfoRes.ok) {
-              const teamsInfo = await teamsInfoRes.json();
-              
-              // Mapear videogames con información de equipos
-              rawData = videogamesData.map((videogame: any) => {
-                const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
-                return {
-                  ...videogame,
-                  isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
-                  teamName: teamInfo?.teamName || "Sin equipo",
-                  confirmId: teamInfo?.confirmId || videogame.status
-                };
-              });
-            } else {
-              // Si tampoco funciona, usar solo datos de videogames sin isExternal
-              rawData = videogamesData.map((videogame: any) => ({
+            // Mapear videogames con información de equipos
+            rawData = videogamesData.map((videogame: any) => {
+              const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
+              return {
                 ...videogame,
-                isExternal: false, // fallback
-                teamName: "Sin equipo"
-              }));
-            }
-          } catch (teamInfoError) {
+                isExternal: teamInfo?.isExternal || teamInfo?.externo || false,
+                teamName: teamInfo?.teamName || "Sin equipo",
+              };
+            });
+          } else {
+            // Si tampoco funciona, usar solo datos de videogames sin isExternal
             rawData = videogamesData.map((videogame: any) => ({
               ...videogame,
-              isExternal: false,
+              isExternal: false, // fallback
               teamName: "Sin equipo"
             }));
           }
+        } catch (teamInfoError) {
+          rawData = videogamesData.map((videogame: any) => ({
+            ...videogame,
+            isExternal: false,
+            teamName: "Sin equipo"
+          }));
         }
-
-        // Los miembros ya vienen incluidos en los datos de teams desde el backend
-        
-        const data: Team[] = rawData.map((item: any) => {
-          // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
-          let fallbackImages: string[] = [];
-          
-          // Determinar si los datos vienen del endpoint de teams o videogames
-          const isFromTeamsEndpoint = item.videogame !== undefined;
-          const team = isFromTeamsEndpoint ? item : item;
-          const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
-          
-          // Determinar el estado del equipo
-          const statusField = team.confirmId || team.status || videogame.status;
-          const mappedStatus = mapStatusToString(statusField);
-          
-          // Obtener integrantes que ya vienen incluidos en los datos del equipo
-          const teamMembers = team.members || [];
-          
-          // Debug temporal: verificar estructura de los datos  
-          if (team.id === 1) {
-            
-            
-          }
-          
-          // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
-          const isExternal = Boolean(team.isExternal || team.externo);
-          
-          return {
-            id: team.id,
-            gameName: videogame.name || team.teamName || "Sin nombre",
-            teamName: team.teamName || "Sin equipo", 
-            status: mappedStatus as TeamStatus || "pendiente",
-            video: videogame.videoUrl || videogame.video_url,
-            repo: videogame.repoUrl || videogame.repo_url,
-            teamCode: team.teamCode || team.code || "",
-            members: teamMembers.map((m: any) => {
-              // Probar diferentes nombres de campos para nombre y apellido
-              const firstName = m.firstName || m.nombre || m.first_name || '';
-              const lastName = m.lastName || m.apellido || m.last_name || '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              
-              // Debug para el primer miembro del primer equipo
-              if (team.id === 1 && teamMembers.indexOf(m) === 0) {
-                
-                
-              }
-              
-              return fullName || 'Sin nombre';
-            }),
-            description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
-            logo: videogame.logoUrl || videogame.logo_url,
-            additionalImages: videogame.additionalImages || fallbackImages,
-            isExternal: isExternal,
-          };
-        });
-        
-        // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
-        const teamsToShow = data.filter(team => team.status !== "expirado");
-        
-        setTeams(teamsToShow);
-      } catch (error) {
-        setTeams([]);
-      } finally {
-        setLoading(false);
       }
+
+      // Los miembros ya vienen incluidos en los datos de teams desde el backend
+      
+      const data: Team[] = rawData.map((item: any) => {
+        // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
+        let fallbackImages: string[] = [];
+        
+        // Determinar si los datos vienen del endpoint de teams o videogames
+        const isFromTeamsEndpoint = item.videogame !== undefined;
+        const team = isFromTeamsEndpoint ? item : item;
+        const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
+        const likeCount = videogame.likes;
+        
+        // Determinar el estado del equipo
+        const statusField = team.videogame?.videogameStatusId || videogamesData.find((vg: any) => vg.teamId === team.id)?.videogameStatusId;
+        const mappedStatus = mapStatusToString(statusField);
+        
+        // Obtener integrantes que ya vienen incluidos en los datos del equipo
+        const teamMembers = team.members || [];
+        
+        // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
+        const isExternal = Boolean(team.isExternal || team.externo);
+        
+        return {
+          id: team.id,
+          gameName: videogame.name || team.teamName || "Sin nombre",
+          teamName: team.teamName || "Sin equipo", 
+          status: mappedStatus,
+          video: videogame.videoUrl || videogame.video_url,
+          repo: videogame.repoUrl || videogame.repo_url,
+          teamCode: team.teamCode || team.code || "",
+          members: teamMembers.map((m: any) => {
+            // Probar diferentes nombres de campos para nombre y apellido
+            const firstName = m.firstName || m.nombre || m.first_name || '';
+            const lastName = m.lastName || m.apellido || m.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            return fullName || 'Sin nombre';
+          }),
+          description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
+          logo: videogame.logoUrl || videogame.logo_url,
+          additionalImages: videogame.additionalImages || fallbackImages,
+          isExternal: isExternal,
+          likes: likeCount || 0,
+        };
+      });
+      
+      // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
+      const teamsToShow = data.filter(team => team.status !== "RECHAZADO");
+      
+      setTeams(teamsToShow);
+    } catch (error) {
+      setTeams([]);
+    } finally {
+      setLoading(false);
     }
-    
+  };
+
+  useEffect(() => {
     fetchTeams();
   }, []);
 
   const filteredTeams = teams.filter((team) => {
     // Filtro de búsqueda por nombre
     const matchesSearch = team.gameName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
-    
+      team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+
     // Filtro por tipo de equipo basado en isExternal
-    const matchesType = activeTeamType === "all" ? true : 
+    const matchesType = activeTeamType === "all" ? true :
       (activeTeamType === "externo" ? team.isExternal === true : team.isExternal === false);
-    
+
     return matchesSearch && matchesType;
   });
 
@@ -266,31 +258,28 @@ export default function TeamsPage() {
           <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
             <button
               onClick={() => setActiveTeamType("all")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "all" 
-                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
+                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Todos ({teams.length})
             </button>
             <button
               onClick={() => setActiveTeamType("uninorte")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "uninorte" 
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
+                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Uninorte ({teams.filter(t => !t.isExternal).length})
             </button>
             <button
               onClick={() => setActiveTeamType("externo")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                activeTeamType === "externo" 
-                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg" 
+              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
+                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-              }`}
+                }`}
             >
               Externos ({teams.filter(t => t.isExternal).length})
             </button>
@@ -305,7 +294,7 @@ export default function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} />
+                <TeamCard key={team.id} team={team} onRefresh={fetchTeams} />
               ))}
             </div>
           )}
@@ -350,18 +339,19 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
 
 interface TeamCardProps {
   team: Team;
+  onRefresh: () => void;
 }
 
-function TeamCard({ team }: TeamCardProps) {
+function TeamCard({ team, onRefresh }: TeamCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const getStatusInfo = (status: TeamStatus) => {
     switch (status) {
-      case "pendiente":
+      case "PENDIENTE":
         return { text: "Pendiente de confirmación", color: "text-purple-400" };
-      case "confirmado":
+      case "CONFIRMADO":
         return { text: "Inscripción completa", color: "text-blue-400" };
-      case "expirado":
+      case "RECHAZADO":
         return { text: "Rechazada", color: "text-red-400" };
       default:
         return { text: "Estado desconocido", color: "text-gray-400" };
@@ -369,6 +359,7 @@ function TeamCard({ team }: TeamCardProps) {
   };
 
   const { text, color } = getStatusInfo(team.status);
+
 
   return (
     <>
@@ -380,14 +371,13 @@ function TeamCard({ team }: TeamCardProps) {
       >
         <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
           {/* Badge de tipo de equipo */}
-          <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-            !team.isExternal
+          <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
               : "bg-green-500/20 text-green-300 border border-green-400/30"
-          }`}>
+            }`}>
             {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
-          
+
           <CardContent className="flex space-x-5 py-6 px-8 h-full">
             <div className="flex items-center">
               <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
@@ -404,14 +394,22 @@ function TeamCard({ team }: TeamCardProps) {
             <div className="flex flex-col justify-center space-y-1 flex-1 pr-16">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
               <p>Equipo: {team.teamName}</p>
-              <p className={`${color} font-semibold`}>{text}</p>
+              <div className="flex items-center justify-between">
+                <p className={`${color} font-semibold`}>{text}</p>
+              </div>
             </div>
           </CardContent>
+          {team.likes !== undefined && (
+            <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
+              <Heart size={20} fill="currentColor" />
+              <span className="text-sm font-bold">{team.likes}</span>
+            </div>
+          )}
         </Card>
       </motion.div>
 
       {isOpen && (
-        <GameDetailModal team={team} onClose={() => setIsOpen(false)} />
+        <GameDetailModal team={team} onClose={() => setIsOpen(false)} onRefresh={onRefresh} />
       )}
     </>
   );
@@ -429,13 +427,13 @@ const getVideoThumbnail = (videoUrl: string): string => {
     // YouTube - extraer ID del video y generar URL de miniatura
     const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const youtubeMatch = videoUrl.match(youtubeRegex);
-    
+
     if (youtubeMatch && youtubeMatch[1]) {
       const videoId = youtubeMatch[1];
       // Usar miniatura de alta calidad de YouTube
       return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     }
-    
+
     // Para otros servicios de video, usar placeholder
     return '/placeholder.svg';
   } catch (error) {
@@ -445,20 +443,20 @@ const getVideoThumbnail = (videoUrl: string): string => {
 
 function MediaCarousel({ video, images }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   // Crear array con todos los elementos multimedia (solo video e imágenes adicionales, NO el logo)
   const mediaItems = [];
-  
+
   // Agregar video como primer elemento si existe
   if (video) {
     const autoThumbnail = getVideoThumbnail(video);
-    mediaItems.push({ 
-      type: 'video', 
-      src: video, 
+    mediaItems.push({
+      type: 'video',
+      src: video,
       thumbnail: autoThumbnail
     });
   }
-  
+
   // Agregar SOLO las imágenes adicionales (no incluir el logo)
   images.forEach((image) => {
     if (image && image.trim() !== '') {
@@ -537,11 +535,10 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${
-                  index === currentIndex
+                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${index === currentIndex
                     ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
                     : 'opacity-70 hover:opacity-100'
-                }`}
+                  }`}
               >
                 {item.type === 'video' ? (
                   <div className="relative w-full h-full">
@@ -575,10 +572,96 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
 interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
-function GameDetailModal({ team, onClose }: GameDetailModalProps) {
+function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
+  const customFetch = useFetch();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(team.likes || 0);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  // Check if the game is already liked on component mount
+  useEffect(() => {
+    const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
+    setIsLiked(likedGames.includes(team.id));
+  }, [team.id]);
+
+  const handleClose = () => {
+    onRefresh(); // Refresh the teams data to get updated like counts
+    onClose(); // Close the modal
+  };
+  
+  const toggleLike = async () => {
+    if (isTogglingLike) return; // Prevent multiple simultaneous requests
+    
+    setIsTogglingLike(true);
+    
+    try {
+      const response = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like/${!isLiked}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (response.status === 201 || response.status === 200) {
+        const data = await response.json();
+        
+        // Update localStorage
+        const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
+        if (!isLiked) {
+          // Add to liked games
+          likedGames.push(team.id);
+          setIsLiked(true);
+          setLikesCount(prev => prev + 1);
+          localStorage.setItem('likedGames', JSON.stringify(likedGames));
+        } else {
+          // Remove from liked games
+          const updatedLikedGames = likedGames.filter((id: number) => id !== team.id);
+          setIsLiked(false);
+          setLikesCount(prev => prev - 1);
+          localStorage.setItem('likedGames', JSON.stringify(updatedLikedGames));
+        }
+        
+        // Update likes count from server response if available
+        if (data.likeCount !== undefined) {
+          setLikesCount(data.likeCount);
+        }
+      } else if (response.status === 400) {
+        const errorData = await response.json();
+        console.log(errorData);
+        const description = errorData.message.includes("20 likes") ?
+          "Este juego no puede recibir más de 20 likes sin video o fotos adicionales." :
+          errorData.message.includes("10 likes") ?
+            "Este juego no puede recibir más de 10 likes sin logo." :
+          "Error al procesar el like. Intenta de nuevo.";
+          console.error('Failed to toggle like:', errorData.message);
+          toast.error(description, { id: 1 });
+      } else {
+        console.error('Failed to toggle like:', response.status);
+        toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error("Error de conexión. Intenta de nuevo.", { id: 1 });
+    } finally {
+      setIsTogglingLike(false);
+    }
+  };
+
   return (
+  <>
+    <Toaster
+      richColors={false}
+      toastOptions={{
+        unstyled: true,
+        classNames: {
+          error: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+        },
+      }} />
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
@@ -595,7 +678,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
         >
           {/* Botón X de cerrar - Oculto en móvil */}
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
@@ -603,9 +686,9 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
 
           {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
           <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
-            <MediaCarousel 
-              video={team.video} 
-              images={team.additionalImages || []} 
+            <MediaCarousel
+              video={team.video}
+              images={team.additionalImages || []}
             />
           </div>
 
@@ -618,7 +701,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
               [&::-webkit-scrollbar-thumb]:rounded-full
               [&::-webkit-scrollbar-thumb]:bg-[#AC7CFF]/50
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
-              
+
               <div className="space-y-4">
                 <div className="flex justify-center mb-2 md:mb-4">
                   <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
@@ -636,10 +719,33 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                       </div>
                     )}
                   </div>
+                </div>       
+                <div className="flex row justify-between gap-3.5">
+                  <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
+                    {team.gameName}
+                  </h2>
+                  {/* Like Button */}
+                  <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
+                    <button
+                      onClick={toggleLike}
+                      disabled={isTogglingLike}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-300 ${
+                        isLiked 
+                          ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30' 
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30'
+                      } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <Heart 
+                        size={20} 
+                        fill={isLiked ? "currentColor" : "none"} 
+                        className={`transition-all duration-300 ${isTogglingLike ? 'animate-pulse' : ''}`}
+                      />
+                      <span className="font-medium">
+                        {isTogglingLike ? '...' : likesCount}
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
-                  {team.gameName}
-                </h2>
                 <p className="text-sm text-gray-400 mb-3">
                   Equipo:{" "}
                   <span className="text-white font-semibold">
@@ -650,7 +756,7 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                   Estado:{" "}
                   <span className="capitalize text-gray-200">{team.status}</span>
                 </p>
-                
+
                 <div className="mt-2">
                   <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
                   <p className="text-gray-300 text-sm leading-relaxed mb-3">
@@ -684,10 +790,10 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
                       Ver repositorio en GitHub
                     </Button>
                   )}
-                  
+
                   {/* Botón Cerrar - Solo visible en móvil */}
                   <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
                   >
                     Cerrar
@@ -699,5 +805,6 @@ function GameDetailModal({ team, onClose }: GameDetailModalProps) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }

@@ -1,16 +1,26 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCropper } from "@/components/grupo 11/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
+import { useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function FieldError({ message }: { message?: string }) {
-    if (!message) return null;
-    return <p className="text-sm text-destructive mt-1">{message}</p>;
-  }
+  if (!message) return null;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
+}
 
 const apiBaseUrl = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
@@ -48,6 +58,146 @@ export default function TeamWizardForm(props: any) {
   } = props;
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteIdx, setPendingDeleteIdx] = useState<number | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
+  const [savingAllMembers, setSavingAllMembers] = useState(false);
+
+  // Generador de códigos estudiantiles (colegio) similar al submitTeamsAdmin
+  const randomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000);
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
+  function buildNrcArray(member: any): string[] {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    const safeList: any[] = Array.isArray(safeNrcs) ? safeNrcs : [];
+    if (isExternalTeam) {
+      const globalId = methods.getValues("team_nrc_global_id");
+      if (!globalId) return [];
+      const match = safeList.find(n => String(n.id) === String(globalId));
+      return [match?.codeStr || String(globalId)];
+    } else {
+      const ids: number[] = Array.isArray(member?.nrcIds) ? member.nrcIds : [];
+      return ids
+        .map(id => {
+          const found = safeList.find(n => n.id === id);
+          return found?.codeStr || String(id);
+        })
+        .filter(Boolean);
+    }
+  }
+
+  function buildMemberPayload(member: any): any {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    // nrc debe ser array de strings (solo propiedad nrc, NO nrcs)
+    let nrcArray = buildNrcArray(member);
+    if (!Array.isArray(nrcArray)) nrcArray = [];
+    nrcArray = nrcArray.map((v) => String(v));
+    return {
+      memberEmail: member.correo?.trim(),
+      memberFirstName: member.nombre?.trim(),
+      memberLastName: member.apellido?.trim(),
+      studentCode: isExternalTeam
+        ? randomStudentCode()
+        : (member.codigo_estudiantil ? String(member.codigo_estudiantil) : undefined),
+      nrc: nrcArray,
+    };
+  }
+
+  async function persistNewMembersAndProceed() {
+    const mode = methods.getValues("mode");
+    if (mode !== "edit") {
+      nextFromStep2();
+      return;
+    }
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+    if (!teamId) {
+      toast.error("No se encontró el ID del equipo");
+      return;
+    }
+    const integrantes = methods.getValues("integrantes") || [];
+    const pendientes = integrantes
+      .map((m: any, i: number) => ({ m, i }))
+      .filter(({ m, i }: any) => i !== 0 && !(m?.id_integrante || m?.id));
+    if (pendientes.length === 0) {
+      nextFromStep2();
+      return;
+    }
+    const isExternalTeam = !!methods.getValues("isExternal");
+    setSavingAllMembers(true);
+    try {
+      for (const { m, i } of pendientes) {
+        if (!m?.nombre || !m?.apellido || !m?.correo) {
+          toast.error(`Completa los datos del miembro ${i + 1}`);
+          setEditingIndex(i);
+          setSavingAllMembers(false);
+          return;
+        }
+        if (isExternalTeam) {
+          const globalId = methods.getValues("team_nrc_global_id");
+          if (!globalId) {
+            toast.error("Selecciona NRC global (colegio)");
+            setSavingAllMembers(false);
+            return;
+          }
+        } else {
+          const nrcIds: number[] = Array.isArray(m.nrcIds) ? m.nrcIds : [];
+          if (nrcIds.length === 0) {
+            toast.error(`Selecciona al menos un NRC para el miembro ${i + 1}`);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+          }
+        }
+        const body = buildMemberPayload(m);
+        const url = `${apiBaseUrl}/teams/${teamId}/add-member`;
+  
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          let msg = "Error agregando miembro";
+          try {
+            const j = await res.json();
+            msg = j?.message || msg;
+          } catch {}
+            toast.error(msg);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+        }
+        const data = await res.json().catch(() => ({}));
+        const newId = data?.member?.id || data?.id || data?.memberId;
+        if (newId) {
+          methods.setValue(`integrantes.${i}.id_integrante`, newId, { shouldDirty: false });
+        }
+      }
+      toast.success("Miembros guardados");
+      nextFromStep2();
+    } catch (e: any) {
+      toast.error(e?.message || "Error guardando miembros");
+    } finally {
+      setSavingAllMembers(false);
+    }
+  }
 
   async function resendInvite(email: string) {
     if (internalIsLoading) return; // prevent multiple petitions
@@ -100,30 +250,118 @@ export default function TeamWizardForm(props: any) {
     );
   }
 
+  // Abrir diálogo de confirmación
+  function handleAskRemoveMember(idx: number) {
+    if (methods.watch("mode") === "edit" && idx === 0) return; // no se permite líder
+    setPendingDeleteIdx(idx);
+    setDeleteDialogOpen(true);
+  }
+
+  // Confirmar eliminación
+  async function handleConfirmDelete() {
+    if (pendingDeleteIdx === null) return;
+    const idx = pendingDeleteIdx;
+    const mode = methods.getValues("mode");
+
+    // obtener teamId robusto
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+
+    const member = methods.getValues(`integrantes.${idx}`);
+    const memberId = member?.id_integrante ?? member?.id ?? null;
+
+    setIsDeletingMember(true);
+    try {
+      if (mode === "edit") {
+        if (idx === 0) {
+          toast.error("El primer miembro no se puede eliminar en edición");
+          return;
+        }
+        if (!teamId) {
+          toast.error("No se encontró el ID del equipo");
+          return;
+        }
+        if (memberId) {
+          const url = `${apiBaseUrl}/teams/${teamId}/members/${memberId}`;
+          const res = await fetch(url, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          const okStatus = res.ok || res.status === 204;
+          if (!okStatus) {
+            let errMsg = "No se pudo eliminar el miembro";
+            try {
+              const errJson = await res.json();
+              errMsg = errJson?.message || errMsg;
+            } catch {}
+            toast.error(errMsg);
+            return;
+          }
+        } else {
+          toast.info("Miembro sin ID persistido; solo se elimina localmente");
+        }
+      }
+
+      // Eliminar local
+      remove(idx);
+      setEditingIndex((prev: any) => {
+        if (prev === null) return null;
+        if (prev === idx) return null;
+        return prev > idx ? prev - 1 : prev;
+      });
+
+      toast.success("Miembro eliminado");
+    } catch (e: any) {
+      console.error("Error eliminando miembro:", e);
+      toast.error(e?.message || "Error eliminando miembro");
+    } finally {
+      setIsDeletingMember(false);
+      setDeleteDialogOpen(false);
+      setPendingDeleteIdx(null);
+    }
+  }
+
   return (
     <form
       onSubmit={async (e) => {
-        // forward to parent handler
-        if (typeof handleFormSubmit === "function") {
-          // prevent default to avoid double submit if parent already handles it
-          e.preventDefault();
-          await handleFormSubmit(e);
-        }
+        e.preventDefault();
 
-        // si estamos en modo "add", reenviar confirmación al primer integrante (si existe)
+        const existingRaw = methods.getValues("videojuego.additionalImages") || [];
+        const existingUrls: string[] = (existingRaw || []).map((it: any) => (typeof it === "string" ? it : it?.url)).filter(Boolean);
+        const removed: string[] = methods.getValues("videojuego._remove_gallery") || [];
+        const remainingExisting = existingUrls.filter(u => !removed.includes(u));
+
+        const newUrls: string[] = (props.galleryUploads || []).map((u: any) => u?.url).filter(Boolean);
+
+        const finalUrls = Array.from(new Set([...remainingExisting, ...newUrls]));
+
+        methods.setValue("videojuego.additionalImages", finalUrls, { shouldDirty: true });
+        methods.setValue("videojuego._remove_gallery", [], { shouldDirty: false });
+
         try {
-          if (methods.watch("mode") === "add") {
-            const firstEmail = ((methods.getValues("integrantes") || [])[0]?.correo || "").trim();
-            if (firstEmail) {
-              await resendInvite(firstEmail);
+          // Enviar el formulario (backend)
+          const result = await handleFormSubmit(e);
+
+          // Si estamos en modo "add", enviar confirmación al primer miembro
+          if (result?.ok) {
+            if (methods.getValues("mode") === "add") {
+              const email = methods.getValues("integrantes.0.correo");
+              if (email) await resendInvite(email);
+              toast.success(`Se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
             }
           }
         } catch (err) {
-          // swallow - toast ya maneja errores
+          console.error("Error submitting form:", err);
         }
       }}
       className="space-y-4 pt-8 sm:pt-0 max-h-[90vh] sm:max-h-[auto] overflow-auto p-4 sm:p-0"
-      // pt-8 hace espacio para la X superior en mobile
     >
       {/* indicador 3 pasos */}
       <div className="relative z-10 flex items-center gap-2 text-xs pr-4 sm:pr-6">
@@ -154,25 +392,68 @@ export default function TeamWizardForm(props: any) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-col gap-1">
-              <Label>Tipo de equipo</Label>
-              <Select
-                value={methods.watch("isExternal") ? "colegio" : "uninorte"}
-                onValueChange={(v) => methods.setValue("isExternal", v === "colegio")}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="uninorte">Uninorte</SelectItem>
-                  <SelectItem value="colegio">Colegio</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-1 justify-between align-baseline sm:flex-row sm:items-end">
+
+              <div className="flex-1 space-y-3 mt-3 sm:mt-0">
+                <div className="flex flex-col gap-1">
+                  <Label>Tipo de equipo</Label>
+                  <Select
+                    value={methods.watch("isExternal") ? "colegio" : "uninorte"}
+                    onValueChange={(v) => methods.setValue("isExternal", v === "colegio")}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uninorte">Uninorte</SelectItem>
+                      <SelectItem value="colegio">Colegio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3 mt-3 sm:mt-0">
+                {/* NRC global si es colegio */}
+                {methods.watch("isExternal") && (
+                  <div className="flex flex-col gap-1">
+                    <Label>NRC (global equipo)</Label>
+                    <Select
+                      value={(() => {
+                        const v = methods.watch("team_nrc_global_id");
+                        return typeof v === "number" ? String(v) : "";
+                      })()}
+                      onValueChange={(value) => methods.setValue("team_nrc_global_id", value ? parseInt(value, 10) : undefined)}
+                      disabled={isPageLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isPageLoading ? "Cargando NRCs..." : safeNrcs.length ? "Selecciona un NRC" : "No hay NRCs disponibles"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {safeNrcs.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
+                          </div>
+                        ) : (
+                          safeNrcs.map((n: any) => (
+                            <SelectItem key={n.id} value={String(n.id)}>
+                              {n.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FieldError message={(methods.formState.errors as any)?.team_nrc_global_id?.message} />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <Label>Nombre del equipo</Label>
-                <Input className="w-full" {...methods.register("nombre_equipo")} placeholder="Ej: Pixel Ninjas" />
-                <FieldError message={(methods.formState.errors as any)?.nombre_equipo?.message} />
+                <Input className="w-full" maxLength={50}{...methods.register("nombre_equipo")} placeholder="Ej: Pixel Ninjas" />
+                <div className="flex justify-between items-center">
+                  <FieldError message={(methods.formState.errors as any)?.nombre_equipo?.message} />
+                  <div className="text-xs text-muted-foreground float-right">{methods.watch("nombre_equipo")?.length || 0}/50</div>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -181,44 +462,17 @@ export default function TeamWizardForm(props: any) {
                 <FieldError message={(methods.formState.errors as any)?.videojuego?.nombre?.message} />
               </div>
 
-              {/* NRC global si es colegio */}
-              {methods.watch("isExternal") && (
-                <div className="flex flex-col gap-1">
-                  <Label>NRC (global equipo)</Label>
-                  <Select
-                    value={(() => {
-                      const v = methods.watch("team_nrc_global_id");
-                      return typeof v === "number" ? String(v) : "";
-                    })()}
-                    onValueChange={(value) => methods.setValue("team_nrc_global_id", value ? parseInt(value, 10) : undefined)}
-                    disabled={isPageLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isPageLoading ? "Cargando NRCs..." : safeNrcs.length ? "Selecciona un NRC" : "No hay NRCs disponibles"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {safeNrcs.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          {isPageLoading ? "Cargando..." : "No hay NRCs disponibles."}
-                        </div>
-                      ) : (
-                        safeNrcs.map((n: any) => (
-                          <SelectItem key={n.id} value={String(n.id)}>
-                            {n.label}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FieldError message={(methods.formState.errors as any)?.team_nrc_global_id?.message} />
-                </div>
-              )}
+
             </div>
 
             <div className="flex flex-col gap-1">
               <Label>Descripción</Label>
-              <textarea className="p-2 border rounded-md w-full" rows={4} {...methods.register("videojuego.descripcion")} placeholder="Breve descripción del juego…" />
-              <FieldError message={(methods.formState.errors as any)?.videojuego?.descripcion?.message} />
+              <textarea className="p-2 border rounded-md w-full resize-none" rows={4} maxLength={300} {...methods.register("videojuego.descripcion")} placeholder="Breve descripción del juego…" />
+              <div className="flex justify-between items-center">
+                <FieldError message={(methods.formState.errors as any)?.videojuego?.descripcion?.message} />
+                <div className="text-xs text-muted-foreground">{methods.watch("videojuego.descripcion")?.length || 0}/300</div>
+              </div>
+
             </div>
 
             <div className="flex flex-col gap-1">
@@ -240,16 +494,36 @@ export default function TeamWizardForm(props: any) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  {logoPreview ? (
-                    <div className="relative inline-block w-full sm:w-32 md:w-32">
-                      <img src={logoPreview} alt="Logo preview" className="rounded-md border object-cover w-full h-full" />
-                      <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 z-40" onClick={() => setLogoFile(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No hay logo seleccionado.</p>
-                  )}
+                  {(() => {
+                    const existingLogoUrl = methods.watch("videojuego.logo_url");
+                    const src = logoPreview || existingLogoUrl;
+                    return src ? (
+                      <div className="relative inline-block w-full sm:w-32 md:w-32">
+                        <img src={src} alt="Logo preview" className="rounded-md border object-cover w-full h-full" />
+                        {logoPreview ? (
+                          <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 z-40" onClick={() => setLogoFile(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 z-40"
+                            onClick={() => {
+                              setLogoFile?.(null);
+                              methods.setValue("videojuego.logo_url", "");
+                              methods.setValue("videojuego._remove_logo", true);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No hay logo seleccionado.</p>
+                    );
+                  })()}
                   <div className="text-xs text-muted-foreground mt-2">Se abrirá un recortador para ajustar a 1:1</div>
                 </div>
               </div>
@@ -278,22 +552,66 @@ export default function TeamWizardForm(props: any) {
                   </div>
                 </div>
 
-                {galleryPreviews.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {galleryPreviews.map((src: string, idx: number) => (
-                      <div key={`${src}-${idx}`} className="relative group">
-                        <div className="aspect-[6/3] overflow-hidden rounded-lg border">
-                          <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                {(() => {
+                  // 1) existentes del form (no las mutamos)
+                  const existingRaw = methods.getValues("videojuego.additionalImages") ?? methods.watch("videojuego.additionalImages") ?? [];
+                  const existingUrls: string[] = (existingRaw || [])
+                    .map((it: any) => (typeof it === "string" ? it : it?.url))
+                    .filter(Boolean);
+                  // 2) marcadas para eliminar
+                  const removedUrls: string[] = methods.watch("videojuego._remove_gallery") ?? [];
+                  // 3) mostrar solo las no eliminadas
+                  const visibleExisting = existingUrls.filter((u) => !removedUrls.includes(u));
+                  const hasExisting = visibleExisting.length > 0;
+                  const hasNew = (galleryPreviews?.length || 0) > 0;
+
+                  if (!hasExisting && !hasNew) {
+                    return <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>;
+                  }
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {hasExisting && visibleExisting.map((src: string, idx: number) => (
+                        <div key={`existing-${src}-${idx}`} className="relative group">
+                          <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                            <img src={src} alt={`Existing ${idx + 1}`} className="h-full w-full object-cover" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40"
+                            onClick={() => {
+                              // no mutar additionalImages; solo marcar para eliminar
+                              const toRemove = visibleExisting[idx];
+                              const removed = methods.getValues("videojuego._remove_gallery") || [];
+                              if (!removed.includes(toRemove)) {
+                                methods.setValue("videojuego._remove_gallery", [...removed, toRemove], { shouldDirty: true });
+                              }
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No hay fotos seleccionadas.</p>
-                )}
+                      ))}
+
+                      {hasNew && (
+                        <div className={`grid grid-cols-2 sm:grid-cols-3 gap-4 ${hasExisting ? "pt-3" : ""}`}>
+                          {galleryPreviews.map((src: string, idx: number) => (
+                            <div key={`new-${src}-${idx}`} className="relative group">
+                              <div className="aspect-[6/3] overflow-hidden rounded-lg border">
+                                <img src={src} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                              </div>
+                              <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 transition-opacity z-40" onClick={() => handleDeleteGallery(idx)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -319,13 +637,38 @@ export default function TeamWizardForm(props: any) {
                       <div className="text-xs text-muted-foreground">{member?.correo || "correo no definido"}</div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="button" size="sm" variant={isOpen ? "secondary" : "outline"} onClick={() => setEditingIndex(isOpen ? null : idx)}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isOpen ? "secondary" : "outline"}
+                        onClick={() => setEditingIndex(isOpen ? null : idx)}
+                      >
                         <Pencil className="w-4 h-4 mr-1" />
                         {isOpen ? "Cerrar" : "Editar"}
                       </Button>
-                      <Button type="button" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { remove(idx); setEditingIndex((prev: any) => { if (prev === null) return null; if (prev === idx) return null; return prev > idx ? prev - 1 : prev; }); }}>
-                        <Trash2 className="w-4 h-4 mr-1" /> Quitar
-                      </Button>
+
+                      {methods.watch("mode") === "edit" && idx === 0 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="text-muted-foreground cursor-not-allowed"
+                          title="El primer miembro no se puede eliminar en edición"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Líder
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleAskRemoveMember(idx)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Quitar
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -346,8 +689,8 @@ export default function TeamWizardForm(props: any) {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex flex-col gap-1 sm:w-2/3">
-                          <Label>Correo {methods.watch("mode") === "edit" && idx === 0 ? "(bloqueado)" : ""}</Label>
-                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} disabled={methods.watch("mode") === "edit" && idx === 0} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
+                          <Label>Correo {idx === 0 ? "(Lider del equipo)" : ""}</Label>
+                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
                           <FieldError message={memErrors?.correo?.message} />
                         </div>
                         {!isExternal && (
@@ -418,11 +761,34 @@ export default function TeamWizardForm(props: any) {
 
       <ImageCropper file={selectedLogoFile} open={cropperOpen} onClose={() => setCropperOpen(false)} onCropComplete={handleCroppedLogo} />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div className="hidden sm:block w-full sm:w-auto">
-          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => methods.getValues && methods.setValue && methods.setValue("mode", methods.watch("mode"))} disabled={busy}>Cancelar</Button>
-        </div>
+      {/* Confirmación eliminar miembro */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setPendingDeleteIdx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar miembro del equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const m = pendingDeleteIdx !== null ? methods.getValues(`integrantes.${pendingDeleteIdx}`) : null;
+                const nombre = [m?.nombre, m?.apellido].filter(Boolean).join(" ");
+                return (
+                  <>
+                    Se eliminará la información {nombre ? `de ${nombre} ` : ""}del equipo. Esta acción no se puede deshacer.
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingMember}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeletingMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeletingMember && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
         <div className="flex w-full sm:w-auto gap-2 flex-col-reverse sm:flex-row">
           {step > 1 && (
             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setStep((s: number) => Math.max(1, s - 1))} disabled={busy}>
@@ -431,13 +797,22 @@ export default function TeamWizardForm(props: any) {
           )}
 
           {step === 1 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); /* console log removido para limpieza */ }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+
             </Button>
           ) : step === 2 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2(); }} className="w-full sm:w-auto" disabled={busy}>
-              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                persistNewMembersAndProceed();
+              }}
+              className="w-full sm:w-auto"
+              disabled={busy || savingAllMembers}
+            >
+              {(busy || savingAllMembers) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (

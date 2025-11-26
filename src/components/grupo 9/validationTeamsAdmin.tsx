@@ -14,7 +14,7 @@ export const MemberSchemaAllRequired = z.object({
   id_integrante: z.number().optional(),
   nombre: z.string().trim().min(1, "Obligatorio"),
   apellido: z.string().trim().min(1, "Obligatorio"),
-  correo: z.string().trim().min(1, "Obligatorio").email("Correo inválido"),
+  correo: z.string().trim().min(1, "Obligatorio").email("Correo inválido").toLowerCase(),
   codigo_estudiantil: z.string().trim().optional(),
   nrcIds: z.array(z.number()).optional(),
 });
@@ -31,6 +31,7 @@ export const WizardSchema = z.object({
     logo_url: z.string().url("URL inválida").or(z.literal("")).optional(),
     video_demo_url: z.string().trim().refine(isYouTubeUrl, "Enlace de YouTube inválido"),
     repo_url: z.string().trim().optional(),
+    additionalImages: z.array(z.string().url("URL inválida")).optional(),
   }),
   integrantes: z.array(MemberSchemaAllRequired).min(1, "Agrega al menos un miembro"),
 }).superRefine((data, ctx) => {

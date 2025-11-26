@@ -54,7 +54,7 @@ export default function ResetPassword() {
 
         try {
             const response = await fetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/verify-token?token=${encodeURIComponent(token)}`,
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/verify-token?type=RESETEAR_CONTRASENA&token=${encodeURIComponent(token)}`,
             {
                 method: "GET",
                 headers: {

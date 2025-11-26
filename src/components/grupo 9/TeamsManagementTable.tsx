@@ -41,10 +41,32 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
-  // filtro (all | external | uninorte)
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+  // REPLACE ABOVE WITH NEW CATEGORY FILTER
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
-  // Responsive header: detectar móvil para mostrar título + dropdown + agregar
+  // Función para categorizar por teamCode / isExternal
+  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+    if ((team as any)?.isExternal) return "Externos";
+    const rawCode: string = (team as any)?.teamCode ?? "";
+    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
+    switch (prefix) {
+      case "N1": return "sem1";
+      case "N2": return "sem2";
+      case "N3": return "sem3";
+      case "N4": return "sem4";
+      default: return undefined;
+    }
+  };
+
+  // Contadores
+  const totalTeamsCount = teams?.length ?? 0;
+  const sem1Count = teams?.filter(t => categorizeTeam(t) === "sem1").length ?? 0;
+  const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
+  const sem3Count = teams?.filter(t => categorizeTeam(t) === "sem3").length ?? 0;
+  const sem4Count = teams?.filter(t => categorizeTeam(t) === "sem4").length ?? 0;
+  const colegiosCount = teams?.filter(t => categorizeTeam(t) === "Externos").length ?? 0;
+
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
   });
@@ -65,7 +87,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   useEffect(() => {
     const load = async () => {
-      //setIsLoadingOptions(true);
       try {
         const res = await fetch(API_ENDPOINT, {
           method: "GET",
@@ -79,13 +100,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
           } catch (e) {
-            console.log(e);
           }
           throw new Error(errorMsg);
         }
         const apiResponseObject = await res.json();
 
-        console.log("API Response for subjects:", apiResponseObject);
 
         const materiasData: MateriaInfo[] = apiResponseObject.data.map((materia: any) => ({
           id: materia.id ?? materia.id_materia,
@@ -95,16 +114,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
         }));
 
         setMateriasOptions(materiasData);
-        console.log("Fetched subjects:", materiasData);
 
       } catch (err) {
         console.error("Error fetching subjects:", err);
-        console.log("Error fetching subjects:", err);
         setMateriasOptions([]);
 
-      } finally {
-        //setIsLoadingOptions(false);
-      }
+      } 
     };
     load();
   }, [API_ENDPOINT]);
@@ -125,9 +140,9 @@ export const TeamsManagementTable: React.FC<Props> = ({
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.message || "Error actualizando el equipo.");
+      throw new Error(err?.message || "Error actualizando estado del videojuego.");
     }
-    // opcional: devolver body si el backend retorna el equipo actualizado
+
     return res.json().catch(() => null);
   };
 
@@ -153,11 +168,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "No se pudo reenviar el correo");
+        throw new Error(err?.message || "No se pudo reenviar el correo de confirmación.");
       }
-      toast.success("Correo de confirmación reenviado");
+      toast.success("Correo de confirmación reenviado a " + email);
     } catch (e: any) {
-      toast.error(e?.message || "Error al reenviar");
+      toast.error(e?.message || "Error al reenviar a " + email);
     } finally {
       setInternalIsLoading(false);
     }
@@ -270,7 +285,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                                 (materia as any)?.name ??
                                 "Materia desconocida";
 
-                              // clave para deduplicar (preferir id_nrc si viene, si no usar código + materia)
                               const nrcKey = String(nrc.id_nrc ?? `${nrc.codigo}-${nrc.id_materia}`);
                               if (shownNrcs.has(nrcKey)) return null;
                               shownNrcs.add(nrcKey);
@@ -331,11 +345,10 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = team.integrantes?.[0]?.correo;
+        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
-        // estado no iniciado: mostrar indicador ligero
         if (cached === undefined || cached === null) {
           return (
             <div className="flex items-center gap-2">
@@ -382,7 +395,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
       renderCell: (team: TeamRowData) => {
         const idEstadoVideojuego = team.videojuego?.id_estado_videojuego ?? 2;
 
-        // Opciones fijas para el estado del videojuego (1:Confirmado, 2:Pendiente, 3:Rechazado)
         const estadoOptions = [
           { id_estado: 1, estado: "Confirmado" },
           { id_estado: 2, estado: "Pendiente" },
@@ -391,7 +403,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
         return (
           <div className="space-y-2">
-            {/* Mostrar badge basado en el id real del videojuego */}
             <div>{getStatusBadge(idEstadoVideojuego)}</div>
 
             <Select
@@ -402,9 +413,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 setInternalIsLoading(true);
                 try {
                   await updateTeamStatus(team.id_equipo, numericStatus);
-                  console.log("Estado anterior:", team.videojuego.id_estado_videojuego);
-                  console.log("Estado actualizado en el backend");
-                  console.log("Nuevo estado:", team.videojuego.id_estado_videojuego);
                   toast.success(
                     `Estado cambiado a ${estadoOptions.find(
                       (o) => o.id_estado === numericStatus
@@ -458,6 +466,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         descripcion: "",
         logo_url: "",
         video_demo_url: "",
+        additionalImages: [],
       },
       integrantes: [
         {
@@ -510,46 +519,81 @@ export const TeamsManagementTable: React.FC<Props> = ({
       className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
-      {/* Header (responsive): título visible junto al filtro desplegable y botón Agregar en móvil) */}
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
           <div className="flex items-center gap-2 w-full">
-            <h1 className="text-lg font-medium truncate">Equipos Inscritos</h1>
+            <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8" disabled={showLoader}>
-                    Filtro
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 flex items-center justify-center"
+                    disabled={showLoader}
+                    aria-label="Filtros"
+                  >
+                    {/* icono filtro */}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="2 0 20 20" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 block m-auto" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z" opacity="0.99" />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "all") return;
-                      setExternalFilter("all");
+                      if (categoryFilter === "all") return;
+                      setCategoryFilter("all");
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Todos
+                    Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "external") return;
-                      setExternalFilter("external");
+                      if (categoryFilter === "sem1") return;
+                      setCategoryFilter("sem1");
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Externos
+                    Primer Semestre ({sem1Count})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "uninorte") return;
-                      setExternalFilter("uninorte");
+                      if (categoryFilter === "sem2") return;
+                      setCategoryFilter("sem2");
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Uninorte
+                    Segundo Semestre ({sem2Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "sem3") return;
+                      setCategoryFilter("sem3");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Tercer Semestre ({sem3Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "sem4") return;
+                      setCategoryFilter("sem4");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Cuarto Semestre ({sem4Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "Externos") return;
+                      setCategoryFilter("Externos");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Externos ({colegiosCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -571,57 +615,90 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* Filtro externo / uninorte — fila de 3 botones */}
+              {/* Grupo de filtros por semestre / Externos */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
-                  variant={externalFilter === "all" ? "default" : "ghost"}
+                  variant={categoryFilter === "all" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "all") return;
-                    setExternalFilter("all");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "all") return;
+                    setCategoryFilter("all");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "all"}
                 >
-                  Todos
+                  Todos ({totalTeamsCount})
                 </Button>
-
                 <Button
                   size="sm"
-                  variant={externalFilter === "external" ? "default" : "ghost"}
+                  variant={categoryFilter === "sem1" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "external") return;
-                    setExternalFilter("external");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "sem1") return;
+                    setCategoryFilter("sem1");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "external"}
                 >
-                  Externos
+                  Primer Semestre ({sem1Count})
                 </Button>
-
                 <Button
                   size="sm"
-                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
+                  variant={categoryFilter === "sem2" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "uninorte") return;
-                    setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "sem2") return;
+                    setCategoryFilter("sem2");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "uninorte"}
                 >
-                  Uninorte
+                  Segundo Semestre ({sem2Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "sem3" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "sem3") return;
+                    setCategoryFilter("sem3");
+                    try { onPageChange(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Tercer Semestre ({sem3Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "sem4" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "sem4") return;
+                    setCategoryFilter("sem4");
+                    try { onPageChange(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Cuarto Semestre ({sem4Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "Externos" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "Externos") return;
+                    setCategoryFilter("Externos");
+                    try { onPageChange(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Externos ({colegiosCount})
                 </Button>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Botón Agregar -> abre el Wizard */}
               <Button
                 variant="outline"
                 className="bg-card hover:bg-accent text-foreground"
@@ -630,9 +707,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar
               </Button>
-
-              {/* Wizard (add/edit) */}
-              {/* (TeamWizardDialog moved below so it's available en mobile también) */}
             </div>
           </>
         )}
@@ -687,14 +761,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              // aplicar filtro cliente por isExternal
+              // aplicar filtro cliente ahora por categoría
               (() => {
                 const filteredTeams = teams?.filter((team) => {
                   if (!team) return false;
-                  const isExt = (team as any).isExternal === true;
-                  if (externalFilter === "all") return true;
-                  if (externalFilter === "external") return isExt;
-                  return !isExt; // uninorte
+                  if (categoryFilter === "all") return true;
+                  return categorizeTeam(team) === categoryFilter;
                 }) ?? [];
 
                 return filteredTeams.map((team) => (
