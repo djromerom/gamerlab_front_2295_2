@@ -161,7 +161,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
       const body: any = { email, typeOfEmail };
       if (reason) body.rejectionReason = reason;
 
-      const res = await fetch(`${apiBaseUrl}/resend-team-email`, {
+      const res = await fetch(`${apiBaseUrl}/email/resend-team-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
