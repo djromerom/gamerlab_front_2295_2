@@ -62,7 +62,7 @@ const EventSetupCard: React.FC<{value: boolean, url: string, title: string, subt
                         <div className="flex items-center justify-between">
                             <p className="text-sm ">{subtitle}</p>    
                             <div>
-                                <Switch checked={isOpen} onCheckedChange={handleToggle} disabled={loading} className="bg-purple-800"/>
+                                <Switch checked={isOpen} onCheckedChange={handleToggle} disabled={loading} className="cursor-pointer bg-purple-800"/>
                             </div>
                         </div>
                     </div>
