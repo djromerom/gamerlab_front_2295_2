@@ -3,6 +3,8 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 
 interface VideogameDetails {
   videogameId: number;
@@ -61,6 +63,8 @@ const PendingGradesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null);
+
+  const { canViewJudges } = useGlobalState()
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -162,6 +166,28 @@ const PendingGradesPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     setPagination((prev) => ({ ...prev, page }));
   };
+  // Permission denied
+
+    
+    if (canViewJudges === false) {
+      return (
+        <LayoutAplication breadcrumbs={breadcrumbs}>
+          <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <Card className="w-full shadow-sm border">
+              <CardHeader className="p-4 sm:p-6 pb-2">
+                <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Evaluación no Disponible</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-foreground/50">
+                  <p className="text-sm text-foreground/70">Las actividades de evaluación aún no se encuentran habilitadas para su realización. </p>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4">
+                <p className="text-foreground/70 text-sm bold">Por favor, espera a que se active el período establecido para este proceso.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </LayoutAplication>
+      )
+    }
 
   // Mapeo para el grid - SIMPLIFICADO
   const gamesToShow = searchResults !== null
@@ -210,6 +236,7 @@ const PendingGradesPage: React.FC = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata.currentPage || 1}`}
+            page="/pendientes-calificar"
           />
 
 
@@ -238,30 +265,30 @@ const PendingGradesPage: React.FC = () => {
           {!isPageLoading &&
             !error &&
             gamesToShow.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-lg text-foreground/70">
                 {searchQuery.trim()
                   ? `No se encontraron resultados para "${searchQuery}"`
                   : "No se encontraron juegos pendientes por calificar."
                 }
               </div>
             )}
-          {error && !gamesData && (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
-                <svg
-                  className="mx-auto mb-2 w-8 h-8 text-red-500"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
-                </svg>
-                <span className="font-semibold block mb-1">¡Atención!</span>
-                <span>{error}</span>
+            {error && !gamesData && (
+              <div className="flex justify-center items-center min-h-[200px]">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
+                  <svg
+                    className="mx-auto mb-2 w-8 h-8 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+                  </svg>
+                  <span className="font-semibold block mb-1">¡Atención!</span>
+                  <span>{error}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </>
       )}
     </LayoutAplication>

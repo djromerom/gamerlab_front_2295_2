@@ -8,6 +8,8 @@ import React, {
   useMemo,
 } from 'react';
 
+
+
 // Tus interfaces (asegúrate que coincidan con los datos de tu BD)
 
 export interface VideojuegoData {
@@ -87,10 +89,22 @@ export interface GlobalStateContextType {
   isLoading: boolean;
   error: Error | null;
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
+  
+  // Permiso local para mostrar u ocultar calificaciones (frontend-only)
+  canViewScores: boolean;
+  setCanViewScores: React.Dispatch<React.SetStateAction<boolean>>;
+
+  canViewRanking: boolean;
+  setCanViewRanking: React.Dispatch<React.SetStateAction<boolean>>;
+
+  canViewJudges: boolean;
+  setCanViewJudges: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-// 2. Crear el Contexto
+// 2. Crear los Contextos
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
+
+// Contexto ligero para permisos/UI que suelen provocar rerenders en consumidores si van juntos
 
 // 3. Crear el Componente Proveedor
 interface GlobalStateProviderProps {
@@ -101,7 +115,6 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   // Estados de los filtros (valores seleccionados)
   const [filtroMateria, setFiltroMateria] = useState<string>("Todas");
   const [filtroNRC, setFiltroNRC] = useState<string>("Todos");
-
   const setFiltroMateriaExt = (value: string) => {
     setFiltroMateria(value);
     setFiltroNRC("Todos"); // Resetea el filtro de NRC si se selecciona "Todas"
@@ -125,9 +138,134 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // 
+
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
   const API_ENDPOINT = `${API_BASE_URL}/reports`;
 
+  // Permiso local para que los jurados puedan calificar a los equipos
+  const [canViewJudges, setCanViewJudges] = useState<boolean>(false);
+  const [canViewScores, setCanViewScores] = useState<boolean>(false);
+  const [canViewRanking, setCanViewRanking] = useState<boolean>(false);
+
+  
+
+  //permiso para que los jurados puedan ver los equipos asignados y calificarlos
+   useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/evaluations-status`;
+    setCanViewJudges(false);
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+   
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.evaluationsOpen ?? false;
+
+        // tu lógica de fecha...
+
+        setCanViewJudges(enabled);
+
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    fetchPermission();
+    
+  }, []); 
+
+  // Consultar endpoint /settings/evaluations (estudiantes pueden ver calificaciones)
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/show-evaluations`;
+    setCanViewScores(false); // valor por defecto
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+   
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.showEvaluations ?? false;
+
+        // tu lógica de fecha...
+        
+        setCanViewScores(enabled);
+
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    fetchPermission();
+    
+  }, []); 
+
+  // Ranking - permiso para habilitar el ranking publico
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoint = `${API_BASE_URL}/settings/show-ranking`;
+    setCanViewRanking(false);
+    const fetchPermission = async () => {
+      try {
+        const res = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          // si falla, mantener estado local (no forzar true). Ajusta según política.
+          console.warn("Permission fetch failed:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+   
+        // soporta boolean directo o objetos como { enabled: true } / { studentsCanView: true }
+        const enabled = typeof body === "boolean" ? body :  body?.showRanking ?? false;
+
+        // tu lógica de fecha...
+
+        setCanViewRanking(enabled);
+
+
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error("Error fetching /settings/evaluations:", err);
+      }
+    };
+
+    fetchPermission();
+    
+  }, []); 
+
+
+  // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
@@ -241,7 +379,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       });
   }, [filtroMateria, opcionesFiltroNRC]);
 
-  // console.log("Lista de videojuegos filtrados:", listaVideojuegosFiltrados);
+  // 
 
   const contextValue = useMemo(() => ({
     // Filtros seleccionados
@@ -255,6 +393,13 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     nrcsFiltrados,
     listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
 
+    // Permiso local para ver calificaciones (frontend-only)
+    canViewScores,
+    setCanViewScores,
+    canViewRanking,
+    setCanViewRanking,
+    canViewJudges,
+    setCanViewJudges,
     // Opciones para los filtros
     opcionesFiltroMateria,
     opcionesFiltroNRC,
@@ -273,14 +418,19 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     listaJurados, // <-- SUGERENCIA: Añadir esto si es necesario
     datosGraficoTortaMaterias, // <-- CORRECCIÓN: Nombre consistente
     isLoading, error,
+    canViewScores,
+    canViewRanking,
+    canViewJudges,
     // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
   ]);
 
+  // Memoizar solo el valor de permisos para que consumidores que solo lean permisos
+  // no se vean re-renderizados cuando cambian los datos pesados del contexto global.
+
   return (
-    // Asumo que GlobalStateContext está definido más arriba
-    <GlobalStateContext.Provider value={contextValue}>
-      {children}
-    </GlobalStateContext.Provider>
+      <GlobalStateContext.Provider value={contextValue}>
+        {children}
+      </GlobalStateContext.Provider>
   );
 }
 

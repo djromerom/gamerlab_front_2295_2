@@ -21,7 +21,7 @@ const FiltrosPanel = () => {
     isLoading,
   } = useGlobalState();
 
-  console.log("Opciones filtro materia:", opcionesFiltroMateria);
+  
   // Efecto para ajustar videojuegoSeleccionado si ya no es válido
   // cuando la lista de videojuegos filtrados cambia.
   useEffect(() => {

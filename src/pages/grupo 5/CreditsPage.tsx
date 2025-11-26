@@ -15,6 +15,9 @@ import {
   Database,
   Camera,
   Calendar,
+  PcCase,
+  Container,
+  
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
@@ -400,14 +403,106 @@ export default function DevelopersCredits() {
       description:
         "Responsable de la infraestructura, despliegue y operaciones.",
     },
+     {
+      id: "fullstacks",
+      name: "FullStacks",
+      icon: <PcCase className="w-5 h-5" />,
+      description:
+        "Desarrolladores encargados tanto del frontend como del backend de la plataforma.",
+    }
   ];
 
-  const developers = [
+  const developers = [ 
+    {
+      id: 28,
+      name: "Natalia Carpintero",
+      role: "Scrum Master",
+      department: "Backend",
+      version: "2.0",
+      github: "https://github.com/Carpinteron",
+      email: "carpinteron@uninorte.edu.co",
+    },
+    {
+      id: 26,
+      name: "Kevin Torregrosa",
+      role: "Backend Leader",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/MrManini",
+      email: "kjtorregrosa@uninorte.edu.co",
+    },
+    {
+      id: 23,
+      name: "Carlos Arango",
+      role: "Frontend Leader",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/carlosam7",
+      email: "arangocarlos@uninorte.edu.co",
+    },
+    {
+      id: 27,
+      name: "Isabella Arrieta",
+      role: "FullStack Developer",
+      department: "fullstacks",
+      version: "2.0",
+      github: "https://github.com/IsaAJ05",
+      email: "isabellajuliao@uninorte.edu.co",
+    },
+    
+    {
+      id: 29,
+      name: "Sebastian Brito",
+      role: "FullStack Developer",
+      department: "fullstacks",
+      version: "2.0",
+      github: "https://github.com/sbritoa20",
+      email: "sbritoa@uninorte.edu.co",
+    },
+    {
+      id: 21,
+      name: "Andres Monserrat",
+      role: "Frontend Developer",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/andresmonserrat",
+      email: "monserrata@uninorte.edu.co",
+    },
+    {
+      id: 24,
+      name: "Judith Perez",
+      role: "Frontend Developer",
+      department: "frontend",
+      version: "2.0",
+      github: "https://github.com/judithpc23",
+      email: "jiconde@uninorte.edu.co",
+    },
+    {
+      id: 22,
+      name: "Esteban Dadul",
+      role: "Backend Developer",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/edadul",
+      email: "edadul@uninorte.edu.co",
+    },
+    {
+      id: 25,
+      name: "Nicolas Muvdi",
+      role: "Backend Developer",
+      department: "backend",
+      version: "2.0",
+      github: "https://github.com/muvdi1805",
+      email: "namuvdi@uninorte.edu.co",
+    },
+    
+   
     {
       id: 1,
       name: "Alejandra Valencia",
       role: "Scrum Master",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/alejavalerua",
       email: "alejandrarua@uninorte.edu.co",
     },
@@ -416,6 +511,7 @@ export default function DevelopersCredits() {
       name: "Juan Povea",
       role: "Backend Leader",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/J-Povea21",
       email: "japovea@uninorte.edu.co",
     },
@@ -424,6 +520,7 @@ export default function DevelopersCredits() {
       name: "Jorge Sánchez",
       role: "Frontend Leader",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/jorgeluissanchez",
       email: "jlbarreneche@uninorte.edu.co",
     },
@@ -432,6 +529,7 @@ export default function DevelopersCredits() {
       name: "Carlos López",
       role: "UX/UI & Frontend developer",
       department: "design",
+      version: "1.0",
       github: "https://github.com/cegallardo0405",
       email: "cegallardo@uninorte.edu.co",
     },
@@ -440,6 +538,7 @@ export default function DevelopersCredits() {
       name: "Yovany Zhu",
       role: "UX/UI & Frontend developer",
       department: "design",
+      version: "1.0",
       github: "https://github.com/yzhuye",
       email: "yzhu@uninorte.edu.co",
     },
@@ -448,6 +547,7 @@ export default function DevelopersCredits() {
       name: "Jhonatan Romero",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/jhonatanrp05",
       email: "jpachecos@uninorte.edu.co",
     },
@@ -456,6 +556,7 @@ export default function DevelopersCredits() {
       name: "Juan Carrasquilla",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/JuanMicarras",
       email: "jmcarrasquilla@uninorte.edu.co",
     },
@@ -464,6 +565,7 @@ export default function DevelopersCredits() {
       name: "Camilo Navarro",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/NavarroCamilo",
       email: "navarrocamilo@uninorte.edu.co",
     },
@@ -472,6 +574,7 @@ export default function DevelopersCredits() {
       name: "Manuel Yepes",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/amyepes",
       email: "amyepes@uninorte.edu.co",
     },
@@ -480,6 +583,7 @@ export default function DevelopersCredits() {
       name: "Juan Pardo",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/JuanPar063",
       email: "anzolas@uninorte.edu.co",
     },
@@ -488,6 +592,7 @@ export default function DevelopersCredits() {
       name: "Santiago Hoyos",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/santiagohoyos20",
       email: "hoyosjs@uninorte.edu.co",
     },
@@ -496,6 +601,7 @@ export default function DevelopersCredits() {
       name: "Presly Romero",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/PreslyR",
       email: "preslyr@uninorte.edu.co",
     },
@@ -504,6 +610,7 @@ export default function DevelopersCredits() {
       name: "Jesús Cabrera",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/JesusC25",
       email: "jcabrerad@uninorte.edu.co",
     },
@@ -512,6 +619,7 @@ export default function DevelopersCredits() {
       name: "Bernardo Álvarez",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/Bern723",
       email: "abernardo@uninorte.edu.co",
     },
@@ -520,6 +628,7 @@ export default function DevelopersCredits() {
       name: "Keiver Miranda",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/keiver213",
       email: "mkeiver@uninorte.edu.co",
     },
@@ -528,6 +637,7 @@ export default function DevelopersCredits() {
       name: "Sandro Torres",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/sandrotg",
       email: "tsandro@uninorte.edu.co",
     },
@@ -536,6 +646,7 @@ export default function DevelopersCredits() {
       name: "Camilo de la Rosa",
       role: "Devops",
       department: "devops",
+      version: "1.0",
       github: "https://github.com/CamiloDlRM",
       email: "amovillac@uninorte.edu.co",
     },
@@ -544,6 +655,7 @@ export default function DevelopersCredits() {
       name: "María Osorno",
       role: "Frontend developer",
       department: "frontend",
+      version: "1.0",
       github: "https://github.com/cosnor",
       email: "osornoc@uninorte.edu.co",
     },
@@ -552,6 +664,7 @@ export default function DevelopersCredits() {
       name: "Alberto Sandoval",
       role: "Backend developer",
       department: "backend",
+      version: "1.0",
       github: "https://github.com/albertojs7",
       email: "albertojs@uninorte.edu.co",
     },
@@ -560,22 +673,27 @@ export default function DevelopersCredits() {
       name: "Daniel Romero",
       role: "Product manager",
       department: "sa",
+      version: "1.0",
       github: "https://github.com/djromerom",
       email: "djromero@uninorte.edu.co",
     },
+    
   ];
 
   const [activeDepartment, setActiveDepartment] = useState<string>("all");
+  const [activeVersion, setActiveVersion] = useState<string>("all");
 
   // Función para filtrar desarrolladores por departamento
   const filteredDevelopers =
-    activeDepartment === "all"
-      ? developers
-      : developers.filter((dev) => dev.department === activeDepartment);
+    developers.filter((dev) => {
+      const byDept = activeDepartment === "all" ? true : dev.department === activeDepartment;
+      const byVersion = activeVersion === "all" ? true : dev.version === activeVersion;
+      return byDept && byVersion;
+    });
 
   // Función para contar desarrolladores por departamento
   const getDepartmentCount = (deptId: string) => {
-    return developers.filter((dev) => dev.department === deptId).length;
+    return developers.filter((dev) => dev.department === deptId && (activeVersion === 'all' ? true : dev.version === activeVersion)).length;
   };
 
   // Tecnologías utilizadas
@@ -585,17 +703,18 @@ export default function DevelopersCredits() {
     { name: "Tailwind CSS", icon: <Palette className="w-4 h-4" /> },
     { name: "Nest.js", icon: <Cpu className="w-4 h-4" /> },
     { name: "Vite", icon: <Rocket className="w-4 h-4" /> },
-    { name: "SupaBase", icon: <Database className="w-4 h-4" /> },
+    { name: "PostgreSQL", icon: <Database className="w-4 h-4" /> },
     { name: "Vercel", icon: <Globe className="w-4 h-4" /> },
     { name: "GitHub", icon: <Github className="w-4 h-4" /> },
     { name: "Figma", icon: <Camera className="w-4 h-4" /> },
     { name: "Prisma", icon: <Database className="w-4 h-4" /> },
+    { name: "Docker", icon: <Container className="w-4 h-4" /> },
   ];
 
   // Estadísticas del proyecto
   const projectStats = [
     {
-      value: "19",
+      value: "29",
       label: "Desarrolladores",
       icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
     },
@@ -605,7 +724,7 @@ export default function DevelopersCredits() {
       icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
     },
     {
-      value: "230+",
+      value: "999+",
       label: "Commits",
       icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
     },
@@ -648,7 +767,7 @@ export default function DevelopersCredits() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>19 Desarrolladores</span>
+                    <span>29 Desarrolladores</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Heart className="w-5 h-5 text-[#AC7CFF]" />
@@ -683,6 +802,34 @@ export default function DevelopersCredits() {
               <h2 className="text-2xl font-bold">Nuestro Equipo</h2>
             </div>
 
+            {/* Version selector (prominent) */}
+            <div className="w-full max-w-4xl mb-4">
+              <div className="bg-[#110D20] p-3 rounded-lg flex items-center gap-3">
+                <span className="text-sm text-gray-300 font-medium">Versión:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveVersion("all")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    Todas
+                  </button>
+                  <button
+                    onClick={() => setActiveVersion("1.0")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "1.0" ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    v1
+                  </button>
+                  <button
+                    onClick={() => setActiveVersion("2.0")}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    v2
+                  </button>
+                </div>
+                <div className="ml-auto text-sm text-gray-400">Filtra por versión de los desarrolladores</div>
+              </div>
+            </div>
+
             {/* Department Navigation */}
             <div className="mb-8">
               <div className="bg-[#110D20] p-2 rounded-lg flex flex-wrap gap-2">
@@ -695,7 +842,7 @@ export default function DevelopersCredits() {
                   }`}
                 >
                   <Globe className="w-5 h-5" />
-                  Todos ({developers.length})
+                  Todos ({developers.filter(d => activeVersion === 'all' ? true : d.version === activeVersion).length})
                 </button>
                 {departments.map((dept) => (
                   <button
@@ -742,9 +889,16 @@ export default function DevelopersCredits() {
                 <div key={dev.id} className="dev-card">
                   <div className="dev-card-content">
                     <div className="flex flex-col items-center mb-4">
-                      <h3 className="text-xl font-bold text-center">
-                        {dev.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-center">
+                          {dev.name}
+                        </h3>
+                        {dev.version && (
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${dev.version === "1.0" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"}`}>
+                            v{dev.version}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[#AC7CFF] text-sm mb-2">{dev.role}</p>
                     </div>
 
