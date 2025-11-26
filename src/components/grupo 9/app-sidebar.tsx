@@ -10,6 +10,7 @@ import {
   ChartLine,
   Sliders,
   Users,
+  Book,
   Settings,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -77,8 +78,11 @@ const MENU: Record<Role, MenuItem[]> = {
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: Binary
-        }
+          icon: Book
+        },
+        { name: "Colegios Evaluados", 
+          url: "/colegios-evaluados", 
+          icon: BookCheck },
       ],
 
     },

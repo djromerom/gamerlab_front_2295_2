@@ -236,6 +236,7 @@ const PendingGradesPage: React.FC = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata.currentPage || 1}`}
+            page="/pendientes-calificar"
           />
 
 
