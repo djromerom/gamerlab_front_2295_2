@@ -68,7 +68,7 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
         )
     } else if (variant === "title" && userRole === "Estudiante") {
         return (
-                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px border-border   bg-card"> 
+                <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card"> 
                     <div className="flex justify-center text-4xl border-b-2 border-border pb-2">
                         <h1 className="font-bold tracking-tighter">Equipo</h1>
                     </div>
