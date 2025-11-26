@@ -20,7 +20,8 @@ export default function GradeWeightsPage() {
 	const [editing, setEditing] = useState<boolean>(false);
 
 	const breadcrumbs = [
-		{ label: " ", href: "" },
+		{ label: "Configuración", href: "/configuracion-evento" },
+		{ label: "Ponderación", href: "/ponderado-calificaciones" },
 	];
 
 	// load() se extrae para permitir recargar desde otros handlers (p. ej. Cancel)
