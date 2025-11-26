@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail } from "lucide-react";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -40,6 +41,13 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
+  const [resendDialogOpen, setResendDialogOpen] = useState(false);
+  const [resendTarget, setResendTarget] = useState<{
+    teamId: number | null;
+    email: string;
+    type?: string;
+  }>({ teamId: null, email: "", type: undefined });
+  const [rejectionReason, setRejectionReason] = useState<string>("");
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
   // REPLACE ABOVE WITH NEW CATEGORY FILTER
@@ -146,6 +154,33 @@ export const TeamsManagementTable: React.FC<Props> = ({
     return res.json().catch(() => null);
   };
 
+  const resendTeamEmail = async (email: string, typeOfEmail: string, reason?: string) => {
+    if (internalIsLoading) return;
+    setInternalIsLoading(true);
+    try {
+      const body: any = { email, typeOfEmail };
+      if (reason) body.rejectionReason = reason;
+
+      const res = await fetch(`${apiBaseUrl}/resend-team-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || "Error reenviando correo.");
+      }
+
+      toast.success("Correo enviado correctamente a " + email);
+    } catch (e: any) {
+      toast.error(e?.message || "Error al enviar correo.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (statusId: number) => {
     const map = {
       1: { variant: "default" as const, text: "Confirmado" },
@@ -168,11 +203,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "No se pudo reenviar el correo de confirmación.");
+        throw new Error(err?.message || "No se pudo enviar el correo de confirmación.");
       }
-      toast.success("Correo de confirmación reenviado a " + email);
+      toast.success("Correo de confirmación enviado a " + email);
     } catch (e: any) {
-      toast.error(e?.message || "Error al reenviar a " + email);
+      toast.error(e?.message || "Error al enviar a " + email);
     } finally {
       setInternalIsLoading(false);
     }
@@ -381,7 +416,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => primaryEmail && resendInvite(primaryEmail)}
                   disabled={!primaryEmail || internalIsLoading}
                 >
-                  Reenviar correo
+                  Enviar correo
                 </Button>
               )}
             </div>
@@ -401,9 +436,51 @@ export const TeamsManagementTable: React.FC<Props> = ({
           { id_estado: 3, estado: "Rechazado" },
         ];
 
+        const primaryEmail = team.integrantes?.[0]?.correo ?? "";
+
         return (
           <div className="space-y-2">
-            <div>{getStatusBadge(idEstadoVideojuego)}</div>
+            <div className="flex items-center gap-2">
+              {getStatusBadge(idEstadoVideojuego)}
+
+              {/* Botón pequeño para reenviar según el estado actual */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={async () => {
+                        const email = primaryEmail;
+                        if (!email) {
+                          showError("No se encontró correo del líder para enviar.");
+                          return;
+                        }
+
+                        if (idEstadoVideojuego === 1) {
+                          await resendTeamEmail(email, "VIDEOGAME_APPROVED");
+                        } else if (idEstadoVideojuego === 3) {
+                          setResendTarget({ teamId: team.id_equipo, email, type: "VIDEOGAME_REJECTED" });
+                          setRejectionReason("");
+                          setResendDialogOpen(true);
+                        } else {
+                          // Pendiente u otros -> enviar actualización de info
+                          await resendTeamEmail(email, "UPDATE_VIDEOGAME_INFO");
+                        }
+                      }}
+                      aria-label="Reenviar según estado"
+                      disabled={!primaryEmail || internalIsLoading}
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{idEstadoVideojuego === 1 ? "Reenviar correo (Aprobado)" : idEstadoVideojuego === 3 ? "Reenviar correo (Rechazado)" : "Enviar correo (Actualizar info)"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
             <Select
               value={String(idEstadoVideojuego)}
@@ -419,6 +496,21 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     )?.estado || numericStatus}.`
                   );
                   refreshData();
+
+                  if (numericStatus === 1) {
+                    if (!primaryEmail) {
+                      showError("No se encontró correo del líder para enviar.");
+                    } else {
+                      try {
+                        await resendTeamEmail(primaryEmail, "VIDEOGAME_APPROVED");
+                      } catch (e) {
+                      }
+                    }
+                  } else if (numericStatus === 3) {
+                    setResendTarget({ teamId: team.id_equipo, email: primaryEmail, type: "VIDEOGAME_REJECTED" });
+                    setRejectionReason("");
+                    setResendDialogOpen(true);
+                  }
                 } catch (err: any) {
                   showError(err?.message || "Error al cambiar el estado.");
                 } finally {
@@ -438,6 +530,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="flex items-center gap-2"></div>
           </div>
         );
       },
@@ -872,6 +966,62 @@ export const TeamsManagementTable: React.FC<Props> = ({
           );
         })()}
       </Card>
+
+      <Dialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>Enviar correo a líder del equipo</DialogTitle>
+            <DialogDescription>
+              Ingrese la razón del rechazo que se incluirá en el correo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <div className="text-sm">Correo destino: <b>{resendTarget.email}</b></div>
+            <div>
+              <textarea
+                className="w-full p-2 border rounded h-28"
+                placeholder="Motivo del rechazo..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResendDialogOpen(false);
+                setResendTarget({ teamId: null, email: "", type: undefined });
+                setRejectionReason("");
+              }}
+              disabled={internalIsLoading}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              onClick={async () => {
+                const email = resendTarget.email;
+                const type = resendTarget.type || "VIDEOGAME_REJECTED";
+                if (!email) {
+                  showError("No hay correo destino para enviar.");
+                  return;
+                }
+                await resendTeamEmail(email, type, rejectionReason || undefined);
+                setResendDialogOpen(false);
+                setResendTarget({ teamId: null, email: "", type: undefined });
+                setRejectionReason("");
+              }}
+              disabled={internalIsLoading || !rejectionReason}
+            >
+              {internalIsLoading ? "Procesando..." : "Enviar"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
