@@ -497,6 +497,17 @@ export default function RatePage() {
                   </div>
                 </div>
 
+                <div className="mt-6 rounded-lg border bg-muted-foreground/20 px-4 py-4 flex items-center justify-between">
+                  <p className="text-2xl font-medium text-bold from-neutral-700">
+                    Nota Final
+                  </p>
+                  <span className="text-2xl font-bold text-primary">
+                    {totalMaxScore > 0
+                      ? `${totalScore.toFixed(2)} / ${totalMaxScore.toFixed(2)}`
+                      : "—"}
+                  </span>
+                </div>
+
                 <div className="mt-6">
                   <h3 className="font-medium mb-2">Comentarios Adicionales</h3>
                   <Textarea

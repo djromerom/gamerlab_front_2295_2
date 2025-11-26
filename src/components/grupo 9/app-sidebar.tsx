@@ -12,6 +12,7 @@ import {
   Users,
   Book,
   Settings,
+  UniversityIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -71,9 +72,9 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Proyectos",
       items: [
         {
-          name: "Calificaciones",
+          name: "Calificaciones Uninorte",
           url: "/home-profesor",
-          icon: Binary
+          icon: UniversityIcon
         },
         {
           name: "Colegios por Evaluar",

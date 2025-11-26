@@ -296,7 +296,7 @@ export default function Scoreboard() {
           
           <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
           <CardDescription className="text-xs sm:text-sm text-foreground/50">
-            Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tus tareas a continuación.
+            Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tu proyecto a continuación.
           </CardDescription>
         </CardHeader>
         {/* circulo de calificacion */}
@@ -348,7 +348,6 @@ export default function Scoreboard() {
          <div className="space-y-2">
             {/* Progress Bars: Total, Junior, Senior */}
             {[
-              { label: "Total", percent: progressPercent, color: "bg-yellow-400", grade: generalGrade },
               {
                 label: "Junior",
                 percent: Math.min(100, Math.max(0, (juniorGrade / 5) * 100)),
