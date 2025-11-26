@@ -1184,7 +1184,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                       }
                     }}
                   />
-                  <span>Seleccionar todos (filtro actual)</span>
+                  <span>Seleccionar todos</span>
                 </label>
               </div>
               <div className="text-sm text-muted-foreground">Seleccionados: {certSelectedTeamIds.length}</div>
