@@ -79,7 +79,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   };
 
   // Counters
-  const totalTeamsCount = teams?.length ?? 0;
+ const totalTeamsCount = paginationMeta?.totalItems ?? (teams?.length ?? 0);
   const sem1Count = teams?.filter(t => categorizeTeam(t) === "sem1").length ?? 0;
   const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
   const sem3Count = teams?.filter(t => categorizeTeam(t) === "sem3").length ?? 0;
