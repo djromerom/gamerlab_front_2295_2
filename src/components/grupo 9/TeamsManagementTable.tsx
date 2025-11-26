@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import { TeamRowData, Props, NrcInfo, MateriaInfo } from "./teams-utils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,16 @@ export const TeamsManagementTable: React.FC<Props> = ({
     type?: string;
   }>({ teamId: null, email: "", type: undefined });
   const [rejectionReason, setRejectionReason] = useState<string>("");
+
+  // Certificados: diálogo de selección y envío masivo
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
+  const [certSearchTerm, setCertSearchTerm] = useState<string>("");
+  const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<number[]>([]);
+  const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
+  const filteredCertTeams = (teams ?? []).filter((t) =>
+    (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
+  );
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
   // REPLACE ABOVE WITH NEW CATEGORY FILTER
@@ -176,6 +187,70 @@ export const TeamsManagementTable: React.FC<Props> = ({
       toast.success("Correo enviado correctamente a " + email);
     } catch (e: any) {
       toast.error(e?.message || "Error al enviar correo.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
+  const sendCertificateEmails = async () => {
+    if (internalIsLoading) return;
+    if (!certSelectedTeamIds || certSelectedTeamIds.length === 0) {
+      showError("Seleccione al menos un equipo para enviar certificados.");
+      return;
+    }
+
+    setInternalIsLoading(true);
+    try {
+      // Mapear teamId -> email
+      const targets = certSelectedTeamIds.map((teamId) => {
+        const team = teams?.find((t) => t.id_equipo === teamId);
+        const email = team?.integrantes?.[0]?.correo ?? "";
+        return { teamId, email };
+      });
+
+      // Preparar promesas de envío (cada promesa devuelve un objeto resultado)
+      const sendPromises = targets.map(({ teamId, email }) => (async () => {
+        if (!email) return { ok: false, email: "(sin correo)", teamId, error: "No hay correo del líder" };
+        try {
+          const body: any = { email, typeOfEmail: certType, certificate: "" };
+          const res = await fetch(`${apiBaseUrl}/email/resend-certificate-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            return { ok: false, email, teamId, error: err?.message || `Error ${res.status}` };
+          }
+
+          return { ok: true, email, teamId };
+        } catch (e: any) {
+          return { ok: false, email, teamId, error: e?.message || "Error de red" };
+        }
+      })());
+
+      // Ejecutar en paralelo y esperar resultados
+      const settled = await Promise.allSettled(sendPromises as Promise<any>[]);
+      const results = settled.map((s) => (s.status === "fulfilled" ? s.value : { ok: false, email: "(unknown)", error: s.reason }));
+
+      const successCount = results.filter((r) => r.ok).length;
+      const failItems = results.filter((r) => !r.ok);
+
+      if (successCount > 0) toast.success(`Certificados enviados: ${successCount}`);
+      if (failItems.length > 0) {
+        toast.error(`Fallaron ${failItems.length} envíos. Revise la consola para más detalles.`);
+        console.error("Errores envío certificados:", failItems);
+      }
+
+      // cerrar diálogo y limpiar selección
+      setCertDialogOpen(false);
+      setCertSelectedTeamIds([]);
+      setCertSelectAll(false);
+      setCertSearchTerm("");
+    } catch (e: any) {
+      toast.error(e?.message || "Error enviando certificados.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -700,6 +775,22 @@ export const TeamsManagementTable: React.FC<Props> = ({
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
+                      disabled={showLoader}
+                      onClick={() => setCertDialogOpen(true)}
+                      aria-label="Enviar certificados"
+                    >
+                      <Award className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Enviar certificados</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         ) : (
@@ -801,6 +892,22 @@ export const TeamsManagementTable: React.FC<Props> = ({
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
+                      disabled={showLoader}
+                      onClick={() => setCertDialogOpen(true)}
+                      aria-label="Enviar certificados"
+                    >
+                      <Award className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Enviar certificados</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </>
         )}
@@ -1018,6 +1125,106 @@ export const TeamsManagementTable: React.FC<Props> = ({
             >
               {internalIsLoading ? "Procesando..." : "Enviar"
               }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col text-sm">
+            <DialogHeader>
+              <DialogTitle>Enviar certificados</DialogTitle>
+              <DialogDescription>
+                Seleccione los equipos destinatarios y el tipo de certificado a enviar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+                <div className="flex gap-2 items-center">
+              <div className="w-50">
+                <Select value={certType} onValueChange={(v) => setCertType(v as any)}>
+                  <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PARTICIPATION_CERTIFICATE">Certificado de Participación</SelectItem>
+                    <SelectItem value="1ST_PLACE_CERTIFICATE">Certificado 1º Puesto</SelectItem>
+                    <SelectItem value="2ND_PLACE_CERTIFICATE">Certificado 2º Puesto</SelectItem>
+                    <SelectItem value="3RD_PLACE_CERTIFICATE">Certificado 3º Puesto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1 relative">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  <input
+                    className="w-full p-2 border rounded"
+                    placeholder="Buscar equipo por nombre..."
+                    value={certSearchTerm}
+                    onChange={(e) => setCertSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between ">
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={certSelectAll}
+                    onChange={(e) => {
+                      const checked = (e.target as HTMLInputElement).checked;
+                      setCertSelectAll(checked);
+                      if (checked) {
+                        const ids = filteredCertTeams.map((t) => t.id_equipo);
+                        setCertSelectedTeamIds(ids);
+                      } else {
+                        setCertSelectedTeamIds([]);
+                      }
+                    }}
+                  />
+                  <span>Seleccionar todos (filtro actual)</span>
+                </label>
+              </div>
+              <div className="text-sm text-muted-foreground">Seleccionados: {certSelectedTeamIds.length}</div>
+            </div>
+
+            <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
+              {filteredCertTeams.map((team) => {
+                  const leaderEmail = team.integrantes?.[0]?.correo ?? "";
+                  const checked = certSelectedTeamIds.includes(team.id_equipo);
+                  return (
+                    <label key={team.id_equipo} className="flex items-center justify-between p-3 border-b">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={checked}
+                          onChange={(e) => {
+                            const ch = (e.target as HTMLInputElement).checked;
+                            setCertSelectedTeamIds((prev) => {
+                              if (ch) return Array.from(new Set([...prev, team.id_equipo]));
+                              return prev.filter((id) => id !== team.id_equipo);
+                            });
+                            if (!ch) setCertSelectAll(false);
+                          }}
+                        />
+                        <div>
+                          <div className="font-medium">{team.nombre_equipo}</div>
+                          <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">ID: {team.id_equipo}</div>
+                    </label>
+                  );
+                })}
+            </div>
+
+            </div>
+
+          <DialogFooter className="pt-0 pb-0 mt-auto">
+            <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
+            <Button onClick={sendCertificateEmails} disabled={internalIsLoading || certSelectedTeamIds.length === 0}>
+              {internalIsLoading ? "Enviando..." : "Enviar certificados"}
             </Button>
           </DialogFooter>
         </DialogContent>
