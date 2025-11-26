@@ -22,6 +22,7 @@ import { AlertTriangle } from "lucide-react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 
@@ -620,7 +621,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         return response.json();
       })
       .then((data) => {
-        toast.success(`✅ Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`);
+        toast.success(`Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`);
         
         // Clear all caches to force a global refresh (subida fue global)
         setFetchedStudentsByNRC({});
@@ -728,8 +729,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         throw new Error(msg);
       }
 
-  toast.success(`✅ Calificación guardada: ${gradeValue}`);
-      
+  toast.success(`Calificación guardada: ${gradeValue}`);
+      console.log('Grade saved:', parsed ?? { status: response.status });
 
       // After saving the senior grade we prefer to reload the authoritative
       // data for the current page from the backend instead of trying to
@@ -768,41 +769,51 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
   // Export Button
   const ExportButton = (
-    <Button
-      variant="outline"
-      size="sm"
-      className="cursor-pointer"
-      onClick={exportToExcel}
-      title="Exportar todas las calificaciones a Excel"
-      aria-label="Exportar todas las calificaciones"
-      disabled={downloading}
-    >
-      {downloading ? (
-        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-      ) : (
-        <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-      )}
-      <span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span>
-      <span className="sm:hidden">Excel</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={exportToExcel}
+          aria-label="Exportar todas las calificaciones"
+          disabled={downloading}
+        >
+          {downloading ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+          )}
+          <span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span>
+          <span className="sm:hidden">Excel</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Exportar todas las calificaciones a Excel</TooltipContent>
+    </Tooltip>
   );
 
   // Download Template Button
   const DownloadTemplateButton = (
-    <Button
-      variant="default"
-      size="sm"
-      className="cursor-pointer"
-      onClick={downloadGradingTemplate}
-      disabled={downloadingTemplate}
-    >
-      {downloadingTemplate ? (
-        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-      ) : (
-        <Download className="h-4 w-4 mr-1.5" />
-      )}
-      {downloadingTemplate ? "Descargando..." : "Plantilla"}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="default"
+          size="sm"
+          className="cursor-pointer"
+          onClick={downloadGradingTemplate}
+          aria-label="Descargar plantilla de calificaciones"
+          disabled={downloadingTemplate}
+        >
+          {downloadingTemplate ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-1.5" />
+          )}
+          {downloadingTemplate ? "Descargando..." : "Plantilla"}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Descargar plantilla de calificaciones</TooltipContent>
+    </Tooltip>
   );
 
   // Upload Grades Button
@@ -816,24 +827,29 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         disabled={uploadingGrades}
         className="hidden"
       />
-      <Label htmlFor="upload-grades">
-        <Button
-          variant="outline"
-          size="sm"
-          className="cursor-pointer"
-          disabled={uploadingGrades}
-          asChild
-        >
-          <span>
-            {uploadingGrades ? (
-              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-1.5" />
-            )}
-            {uploadingGrades ? "Subiendo..." : "Subir"}
-          </span>
-        </Button>
-      </Label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Label htmlFor="upload-grades">
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              disabled={uploadingGrades}
+              asChild
+            >
+              <span>
+                {uploadingGrades ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1.5" />
+                )}
+                {uploadingGrades ? "Subiendo..." : "Subir"}
+              </span>
+            </Button>
+          </Label>
+        </TooltipTrigger>
+        <TooltipContent side="top">Subir calificaciones (Excel)</TooltipContent>
+      </Tooltip>
     </div>
   );
 
@@ -959,7 +975,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         <>
           <Card className="rounded-lg overflow-hidden bg-card">
             <Table>
-              <TableHeader className="bg-blue-100 dark:bg-blue-900/30 border-b border-border">
+              <TableHeader className="bg-[var(--color-primary)] [&_th]:!text-white dark:bg-blue-900/30 dark:text-[var(--card-foreground)] border-b border-border">
                 <TableRow>
                     <TableHead>Team Code</TableHead>
                     <TableHead>NRC</TableHead>
@@ -1040,17 +1056,21 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                     </TableCell>
                     <TableCell className="text-center">
                       {editingRowIndex !== i && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                          onClick={() => startEditing(i, t.calificacionDocente)}
-                          title="Editar calificación docente"
-                          aria-label="Editar calificación docente"
-                          disabled={savingGrade || editingRowIndex !== null}
-                        >
-                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                              onClick={() => startEditing(i, t.calificacionDocente)}
+                              aria-label="Editar calificación docente"
+                              disabled={savingGrade || editingRowIndex !== null}
+                            >
+                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">Editar calificación docente</TooltipContent>
+                        </Tooltip>
                       )}
                     </TableCell>
                   </TableRow>
