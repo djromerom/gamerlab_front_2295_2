@@ -132,9 +132,6 @@ export default function PodioGamer() {
           teamCode: team.codigoEquipo,
         }));
 
-        console.log("Equipos formateados:", formattedTeams);
-        console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
-
         setTeams(formattedTeams);
       } catch (error) {
         console.error("Error cargando datos:", error);
@@ -148,9 +145,7 @@ export default function PodioGamer() {
   const getSemesterFromTeamCode = (teamCode?: string): string | null => {
     if (!teamCode) return null;
     const match = teamCode.match(/^[Nn](\d+)/);
-    const result = match ? match[1] : null;
-    console.log(`TeamCode: ${teamCode} -> Semestre: ${result}`);
-    return result;
+    return match ? match[1] : null;
   };
 
   // Filtrar equipos según el semestre activo
@@ -166,10 +161,6 @@ export default function PodioGamer() {
     
     return semester === activeSemester;
   });
-
-  console.log("Semestre activo:", activeSemester);
-  console.log("Equipos filtrados:", filteredTeams.length);
-
   const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
