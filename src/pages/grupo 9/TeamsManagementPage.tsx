@@ -6,8 +6,10 @@ import { useState, useEffect, useCallback } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { PaginatedTeams, TeamConfirmationStatusResponse } from "@/components/grupo 9/teams-utils";
 import type { TeamRowData } from "@/components/grupo 9/teams-utils";
+import { set } from "react-hook-form";
 
 const TeamsManagementPage = () => {
+  const [allTeams, setAllTeams] = useState<TeamRowData[]>([]);
   const [teamsData, setTeamsData] = useState<PaginatedTeams | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +112,118 @@ const TeamsManagementPage = () => {
     };
   }, [teamsData?.data, statusEmailLeader]); 
 
+  // Agregar este mapper fuera de fetchTeams para reutilizar
+  const mapApiTeamToTeamRow = (t: any): TeamRowData => {
+    const members = Array.isArray(t.members) ? t.members : [];
+
+    const integrantes = members.map((m: any) => ({
+      id_integrante: m.id,
+      nombre: m.firstName ?? m.nombre ?? "",
+      apellido: m.lastName ?? m.apellido ?? "",
+      correo: m.email ?? m.correo ?? "",
+      codigo_estudiantil: m.studentCode ?? m.codigo_estudiantil ?? "",
+      id_equipo: m.teamId ?? t.id ?? 0,
+      activo: m.isActive ?? m.activo ?? true,
+      creado_en: m.createdAt ?? m.creado_en ?? new Date().toISOString(),
+      actualizado_en: m.updatedAt ?? m.actualizado_en ?? new Date().toISOString(),
+      nrcs: Array.isArray(m.nrcs)
+        ? m.nrcs.map((n: any) => ({
+            id_nrc: n.id,
+            codigo: n.code,
+            id_materia: n.subjectId ?? (n.subject && n.subject.id),
+            id_profesor: n.professorId,
+            subject: n.subject,
+          }))
+        : [],
+    }));
+
+    const vg = t.videogame ?? t.videojuego ?? {};
+
+    let nrc_info = undefined;
+    let materia_info = undefined;
+    const firstNrc = integrantes?.[0]?.nrcs?.[0];
+    if (firstNrc) {
+      nrc_info = {
+        id_nrc: firstNrc.id_nrc,
+        codigo: firstNrc.codigo,
+        id_materia: firstNrc.id_materia,
+        id_profesor: firstNrc.id_profesor,
+      } as any;
+
+      if (firstNrc.subject) {
+        materia_info = {
+          id_materia: firstNrc.subject.id,
+          nombre: firstNrc.subject.name,
+          codigo: firstNrc.subject.code,
+          semestre: firstNrc.subject.semester,
+        } as any;
+      }
+    }
+
+    return {
+      id_equipo: t.id,
+      teamCode: t.teamCode,
+      nombre_equipo: t.teamName ?? t.nombre_equipo ?? "",
+      fecha_registro: t.registrationDate ?? t.fecha_registro ?? new Date().toISOString(),
+      id_usuario: t.userId ?? t.id_usuario ?? "",
+      id_edicion: t.editionId ?? t.id_edicion ?? 0,
+      activo: t.isActive ?? t.activo ?? true,
+      integrantes,
+      videojuego: {
+        id_videojuego: vg?.id ?? vg?.id_videojuego ?? 0,
+        nombre: vg?.name ?? vg?.nombre ?? "",
+        descripcion: vg?.description ?? vg?.descripcion ?? "",
+        logo_url: vg?.logoUrl ?? vg?.logo_url ?? "",
+        fecha_registro: vg?.registrationDate ?? vg?.fecha_registro ?? new Date().toISOString(),
+        id_estado_videojuego: vg?.videogameStatusId ?? vg?.id_estado_videojuego ?? 2,
+        id_equipo: vg?.teamId ?? t.id,
+        activo: vg?.isActive ?? vg?.activo ?? true,
+        video_demo_url: vg?.videoUrl ?? vg?.video_demo_url ?? "",
+        additionalImages: vg?.additionalImages ?? [],
+      },
+      nrc_info,
+      materia_info,
+      isExternal: (t as any).isExternal,
+      team_nrc_global_id: (t as any).teamNrcGlobal ?? (t as any).team_nrc_global_id,
+    } as TeamRowData;
+  };
+
+  const fetchAllTeams = async () => {
+    try {
+      const res = await fetch(
+        `${API_ENDPOINT}/teams`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: Failed to fetch all teams`);
+      }
+      const apiResponse = await res.json();
+
+      // Normalizar respuesta a TeamRowData[]
+      let mapped: TeamRowData[] = [];
+      if (Array.isArray(apiResponse)) {
+        mapped = apiResponse.map(mapApiTeamToTeamRow);
+      } else if (apiResponse && Array.isArray(apiResponse.data)) {
+        mapped = apiResponse.data.map(mapApiTeamToTeamRow);
+      } else {
+        mapped = [];
+      }
+
+      setAllTeams(mapped);
+      return mapped;
+
+    } catch (err: any) {
+      console.error("Error fetching all teams:", err);
+      setAllTeams([]);
+      return null;
+    }
+  };
+
   const fetchTeams = async (page: number, limit: number) => {
     setIsPageLoading(true);
     setError(null);
@@ -141,81 +255,6 @@ const TeamsManagementPage = () => {
       }
 
       const apiResponse = await res.json();
-
-      const mapApiTeamToTeamRow = (t: any): TeamRowData => {
-        const members = Array.isArray(t.members) ? t.members : [];
-
-        const integrantes = members.map((m: any) => ({
-          id_integrante: m.id,
-          nombre: m.firstName ?? m.nombre ?? "",
-          apellido: m.lastName ?? m.apellido ?? "",
-          correo: m.email ?? m.correo ?? "",
-          codigo_estudiantil: m.studentCode ?? m.codigo_estudiantil ?? "",
-          id_equipo: m.teamId ?? t.id ?? 0,
-          activo: m.isActive ?? m.activo ?? true,
-          creado_en: m.createdAt ?? m.creado_en ?? new Date().toISOString(),
-          actualizado_en: m.updatedAt ?? m.actualizado_en ?? new Date().toISOString(),
-          nrcs: Array.isArray(m.nrcs)
-            ? m.nrcs.map((n: any) => ({
-              id_nrc: n.id,
-              codigo: n.code,
-              id_materia: n.subjectId ?? (n.subject && n.subject.id),
-              id_profesor: n.professorId,
-              subject: n.subject,
-            }))
-            : [],
-        }));
-
-        const vg = t.videogame ?? t.videojuego ?? {};
-
-        let nrc_info = undefined;
-        let materia_info = undefined;
-        const firstNrc = integrantes?.[0]?.nrcs?.[0];
-        if (firstNrc) {
-          nrc_info = {
-            id_nrc: firstNrc.id_nrc,
-            codigo: firstNrc.codigo,
-            id_materia: firstNrc.id_materia,
-            id_profesor: firstNrc.id_profesor,
-          } as any;
-
-          if (firstNrc.subject) {
-            materia_info = {
-              id_materia: firstNrc.subject.id,
-              nombre: firstNrc.subject.name,
-              codigo: firstNrc.subject.code,
-              semestre: firstNrc.subject.semester,
-            } as any;
-          }
-        }
-
-        return {
-          id_equipo: t.id,
-          teamCode: t.teamCode,
-          nombre_equipo: t.teamName ?? t.nombre_equipo ?? "",
-          fecha_registro: t.registrationDate ?? t.fecha_registro ?? new Date().toISOString(),
-          id_usuario: t.userId ?? t.id_usuario ?? "",
-          id_edicion: t.editionId ?? t.id_edicion ?? 0,
-          activo: t.isActive ?? t.activo ?? true,
-          integrantes,
-          videojuego: {
-            id_videojuego: vg?.id ?? vg?.id_videojuego ?? 0,
-            nombre: vg?.name ?? vg?.nombre ?? "",
-            descripcion: vg?.description ?? vg?.descripcion ?? "",
-            logo_url: vg?.logoUrl ?? vg?.logo_url ?? "",
-            fecha_registro: vg?.registrationDate ?? vg?.fecha_registro ?? new Date().toISOString(),
-            id_estado_videojuego: vg?.videogameStatusId ?? vg?.id_estado_videojuego ?? 2,
-            id_equipo: vg?.teamId ?? t.id,
-            activo: vg?.isActive ?? vg?.activo ?? true,
-            video_demo_url: vg?.videoUrl ?? vg?.video_demo_url ?? "",
-            additionalImages: vg?.additionalImages ?? [],
-          },
-          nrc_info,
-          materia_info,
-          isExternal: (t as any).isExternal,
-          team_nrc_global_id: (t as any).teamNrcGlobal ?? (t as any).team_nrc_global_id,
-        } as TeamRowData;
-      };
 
       let dataRespond: PaginatedTeams;
 
@@ -283,6 +322,7 @@ const TeamsManagementPage = () => {
 
   useEffect(() => {
     fetchTeams(pagination.page, pagination.limit);
+    fetchAllTeams();
   }, [pagination.page, pagination.limit, refreshFlag]);
 
   const handlePageChange = (newPage: number) => {
@@ -319,6 +359,7 @@ const TeamsManagementPage = () => {
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
               refreshData={refreshData}
+              allTeams={allTeams}
               statusEmailLeader={(email: string) => {
                 const team = teamsData.data.find(t => t.integrantes?.[0]?.correo === email);
                 return team ? emailConfirmMap[team.id_equipo] ?? null : null;
