@@ -40,7 +40,7 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
         { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
         { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck,},
-        { name: "Configuracion de Evento", url: "/configuracion-evento", icon: FileUser }
+        { name: "Configuración de Evento", url: "/configuracion-evento", icon: FileUser }
       ],
     },
     {

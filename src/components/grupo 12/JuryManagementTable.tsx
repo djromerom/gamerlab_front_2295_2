@@ -357,7 +357,7 @@ export const JuryManagementTable: React.FC<Props> = ({
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="bg-card hover:bg-accent text-foreground"
+              className="cursor-pointer bg-card hover:bg-accent text-foreground"
               disabled={showLoader} // <-- Deshabilitar si no hay data O si está cargando
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar
