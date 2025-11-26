@@ -56,7 +56,11 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
       }
 
       const blob = await response.blob();
-      const filename = "reporte_videojuegos.xlsx"; // Nombre fijo del backend
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const filename = `reporte_equipos_${yyyy}_${mm}_${dd}.xlsx`;
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -101,18 +105,9 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
             ) : (
               <Download className="h-4 w-4 mr-1" />
             )}
-            Excel
+            Exportar
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            aria-label={`Descargar ${title} en PDF`}
-            onClick={handleDownloadPdf}
-            disabled={true} // Deshabilitar hasta que esté implementado
-            className="cursor-pointer"
-          >
-            <Download className="h-4 w-4 mr-1" /> PDF
-          </Button>
+          {/* PDF button removed as requested */}
         </div>
       </TableCell>
     </TableRow>
