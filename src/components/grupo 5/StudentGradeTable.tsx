@@ -975,7 +975,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         <>
           <Card className="rounded-lg overflow-hidden bg-card">
             <Table>
-              <TableHeader className="bg-blue-100 dark:bg-blue-900/30 border-b border-border">
+              <TableHeader className="bg-[var(--color-primary)] [&_th]:!text-white dark:bg-blue-900/30 dark:text-[var(--card-foreground)] border-b border-border">
                 <TableRow>
                     <TableHead>Team Code</TableHead>
                     <TableHead>NRC</TableHead>
