@@ -268,7 +268,7 @@ export default function TeamWizardForm(props: any) {
           }
         }
         const body = buildMemberPayload(m);
-        const url = `${apiBaseUrl}/teams/${teamId}/add-member`;
+        const url = `${apiBaseUrl}/teams/${teamId}/member`;
   
         const res = await fetch(url, {
           method: "POST",
