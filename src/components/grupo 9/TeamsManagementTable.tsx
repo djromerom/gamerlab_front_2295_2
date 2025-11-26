@@ -50,7 +50,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   }>({ teamId: null, email: "", type: undefined });
   const [rejectionReason, setRejectionReason] = useState<string>("");
 
-  // Certificados: diálogo de selección y envío masivo
+  // Certificates: selection dialog and bulk sending
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
@@ -64,7 +64,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   // REPLACE ABOVE WITH NEW CATEGORY FILTER
   const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
-  // Función para categorizar por teamCode / isExternal
+  // Function to categorize by teamCode / isExternal
   const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
     if ((team as any)?.isExternal) return "Externos";
     const rawCode: string = (team as any)?.teamCode ?? "";
@@ -78,7 +78,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
     }
   };
 
-  // Contadores
+  // Counters
   const totalTeamsCount = teams?.length ?? 0;
   const sem1Count = teams?.filter(t => categorizeTeam(t) === "sem1").length ?? 0;
   const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
@@ -208,7 +208,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         return { teamId, email };
       });
 
-      // Preparar promesas de envío (cada promesa devuelve un objeto resultado)
+      // Prepare send promises (each promise returns a result object)
       const sendPromises = targets.map(({ teamId, email }) => (async () => {
         if (!email) return { ok: false, email: "(sin correo)", teamId, error: "No hay correo del líder" };
         try {
@@ -231,7 +231,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         }
       })());
 
-      // Ejecutar en paralelo y esperar resultados
+      // Run in parallel and wait for results
       const settled = await Promise.allSettled(sendPromises as Promise<any>[]);
       const results = settled.map((s) => (s.status === "fulfilled" ? s.value : { ok: false, email: "(unknown)", error: s.reason }));
 
@@ -244,7 +244,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         console.error("Errores envío certificados:", failItems);
       }
 
-      // cerrar diálogo y limpiar selección
+      // close dialog and clear selection
       setCertDialogOpen(false);
       setCertSelectedTeamIds([]);
       setCertSelectAll(false);
@@ -472,7 +472,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         const label = String(rawLabel);
 
         const s = String(label).trim();
-        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalizar
+        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalize
 
         const showResend = norm === "Pendiente" || norm === "Expirado";
         const variant =
@@ -540,7 +540,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                           setRejectionReason("");
                           setResendDialogOpen(true);
                         } else {
-                          // Pendiente u otros -> enviar actualización de info
+                          // Pending or others -> send info update
                           await resendTeamEmail(email, "UPDATE_VIDEOGAME_INFO");
                         }
                       }}
@@ -962,7 +962,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              // aplicar filtro cliente ahora por categoría
+              // apply client-side filter now by category
               (() => {
                 const filteredTeams = teams?.filter((team) => {
                   if (!team) return false;
@@ -1021,7 +1021,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           const currentPage = paginationMeta?.currentPage ?? 1;
           const totalPages = paginationMeta?.totalPages ?? 0;
 
-          // Siempre renderizamos la barra de paginación (pero acciones deshabilitadas si no hay páginas)
+          // Always render the pagination bar (but disable actions if there are no pages)
           return (
             <div className="flex justify-between items-center p-4 text-sm border-t border-border">
               <div className="flex items-center gap-2">
