@@ -480,23 +480,6 @@ export default function RatePage() {
                   </Table>
                 </div>
 
-                <div className="flex justify-end">
-                  <div className="w-80px md:w-auto mt-6 rounded-lg border bg-muted-foreground/10 px-4 py-3 flex flex-row md:flex-row gap-3 md:gap-10 items-center md:items-center md:justify-end">
-                    <div className="flex flex-auto gap-2">
-                      <p className="tracking-tighter text-lg font-bold">Nota Final</p>
-                      <p className="text-lg font-medium text-foreground">|</p>
-                    </div>
-
-                    <div className="ml-0 md:ml-2">
-                      <span className="text- font-bold text-primary ">
-                        {totalMaxScore > 0
-                          ? `${totalScore.toFixed(2)} / ${totalMaxScore.toFixed(2)}`
-                          : "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="mt-6 rounded-lg border bg-muted-foreground/20 px-4 py-4 flex items-center justify-between">
                   <p className="text-2xl font-medium text-bold from-neutral-700">
                     Nota Final
