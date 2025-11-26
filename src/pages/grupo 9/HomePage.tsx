@@ -10,7 +10,7 @@ const HomePage: React.FC = () => {
   const { user } = useAuth();
   return (
     <LayoutAplication breadcrumbs={[]}>
-      <section className="w-full h-full md:py-24 lg:py-24 xl:py-24">
+      <section className="w-full h-full md:py-24 lg:py-24 xl:py-24 min-w-[250px]">
         <div className=" flex flex-col gap-[8rem] container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="flex items-center justify-center">

@@ -33,6 +33,7 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
 
@@ -124,6 +125,7 @@ const routes: RouteConfig[] = [
     element: <TeamsManagementPage />,
     roles: ["Administrador"],
   },
+
   {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
@@ -134,6 +136,8 @@ const routes: RouteConfig[] = [
     element: <RatePage />,
     roles: ["Jurado"],
   },
+
+
   {
     path: "/colegios-calificar",
     element: <PendingSchoolGradesPage />,
@@ -144,7 +148,16 @@ const routes: RouteConfig[] = [
     element: <SchoolRate />,
     roles: ["Profesor"],
   },
+  {
+    path: "/colegios-evaluados",
+    element: < SchoolGradesPage />,
+    roles: ["Profesor"],
+  },
+
+
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
+
+  
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
