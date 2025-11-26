@@ -630,6 +630,16 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
+      } else if (response.status === 400) {
+        const errorData = await response.json();
+        console.log(errorData);
+        const description = errorData.message.includes("20 likes") ?
+          "Este juego no puede recibir más de 20 likes sin video o fotos adicionales." :
+          errorData.message.includes("10 likes") ?
+            "Este juego no puede recibir más de 10 likes sin logo." :
+          "Error al procesar el like. Intenta de nuevo.";
+          console.error('Failed to toggle like:', errorData.message);
+          toast.error(description, { id: 1 });
       } else {
         console.error('Failed to toggle like:', response.status);
         toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
