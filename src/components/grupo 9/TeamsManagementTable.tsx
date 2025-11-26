@@ -494,7 +494,7 @@ export const TeamsManagementTable = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = (team.integrantes?.[0]?.correo as any)?.toLowerCase() ?? "";
+        const primaryEmail = (team.integrantes?.[0]?.correo)?.toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
