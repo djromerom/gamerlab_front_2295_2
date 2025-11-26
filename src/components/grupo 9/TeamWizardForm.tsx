@@ -6,6 +6,17 @@ import { ImageCropper } from "@/components/grupo 11/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="text-sm text-destructive mt-1">{message}</p>;
@@ -47,6 +58,146 @@ export default function TeamWizardForm(props: any) {
   } = props;
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteIdx, setPendingDeleteIdx] = useState<number | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
+  const [savingAllMembers, setSavingAllMembers] = useState(false);
+
+  // Generador de códigos estudiantiles (colegio) similar al submitTeamsAdmin
+  const randomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000);
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
+  function buildNrcArray(member: any): string[] {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    const safeList: any[] = Array.isArray(safeNrcs) ? safeNrcs : [];
+    if (isExternalTeam) {
+      const globalId = methods.getValues("team_nrc_global_id");
+      if (!globalId) return [];
+      const match = safeList.find(n => String(n.id) === String(globalId));
+      return [match?.codeStr || String(globalId)];
+    } else {
+      const ids: number[] = Array.isArray(member?.nrcIds) ? member.nrcIds : [];
+      return ids
+        .map(id => {
+          const found = safeList.find(n => n.id === id);
+          return found?.codeStr || String(id);
+        })
+        .filter(Boolean);
+    }
+  }
+
+  function buildMemberPayload(member: any): any {
+    const isExternalTeam = !!methods.getValues("isExternal");
+    // nrc debe ser array de strings (solo propiedad nrc, NO nrcs)
+    let nrcArray = buildNrcArray(member);
+    if (!Array.isArray(nrcArray)) nrcArray = [];
+    nrcArray = nrcArray.map((v) => String(v));
+    return {
+      memberEmail: member.correo?.trim(),
+      memberFirstName: member.nombre?.trim(),
+      memberLastName: member.apellido?.trim(),
+      studentCode: isExternalTeam
+        ? randomStudentCode()
+        : (member.codigo_estudiantil ? String(member.codigo_estudiantil) : undefined),
+      nrc: nrcArray,
+    };
+  }
+
+  async function persistNewMembersAndProceed() {
+    const mode = methods.getValues("mode");
+    if (mode !== "edit") {
+      nextFromStep2();
+      return;
+    }
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+    if (!teamId) {
+      toast.error("No se encontró el ID del equipo");
+      return;
+    }
+    const integrantes = methods.getValues("integrantes") || [];
+    const pendientes = integrantes
+      .map((m: any, i: number) => ({ m, i }))
+      .filter(({ m, i }: any) => i !== 0 && !(m?.id_integrante || m?.id));
+    if (pendientes.length === 0) {
+      nextFromStep2();
+      return;
+    }
+    const isExternalTeam = !!methods.getValues("isExternal");
+    setSavingAllMembers(true);
+    try {
+      for (const { m, i } of pendientes) {
+        if (!m?.nombre || !m?.apellido || !m?.correo) {
+          toast.error(`Completa los datos del miembro ${i + 1}`);
+          setEditingIndex(i);
+          setSavingAllMembers(false);
+          return;
+        }
+        if (isExternalTeam) {
+          const globalId = methods.getValues("team_nrc_global_id");
+          if (!globalId) {
+            toast.error("Selecciona NRC global (colegio)");
+            setSavingAllMembers(false);
+            return;
+          }
+        } else {
+          const nrcIds: number[] = Array.isArray(m.nrcIds) ? m.nrcIds : [];
+          if (nrcIds.length === 0) {
+            toast.error(`Selecciona al menos un NRC para el miembro ${i + 1}`);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+          }
+        }
+        const body = buildMemberPayload(m);
+        const url = `${apiBaseUrl}/teams/${teamId}/add-member`;
+  
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          let msg = "Error agregando miembro";
+          try {
+            const j = await res.json();
+            msg = j?.message || msg;
+          } catch {}
+            toast.error(msg);
+            setEditingIndex(i);
+            setSavingAllMembers(false);
+            return;
+        }
+        const data = await res.json().catch(() => ({}));
+        const newId = data?.member?.id || data?.id || data?.memberId;
+        if (newId) {
+          methods.setValue(`integrantes.${i}.id_integrante`, newId, { shouldDirty: false });
+        }
+      }
+      toast.success("Miembros guardados");
+      nextFromStep2();
+    } catch (e: any) {
+      toast.error(e?.message || "Error guardando miembros");
+    } finally {
+      setSavingAllMembers(false);
+    }
+  }
 
   async function resendInvite(email: string) {
     if (internalIsLoading) return; // prevent multiple petitions
@@ -99,6 +250,84 @@ export default function TeamWizardForm(props: any) {
     );
   }
 
+  // Abrir diálogo de confirmación
+  function handleAskRemoveMember(idx: number) {
+    if (methods.watch("mode") === "edit" && idx === 0) return; // no se permite líder
+    setPendingDeleteIdx(idx);
+    setDeleteDialogOpen(true);
+  }
+
+  // Confirmar eliminación
+  async function handleConfirmDelete() {
+    if (pendingDeleteIdx === null) return;
+    const idx = pendingDeleteIdx;
+    const mode = methods.getValues("mode");
+
+    // obtener teamId robusto
+    const teamId =
+      methods.getValues("id_equipo") ||
+      methods.getValues("id") ||
+      methods.getValues("team_id") ||
+      methods.getValues("teamId") ||
+      props?.initialData?.id_equipo ||
+      props?.initialData?.id ||
+      null;
+
+    const member = methods.getValues(`integrantes.${idx}`);
+    const memberId = member?.id_integrante ?? member?.id ?? null;
+
+    setIsDeletingMember(true);
+    try {
+      if (mode === "edit") {
+        if (idx === 0) {
+          toast.error("El primer miembro no se puede eliminar en edición");
+          return;
+        }
+        if (!teamId) {
+          toast.error("No se encontró el ID del equipo");
+          return;
+        }
+        if (memberId) {
+          const url = `${apiBaseUrl}/teams/${teamId}/members/${memberId}`;
+          const res = await fetch(url, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          const okStatus = res.ok || res.status === 204;
+          if (!okStatus) {
+            let errMsg = "No se pudo eliminar el miembro";
+            try {
+              const errJson = await res.json();
+              errMsg = errJson?.message || errMsg;
+            } catch {}
+            toast.error(errMsg);
+            return;
+          }
+        } else {
+          toast.info("Miembro sin ID persistido; solo se elimina localmente");
+        }
+      }
+
+      // Eliminar local
+      remove(idx);
+      setEditingIndex((prev: any) => {
+        if (prev === null) return null;
+        if (prev === idx) return null;
+        return prev > idx ? prev - 1 : prev;
+      });
+
+      toast.success("Miembro eliminado");
+    } catch (e: any) {
+      console.error("Error eliminando miembro:", e);
+      toast.error(e?.message || "Error eliminando miembro");
+    } finally {
+      setIsDeletingMember(false);
+      setDeleteDialogOpen(false);
+      setPendingDeleteIdx(null);
+    }
+  }
+
   return (
     <form
       onSubmit={async (e) => {
@@ -125,9 +354,8 @@ export default function TeamWizardForm(props: any) {
             if (methods.getValues("mode") === "add") {
               const email = methods.getValues("integrantes.0.correo");
               if (email) await resendInvite(email);
+              toast.success(`Se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
             }
-          } else {
-            toast.error(`No se pudo enviar correo de confirmación a ${methods.getValues("integrantes.0.correo")}`);
           }
         } catch (err) {
           console.error("Error submitting form:", err);
@@ -409,13 +637,38 @@ export default function TeamWizardForm(props: any) {
                       <div className="text-xs text-muted-foreground">{member?.correo || "correo no definido"}</div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="button" size="sm" variant={isOpen ? "secondary" : "outline"} onClick={() => setEditingIndex(isOpen ? null : idx)}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isOpen ? "secondary" : "outline"}
+                        onClick={() => setEditingIndex(isOpen ? null : idx)}
+                      >
                         <Pencil className="w-4 h-4 mr-1" />
                         {isOpen ? "Cerrar" : "Editar"}
                       </Button>
-                      <Button type="button" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { remove(idx); setEditingIndex((prev: any) => { if (prev === null) return null; if (prev === idx) return null; return prev > idx ? prev - 1 : prev; }); }}>
-                        <Trash2 className="w-4 h-4 mr-1" /> Quitar
-                      </Button>
+
+                      {methods.watch("mode") === "edit" && idx === 0 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="text-muted-foreground cursor-not-allowed"
+                          title="El primer miembro no se puede eliminar en edición"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Líder
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleAskRemoveMember(idx)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Quitar
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -436,8 +689,8 @@ export default function TeamWizardForm(props: any) {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex flex-col gap-1 sm:w-2/3">
-                          <Label>Correo {methods.watch("mode") === "edit" && idx === 0 ? "(bloqueado)" : ""}</Label>
-                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} disabled={methods.watch("mode") === "edit" && idx === 0} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
+                          <Label>Correo {idx === 0 ? "(Lider del equipo)" : ""}</Label>
+                          <Input {...methods.register(`integrantes.${idx}.correo` as const)} placeholder={isExternal ? "example@example.com" : "usuario@uninorte.edu.co"} />
                           <FieldError message={memErrors?.correo?.message} />
                         </div>
                         {!isExternal && (
@@ -508,6 +761,33 @@ export default function TeamWizardForm(props: any) {
 
       <ImageCropper file={selectedLogoFile} open={cropperOpen} onClose={() => setCropperOpen(false)} onCropComplete={handleCroppedLogo} />
 
+      {/* Confirmación eliminar miembro */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setPendingDeleteIdx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar miembro del equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const m = pendingDeleteIdx !== null ? methods.getValues(`integrantes.${pendingDeleteIdx}`) : null;
+                const nombre = [m?.nombre, m?.apellido].filter(Boolean).join(" ");
+                return (
+                  <>
+                    Se eliminará la información {nombre ? `de ${nombre} ` : ""}del equipo. Esta acción no se puede deshacer.
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingMember}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeletingMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeletingMember && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
         <div className="flex w-full sm:w-auto gap-2 flex-col-reverse sm:flex-row">
           {step > 1 && (
@@ -517,16 +797,23 @@ export default function TeamWizardForm(props: any) {
           )}
 
           {step === 1 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); console.log("aditional", methods.watch("videojuego.additionalImages"), methods.watch("videojuego.logo_url")); }} className="w-full sm:w-auto" disabled={busy}>
+            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep1(); /* console log removido para limpieza */ }} className="w-full sm:w-auto" disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
 
             </Button>
           ) : step === 2 ? (
-            <Button type="button" onClick={(e) => { e.preventDefault(); nextFromStep2(); }} className="w-full sm:w-auto" disabled={busy}>
-              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                persistNewMembersAndProceed();
+              }}
+              className="w-full sm:w-auto"
+              disabled={busy || savingAllMembers}
+            >
+              {(busy || savingAllMembers) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Siguiente <ChevronRight className="w-4 h-4 ml-1" />
-
             </Button>
           ) : (
             <Button type="submit" className="w-full sm:w-auto" disabled={busy}>

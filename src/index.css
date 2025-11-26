@@ -182,3 +182,13 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+/* Remove number input spinner for elements with class 'no-spinner' */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner {
+  -moz-appearance: textfield; /* Firefox */
+}

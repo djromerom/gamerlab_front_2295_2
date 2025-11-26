@@ -773,6 +773,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       size="sm"
       className="cursor-pointer"
       onClick={exportToExcel}
+      title="Exportar todas las calificaciones a Excel"
+      aria-label="Exportar todas las calificaciones"
       disabled={downloading}
     >
       {downloading ? (
@@ -1042,7 +1044,9 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                          onClick={() => startEditing(i, t.calificacionFeria)}
+                          onClick={() => startEditing(i, t.calificacionDocente)}
+                          title="Editar calificación docente"
+                          aria-label="Editar calificación docente"
                           disabled={savingGrade || editingRowIndex !== null}
                         >
                           <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />

@@ -247,11 +247,11 @@ export default function RatePage() {
       // parsear una sola vez (acepta number o string)
       const parsedRaw = parseScoreValue(criterion.score.toString() ?? "", criterion.maxScore);
       // Opción A (estricto): descomentar para exigir que ingresen un valor
-      if (parsedRaw === null) {
-        setIsSubmitting(false);
-        showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
-        return;
-      }
+      // if (parsedRaw === null) {
+      //   setIsSubmitting(false);
+      //   showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+      //   return;
+      // }
       const parsedScore = parsedRaw === null ? 0 : parsedRaw;
 
       parsedDetails.push({
