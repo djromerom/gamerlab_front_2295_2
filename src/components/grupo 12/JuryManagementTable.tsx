@@ -434,9 +434,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     setInternalIsLoading(true);
     try {
       const response = await customFetch(
-        `${apiBaseUrl}/juror/${deletingId}/delete`,
+        `${apiBaseUrl}/juror/${deletingId}`,
         {
-          method: "PATCH",
+          method: "DELETE",
         }
       );
 
