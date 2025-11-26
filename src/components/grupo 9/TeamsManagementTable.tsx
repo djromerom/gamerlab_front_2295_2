@@ -54,7 +54,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
-  const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<number[]>([]);
+  const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<string[]>([]);
   const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
   const filteredCertTeams = (teams ?? []).filter((t) =>
     (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
@@ -201,16 +201,16 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
     setInternalIsLoading(true);
     try {
-      // Mapear teamId -> email
-      const targets = certSelectedTeamIds.map((teamId) => {
-        const team = teams?.find((t) => t.id_equipo === teamId);
+      // Mapear teamCode -> email (fallback a id_equipo si teamCode no existe)
+      const targets = certSelectedTeamIds.map((teamCode) => {
+        const team = teams?.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
         const email = team?.integrantes?.[0]?.correo ?? "";
-        return { teamId, email };
+        return { teamCode, email };
       });
 
       // Prepare send promises (each promise returns a result object)
-      const sendPromises = targets.map(({ teamId, email }) => (async () => {
-        if (!email) return { ok: false, email: "(sin correo)", teamId, error: "No hay correo del líder" };
+      const sendPromises = targets.map(({ teamCode, email }) => (async () => {
+        if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
         try {
           const body: any = { email, typeOfEmail: certType, certificate: "" };
           const res = await fetch(`${apiBaseUrl}/email/resend-certificate-email`, {
@@ -222,12 +222,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            return { ok: false, email, teamId, error: err?.message || `Error ${res.status}` };
+            return { ok: false, email, teamCode, error: err?.message || `Error ${res.status}` };
           }
 
-          return { ok: true, email, teamId };
+          return { ok: true, email, teamCode };
         } catch (e: any) {
-          return { ok: false, email, teamId, error: e?.message || "Error de red" };
+          return { ok: false, email, teamCode, error: e?.message || "Error de red" };
         }
       })());
 
@@ -1171,39 +1171,40 @@ export const TeamsManagementTable: React.FC<Props> = ({
             <div className="flex items-center justify-between ">
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={certSelectAll}
-                    onChange={(e) => {
-                      const checked = (e.target as HTMLInputElement).checked;
-                      setCertSelectAll(checked);
-                      if (checked) {
-                        const ids = filteredCertTeams.map((t) => t.id_equipo);
-                        setCertSelectedTeamIds(ids);
-                      } else {
-                        setCertSelectedTeamIds([]);
-                      }
-                    }}
-                  />
-                  <span>Seleccionar todos (filtro actual)</span>
+                      <Checkbox
+                        checked={certSelectAll}
+                        onChange={(e) => {
+                          const checked = (e.target as HTMLInputElement).checked;
+                          setCertSelectAll(checked);
+                          if (checked) {
+                            const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
+                            setCertSelectedTeamIds(ids);
+                          } else {
+                            setCertSelectedTeamIds([]);
+                          }
+                        }}
+                      />
+                  <span>Seleccionar todos</span>
                 </label>
               </div>
               <div className="text-sm text-muted-foreground">Seleccionados: {certSelectedTeamIds.length}</div>
             </div>
 
             <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
-              {filteredCertTeams.map((team) => {
+                  {filteredCertTeams.map((team) => {
                   const leaderEmail = team.integrantes?.[0]?.correo ?? "";
-                  const checked = certSelectedTeamIds.includes(team.id_equipo);
+                  const code = String(team.teamCode ?? team.id_equipo);
+                  const checked = certSelectedTeamIds.includes(code);
                   return (
-                    <label key={team.id_equipo} className="flex items-center justify-between p-3 border-b">
+                    <label key={code} className="flex items-center justify-between p-3 border-b">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={checked}
                           onChange={(e) => {
                             const ch = (e.target as HTMLInputElement).checked;
                             setCertSelectedTeamIds((prev) => {
-                              if (ch) return Array.from(new Set([...prev, team.id_equipo]));
-                              return prev.filter((id) => id !== team.id_equipo);
+                              if (ch) return Array.from(new Set([...prev, code]));
+                              return prev.filter((id) => id !== code);
                             });
                             if (!ch) setCertSelectAll(false);
                           }}
@@ -1213,7 +1214,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                           <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">ID: {team.id_equipo}</div>
+                      <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
                     </label>
                   );
                 })}
