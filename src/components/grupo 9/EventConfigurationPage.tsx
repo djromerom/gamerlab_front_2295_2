@@ -20,30 +20,30 @@ const EventConfigurationPage: React.FC = () => {
                 
             <div className="flex p-2 sm:p-2 sm:flex-row  sm:justify-between mb-6 gap-2 ">
                 
-                <h3 className="text-xl font-medium  ">Configuración del evento</h3>
+                <h3 className="text-xl font-medium  ">Configuración del Evento</h3>
                 
             </div>
 
             <div className="grid gap-4 max-[500px]:gap-4 md:grid:gap-4:grid-cols-[repeat(auto-fill,minmax(370px,1fr))] min-w-[200px] mb-8  max-w-full">
-                <EventSetupCard value={canViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Evaluar Participantes"/>
-                <EventSetupCard value={canViewScores} url="/settings/show-evaluations" title="Habilitar Calificaciones" subtitle="Resultados de Evaluación"/>
-                <EventSetupCard value={canViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Habilitar Ranking Público"/>
+                <EventSetupCard value={canViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Permite que los jurados califiquen a los equipos del evento."/>
+                <EventSetupCard value={canViewScores} url="/settings/show-evaluations" title="Resultados de Evaluación" subtitle="Permite que los equipos vean las calificaciones que recibieron."/>
+                <EventSetupCard value={canViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público."/>
                 <div className="sm:flex-[0_1_10%] md:mb-6 space-y-2 border-2 rounded-lg overflow-hidden  md:w-full shadow-sm ">
                 <div className="border-b last:border-b-0">
                     <div className="w-full p-4 flex items-center justify-between transition-colors">
                         <div className="flex items-center ">
-                            <span className="font-medium ">Apartado de Ponderación</span>
+                            <span className="font-medium ">Ponderación de Jurados</span>
                         </div>
                     </div>
                     <div className="px-4 py-3  border-t">
                         <div className="flex items-center justify-between">   
-                            <p className="text-sm ">Asigna pesos porcentuales a los jurados.</p> 
+                            <p className="text-sm ">Define los pesos porcentuales asignados a cada jurado.</p> 
                             <div>
                                 <Button
                                     className="bg-card border-2 hover:bg-accent hover:transition-colors  text-foreground cursor-pointer" 
                                     onClick={() => navigate("/ponderado-calificaciones")}
                                     >
-                                        Ir a Ponderación
+                                        Configurar Ponderación
                                 </Button>
                             </div>
                         </div>
