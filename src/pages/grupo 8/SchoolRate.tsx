@@ -52,7 +52,7 @@ interface Game {
 }
 
 
-export default function RatePage() {
+export default function SchoolRate() {
   const navigate = useNavigate();
   const location = useLocation();
   const game = location.state?.game as Game | undefined;
@@ -359,7 +359,7 @@ export default function RatePage() {
   const breadcrumbs = game ? [
     {
       label: `Pendientes por calificar >  ${game.nombre}`,
-      href: "/pendientes-calificar",
+      href: "/colegios-calificar",
     },
   ] : [];
 
@@ -379,7 +379,7 @@ export default function RatePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/pendientes-calificar")}
+              onClick={() => navigate("/colegios-calificar")}
               className="cursor-pointer"
             >
               <RefreshCw className="mr-2 h-4 w-4" />

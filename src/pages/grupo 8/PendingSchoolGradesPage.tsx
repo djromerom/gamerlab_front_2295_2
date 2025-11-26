@@ -210,8 +210,8 @@ const PendingSchoolGradesPage: React.FC = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata.currentPage || 1}`}
+            page="/colegios-calificar"
           />
-
 
           {/* Solo muestra paginación si NO estás en búsqueda */}
           {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (

@@ -18,6 +18,10 @@ interface VideogameDetails {
   comments: string;
 }
 
+interface teamIsSchool {
+  isSchool: boolean;
+}
+
 interface PaginatedGames {
   data: VideogameDetails[];
   metadata: {
@@ -188,6 +192,7 @@ const SchoolGradesPage: React.FC = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata?.currentPage || 1}`}
+            page="/colegios-evaluados"
           />
 
 

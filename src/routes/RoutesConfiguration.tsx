@@ -154,6 +154,8 @@ const routes: RouteConfig[] = [
 
 
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
+
+  
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
