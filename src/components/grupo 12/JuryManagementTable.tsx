@@ -458,16 +458,16 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     }
   };
 
-  const handleResendEmail = async (jurorId: string) => {
+  const handleResendEmail = async (jurorEmail: string) => {
     
     setInternalIsLoading(true);
     try {
       const response = await customFetch(
-        `${apiBaseUrl}/auth/reset-token-expiration`,
+        `${apiBaseUrl}/auth/resend-confirmation`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: jurorId }),
+          body: JSON.stringify({ email: jurorEmail }),
         }
       );
       if (!response.ok) {
@@ -711,7 +711,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         </DropdownMenuItem>
                         {!(juror.confirmationStatusId === "Confirmado") && (
                           <DropdownMenuItem
-                            onClick={() => handleResendEmail(juror.id)}
+                            onClick={() => handleResendEmail(juror.email)}
                             disabled={internalIsLoading}
                             className="cursor-pointer"
                           >
