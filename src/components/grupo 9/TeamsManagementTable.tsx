@@ -43,6 +43,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
 
+  // ADD: contadores por categoría
+  const totalTeamsCount = teams?.length ?? 0;
+  const externalTeamsCount = (teams?.filter(t => (t as any)?.isExternal === true).length) ?? 0;
+  const uninorteTeamsCount = totalTeamsCount - externalTeamsCount;
+
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
   });
@@ -536,7 +541,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Todos
+                    Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -545,7 +550,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Externos
+                    Externos ({externalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
@@ -554,7 +559,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Uninorte
+                    Uninorte ({uninorteTeamsCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -590,7 +595,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   disabled={showLoader}
                   aria-pressed={externalFilter === "all"}
                 >
-                  Todos
+                  Todos ({totalTeamsCount})
                 </Button>
 
                 <Button
@@ -605,7 +610,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   disabled={showLoader}
                   aria-pressed={externalFilter === "external"}
                 >
-                  Externos
+                  Externos ({externalTeamsCount})
                 </Button>
 
                 <Button
@@ -620,7 +625,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   disabled={showLoader}
                   aria-pressed={externalFilter === "uninorte"}
                 >
-                  Uninorte
+                  Uninorte ({uninorteTeamsCount})
                 </Button>
               </div>
             </div>
