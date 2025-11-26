@@ -33,6 +33,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", name: "", videogame: ""})
   const [teamsByJuror, setTeamsByJuror] = useState([{id: "", name: "", videogame: ""}])
   const [valueDeleteTeam, setValueDeleteTeam] = useState({id: "", name: "", videogame: ""})
+  const [searchTerm, setSearchTerm] = useState("");
+  const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   useEffect(() => {
 
@@ -113,6 +116,51 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       setExportLoading(false);
     }
   };
+
+  const filteredJurors = (() => {
+    // If there's a search term, prefer the full jurors list (ignore pagination)
+    const q = (searchTerm || "").trim().toLowerCase();
+    const source = q ? allJurors : jurors;
+    if (!source) return [] as any[];
+    if (!q) return source;
+    return source.filter((j: any) => {
+      const name = `${j.firstName ?? ""} ${j.lastName ?? ""}`.toLowerCase();
+      const email = (j.email ?? "").toLowerCase();
+      return name.includes(q) || email.includes(q) || String(j.id).includes(q);
+    });
+  })();
+
+  // Fetch all jurors when a search is active so we can ignore pagination
+  useEffect(() => {
+    let cancelled = false;
+    const q = (searchTerm || "").trim();
+    if (!q) {
+      // clear previously loaded full list when search is cleared
+      setAllJurors(null);
+      return; // nothing to do
+    }
+    if (allJurors) return; // already loaded
+
+    (async () => {
+      setSearchLoading(true);
+      try {
+        const resp = await juryManagement.getJuries(1, 99999);
+        if (cancelled) return;
+        // `getJuries` returns a paginated response shape
+        const data = resp?.data || resp?.items || [];
+        setAllJurors(data);
+      } catch (err: any) {
+        console.error("Failed to fetch all jurors for search:", err);
+        toast.error(err?.message || "Error loading jurados para búsqueda");
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm]);
 
   const showError = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -578,7 +626,14 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       {/* Encabezado (Título y Botón Agregar) */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Jurados</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Buscar jurado por nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64"
+            disabled={showLoader || searchLoading}
+          />
           <Button
               variant="destructive"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
@@ -758,17 +813,17 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && (!jurors || jurors.length === 0) ? (
+            ) : !showLoader && (!filteredJurors || filteredJurors.length === 0) ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay jurados para mostrar en esta página.
+                  No hay jurados para mostrar.
                 </TableCell>
               </TableRow>
             ) : (
-              jurors?.map((juror) => (
+              filteredJurors?.map((juror) => (
                 <TableRow key={juror.id}>
                   {columnsToDisplay.map(({ key, renderCell }) => (
                     <TableCell key={key}>{renderCell(juror)}</TableCell>
@@ -830,8 +885,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             )}
           </TableBody>
         </Table>
-        {/* Pagination Controls */}
-        {paginationMeta && paginationMeta.totalItems > 0 && (
+        {/* Pagination Controls (hidden while searching) */}
+        {!searchTerm && paginationMeta && paginationMeta.totalItems > 0 && (
           <div className="flex justify-between items-center p-4 text-sm border-t border-border">
             <div className="flex items-center gap-2">
               <span>Filas por página</span>
