@@ -114,9 +114,7 @@ export default function TeamWizardForm(props: any) {
 
   // Update likes for the videogame (separate from form submission)
   const updateLikes = useCallback(async () => {
-    console.log("Updating likes...", { likesInput, currentLikes });
     if (!likesInput || likesInput.trim() === "") {
-      console.log("No likes input to update");
       return; // No likes to update
     }
 
@@ -124,7 +122,6 @@ export default function TeamWizardForm(props: any) {
     
     // Skip if likes value hasn't changed
     if (likesValue === currentLikes) {
-      console.log("Likes value hasn't changed, skipping update");
       return;
     }
 
@@ -144,7 +141,6 @@ export default function TeamWizardForm(props: any) {
     }
 
     try {
-      console.log("Fetching team data for videogame ID...");
       // Get team data to find videogame ID
       const teamResponse = await fetch(`${apiBaseUrl}/teams/${teamId}/full`, {
         method: 'GET',
@@ -164,7 +160,6 @@ export default function TeamWizardForm(props: any) {
         return;
       }
 
-      console.log("Making PUT request to update likes...", { videogameId, likesValue });
       // Make PUT request to update likes
       const response = await fetch(`${apiBaseUrl}/videogames/${videogameId}/likes`, {
         method: 'PUT',
@@ -175,7 +170,6 @@ export default function TeamWizardForm(props: any) {
 
       if (response.ok) {
         setCurrentLikes(likesValue);
-        console.log(`Likes updated successfully: ${likesValue}`);
       } else {
         const errorText = await response.text();
         console.error('Error updating likes:', errorText);

@@ -629,7 +629,6 @@ export default function TeamWizardDialog({
   }, [open, safeNrcs, nrcActivos, initialData, methods]);
 
   const onSubmit = methods.handleSubmit((data: any) => {
-    console.log("onSubmit called, updateLikesFunction:", { updateLikesFunction: typeof updateLikesFunction });
     return submitTeam(data, {
       methods,
       setBusy,
