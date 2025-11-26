@@ -109,6 +109,7 @@ export default function RatePage() {
       setShowSuccessLoading(true);
       setTimeout(() => {
         navigate("/pendientes-calificar");
+        
       }, 1000);
     }, 2500);
   };

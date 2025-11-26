@@ -9,6 +9,7 @@ import {
   Gavel,
   ChartLine,
   Users,
+  Book,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -77,7 +78,7 @@ const MENU: Record<Role, MenuItem[]> = {
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: BookCheck
+          icon: Book
         },
         { name: "Colegios Evaluados", 
           url: "/colegios-evaluados", 
