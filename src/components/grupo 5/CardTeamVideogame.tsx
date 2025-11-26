@@ -6,7 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 export default function CardTeamVideogame ({ infoEquipo, infoEditEquipo, setEdit } : {infoEquipo: Team, infoEditEquipo: Team, setEdit: React.Dispatch<React.SetStateAction<boolean | null>>}) {
     return (
-        <Card className="w-full shadow-sm border pb-4 bg-transparent py-5 md:p-10">
+        <Card className="w-full shadow-sm border pb-4 bg-transparent py-5 md:p-10 relative">
+            <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium 
+                ${infoEquipo.status === "CONFIRMADO" ? 
+                    "bg-blue-500/20 text-blue-300 border border-blue-400/30" :
+                    infoEquipo.status === "PENDIENTE" ? 
+                    "bg-purple-500/20 text-purple-300 border border-purple-400/30" :
+                    "bg-red-500/20 text-red-300 border border-red-400/30"
+                }`}>
+                {infoEquipo.status}
+            </div>
             <CardContent>
                 <div className="flex flex-col justify-center space-x-5 space-y-5">
                     <div className="flex justify-center items-center rounded-[20px] w-full space-x-5">

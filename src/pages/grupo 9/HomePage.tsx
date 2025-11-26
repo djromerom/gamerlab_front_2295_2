@@ -5,13 +5,14 @@ import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
 import TeamCode from "@/components/grupo 5/TeamCode";
+import CircularProgress from "@/components/CircularProgress";
 
 const HomePage: React.FC = () => {
   const { user } = useAuth();
   return (
     <LayoutAplication breadcrumbs={[]}>
-      <section className="w-full h-full md:py-24 lg:py-24 xl:py-24 min-w-[250px]">
-        <div className=" flex flex-col gap-[8rem] container px-4 md:px-6">
+      <section className="flex flex-col justify-evenly items-center w-full h-full min-w-[250px]">
+        <section className=" flex flex-col gap-[8rem] container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="flex items-center justify-center">
               <img
@@ -34,12 +35,25 @@ const HomePage: React.FC = () => {
               Estamos encantados de tenerte, {user?.firstName}
             </p>
           </div>
-          <div className="flex flex-col  items-center  space-y-4">
+        </section>
+        <section className="flex flex-col md:flex-row items-center gap-10 space-y-4">
             <TeamCode variant="title" />
-          </div>
-          
-
-        </div>
+        
+        
+            {/* custom size and colors */}
+            <CircularProgress
+            size={140}
+            strokeWidth={14}
+            trackClass="text-gray-200"
+            progressClass="text-emerald-500"
+            labelFormatter={(r, t) => (
+            <div>
+            <div className="text-sm font-bold">{r}/{t}</div>
+            <div className="text-xs text-gray-500">Recibidas</div>
+            </div>
+            )}
+            />
+        </section>
       </section>
     </LayoutAplication>
   );

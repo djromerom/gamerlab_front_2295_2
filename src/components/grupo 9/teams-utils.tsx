@@ -6,6 +6,7 @@ export interface TeamRowData {
   id_edicion: number;
   activo: boolean;
   isExternal?: boolean;
+  teamCode?: string;
   team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
   videojuego: VideojuegoData;

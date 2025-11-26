@@ -258,7 +258,7 @@ export default function TeamsPage() {
           <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
             <button
               onClick={() => setActiveTeamType("all")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
                   ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -267,7 +267,7 @@ export default function TeamsPage() {
             </button>
             <button
               onClick={() => setActiveTeamType("uninorte")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
                   ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -276,7 +276,7 @@ export default function TeamsPage() {
             </button>
             <button
               onClick={() => setActiveTeamType("externo")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
                   ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -321,7 +321,11 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
         <Input
           type="text"
           value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setFilterText(v);
+            onFilter(v);
+          }}
           placeholder="Busca por nombre de equipo o videojuego"
           className="w-64 md:w-96 pl-10"
         />
@@ -511,7 +515,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
             {/* Botón anterior - Solo visible en desktop */}
             <button
               onClick={prevSlide}
-              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+              className="cursor-pointer hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -519,7 +523,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
             {/* Botón siguiente - Solo visible en desktop */}
             <button
               onClick={nextSlide}
-              className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+              className="cursor-pointer hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -547,7 +551,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
                       alt={`Video miniatura ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="cursor-pointer absolute inset-0 bg-black/30 flex items-center justify-center">
                       <div className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center">
                         <div className="w-0 h-0 border-l-4 border-l-black border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
                       </div>
@@ -557,7 +561,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
                   <img
                     src={item.src}
                     alt={`Miniatura ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="cursor-pointer w-full h-full object-cover"
                   />
                 )}
               </button>
@@ -679,7 +683,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
           {/* Botón X de cerrar - Oculto en móvil */}
           <button
             onClick={handleClose}
-            className="hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+            className="cursor-pointer hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -784,7 +788,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
                     <Button
                       variant="outline"
                       onClick={() => window.open(team.repo, "_blank")}
-                      className="w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                      className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Ver repositorio en GitHub

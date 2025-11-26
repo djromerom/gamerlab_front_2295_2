@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CloudUpload, X } from "lucide-react"
+import { CloudUpload, X, AlertTriangle } from "lucide-react"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { ImageCropper } from "../grupo 11/ImageCropper"
@@ -31,6 +31,8 @@ export default function FormEditVideogame (
     const { user } = useAuth();
     const [data, setData] = useState<any>();
     const [error, setError] = useState("");
+    const [originalData, setOriginalData] = useState<any>(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     // Procesar archivos (común para click y drag & drop) 
 
     const processFiles = (files: FileList | File[]) => { 
@@ -83,6 +85,7 @@ export default function FormEditVideogame (
                 setError(`No fue posible obtener las imagenes: ${data.message}`)
             }
             setData(data);
+            setOriginalData(data);
             setImageUrls(data.videogame.additionalImages);
         } catch (error) {
             setError(`Error: ${error}`,);
@@ -94,32 +97,52 @@ export default function FormEditVideogame (
         setAdditionalImages(prev => prev.filter((_, i) => i !== index))
     }; 
 
-    const updateImages = async () => {
-        try {
-            if (data) {
-                const payload = {
-                    videogame: {
-                        additionalImages: imageUrls
-                    }
-                };
-            const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${data.id}`, {
-                method: 'PATCH',
-                credentials: 'include',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
+    // Check if there are changes compared to original data
+    const hasChanges = () => {
+        if (!originalData || !infoEditEquipo) return false;
+        
+        return (
+            infoEditEquipo.teamName !== originalData.teamName ||
+            infoEditEquipo.videogameName !== originalData.videogame?.name ||
+            infoEditEquipo.description !== originalData.videogame?.description ||
+            infoEditEquipo.videoUrl !== originalData.videogame?.videoUrl ||
+            infoEditEquipo.repoUrl !== originalData.videogame?.repoUrl ||
+            currentFiles.length > 0 ||
+            additionalImages.length > 0 ||
+            JSON.stringify(imageUrls) !== JSON.stringify(originalData.videogame?.additionalImages)
+        );
+    };
 
-            if (!response.ok) {
-                toast.error("Hubo un error al actualizar los datos.", { id: 777 })
-                throw new Error ('Error')
-            } else {
-                toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
-            }
+    // Handle save button click
+    const handleSave = async () => {
+        if (!hasChanges()) {
+            toast.info("No hay cambios para guardar");
+            setEdit(false);
+            return;
         }
+        
+        // Check if team is confirmed and there are changes
+        const status = data.videogame.videogameStatus.status;
+        if (status === 'CONFIRMADO' && hasChanges()) {
+            setShowConfirmDialog(true);
+            return;
+        }
+
+        await saveChanges();
+    };
+
+    // Save changes to backend
+    const saveChanges = async () => {
+        try {
+            // Pass the current imageUrls to uploadInfoTeam to handle everything in one request
+            await uploadInfoTeam(imageUrls);
+            setInfoEquipo(infoEditEquipo);
+            setEdit(false);
+            setShowConfirmDialog(false);
         } catch (error) {
-            toast.error(`${error}`)
+            toast.error("Error al guardar los cambios");
         }
-    }
+    };
 
     useEffect(() => {
         if (edit) {
@@ -169,7 +192,6 @@ export default function FormEditVideogame (
                                 />
                             </div>
                         </div>
-
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="description">Descripción</Label>
                             <textarea 
@@ -347,16 +369,45 @@ export default function FormEditVideogame (
                         >
                             Cancelar
                         </Button>
-                        <Button onClick={async () => { 
-                            uploadInfoTeam();
-                            setInfoEquipo(infoEditEquipo); 
-                            await updateImages();
-                            setEdit(false)}}>
+                        <Button onClick={handleSave}>
                                 Guardar
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            {/* Confirmation Dialog for Status Change */}
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                            Confirmar cambios
+                        </DialogTitle>
+                        <DialogDescription className="space-y-2">
+                            Tu videojuego está actualmente <span className="font-semibold text-blue-400">confirmado</span>.<br/>
+                            Al realizar estos cambios, tu videojuego volverá al estado <span className="font-semibold text-purple-400">pendiente</span> y requerirá aprobación del administrador nuevamente.<br/>
+                            ¿Estás seguro de que deseas continuar?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-2">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setShowConfirmDialog(false)}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button 
+                            variant="default"
+                            onClick={async () => { await saveChanges(); }}
+                            className="bg-yellow-500 hover:bg-yellow-600"
+                        >
+                            Sí, continuar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <ImageCropper
                 file={selectedFile}
                 open={cropperOpen}
