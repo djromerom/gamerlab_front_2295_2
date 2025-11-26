@@ -43,11 +43,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
   // REPLACE ABOVE WITH NEW CATEGORY FILTER
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "colegios">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
   // Función para categorizar por teamCode / isExternal
-  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "colegios" | undefined => {
-    if ((team as any)?.isExternal) return "colegios";
+  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+    if ((team as any)?.isExternal) return "Externos";
     const rawCode: string = (team as any)?.teamCode ?? "";
     const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
     switch (prefix) {
@@ -65,7 +65,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
   const sem3Count = teams?.filter(t => categorizeTeam(t) === "sem3").length ?? 0;
   const sem4Count = teams?.filter(t => categorizeTeam(t) === "sem4").length ?? 0;
-  const colegiosCount = teams?.filter(t => categorizeTeam(t) === "colegios").length ?? 0;
+  const colegiosCount = teams?.filter(t => categorizeTeam(t) === "Externos").length ?? 0;
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
@@ -588,12 +588,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "colegios") return;
-                      setCategoryFilter("colegios");
+                      if (categoryFilter === "Externos") return;
+                      setCategoryFilter("Externos");
                       try { onPageChange(1); } catch { }
                     }}
                   >
-                    Colegios ({colegiosCount})
+                    Externos ({colegiosCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -615,7 +615,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* Grupo de filtros por semestre / colegios */}
+              {/* Grupo de filtros por semestre / Externos */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
@@ -684,16 +684,16 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </Button>
                 <Button
                   size="sm"
-                  variant={categoryFilter === "colegios" ? "default" : "ghost"}
+                  variant={categoryFilter === "Externos" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (categoryFilter === "colegios") return;
-                    setCategoryFilter("colegios");
+                    if (categoryFilter === "Externos") return;
+                    setCategoryFilter("Externos");
                     try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
-                  Colegios ({colegiosCount})
+                  Externos ({colegiosCount})
                 </Button>
               </div>
             </div>
