@@ -1006,11 +1006,21 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <span>Filas</span>
                 <Select
                   value={String(itemsPerPage)}
-                  onValueChange={(value) => onLimitChange(parseInt(value, 10))}
+                  onValueChange={(value) => {
+                    if (value === "all") {
+                      // Use a large limit to fetch everything. Replace with 0 or -1 if your backend supports "no limit".
+                      onLimitChange(999999);
+                      try { onPageChange(1); } catch {}
+                    } else {
+                      onLimitChange(parseInt(value, 10));
+                    }
+                  }}
                   disabled={showLoader}
                 >
-                  <SelectTrigger className="w-[70px] cursor-pointer">
-                    <SelectValue placeholder={itemsPerPage} />
+                  <SelectTrigger className="w-[100px] cursor-pointer">
+                    <SelectValue
+                      placeholder={itemsPerPage === 999999 ? "Todos" : String(itemsPerPage)}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {[5, 10, 15, 20].map((n) => (
@@ -1018,6 +1028,10 @@ export const TeamsManagementTable: React.FC<Props> = ({
                         {n}
                       </SelectItem>
                     ))}
+                    {/* Opción "Todos" */}
+                    <SelectItem className="cursor-pointer" value="all">
+                      Todos
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
