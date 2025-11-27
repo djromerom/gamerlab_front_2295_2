@@ -12,6 +12,7 @@ type Team = {
   score: number;
   logo?: string;
   teamCode?: string;
+  tiebreakerScore?: number;
 };
 
 // Estilos para el borde luminoso mejorado
@@ -130,6 +131,7 @@ export default function PodioGamer() {
           score: team.promedio,
           logo: team.logoUrl,
           teamCode: team.codigoEquipo,
+          tiebreakerScore: team.tiebreakerScore || 999,
         }));
 
         setTeams(formattedTeams);
@@ -161,7 +163,14 @@ export default function PodioGamer() {
     
     return semester === activeSemester;
   });
-  const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
+  const sortedTeams = [...filteredTeams].sort((a, b) => {
+    // Ordenar por puntaje descendente
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    // Si tienen el mismo puntaje, ordenar por tiebreaker ascendente (menor es mejor)
+    return (a.tiebreakerScore || 999) - (b.tiebreakerScore || 999);
+  });
 
   useEffect(() => {
     const styleElement = document.createElement("style");

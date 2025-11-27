@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast, Toaster } from "sonner";
-import { ArrowUpDown, Save } from "lucide-react";
+import { ArrowUpDown, Save, X } from "lucide-react";
 
 interface Team {
   id: number;
@@ -55,7 +55,7 @@ export default function TiebreakerPage() {
           averageScore: parseFloat(item.promedio) || 0,
           position: 0, // Se asignará por semestre
           semester: getSemesterFromTeamCode(item.codigoEquipo) || "0",
-          tiebreakerScore: item.tiebreakerScore || 0,
+          tiebreakerScore: item.tiebreakerScore || 999,
         }));
 
         setTeams(formattedTeams);
@@ -96,7 +96,7 @@ export default function TiebreakerPage() {
     }));
 
   const handleTiebreakerChange = (teamId: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    const numValue = parseInt(value) || 999;
     setTeams((prev) =>
       prev.map((team) =>
         team.id === teamId ? { ...team, tiebreakerScore: numValue } : team
@@ -104,25 +104,65 @@ export default function TiebreakerPage() {
     );
   };
 
+  const ignoreEntireTie = async (tiedTeamIds: number[]) => {
+    try {
+      // Primero actualizar el estado local
+      setTeams((prev) =>
+        prev.map((team) =>
+          tiedTeamIds.includes(team.id) ? { ...team, tiebreakerScore: 999 } : team
+        )
+      );
+
+      // Actualizar cada equipo individualmente
+      const updatePromises = tiedTeamIds.map(id =>
+        customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${id}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tiebreakerScore: 999 }),
+          }
+        )
+      );
+
+      const responses = await Promise.all(updatePromises);
+      const allSuccessful = responses.every(r => r.ok);
+
+      if (allSuccessful) {
+        toast.success("Empate ignorado");
+        await fetchTeams();
+      } else {
+        toast.error("Error al ignorar el empate");
+        fetchTeams();
+      }
+    } catch (error) {
+      console.error("Error ignoring entire tie:", error);
+      toast.error("Error de conexión");
+      fetchTeams();
+    }
+  };
+
   const saveTiebreakers = async () => {
     setSaving(true);
     try {
-      const updates = teams.map((team) => ({
-        teamId: team.id,
-        tiebreakerScore: team.tiebreakerScore || 0,
-      }));
-
-      const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/tiebreaker`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ updates }),
-        }
+      // Actualizar cada equipo individualmente
+      const updatePromises = teams.map((team) =>
+        customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${team.id}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tiebreakerScore: team.tiebreakerScore || 999 }),
+          }
+        )
       );
 
-      if (response.ok) {
+      const responses = await Promise.all(updatePromises);
+      const allSuccessful = responses.every(r => r.ok);
+
+      if (allSuccessful) {
         toast.success("Puntuaciones de desempate guardadas exitosamente");
         fetchTeams();
       } else {
@@ -220,7 +260,7 @@ export default function TiebreakerPage() {
               </div>
               
               {tiedGroups.map(([score, tiedTeams]) => (
-                <div key={score} className="border rounded-lg p-4 bg-muted/30">
+                <div key={score} className="border rounded-lg p-4 bg-muted/30 relative">
                   <div className="flex items-center justify-between mb-3 pb-3 border-b">
                     <h4 className="font-semibold">Promedio: {score}</h4>
                     <span className="text-sm text-muted-foreground">
@@ -249,16 +289,27 @@ export default function TiebreakerPage() {
                           <Input
                             id={`tiebreaker-${team.id}`}
                             type="text"
-                            value={team.tiebreakerScore || 0}
+                            value={team.tiebreakerScore || 999}
                             onChange={(e) =>
                               handleTiebreakerChange(team.id, e.target.value)
                             }
                             className="h-9"
-                            placeholder="0.00"
+                            placeholder="999"
                           />
                         </div>
                       </div>
                     ))}
+                  </div>
+                  <div className="flex justify-end mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => ignoreEntireTie(tiedTeams.map(t => t.id))}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Ignorar empate
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -295,7 +346,7 @@ export default function TiebreakerPage() {
                         <span className="font-semibold">{team.averageScore.toFixed(2)}</span>
                       </p>
                       <p className="text-muted-foreground">
-                        Desempate: {team.tiebreakerScore?.toFixed(2) || "0.00"}
+                        Desempate: {team.tiebreakerScore || 999}
                       </p>
                     </div>
                   </div>
