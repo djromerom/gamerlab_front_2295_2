@@ -743,10 +743,10 @@ export const TeamsManagementTable = ({
 
             <div className="ml-auto flex items-center gap-2">
               {/* NEW: mobile search input */}
-              <div className="flex items-center gap-2 border rounded px-2 h-8">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 border rounded px-2 h-8 w-full max-w-[80vw] sm:max-w-xs md:max-w-sm lg:max-w-md">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
-                  className="bg-transparent outline-none text-sm w-36"
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
                   placeholder="Buscar equipo o juego..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -838,8 +838,9 @@ export const TeamsManagementTable = ({
                 disabled={showLoader}
                 onClick={handleOpenAdd}
               >
-                <Plus className="mr-2 h-4 w-4" /> Agregar
+                <Plus className="h-4 w-2" />
               </Button>
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
