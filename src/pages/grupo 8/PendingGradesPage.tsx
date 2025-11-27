@@ -3,6 +3,8 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 
 interface VideogameDetails {
   videogameId: number;
@@ -61,6 +63,8 @@ const PendingGradesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null);
+
+  const { canViewJudges } = useGlobalState()
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -162,6 +166,26 @@ const PendingGradesPage: React.FC = () => {
   const handlePageChange = (page: number) => {
     setPagination((prev) => ({ ...prev, page }));
   };
+  // Permission denied
+    if (canViewJudges === false) {
+      return (
+        <LayoutAplication breadcrumbs={breadcrumbs}>
+          <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <Card className="w-full shadow-sm border">
+              <CardHeader className="p-4 sm:p-6 pb-2">
+                <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Evaluación no Disponible</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-foreground/50">
+                  <p className="text-sm text-foreground/70">Las actividades de evaluación aún no se encuentran habilitadas para su realización. </p>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4">
+                <p className="text-foreground/70 text-sm bold">Por favor, espera a que se active el período establecido para este proceso.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </LayoutAplication>
+      )
+    }
 
   // Mapeo para el grid - SIMPLIFICADO
   const gamesToShow = searchResults !== null
@@ -238,7 +262,7 @@ const PendingGradesPage: React.FC = () => {
           {!isPageLoading &&
             !error &&
             gamesToShow.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-lg text-foreground/70">
                 {searchQuery.trim()
                   ? `No se encontraron resultados para "${searchQuery}"`
                   : "No se encontraron juegos pendientes por calificar."

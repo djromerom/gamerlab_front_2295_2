@@ -191,14 +191,12 @@ const TeamsManagementPage = () => {
 
         return {
           id_equipo: t.id,
+          teamCode: t.teamCode,
           nombre_equipo: t.teamName ?? t.nombre_equipo ?? "",
           fecha_registro: t.registrationDate ?? t.fecha_registro ?? new Date().toISOString(),
           id_usuario: t.userId ?? t.id_usuario ?? "",
           id_edicion: t.editionId ?? t.id_edicion ?? 0,
           activo: t.isActive ?? t.activo ?? true,
-          id_estado_confirmacion: t.confirmId ?? t.id_estado_confirmacion ?? 2,
-          estado_nombre:
-            t.confirmId === 1 ? "confirmado" : t.confirmId === 2 ? "pendiente" : t.confirmId === 3 ? "expirado" : (t.estado_nombre ?? "pendiente"),
           integrantes,
           videojuego: {
             id_videojuego: vg?.id ?? vg?.id_videojuego ?? 0,

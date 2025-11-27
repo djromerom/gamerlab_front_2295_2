@@ -33,6 +33,8 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
+import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
 
 type Role =
   | "Profesor"
@@ -170,6 +172,16 @@ const routes: RouteConfig[] = [
     element: <EditTeamPage />,
     roles: ["Estudiante"],
   },
+  {
+    path: "/ponderado-calificaciones",
+    element: <GradeWeightsPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/configuracion-evento",
+    element: <EventConfigurationPage />,
+    roles: ["Administrador"],
+  }
 ];
 
 const RoutesConfiguration: React.FC = () => {

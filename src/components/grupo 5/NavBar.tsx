@@ -166,6 +166,12 @@ export default function navBar(): React.ReactElement {
               Información
             </Link>
             <Link
+              to="/ediciones-pasadas"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Ediciones Pasadas
+            </Link>
+            <Link
               to="/contribuidores"
 
               onClick={() => setIsMenuOpen(false)}

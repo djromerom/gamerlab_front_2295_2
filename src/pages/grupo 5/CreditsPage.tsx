@@ -809,19 +809,19 @@ export default function DevelopersCredits() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setActiveVersion("all")}
-                    className={`px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     Todas
                   </button>
                   <button
                     onClick={() => setActiveVersion("1.0")}
-                    className={`px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "1.0" ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "1.0" ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     v1
                   </button>
                   <button
                     onClick={() => setActiveVersion("2.0")}
-                    className={`px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     v2
                   </button>
