@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,12 +14,13 @@ import { TeamRowData, Props, NrcInfo, MateriaInfo } from "./teams-utils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
 ──────────────────────────────────────────────────────────────────── */
-export const TeamsManagementTable: React.FC<Props> = ({
+export const TeamsManagementTable = ({
   teams,
   paginationMeta,
   apiBaseUrl,
@@ -26,6 +28,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  allTeams,
   statusEmailLeader,
 }) => {
 
@@ -37,21 +40,102 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const handler = (ev: MediaQueryListEvent | MediaQueryList) => setIsMobile((ev as any).matches === true);
+    setIsMobile(mq.matches);
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handler as any);
+    } else if (typeof (mq as any).addListener === "function") {
+      (mq as any).addListener(handler as any);
+    }
+    return () => {
+      if (typeof mq.removeEventListener === "function") {
+        mq.removeEventListener("change", handler as any);
+      } else if (typeof (mq as any).removeListener === "function") {
+        (mq as any).removeListener(handler as any);
+      }
+    };
+  }, []);
+
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
+  const [resendDialogOpen, setResendDialogOpen] = useState(false);
+  const [resendTarget, setResendTarget] = useState<{
+    teamId: number | null;
+    email: string;
+    type?: string;
+  }>({ teamId: null, email: "", type: undefined });
+  const [rejectionReason, setRejectionReason] = useState<string>("");
 
-  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
+  const [certSearchTerm, setCertSearchTerm] = useState<string>("");
+  const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<string[]>([]);
+  const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
+  const filteredCertTeams = (teams ?? []).filter((t) =>
+    (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
+  );
 
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    try { return window.innerWidth < 768; } catch { return false; }
-  });
-  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
+
+  const categorizeTeam = (
+    t?: TeamRowData
+  ): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+    if (!t) return undefined;
+    if ((t as any).isExternal) return "Externos";
+    const rawCode: string = (t as any).teamCode ?? "";
+    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
+    switch (prefix) {
+      case "N1":
+        return "sem1";
+      case "N2":
+        return "sem2";
+      case "N3":
+        return "sem3";
+      case "N4":
+        return "sem4";
+      default:
+        return undefined;
+    }
+  };
+
+  const datasetForCounts: TeamRowData[] = Array.isArray(allTeams) ? allTeams : (teams ?? []);
+  const totalTeamsCount = datasetForCounts.length; // ahora siempre desde allTeams
+  const sem1Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem1").length;
+  const sem2Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem2").length;
+  const sem3Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem3").length;
+  const sem4Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem4").length;
+  const colegiosCount = datasetForCounts.filter((t) => categorizeTeam(t) === "Externos").length;
+
+  const [clientPage, setClientPage] = useState<number>(1);
+  const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta?.itemsPerPage ?? 10);
+
   useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, [handleResize]);
+    setClientPage(1);
+  }, [categoryFilter]);
+
+  const itemsPerPage = clientPageSize;
+  const currentPage = clientPage;
+  const filteredAllTeams =
+    categoryFilter === "all"
+      ? datasetForCounts
+      : datasetForCounts.filter((t) => categorizeTeam(t) === categoryFilter);
+
+  const totalFiltered = filteredAllTeams.length;
+  const clientTotalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > clientTotalPages) {
+      setClientPage(1);
+    }
+  }, [currentPage, clientTotalPages]);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -122,6 +206,95 @@ export const TeamsManagementTable: React.FC<Props> = ({
     return res.json().catch(() => null);
   };
 
+  const resendTeamEmail = async (email: string, typeOfEmail: string, reason?: string) => {
+    if (internalIsLoading) return;
+    setInternalIsLoading(true);
+    try {
+      const body: any = { email, typeOfEmail };
+      if (reason) body.rejectionReason = reason;
+
+      const res = await fetch(`${apiBaseUrl}/email/resend-team-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || "Error reenviando correo.");
+      }
+
+      toast.success("Correo enviado correctamente a " + email);
+    } catch (e: any) {
+      toast.error(e?.message || "Error al enviar correo.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
+  const sendCertificateEmails = async () => {
+    if (internalIsLoading) return;
+    if (!certSelectedTeamIds || certSelectedTeamIds.length === 0) {
+      showError("Seleccione al menos un equipo para enviar certificados.");
+      return;
+    }
+
+    setInternalIsLoading(true);
+    try {
+      const targets = certSelectedTeamIds.map((teamCode) => {
+        const team = teams?.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
+        const email = team?.integrantes?.[0]?.correo ?? "";
+        return { teamCode, email };
+      });
+
+      const sendPromises = targets.map(({ teamCode, email }) => (async () => {
+        if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
+        try {
+          const body: any = { email, typeOfEmail: certType, certificate: "" };
+          const res = await fetch(`${apiBaseUrl}/email/resend-certificate-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            return { ok: false, email, teamCode, error: err?.message || `Error ${res.status}` };
+          }
+
+          return { ok: true, email, teamCode };
+        } catch (e: any) {
+          return { ok: false, email, teamCode, error: e?.message || "Error de red" };
+        }
+      })());
+
+      // Run in parallel and wait for results
+      const settled = await Promise.allSettled(sendPromises as Promise<any>[]);
+      const results = settled.map((s) => (s.status === "fulfilled" ? s.value : { ok: false, email: "(unknown)", error: s.reason }));
+
+      const successCount = results.filter((r) => r.ok).length;
+      const failItems = results.filter((r) => !r.ok);
+
+      if (successCount > 0) toast.success(`Certificados enviados: ${successCount}`);
+      if (failItems.length > 0) {
+        toast.error(`Fallaron ${failItems.length} envíos. Revise la consola para más detalles.`);
+        console.error("Errores envío certificados:", failItems);
+      }
+
+      // close dialog and clear selection
+      setCertDialogOpen(false);
+      setCertSelectedTeamIds([]);
+      setCertSelectAll(false);
+      setCertSearchTerm("");
+    } catch (e: any) {
+      toast.error(e?.message || "Error enviando certificados.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (statusId: number) => {
     const map = {
       1: { variant: "default" as const, text: "Confirmado" },
@@ -144,11 +317,11 @@ export const TeamsManagementTable: React.FC<Props> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || "No se pudo reenviar el correo de confirmación.");
+        throw new Error(err?.message || "No se pudo enviar el correo de confirmación.");
       }
-      toast.success("Correo de confirmación reenviado a " + email);
+      toast.success("Correo de confirmación enviado a " + email);
     } catch (e: any) {
-      toast.error(e?.message || "Error al reenviar a " + email);
+      toast.error(e?.message || "Error al enviar a " + email);
     } finally {
       setInternalIsLoading(false);
     }
@@ -321,7 +494,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
+        const primaryEmail = (team.integrantes?.[0]?.correo)?.toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
@@ -338,7 +511,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         const label = String(rawLabel);
 
         const s = String(label).trim();
-        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalizar
+        const norm = s.charAt(0).toLocaleUpperCase() + s.slice(1).toLocaleLowerCase(); // normalize
 
         const showResend = norm === "Pendiente" || norm === "Expirado";
         const variant =
@@ -357,7 +530,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => primaryEmail && resendInvite(primaryEmail)}
                   disabled={!primaryEmail || internalIsLoading}
                 >
-                  Reenviar correo
+                  Enviar correo
                 </Button>
               )}
             </div>
@@ -377,9 +550,51 @@ export const TeamsManagementTable: React.FC<Props> = ({
           { id_estado: 3, estado: "Rechazado" },
         ];
 
+        const primaryEmail = team.integrantes?.[0]?.correo ?? "";
+
         return (
           <div className="space-y-2">
-            <div>{getStatusBadge(idEstadoVideojuego)}</div>
+            <div className="flex items-center gap-2">
+              {getStatusBadge(idEstadoVideojuego)}
+
+              {/* Botón pequeño para reenviar según el estado actual */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={async () => {
+                        const email = primaryEmail;
+                        if (!email) {
+                          showError("No se encontró correo del líder para enviar.");
+                          return;
+                        }
+
+                        if (idEstadoVideojuego === 1) {
+                          await resendTeamEmail(email, "VIDEOGAME_APPROVED");
+                        } else if (idEstadoVideojuego === 3) {
+                          setResendTarget({ teamId: team.id_equipo, email, type: "VIDEOGAME_REJECTED" });
+                          setRejectionReason("");
+                          setResendDialogOpen(true);
+                        } else {
+                          // Pending or others -> send info update
+                          await resendTeamEmail(email, "UPDATE_VIDEOGAME_INFO");
+                        }
+                      }}
+                      aria-label="Reenviar según estado"
+                      disabled={!primaryEmail || internalIsLoading}
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{idEstadoVideojuego === 1 ? "Reenviar correo (Aprobado)" : idEstadoVideojuego === 3 ? "Reenviar correo (Rechazado)" : "Enviar correo (Actualizar info)"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
             <Select
               value={String(idEstadoVideojuego)}
@@ -395,6 +610,21 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     )?.estado || numericStatus}.`
                   );
                   refreshData();
+
+                  if (numericStatus === 1) {
+                    if (!primaryEmail) {
+                      showError("No se encontró correo del líder para enviar.");
+                    } else {
+                      try {
+                        await resendTeamEmail(primaryEmail, "VIDEOGAME_APPROVED");
+                      } catch (e) {
+                      }
+                    }
+                  } else if (numericStatus === 3) {
+                    setResendTarget({ teamId: team.id_equipo, email: primaryEmail, type: "VIDEOGAME_REJECTED" });
+                    setRejectionReason("");
+                    setResendDialogOpen(true);
+                  }
                 } catch (err: any) {
                   showError(err?.message || "Error al cambiar el estado.");
                 } finally {
@@ -414,6 +644,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="flex items-center gap-2"></div>
           </div>
         );
       },
@@ -510,51 +742,72 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     disabled={showLoader}
                     aria-label="Filtros"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="2 0 20 20"
-                      strokeWidth={2.5}
-                      stroke="currentColor"
-                      className="w-6 h-6 block m-auto"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z"
-                        opacity="0.99"
-                      />
+                    {/* icono filtro */}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="2 0 20 20" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 block m-auto" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z" opacity="0.99" />
                     </svg>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "all") return;
-                      setExternalFilter("all");
-                      try { onPageChange(1); } catch { }
+                      if (categoryFilter === "all") return;
+                      setCategoryFilter("all");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
-                    Todos
+                    Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "external") return;
-                      setExternalFilter("external");
-                      try { onPageChange(1); } catch { }
+                      if (categoryFilter === "sem1") return;
+                      setCategoryFilter("sem1");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
-                    Externos
+                    Primer Semestre ({sem1Count})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (externalFilter === "uninorte") return;
-                      setExternalFilter("uninorte");
-                      try { onPageChange(1); } catch { }
+                      if (categoryFilter === "sem2") return;
+                      setCategoryFilter("sem2");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
-                    Uninorte
+                    Segundo Semestre ({sem2Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "sem3") return;
+                      setCategoryFilter("sem3");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
+                    }}
+                  >
+                    Tercer Semestre ({sem3Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "sem4") return;
+                      setCategoryFilter("sem4");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
+                    }}
+                  >
+                    Cuarto Semestre ({sem4Count})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (categoryFilter === "Externos") return;
+                      setCategoryFilter("Externos");
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
+                    }}
+                  >
+                    Externos ({colegiosCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -567,6 +820,22 @@ export const TeamsManagementTable: React.FC<Props> = ({
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
+                      disabled={showLoader}
+                      onClick={() => setCertDialogOpen(true)}
+                      aria-label="Enviar certificados"
+                    >
+                      <Award className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Enviar certificados</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         ) : (
@@ -576,57 +845,96 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* Filtro externo / uninorte — fila de 3 botones */}
+              {/* Grupo de filtros por semestre / Externos */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
-                  variant={externalFilter === "all" ? "default" : "ghost"}
+                  variant={categoryFilter === "all" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "all") return;
-                    setExternalFilter("all");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "all") return;
+                    setCategoryFilter("all");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "all"}
                 >
-                  Todos
+                  Todos ({totalTeamsCount})
                 </Button>
-
                 <Button
                   size="sm"
-                  variant={externalFilter === "external" ? "default" : "ghost"}
+                  variant={categoryFilter === "sem1" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "external") return;
-                    setExternalFilter("external");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "sem1") return;
+                    setCategoryFilter("sem1");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "external"}
                 >
-                  Externos
+                  Primer Semestre ({sem1Count})
                 </Button>
-
                 <Button
                   size="sm"
-                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
+                  variant={categoryFilter === "sem2" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (externalFilter === "uninorte") return;
-                    setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch (e) { }
+                    if (categoryFilter === "sem2") return;
+                    setCategoryFilter("sem2");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
-                  aria-pressed={externalFilter === "uninorte"}
                 >
-                  Uninorte
+                  Segundo Semestre ({sem2Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "sem3" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "sem3") return;
+                    setCategoryFilter("sem3");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Tercer Semestre ({sem3Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "sem4" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "sem4") return;
+                    setCategoryFilter("sem4");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Cuarto Semestre ({sem4Count})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={categoryFilter === "Externos" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (categoryFilter === "Externos") return;
+                    setCategoryFilter("Externos");
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Externos ({colegiosCount})
                 </Button>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Botón Agregar -> abre el Wizard */}
               <Button
                 variant="outline"
                 className="bg-card hover:bg-accent text-foreground"
@@ -635,9 +943,22 @@ export const TeamsManagementTable: React.FC<Props> = ({
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar
               </Button>
-
-              {/* Wizard (add/edit) */}
-              {/* (TeamWizardDialog moved below so it's available en mobile también) */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
+                      disabled={showLoader}
+                      onClick={() => setCertDialogOpen(true)}
+                      aria-label="Enviar certificados"
+                    >
+                      <Award className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Enviar certificados</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </>
         )}
@@ -670,7 +991,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && (!teams || teams.length === 0) ? (
+            {showLoader && filteredAllTeams.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -682,27 +1003,21 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && (!teams || teams.length === 0) ? (
+            ) : !showLoader && totalFiltered === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay equipos para mostrar en esta página.
+                  No hay equipos para mostrar con el filtro seleccionado.
                 </TableCell>
               </TableRow>
             ) : (
-              // aplicar filtro cliente por isExternal
               (() => {
-                const filteredTeams = teams?.filter((team) => {
-                  if (!team) return false;
-                  const isExt = (team as any).isExternal === true;
-                  if (externalFilter === "all") return true;
-                  if (externalFilter === "external") return isExt;
-                  return !isExt; // uninorte
-                }) ?? [];
-
-                return filteredTeams.map((team) => (
+                const start = (currentPage - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageSlice = filteredAllTeams.slice(start, end);
+                return pageSlice.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(team)}</TableCell>
@@ -747,64 +1062,217 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        {/* Paginación */}
-        {(() => {
-          const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
-          const currentPage = paginationMeta?.currentPage ?? 1;
-          const totalPages = paginationMeta?.totalPages ?? 0;
+        {/* Paginación (cliente) */}
+        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+          <div className="flex items-center gap-2">
+            <span>Filas</span>
+            <Select
+              value={String(itemsPerPage)}
+              onValueChange={(value) => {
+                const n = parseInt(value, 10);
+                setClientPageSize(n);
+                setClientPage(1);
+                try { onLimitChange?.(n); } catch {}
+              }}
+              disabled={showLoader}
+            >
+              <SelectTrigger className="w-[70px] cursor-pointer">
+                <SelectValue placeholder={itemsPerPage} />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20].map((n) => (
+                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          // Siempre renderizamos la barra de paginación (pero acciones deshabilitadas si no hay páginas)
-          return (
-            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-              <div className="flex items-center gap-2">
-                <span>Filas</span>
-                <Select
-                  value={String(itemsPerPage)}
-                  onValueChange={(value) => onLimitChange(parseInt(value, 10))}
-                  disabled={showLoader}
-                >
-                  <SelectTrigger className="w-[70px] cursor-pointer">
-                    <SelectValue placeholder={itemsPerPage} />
+          <div className="flex items-center gap-4">
+            <span>
+              {clientTotalPages === 0 ? 0 : currentPage} de {clientTotalPages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                onClick={() => setClientPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1 || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setClientPage(Math.min(clientTotalPages, currentPage + 1))}
+                disabled={currentPage >= clientTotalPages || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Dialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>Enviar correo a líder del equipo</DialogTitle>
+            <DialogDescription>
+              Ingrese la razón del rechazo que se incluirá en el correo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <div className="text-sm">Correo destino: <b>{resendTarget.email}</b></div>
+            <div>
+              <textarea
+                className="w-full p-2 border rounded h-28"
+                placeholder="Motivo del rechazo..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResendDialogOpen(false);
+                setResendTarget({ teamId: null, email: "", type: undefined });
+                setRejectionReason("");
+              }}
+              disabled={internalIsLoading}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              onClick={async () => {
+                const email = resendTarget.email;
+                const type = resendTarget.type || "VIDEOGAME_REJECTED";
+                if (!email) {
+                  showError("No hay correo destino para enviar.");
+                  return;
+                }
+                await resendTeamEmail(email, type, rejectionReason || undefined);
+                setResendDialogOpen(false);
+                setResendTarget({ teamId: null, email: "", type: undefined });
+                setRejectionReason("");
+              }}
+              disabled={internalIsLoading || !rejectionReason}
+            >
+              {internalIsLoading ? "Procesando..." : "Enviar"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col text-sm">
+            <DialogHeader>
+              <DialogTitle>Enviar certificados</DialogTitle>
+              <DialogDescription>
+                Seleccione los equipos destinatarios y el tipo de certificado a enviar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+                <div className="flex gap-2 items-center">
+              <div className="w-50">
+                <Select value={certType} onValueChange={(v) => setCertType(v as any)}>
+                  <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 10, 15, 20].map((n) => (
-                      <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
-                        {n}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="PARTICIPATION_CERTIFICATE">Certificado de Participación</SelectItem>
+                    <SelectItem value="1ST_PLACE_CERTIFICATE">Certificado 1º Puesto</SelectItem>
+                    <SelectItem value="2ND_PLACE_CERTIFICATE">Certificado 2º Puesto</SelectItem>
+                    <SelectItem value="3RD_PLACE_CERTIFICATE">Certificado 3º Puesto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex items-center gap-4">
-                <span>
-                  {totalPages > 0 ? currentPage : 0} de {totalPages}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1 || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+              <div className="flex-1 relative">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  <input
+                    className="w-full p-2 border rounded"
+                    placeholder="Buscar equipo por nombre..."
+                    value={certSearchTerm}
+                    onChange={(e) => setCertSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
-          );
-        })()}
-      </Card>
+
+            <div className="flex items-center justify-between ">
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={certSelectAll}
+                        onChange={(e) => {
+                          const checked = (e.target as HTMLInputElement).checked;
+                          setCertSelectAll(checked);
+                          if (checked) {
+                            const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
+                            setCertSelectedTeamIds(ids);
+                          } else {
+                            setCertSelectedTeamIds([]);
+                          }
+                        }}
+                      />
+                  <span>Seleccionar todos</span>
+                </label>
+              </div>
+              <div className="text-sm text-muted-foreground">Seleccionados: {certSelectedTeamIds.length}</div>
+            </div>
+
+            <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
+                  {filteredCertTeams.map((team) => {
+                  const leaderEmail = team.integrantes?.[0]?.correo ?? "";
+                  const code = String(team.teamCode ?? team.id_equipo);
+                  const checked = certSelectedTeamIds.includes(code);
+                  return (
+                    <label key={code} className="flex items-center justify-between p-3 border-b">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={checked}
+                          onChange={(e) => {
+                            const ch = (e.target as HTMLInputElement).checked;
+                            setCertSelectedTeamIds((prev) => {
+                              if (ch) return Array.from(new Set([...prev, code]));
+                              return prev.filter((id) => id !== code);
+                            });
+                            if (!ch) setCertSelectAll(false);
+                          }}
+                        />
+                        <div>
+                          <div className="font-medium">{team.nombre_equipo}</div>
+                          <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
+                    </label>
+                  );
+                })}
+            </div>
+
+            </div>
+
+          <DialogFooter className="pt-0 pb-0 mt-auto">
+            <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
+            <Button onClick={sendCertificateEmails} disabled={internalIsLoading || certSelectedTeamIds.length === 0}>
+              {internalIsLoading ? "Enviando..." : "Enviar certificados"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

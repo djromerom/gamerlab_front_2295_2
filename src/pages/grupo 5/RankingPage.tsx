@@ -1,9 +1,10 @@
 "use client";
 
 import NavBar from "@/components/grupo 5/NavBar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 type Team = {
   id: number;
@@ -99,7 +100,7 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
-const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || true;
+// const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
@@ -107,9 +108,8 @@ export default function PodioGamer() {
   const [fairEnded, setFairEnded] = useState(false);
   const [activeSemester, setActiveSemester] = useState<string>("all");
 
-  useEffect(() => { //
-      setFairEnded(FAIR_ENDED);
-  }, []);
+  // console.log("fairEnded:", fairEnded);
+  // console.log("canViewScores from global state:", canViewScores);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -172,6 +172,7 @@ export default function PodioGamer() {
       document.head.removeChild(styleElement);
     };
   }, []);
+
 
   return (
     <>

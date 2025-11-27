@@ -67,6 +67,7 @@ interface PendingGamesGridProps {
   onSearch?: (query: string) => void;
   isSearching?: boolean;
   searchQuery?: string;
+  page?: string;
 }
 
 export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: string }> = ({
@@ -77,6 +78,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
   onSearch,
   isSearching,
   searchQuery = "",
+  page = "",
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const navigate = useNavigate();
@@ -96,7 +98,7 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
   };
 
   const handleCalificarClick = (game: Game) => {
-    navigate(`/pendientes-calificar/${game.id}`, { state: { game, jurorId } });
+    navigate(`${page}/${game.id}`, { state: { game, jurorId } });
   };
 
   const handleOpenModal = (game: Game) => {

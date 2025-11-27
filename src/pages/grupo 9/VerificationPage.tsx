@@ -387,7 +387,7 @@ export function VerifyEmailPage() {
                 htmlFor="password"
                 className="text-gray-800 dark:text-gray-200"
               >
-                Crea tu Contraseñaa
+                Crea tu Contraseña
               </Label>
               <Input
                 id="password"

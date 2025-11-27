@@ -39,7 +39,7 @@ export default function EditBoard() {
   const [loading, setLoading] = useState(false)
   const [loadingForm, setLoadingForm] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
-  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
+  const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', status: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
 
   //Manage image
   const { setValue, watch } = useForm<CombinedFormValues>();
@@ -122,6 +122,7 @@ export default function EditBoard() {
       teamName: data.teamName,
       videogameName: data.videogame.name, 
       description: data.videogame.description,
+      status: data.videogame.videogameStatus.status,
       logoUrl: data.videogame.logoUrl,
       videoUrl: data.videogame.videoUrl,
       repoUrl: data.videogame.repoUrl,
@@ -132,7 +133,7 @@ export default function EditBoard() {
   }
 
   //Uploads the team's logo image to Azure, then updates the team’s general information via PATCH.
-  async function uploadInfoTeam() {
+  async function uploadInfoTeam(currentImageUrls?: string[]) {
     setLoadingForm(true)
   
     try {
@@ -150,7 +151,10 @@ export default function EditBoard() {
         uploadedAdditional.push(urlResult.url);
       }
 
-      const uploadedAdditionalImages = [...infoEquipo.additionalImages, ...uploadedAdditional];
+      // Use currentImageUrls if provided, otherwise use original logic
+      const finalImageUrls = currentImageUrls 
+        ? [...currentImageUrls, ...uploadedAdditional]
+        : [...infoEquipo.additionalImages, ...uploadedAdditional];
       
       const payload = {
         teamName: infoEditEquipo.teamName,
@@ -160,7 +164,7 @@ export default function EditBoard() {
           logoUrl: uploadedFileUrls[0] || infoEquipo.logoUrl,
           videoUrl: infoEditEquipo.videoUrl,
           repoUrl: infoEditEquipo.repoUrl,
-          additionalImages: uploadedAdditionalImages
+          additionalImages: finalImageUrls
         }
       };
   
@@ -180,8 +184,14 @@ export default function EditBoard() {
         toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
       }
     } catch (error) {
-      toast.error(`Ocurrió un error: ${error}`, { id: 777 })
-      console.error('Los sentimos: ', error)
+      let description = '';
+      if (error instanceof Error && error.message.includes("413")) {
+        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
+      } else {
+        description = error instanceof Error ? error.message : String(error);
+      }
+      toast.error(`Ocurrió un error: ${description}`, { id: 777 });
+      console.error("Error al subir la información del equipo:", error);
     } finally {
       setLoadingForm(false)
     }

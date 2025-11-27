@@ -52,39 +52,12 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
 
     }, [user?.id, teams]);
 
-    // useEffect(() => {
-
-    //     const fetchData = async () => {
-    //         try {
-    //             const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
-    //                 method: "GET",
-    //                 credentials: "include",
-    //                 headers: { "Content-Type": "application/json" }
-    //             });
-    //             if (!response.ok) {
-    //                 throw new Error("Error fetching teams");
-    //             }
-    //             const teamsInfo = await response.json();
-
-
-    //             setTeam(
-    //                 teamsInfo.find((t: { userId: string }) => t.userId === user?.id) || null
-    //             );
-                
-    //         } catch (error) {
-    //             console.error(error);
-    //         }
-    //     };
-
-    //     fetchData();
-    // }, [user?.id]);
 
     
 
     if (variant === "default") {
         return (
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-                <div className="flex justify-start ml-0 m-4">
+                <div className="flex justify-start ml-0 m-4 min-w-[350px]">
                     <div className="flex justify-between gap-3 rounded-2xl p-0 text-xl border-2 border-border bg-card">
                         <p className="pl-4 p-2 font-semibold text-base text-foreground">Codigo del equipo:</p>
                         <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
@@ -92,23 +65,19 @@ export default function TeamCode({ variant = "default"}: TeamCodeProps) {
                         </p>
                     </div>
                 </div>
-            </ThemeProvider>
         )
     } else if (variant === "title" && userRole === "Estudiante") {
         return (
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">   
-                <div className="grid-cols-1 grid-rows-2 border-2 rounded-2xl p-4 h-full gap-10px">
-                    <div className="flex justify-center text-4xl border-b-2  ">
+                <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card"> 
+                    <div className="flex justify-center text-4xl border-b-2 border-border pb-2">
                         <h1 className="font-bold tracking-tighter">Equipo</h1>
-                        
                     </div>
                     <div className="flex justify-center ">
                         <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl p-5 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
                             {team?.teamCode ?? "Cargando..."}
                         </p>
                     </div>
-                </div>
-            </ThemeProvider>    
+                </div> 
         )
     } else {
         return null;

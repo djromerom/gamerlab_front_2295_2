@@ -9,6 +9,7 @@ import {
   mapConfirmationStatus,
 } from "../../components/grupo 12/utils"; // Adjust path if needed
 import { JurorRowData, PaginatedJurors } from "../../components/grupo 12/utils";
+import { juryManagement } from "@/hooks/juryManagement";
 
 const JuryManagementPage = () => {
   // const [data, setData] = useState<Data | null>(null);
@@ -29,51 +30,21 @@ const JuryManagementPage = () => {
     setError(null);
     const includeInactive = false;
 
-    try {
-      const res = await fetch(
-        `${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      if (!res.ok) {
-        let errorMsg = `Error ${res.status}: Failed to fetch jurors`;
-        try {
-          const errorBody = await res.json();
-          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-        } catch (e) {
-          /* ignore */
-        }
-        throw new Error(errorMsg);
-      }
-
-      const dataRespond: PaginatedJurors = await res.json();
+    try {      
+      const dataRespond: PaginatedJurors = await juryManagement.getJuries(page, limit)
       
-
       // If the current page is empty (e.g., after deleting the last item)
       // and it's not the first page, fetch the previous page.
-      if (
-        dataRespond.data.length === 0 &&
-        page > 1 &&
-        dataRespond.metadata.totalItems > 0
-      ) {
+      if (dataRespond.data.length === 0 && page > 1 && dataRespond.metadata.totalItems > 0) {
         // Check totalItems to prevent infinite loop if backend returns 0 items always
         return fetchJurors(page - 1, limit);
       }
 
-      dataRespond.data = dataRespond.data.map(
-        (jurado: any): JurorRowData => ({
-          ...jurado,
-          confirmationStatusId: mapConfirmationStatus(
-            jurado.confirmationStatusId
-          ),
-          lastSignInAt: formatDate(jurado.lastSignInAt),
-        })
-      );
-
+      dataRespond.data = dataRespond.data.map((jurado: any): JurorRowData => ({
+        ...jurado,
+        confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
+        lastSignInAt: formatDate(jurado.lastSignInAt),
+      }));
       setJurorsData(dataRespond);
 
     } catch (err: any) {
@@ -103,6 +74,15 @@ const JuryManagementPage = () => {
     // Reset to page 1 when limit changes to avoid being on an invalid page
     setPagination({ page: 1, limit: newLimit });
   };
+
+  const automaticAssignment = async () => {
+    try {
+      const response = await juryManagement.automaticAssignment()
+      setError(response.message)
+    } catch (error) {
+      setError (error)
+    }
+  }
 
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 

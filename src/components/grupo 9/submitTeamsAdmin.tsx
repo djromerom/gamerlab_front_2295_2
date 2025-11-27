@@ -15,6 +15,7 @@ export type SubmitCtx = {
   toast: any;
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
+  updateLikes?: () => Promise<void>;
 };
 
 export async function submitTeam(data: any, ctx: SubmitCtx) {
@@ -33,15 +34,48 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     toast,
     onOpenChange,
     onSuccess,
+    updateLikes,
   } = ctx;
+
+  // Helper: generar código para miembros colegio (externos) nuevos sin código
+  const randomStudentCode = (() => {
+    const used = new Set<string>();
+    return () => {
+      let n: number;
+      do {
+        n = 400000000 + Math.floor(Math.random() * 500000000);
+      } while (used.has(String(n)));
+      used.add(String(n));
+      return String(n);
+    };
+  })();
+
+  // Normalizar array NRC (retorna array de strings de códigos)
+  function buildNrcCodeArray(member: any, isExternalTeam: boolean, globalNrcId: any): string[] {
+    if (isExternalTeam) {
+      if (!globalNrcId) return [];
+      const match = nrcOptions.find((n: any) =>
+        [n.id, n.id_nrc, n.codigo, n.codeStr, n.code]
+          .map(x => String(x))
+          .includes(String(globalNrcId))
+      );
+      return [String(match?.codigo ?? match?.codeStr ?? match?.id_nrc ?? globalNrcId)];
+    }
+    const ids: number[] = Array.isArray(member?.nrcIds) ? member.nrcIds : [];
+    return ids
+      .map(id => {
+        const found = nrcOptions.find((n: any) => Number(n.id_nrc ?? n.id) === Number(id));
+        return String(found?.codigo ?? found?.codeStr ?? id);
+      })
+      .filter(Boolean);
+  }
 
   setBusy(true);
   try {
     const formValues = methods.getValues();
     WizardSchema.parse(formValues);
-    const formIsExternal = !!formValues.isExternal;
-    (data as any).isExternal = formIsExternal;
-    (data as any).integrantes = formValues.integrantes ?? (data as any).integrantes;
+    data.isExternal = !!formValues.isExternal;
+    data.integrantes = formValues.integrantes ?? data.integrantes;
 
     (formValues.integrantes || []).forEach((_: any, i: any) =>
       methods.clearErrors(`integrantes.${i}.correo`)
@@ -71,7 +105,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     }
 
     if (!data.isExternal && data.integrantes.length > 0) {
-      const emails = data.integrantes.map((m: { correo: any }) => (m.correo || "").trim());
+      const emails = data.integrantes.map((m: any) => (m.correo || "").trim());
       let excludeEmails: string[] = [];
 
       if (data.mode === "edit" && initialData?.integrantes) {
@@ -92,9 +126,19 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
           }
         });
 
+        // Excluir correos de miembros recién agregados (tienen id nuevo no presente en initialData)
+        const originalIds = new Set(
+          (initialData.integrantes || []).map((m: any) => m?.id_integrante ?? m?.id).filter((v: any) => v != null)
+        );
+        data.integrantes.forEach((m: any) => {
+          const id = m?.id_integrante ?? m?.id;
+          if (id != null && !originalIds.has(id)) {
+            const curEmail = (m?.correo || "").trim();
+            if (curEmail) excludeEmails.push(curEmail);
+          }
+        });
+
         excludeEmails = Array.from(new Set(excludeEmails));
-      } else {
-        excludeEmails = [];
       }
 
       const dup = await findUsedEmails(apiBaseUrl, emails, excludeEmails);
@@ -116,9 +160,18 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       galleryUploads = await uploadFilesToAzure(galleryFiles);
     }
 
-    const fullPayload = buildPayload(data, logoUpload, galleryUploads, nrcOptions, primaryEmailLocked);
+    const fullPayload = buildPayload(
+      data,
+      logoUpload,
+      galleryUploads,
+      nrcOptions,
+      primaryEmailLocked
+    );
 
-    const url = data.mode === "add" ? `${apiBaseUrl}/teams/admin` : `${apiBaseUrl}/teams/${data.id_equipo}`;
+    const url =
+      data.mode === "add"
+        ? `${apiBaseUrl}/teams/admin`
+        : `${apiBaseUrl}/teams/${data.id_equipo}`;
     const method = data.mode === "add" ? "POST" : "PATCH";
 
     let requestBody: any = fullPayload;
@@ -126,21 +179,21 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     if (method === "PATCH") {
       const patch: any = {};
       const changed = (a: any, b: any) => {
-        try {
-          return JSON.stringify(a) !== JSON.stringify(b);
-        } catch {
-          return a !== b;
-        }
+        try { return JSON.stringify(a) !== JSON.stringify(b); } catch { return a !== b; }
       };
 
+      // Equipo
       const origTeamName = initialData?.nombre_equipo ?? "";
       if (changed(fullPayload.teamName, origTeamName)) patch.teamName = fullPayload.teamName;
 
       const origIsExternal = initialData?.isExternal ?? false;
       if (changed(fullPayload.isExternal, origIsExternal)) patch.isExternal = fullPayload.isExternal;
-      const origGlobalNrc = initialData?.team_nrc_global_id ?? undefined;
-      if (changed((fullPayload as any).team_nrc_global_id, origGlobalNrc)) patch.team_nrc_global_id = (fullPayload as any).team_nrc_global_id;
 
+      const origGlobalNrc = initialData?.team_nrc_global_id ?? undefined;
+      if (changed(fullPayload.team_nrc_global_id, origGlobalNrc))
+        patch.team_nrc_global_id = fullPayload.team_nrc_global_id;
+
+      // Videojuego
       const vgPatch: any = {};
       const origVg = {
         nombre: "",
@@ -151,8 +204,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         additionalImages: [],
         ...(initialData?.videojuego || {}),
       };
-
-      const curVg = (fullPayload as any).videogame || {};
+      const curVg = fullPayload.videogame || {};
       if (changed(curVg.vgName, origVg.nombre)) vgPatch.vgName = curVg.vgName;
       if (changed(curVg.description, origVg.descripcion)) vgPatch.description = curVg.description;
       if (changed(curVg.repoUrl, origVg.repo_url)) vgPatch.repoUrl = curVg.repoUrl;
@@ -161,106 +213,65 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       if (changed(curVg.additionalImages, origVg.additionalImages)) vgPatch.additionalImages = curVg.additionalImages;
       if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
 
+      // Miembros (solo actualizar / remover; los nuevos ya fueron creados vía add-member)
       const membersPatch: any[] = [];
       const origMembers = initialData?.integrantes || [];
       const curMembers = data.integrantes || [];
+      const isExternalTeam = !!data.isExternal;
+      const globalNrcId = data.team_nrc_global_id;
 
-      const globalNrcCodeForPatch =
-        data.isExternal && data.team_nrc_global_id
-          ? (() => {
-              const v = data.team_nrc_global_id;
-              const match = (nrcOptions || []).find((n: any) => {
-                return (
-                  n?.id_nrc === v ||
-                  n?.id === v ||
-                  String(n?.id_nrc) === String(v) ||
-                  String(n?.id) === String(v) ||
-                  String(n?.code ?? n?.codigo ?? n?.codeStr ?? "") === String(v)
-                );
-              });
-              return match ? (match.codigo ?? match.id_nrc ?? String(v)) : String(v);
-            })()
-          : undefined;
-
-      const makeRandomStudentCodeForPatch = (() => {
-        const used = new Set<string>();
-        return () => {
-          let n: number;
-          do {
-            n = 400000000 + Math.floor(Math.random() * 500000000);
-          } while (used.has(String(n)));
-          used.add(String(n));
-          return String(n);
-        };
-      })();
-
-      const origIdsSet = new Set<number | string>(origMembers.map((m: any) => m?.id_integrante ?? m?.id).filter(Boolean));
-      const curIdsSet = new Set<number | string>();
+      const origIdsSet = new Set(
+        origMembers.map((m: any) => m?.id_integrante ?? m?.id).filter(Boolean)
+      );
+      const curIdsSet = new Set<any>();
 
       for (let idx = 0; idx < curMembers.length; idx++) {
         const cur = curMembers[idx];
-        const orig = origMembers[idx] || null;
-        const id = cur?.id_integrante ?? orig?.id_integrante;
-        if (id != null) curIdsSet.add(id);
-        if (id == null && (!orig || orig == null)) {
-          const newMember: any = {
-            memberFirstName: cur.nombre,
-            memberLastName: cur.apellido,
-            memberEmail: cur.correo,
-            nrc: data.isExternal
-              ? (globalNrcCodeForPatch ? [String(globalNrcCodeForPatch)] : [])
-              : (cur.nrcIds || []).map((nid: number) => {
-                  const n = nrcOptions.find(nrc => nrc.id_nrc === nid) || nrcOptions.find(nrc => String(nrc.codigo) === String(nid));
-                  return n ? String((n as any).codigo ?? (n as any).code) : String(nid);
-                }),
-          };
+        const curId = cur?.id_integrante ?? cur?.id ?? null;
+        if (curId != null) curIdsSet.add(curId);
 
-          if (cur.codigo_estudiantil && String(cur.codigo_estudiantil).trim() !== "") {
-            newMember.studentCode = String(cur.codigo_estudiantil);
-          } else {
-            newMember.studentCode = makeRandomStudentCodeForPatch();
-          }
-          membersPatch.push(newMember);
-          continue;
-        }
+        const orig = origMembers.find(
+          (om: any) => (om?.id_integrante ?? om?.id) === curId
+        ) || null;
 
-        if (id != null) {
-          const changedMember: any = { id };
-          const origEmail = (orig?.correo || "").trim();
-          const curEmail = (cur?.correo || "").trim();
-          if (changed(curEmail, origEmail)) changedMember.memberEmail = curEmail;
+        // Miembro nuevo: NO se incluye en patch (ya creado antes)
+        if (!orig) continue;
 
-          const origFirst = (orig?.nombre || "");
-          if (changed(cur?.nombre || "", origFirst)) changedMember.memberFirstName = cur.nombre;
-          const origLast = (orig?.apellido || "");
-          if (changed(cur?.apellido || "", origLast)) changedMember.memberLastName = cur.apellido;
-          if (!data.isExternal) {
-            const origCode = String(orig?.codigo_estudiantil ?? "");
-            if (changed(cur?.codigo_estudiantil ?? "", origCode)) changedMember.studentCode = cur.codigo_estudiantil;
-          }
-          const origNrcs = Array.isArray(orig?.nrcIds) ? orig.nrcIds.map(String) : (Array.isArray((orig as any).nrcs) ? (orig as any).nrcs.map((n: any) => String(n.id_nrc ?? n.id ?? n.code)) : []);
-          const curNrcs = (cur?.nrcIds || []).map(String);
+        const curEmail = (cur?.correo || "").trim();
+        const curFirst = cur?.nombre || "";
+        const curLast = cur?.apellido || "";
+        const curStudentCode = cur?.codigo_estudiantil
+          ? String(cur.codigo_estudiantil)
+          : (isExternalTeam ? String(cur.codigo_estudiantil || "") : undefined);
 
-          if (data.isExternal) {
-            const globalArr = globalNrcCodeForPatch ? [String(globalNrcCodeForPatch)] : [];
-            if (changed(origNrcs, globalArr)) {
-              changedMember.nrc = globalArr;
-            }
-          } else {
-            if (changed(origNrcs, curNrcs)) {
-              changedMember.nrc = curNrcs;
-            }
-          }
+        const curNrcArray = buildNrcCodeArray(cur, isExternalTeam, globalNrcId);
+        const origEmail = (orig?.correo || "").trim();
+        const origFirst = orig?.nombre || "";
+        const origLast = orig?.apellido || "";
+        const origStudentCode = orig?.codigo_estudiantil
+          ? String(orig.codigo_estudiantil)
+          : (isExternalTeam ? String(orig.codigo_estudiantil || "") : undefined);
+        const origNrcArray = buildNrcCodeArray(orig, !!initialData?.isExternal, initialData?.team_nrc_global_id);
 
-          if (Object.keys(changedMember).length > 1) membersPatch.push(changedMember);
-        }
+        const memberPatch: any = { id: curId };
+
+        if (changed(curEmail, origEmail)) memberPatch.memberEmail = curEmail;
+        if (changed(curFirst, origFirst)) memberPatch.memberFirstName = curFirst;
+        if (changed(curLast, origLast)) memberPatch.memberLastName = curLast;
+        if (changed(curStudentCode, origStudentCode)) memberPatch.studentCode = curStudentCode;
+        if (changed(curNrcArray, origNrcArray)) memberPatch.nrc = curNrcArray.map(String); // garantiza array de strings
+
+        // Si solo tiene id no se envía
+        if (Object.keys(memberPatch).length > 1) membersPatch.push(memberPatch);
       }
 
+      // IDs removidos
       const removedIds = Array.from(origIdsSet).filter(id => !curIdsSet.has(id));
       if (membersPatch.length) patch.members = membersPatch;
       if (removedIds.length) patch.removedMemberIds = removedIds;
 
-      if (Object.keys(patch).length === 0) {
+      // Si nada cambió
+      if (!Object.keys(patch).length) {
         toast.info("No hay cambios para guardar");
         setBusy(false);
         return;
@@ -279,33 +290,33 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     let res: Response | null = null;
     try {
       res = await fetch(url, fetchOpts as any);
-
       const rawText = await res.text().catch(() => "<no body>");
       let parsed: any = null;
       try {
         parsed = rawText && rawText !== "<no body>" ? JSON.parse(rawText) : rawText;
-      } catch (e) {
+      } catch {
         parsed = rawText;
       }
-      console.groupEnd();
 
       if (!(data.mode === "add" ? res.status === 201 : res.ok)) {
         const errBody = parsed ?? {};
         let mapped = false;
         const mappedMsgs: string[] = [];
 
-        const sourceObj = errBody.errors ?? (typeof errBody.message === "object" ? errBody.message : undefined);
+        const sourceObj =
+          errBody.errors ??
+          (typeof errBody.message === "object" ? errBody.message : undefined);
         if (sourceObj && typeof sourceObj === "object") {
           Object.entries(sourceObj).forEach(([k, v]) => {
             const msg = Array.isArray(v) ? v.join(", ") : String(v);
-            const normalized = String(k).replace(/^members\./, "integrantes.").replace(/\[(\d+)\]/g, '.$1');
+            const normalized = String(k)
+              .replace(/^members\./, "integrantes.")
+              .replace(/\[(\d+)\]/g, ".$1");
             try {
               methods.setError(normalized, { type: "server", message: msg });
               mapped = true;
               mappedMsgs.push(msg);
-            } catch (e) {
-              console.warn("Failed to setError for", normalized, msg, e);
-            }
+            } catch {}
           });
         }
 
@@ -315,7 +326,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
           else if (typeof errBody.message === "string") messagesArr.push(errBody.message);
           else if (typeof errBody === "string") messagesArr.push(errBody);
 
-          messagesArr.forEach((rawMsg) => {
+          messagesArr.forEach(rawMsg => {
             const m = String(rawMsg).match(/members\.(\d+)\.(.+)$/i);
             if (m) {
               const idx = Number(m[1]);
@@ -325,9 +336,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
                 methods.setError(path, { type: "server", message: msg });
                 mapped = true;
                 mappedMsgs.push(msg);
-              } catch (e) {
-                console.warn("Failed to setError for", path, msg, e);
-              }
+              } catch {}
             } else {
               mappedMsgs.push(String(rawMsg));
             }
@@ -342,17 +351,14 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         const fallback = typeof parsed === "string" ? parsed : JSON.stringify(parsed);
         throw new Error(fallback || `Error ${res.status}`);
       }
-
-      // success
     } catch (err: any) {
-      console.error("Teams submit fatal error:", err, { url, method, requestBody, response: res ? { status: res.status, statusText: res.statusText } : null });
-      const msg = err?.message ? (String(err.message).slice(0, 400)) : "Error inesperado";
-      toast.error("Error al guardar: " + msg);
+      toast.error("Error al guardar: " + (err?.message || "Error inesperado"));
       setBusy(false);
       return;
     }
 
     toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
+    
     onOpenChange(false);
     onSuccess();
   } catch (e: any) {

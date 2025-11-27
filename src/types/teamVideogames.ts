@@ -3,6 +3,7 @@ export type Team = {
   teamName: string;
   videogameName: string;
   description: string;
+  status: string;
   logoUrl: string;
   videoUrl: string;
   repoUrl: string;
@@ -37,6 +38,6 @@ export interface TeamVideogameProps {
 
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
     handleDeleteFile: () => void,
-    uploadInfoTeam: () => void,
+    uploadInfoTeam: (currentImageUrls?: string[]) => Promise<void>,
     handleCroppedImage: (croppedFile: File) => void
 }
