@@ -117,9 +117,12 @@ export const TeamsManagementTable = ({
   const [clientPage, setClientPage] = useState<number>(1);
   const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta?.itemsPerPage ?? 10);
 
+  // NEW: search term state
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
   useEffect(() => {
     setClientPage(1);
-  }, [categoryFilter]);
+  }, [categoryFilter, searchTerm]); // reset page when filters change
 
   const itemsPerPage = clientPageSize;
   const currentPage = clientPage;
@@ -128,7 +131,16 @@ export const TeamsManagementTable = ({
       ? datasetForCounts
       : datasetForCounts.filter((t) => categorizeTeam(t) === categoryFilter);
 
-  const totalFiltered = filteredAllTeams.length;
+  // NEW: apply search filter (team name or videogame name)
+  const filteredBySearch = filteredAllTeams.filter((t) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    const teamName = (t.nombre_equipo ?? "").toLowerCase();
+    const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+    return teamName.includes(term) || gameName.includes(term);
+  });
+
+  const totalFiltered = filteredBySearch.length;
   const clientTotalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
 
   useEffect(() => {
@@ -179,7 +191,7 @@ export const TeamsManagementTable = ({
         console.error("Error fetching subjects:", err);
         setMateriasOptions([]);
 
-      } 
+      }
     };
     load();
   }, [API_ENDPOINT]);
@@ -723,16 +735,24 @@ export const TeamsManagementTable = ({
   };
 
   return (
-    <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
-        }`}
-    >
+    <div className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}>
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
           <div className="flex items-center gap-2 w-full">
             <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
+              {/* NEW: mobile search input */}
+              <div className="flex items-center gap-2 border rounded px-2 h-8">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <input
+                  className="bg-transparent outline-none text-sm w-36"
+                  placeholder="Buscar equipo o juego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -855,7 +875,7 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "all") return;
                     setCategoryFilter("all");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
@@ -869,11 +889,11 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "sem1") return;
                     setCategoryFilter("sem1");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
-                  Primer Semestre ({sem1Count})
+                  N1 ({sem1Count})
                 </Button>
                 <Button
                   size="sm"
@@ -883,11 +903,11 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "sem2") return;
                     setCategoryFilter("sem2");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
-                  Segundo Semestre ({sem2Count})
+                  N2 ({sem2Count})
                 </Button>
                 <Button
                   size="sm"
@@ -897,11 +917,11 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "sem3") return;
                     setCategoryFilter("sem3");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
-                  Tercer Semestre ({sem3Count})
+                  N3 ({sem3Count})
                 </Button>
                 <Button
                   size="sm"
@@ -911,11 +931,11 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "sem4") return;
                     setCategoryFilter("sem4");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
-                  Cuarto Semestre ({sem4Count})
+                  N4 ({sem4Count})
                 </Button>
                 <Button
                   size="sm"
@@ -925,13 +945,24 @@ export const TeamsManagementTable = ({
                     if (categoryFilter === "Externos") return;
                     setCategoryFilter("Externos");
                     setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    try { onPageChange?.(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
                   Externos ({colegiosCount})
                 </Button>
               </div>
+            </div>
+
+            {/* NEW: desktop search input */}
+            <div className="flex items-center gap-2 border rounded px-2 h-9">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <input
+                className="bg-transparent outline-none text-sm w-64"
+                placeholder="Buscar equipo o videojuego..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
 
             <div className="flex items-center gap-3">
@@ -991,7 +1022,7 @@ export const TeamsManagementTable = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && filteredAllTeams.length === 0 ? (
+            {showLoader && filteredBySearch.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -1016,7 +1047,7 @@ export const TeamsManagementTable = ({
               (() => {
                 const start = (currentPage - 1) * itemsPerPage;
                 const end = start + itemsPerPage;
-                const pageSlice = filteredAllTeams.slice(start, end);
+                const pageSlice = filteredBySearch.slice(start, end); // NEW: use search-filtered list
                 return pageSlice.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
@@ -1072,7 +1103,7 @@ export const TeamsManagementTable = ({
                 const n = parseInt(value, 10);
                 setClientPageSize(n);
                 setClientPage(1);
-                try { onLimitChange?.(n); } catch {}
+                try { onLimitChange?.(n); } catch { }
               }}
               disabled={showLoader}
             >
@@ -1175,15 +1206,15 @@ export const TeamsManagementTable = ({
 
       <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
         <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col text-sm">
-            <DialogHeader>
-              <DialogTitle>Enviar certificados</DialogTitle>
-              <DialogDescription>
-                Seleccione los equipos destinatarios y el tipo de certificado a enviar.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Enviar certificados</DialogTitle>
+            <DialogDescription>
+              Seleccione los equipos destinatarios y el tipo de certificado a enviar.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-3">
-                <div className="flex gap-2 items-center">
+          <div className="space-y-3">
+            <div className="flex gap-2 items-center">
               <div className="w-50">
                 <Select value={certType} onValueChange={(v) => setCertType(v as any)}>
                   <SelectTrigger className="w-full h-8 text-xs">
@@ -1214,19 +1245,19 @@ export const TeamsManagementTable = ({
             <div className="flex items-center justify-between ">
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={certSelectAll}
-                        onChange={(e) => {
-                          const checked = (e.target as HTMLInputElement).checked;
-                          setCertSelectAll(checked);
-                          if (checked) {
-                            const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
-                            setCertSelectedTeamIds(ids);
-                          } else {
-                            setCertSelectedTeamIds([]);
-                          }
-                        }}
-                      />
+                  <Checkbox
+                    checked={certSelectAll}
+                    onChange={(e) => {
+                      const checked = (e.target as HTMLInputElement).checked;
+                      setCertSelectAll(checked);
+                      if (checked) {
+                        const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
+                        setCertSelectedTeamIds(ids);
+                      } else {
+                        setCertSelectedTeamIds([]);
+                      }
+                    }}
+                  />
                   <span>Seleccionar todos</span>
                 </label>
               </div>
@@ -1234,36 +1265,36 @@ export const TeamsManagementTable = ({
             </div>
 
             <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
-                  {filteredCertTeams.map((team) => {
-                  const leaderEmail = team.integrantes?.[0]?.correo ?? "";
-                  const code = String(team.teamCode ?? team.id_equipo);
-                  const checked = certSelectedTeamIds.includes(code);
-                  return (
-                    <label key={code} className="flex items-center justify-between p-3 border-b">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={checked}
-                          onChange={(e) => {
-                            const ch = (e.target as HTMLInputElement).checked;
-                            setCertSelectedTeamIds((prev) => {
-                              if (ch) return Array.from(new Set([...prev, code]));
-                              return prev.filter((id) => id !== code);
-                            });
-                            if (!ch) setCertSelectAll(false);
-                          }}
-                        />
-                        <div>
-                          <div className="font-medium">{team.nombre_equipo}</div>
-                          <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
-                        </div>
+              {filteredCertTeams.map((team) => {
+                const leaderEmail = team.integrantes?.[0]?.correo ?? "";
+                const code = String(team.teamCode ?? team.id_equipo);
+                const checked = certSelectedTeamIds.includes(code);
+                return (
+                  <label key={code} className="flex items-center justify-between p-3 border-b">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={checked}
+                        onChange={(e) => {
+                          const ch = (e.target as HTMLInputElement).checked;
+                          setCertSelectedTeamIds((prev) => {
+                            if (ch) return Array.from(new Set([...prev, code]));
+                            return prev.filter((id) => id !== code);
+                          });
+                          if (!ch) setCertSelectAll(false);
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium">{team.nombre_equipo}</div>
+                        <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
-                    </label>
-                  );
-                })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
+                  </label>
+                );
+              })}
             </div>
 
-            </div>
+          </div>
 
           <DialogFooter className="pt-0 pb-0 mt-auto">
             <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
