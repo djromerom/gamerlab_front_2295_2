@@ -83,40 +83,35 @@ export const TeamsManagementTable = ({
     (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
   );
 
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
+  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+  // REPLACE ABOVE WITH NEW CATEGORY FILTER
+  // const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
-  const categorizeTeam = (
-    t?: TeamRowData
-  ): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
-    if (!t) return undefined;
-    if ((t as any).isExternal) return "Externos";
-    const rawCode: string = (t as any).teamCode ?? "";
-    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
-    switch (prefix) {
-      case "N1":
-        return "sem1";
-      case "N2":
-        return "sem2";
-      case "N3":
-        return "sem3";
-      case "N4":
-        return "sem4";
-      default:
-        return undefined;
-    }
-  };
+  // Function to categorize by teamCode / isExternal
+  // const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+  //   if ((team as any)?.isExternal) return "Externos";
+  //   const rawCode: string = (team as any)?.teamCode ?? "";
+  //   const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
+  //   switch (prefix) {
+  //     case "N1": return "sem1";
+  //     case "N2": return "sem2";
+  //     case "N3": return "sem3";
+  //     case "N4": return "sem4";
+  //     default: return undefined;
+  //   }
+  // };
 
-  const datasetForCounts: TeamRowData[] = Array.isArray(allTeams) ? allTeams : (teams ?? []);
-  const totalTeamsCount = datasetForCounts.length; // ahora siempre desde allTeams
-  const sem1Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem1").length;
-  const sem2Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem2").length;
-  const sem3Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem3").length;
-  const sem4Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem4").length;
-  const colegiosCount = datasetForCounts.filter((t) => categorizeTeam(t) === "Externos").length;
+  // Counters
+  const totalTeamsCount = teams?.length ?? 0;
+  const uninorteCount = teams?.filter(t => !(t as any)?.isExternal).length ?? 0;
+  const externalCount = teams?.filter(t => (t as any)?.isExternal).length ?? 0;
 
-  const [clientPage, setClientPage] = useState<number>(1);
-  const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta?.itemsPerPage ?? 10);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    try { return window.innerWidth < 768; } catch { return false; }
+  });
+  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
   useEffect(() => {
     setClientPage(1);
   }, [categoryFilter]);
@@ -724,8 +719,7 @@ export const TeamsManagementTable = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
-        }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}
     >
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
@@ -733,6 +727,17 @@ export const TeamsManagementTable = ({
             <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
+              {/* buscador móvil responsive */}
+              <div className="flex items-center gap-2 border rounded px-2 h-8 w-full max-w-[70vw]">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                  placeholder="Buscar equipo o videojuego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -751,63 +756,30 @@ export const TeamsManagementTable = ({
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "all") return;
-                      setCategoryFilter("all");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
+                      if (externalFilter === "all") return;
+                      setExternalFilter("all");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
                     Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "sem1") return;
-                      setCategoryFilter("sem1");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
+                      if (externalFilter === "uninorte") return;
+                      setExternalFilter("uninorte");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
-                    Primer Semestre ({sem1Count})
+                    Uninorte ({uninorteCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "sem2") return;
-                      setCategoryFilter("sem2");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
+                      if (externalFilter === "external") return;
+                      setExternalFilter("external");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
-                    Segundo Semestre ({sem2Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "sem3") return;
-                      setCategoryFilter("sem3");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
-                    }}
-                  >
-                    Tercer Semestre ({sem3Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "sem4") return;
-                      setCategoryFilter("sem4");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
-                    }}
-                  >
-                    Cuarto Semestre ({sem4Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "Externos") return;
-                      setCategoryFilter("Externos");
-                      setClientPage(1);
-                      try { onPageChange?.(1); } catch { }
-                    }}
-                  >
-                    Externos ({colegiosCount})
+                    Externos ({externalCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -818,7 +790,7 @@ export const TeamsManagementTable = ({
                 disabled={showLoader}
                 onClick={handleOpenAdd}
               >
-                <Plus className="mr-2 h-4 w-4" /> Agregar
+                <Plus className=" h-4 w-4" />
               </Button>
               <TooltipProvider>
                 <Tooltip>
@@ -840,22 +812,23 @@ export const TeamsManagementTable = ({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-6">
-              <div>
+            <div className="flex items-center gap-4">
+
+              <div className="flex w-full">
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* Grupo de filtros por semestre / Externos */}
+
+              {/* Filtro externo / uninorte */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
-                  variant={categoryFilter === "all" ? "default" : "ghost"}
+                  variant={externalFilter === "all" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (categoryFilter === "all") return;
-                    setCategoryFilter("all");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    if (externalFilter === "all") return;
+                    setExternalFilter("all");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -863,76 +836,44 @@ export const TeamsManagementTable = ({
                 </Button>
                 <Button
                   size="sm"
-                  variant={categoryFilter === "sem1" ? "default" : "ghost"}
+                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (categoryFilter === "sem1") return;
-                    setCategoryFilter("sem1");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    if (externalFilter === "uninorte") return;
+                    setExternalFilter("uninorte");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
-                  Primer Semestre ({sem1Count})
+                  Uninorte ({uninorteCount})
                 </Button>
                 <Button
                   size="sm"
-                  variant={categoryFilter === "sem2" ? "default" : "ghost"}
+                  variant={externalFilter === "external" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (categoryFilter === "sem2") return;
-                    setCategoryFilter("sem2");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
+                    if (externalFilter === "external") return;
+                    setExternalFilter("external");
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
-                  Segundo Semestre ({sem2Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "sem3" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "sem3") return;
-                    setCategoryFilter("sem3");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Tercer Semestre ({sem3Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "sem4" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "sem4") return;
-                    setCategoryFilter("sem4");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Cuarto Semestre ({sem4Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "Externos" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "Externos") return;
-                    setCategoryFilter("Externos");
-                    setClientPage(1);
-                    try { onPageChange?.(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Externos ({colegiosCount})
+                  Externos ({externalCount})
                 </Button>
               </div>
             </div>
+
+                          {/* buscador desktop */}
+              
+              <div className="flex items-center gap-2 border rounded px-3 h-9 w-200 max-w-md ">
+                <Search className="h-4 text-muted-foreground shrink-0" />
+                <input
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                  placeholder="Buscar equipo o videojuego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
             <div className="flex items-center gap-3">
               <Button
@@ -1013,11 +954,36 @@ export const TeamsManagementTable = ({
                 </TableCell>
               </TableRow>
             ) : (
+              // filtro por tipo + búsqueda
+              // apply client-side filter: only all / uninorte / external
               (() => {
-                const start = (currentPage - 1) * itemsPerPage;
-                const end = start + itemsPerPage;
-                const pageSlice = filteredAllTeams.slice(start, end);
-                return pageSlice.map((team) => (
+                const filteredByExternal = teams?.filter((team) => {
+                  if (!team) return false;
+                  if (externalFilter === "all") return true;
+                  const isExt = (team as any)?.isExternal === true;
+                  return externalFilter === "external" ? isExt : !isExt;
+                }) ?? [];
+
+                const term = searchTerm.trim().toLowerCase();
+                const filteredTeams = term
+                  ? filteredByExternal.filter((t) => {
+                      const teamName = (t.nombre_equipo ?? "").toLowerCase();
+                      const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+                      return teamName.includes(term) || gameName.includes(term);
+                    })
+                  : filteredByExternal;
+
+                if (filteredTeams.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={columnsToDisplay.length + 1} className="h-24 text-center">
+                        No hay equipos que coincidan con la búsqueda o filtros.
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+
+                return filteredTeams.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(team)}</TableCell>
@@ -1062,32 +1028,48 @@ export const TeamsManagementTable = ({
           </TableBody>
         </Table>
 
-        {/* Paginación (cliente) */}
-        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-          <div className="flex items-center gap-2">
-            <span>Filas</span>
-            <Select
-              value={String(itemsPerPage)}
-              onValueChange={(value) => {
-                const n = parseInt(value, 10);
-                setClientPageSize(n);
-                setClientPage(1);
-                try { onLimitChange?.(n); } catch {}
-              }}
-              disabled={showLoader}
-            >
-              <SelectTrigger className="w-[70px] cursor-pointer">
-                <SelectValue placeholder={itemsPerPage} />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20].map((n) => (
-                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Paginación */}
+        {(() => {
+          const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
+          const currentPage = paginationMeta?.currentPage ?? 1;
+          const totalPages = paginationMeta?.totalPages ?? 0;
+
+          // Always render the pagination bar (but disable actions if there are no pages)
+          return (
+            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+              <div className="flex items-center gap-2">
+                <span>Filas</span>
+                <Select
+                  value={String(itemsPerPage)}
+                  onValueChange={(value) => {
+                    if (value === "all") {
+                      // Use a large limit to fetch everything. Replace with 0 or -1 if your backend supports "no limit".
+                      onLimitChange(999999);
+                      try { onPageChange(1); } catch {}
+                    } else {
+                      onLimitChange(parseInt(value, 10));
+                    }
+                  }}
+                  disabled={showLoader}
+                >
+                  <SelectTrigger className="w-[100px] cursor-pointer">
+                    <SelectValue
+                      placeholder={itemsPerPage === 999999 ? "Todos" : String(itemsPerPage)}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20].map((n) => (
+                      <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                    {/* Opción "Todos" */}
+                    <SelectItem className="cursor-pointer" value="all">
+                      Todos
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
           <div className="flex items-center gap-4">
             <span>
