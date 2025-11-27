@@ -373,7 +373,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
         onClick={() => setIsOpen(true)}
         className="cursor-pointer"
       >
-        <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
+        <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-auto min-h-[180px] md:h-52">
           {/* Badge de tipo de equipo */}
           <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
@@ -382,7 +382,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
             {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
 
-          <CardContent className="flex space-x-5 py-6 px-8 h-full">
+          <CardContent className="flex space-x-5 py-6 px-8 h-full min-h-[180px] md:min-h-0">
             <div className="flex items-center">
               <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
                 <AvatarImage
