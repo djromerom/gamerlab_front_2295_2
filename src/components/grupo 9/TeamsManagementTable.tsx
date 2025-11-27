@@ -777,21 +777,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-6">
-              <div className="mr-4">
+            <div className="flex items-center gap-4">
+
+              <div className="flex w-full">
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* buscador desktop */}
-              <div className="flex items-center gap-2 border rounded px-3 h-9 w-full max-w-md">
-                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                <input
-                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
-                  placeholder="Buscar equipo o videojuego..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
 
               {/* Filtro externo / uninorte */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
@@ -836,6 +827,18 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </Button>
               </div>
             </div>
+
+                          {/* buscador desktop */}
+              
+              <div className="flex items-center gap-2 border rounded px-3 h-9 w-200 max-w-md ">
+                <Search className="h-4 text-muted-foreground shrink-0" />
+                <input
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                  placeholder="Buscar equipo o videojuego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
             <div className="flex items-center gap-3">
               <Button
