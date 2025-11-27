@@ -233,7 +233,7 @@ export default function TeamsPage() {
       (activeTeamType === "externo" ? team.isExternal === true : team.isExternal === false);
 
     return matchesSearch && matchesType;
-  });
+  }).sort((a, b) => (b.likes || 0) - (a.likes || 0)); // Ordenar por likes descendente
 
   const handleFilter = (value: string) => {
     setSearchQuery(value);
@@ -346,6 +346,13 @@ interface TeamCardProps {
   onRefresh: () => void;
 }
 
+// Función para extraer el semestre del código de equipo
+const getSemesterFromTeamCode = (teamCode?: string): string | null => {
+  if (!teamCode) return null;
+  const match = teamCode.match(/^[Nn](\d+)/);
+  return match ? match[1] : null;
+};
+
 function TeamCard({ team, onRefresh }: TeamCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -364,6 +371,9 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
 
   const { text, color } = getStatusInfo(team.status);
 
+  // Obtener el semestre del código de equipo
+  const semester = getSemesterFromTeamCode(team.teamCode);
+  const semesterDisplay = semester && semester !== "0" ? `Semestre ${semester}` : "Colegio";
 
   return (
     <>
@@ -398,6 +408,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
             <div className="flex flex-col justify-center space-y-1 flex-1 pr-16">
               <h4 className="text-xl font-medium">{team.gameName}</h4>
               <p>Equipo: {team.teamName}</p>
+              <p className="text-sm text-gray-400">{semesterDisplay}</p>
               <div className="flex items-center justify-between">
                 <p className={`${color} font-semibold`}>{text}</p>
               </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import NavBar from "@/components/grupo 5/NavBar";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 type Team = {
   id: number;
@@ -100,37 +99,46 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
-// const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
+//const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || true;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fairEnded, setFairEnded] = useState(false);
-  const [activeSemester, setActiveSemester] = useState<string>("all");
+  const [activeSemester, setActiveSemester] = useState<string>("1");
 
-  // console.log("fairEnded:", fairEnded);
-  // console.log("canViewScores from global state:", canViewScores);
+  const isRankingVisible = async () => {
+    const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
+      method: 'GET',
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include'
+    })
 
-  useEffect(() => {
-    document.documentElement.classList.remove("light", "high-contrast");
-    document.documentElement.classList.add("dark");
-    return () => {
-      document.documentElement.classList.remove("dark");
-    };
-  }, []);
-  useEffect(() => {
-    const fetchData = async () => {
+    if (!res.ok) {
+      throw new Error('Ocurrió un error.')
+    }
+
+    const isVisible = await res.json()
+    console.log('Esta es la respuesta: ', isVisible)
+    setFairEnded(isVisible.showRanking)
+  }
+
+  const fetchData = async (n: string) => {
       try {
-        const res = await fetch(`${API_ENDPOINT}/videojuegoData`);
+        const res = await fetch(`${API_BASE_URL}/teams/final-score/by-n/${n}`);
         const data = await res.json();
 
+        console.log('DATAAAAA: ', data)
         const formattedTeams = data.map((team: any) => ({
           id: team.id,
-          name: team.nombre,
-          score: team.promedio,
+          name: team.videogameName,
+          score: team.finalScore,
           logo: team.logoUrl,
-          teamCode: team.codigoEquipo,
+          teamCode: team.teamCode,
         }));
+
+        console.log("Equipos formateados:", formattedTeams);
+        console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
 
         setTeams(formattedTeams);
       } catch (error) {
@@ -138,14 +146,24 @@ export default function PodioGamer() {
       }
     };
 
-    fetchData();
+  useEffect(() => { //
+    // setFairEnded(FAIR_ENDED);
+    isRankingVisible()
+    document.documentElement.classList.remove("light", "high-contrast");
+    document.documentElement.classList.add("dark");
+    fetchData("n1");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
   }, []);
 
   // Función para extraer el semestre del código de equipo
   const getSemesterFromTeamCode = (teamCode?: string): string | null => {
     if (!teamCode) return null;
     const match = teamCode.match(/^[Nn](\d+)/);
-    return match ? match[1] : null;
+    const result = match ? match[1] : null;
+    console.log(`TeamCode: ${teamCode} -> Semestre: ${result}`);
+    return result;
   };
 
   // Filtrar equipos según el semestre activo
@@ -161,6 +179,10 @@ export default function PodioGamer() {
     
     return semester === activeSemester;
   });
+
+  console.log("Semestre activo:", activeSemester);
+  console.log("Equipos filtrados:", filteredTeams.length);
+
   const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
@@ -172,7 +194,6 @@ export default function PodioGamer() {
       document.head.removeChild(styleElement);
     };
   }, []);
-
 
   return (
     <>
@@ -196,7 +217,7 @@ export default function PodioGamer() {
           {fairEnded && (
             <div className="w-full max-w-4xl mb-8">
               <div className="flex justify-center gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
-                <button
+                {/* <button
                   onClick={() => setActiveSemester("all")}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "all"
@@ -205,9 +226,9 @@ export default function PodioGamer() {
                   }`}
                 >
                   Todos
-                </button>
+                </button> */}
                 <button
-                  onClick={() => setActiveSemester("1")}
+                  onClick={async () => {setActiveSemester("1"); await fetchData("n1")}}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "1"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
@@ -217,7 +238,7 @@ export default function PodioGamer() {
                   Primer Semestre
                 </button>
                 <button
-                  onClick={() => setActiveSemester("2")}
+                  onClick={async () => {setActiveSemester("2"); await fetchData("n2")}}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "2"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
@@ -227,7 +248,7 @@ export default function PodioGamer() {
                   Segundo Semestre
                 </button>
                 <button
-                  onClick={() => setActiveSemester("3")}
+                  onClick={async () => {setActiveSemester("3"); await fetchData("n3")}}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "3"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
@@ -237,7 +258,7 @@ export default function PodioGamer() {
                   Tercer Semestre
                 </button>
                 <button
-                  onClick={() => setActiveSemester("4")}
+                  onClick={async () => {setActiveSemester("4"); await fetchData("n4")}}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "4"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
@@ -247,7 +268,7 @@ export default function PodioGamer() {
                   Cuarto Semestre
                 </button>
                 <button
-                  onClick={() => setActiveSemester("colegio")}
+                  onClick={async () => {setActiveSemester("colegio"); await fetchData("n0")}}
                   className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
                     activeSemester === "colegio"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
@@ -403,7 +424,7 @@ export default function PodioGamer() {
                     </thead>
                     <tbody>
                       {sortedTeams.slice(activeSemester === "all" ? 0 : 3).map((team, index) => (
-                        <tr key={team.id} className="border-t border-gray-700">
+                        <tr key={index} className="border-t border-gray-700">
                           <td className="px-4 py-3 text-sm text-gray-300">
                             {activeSemester === "all" ? index + 1 : index + 4}
                           </td>

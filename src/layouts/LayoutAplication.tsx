@@ -2,10 +2,8 @@
 
 import { AppSidebar } from "@/components/grupo 9/app-sidebar"
 import Breadcrumbs from "@/components/grupo 9/BreadCrums"
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
-import { DiscordButton } from "@/components/grupo 5/DiscordButton"
 
 import type React from "react"
 
@@ -18,7 +16,6 @@ interface Props {
 }
 
 const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
-  const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -28,8 +25,6 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
             <SidebarTrigger className="-ml-1 z-20" />
             <Breadcrumbs items={breadcrumbs} />
           </div>
-          <TextSizeControls />
-          <DiscordButton discordUrl={discordSupportUrl} />
         </header>
         {children}
         
