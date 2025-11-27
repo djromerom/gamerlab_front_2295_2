@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
 ──────────────────────────────────────────────────────────────────── */
-export const TeamsManagementTable: React.FC<Props> = ({
+export const TeamsManagementTable = ({
   teams,
   paginationMeta,
   apiBaseUrl,
@@ -28,6 +28,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  allTeams,
   statusEmailLeader,
 }) => {
 
@@ -38,6 +39,29 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const handler = (ev: MediaQueryListEvent | MediaQueryList) => setIsMobile((ev as any).matches === true);
+    setIsMobile(mq.matches);
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handler as any);
+    } else if (typeof (mq as any).addListener === "function") {
+      (mq as any).addListener(handler as any);
+    }
+    return () => {
+      if (typeof mq.removeEventListener === "function") {
+        mq.removeEventListener("change", handler as any);
+      } else if (typeof (mq as any).removeListener === "function") {
+        (mq as any).removeListener(handler as any);
+      }
+    };
+  }, []);
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
@@ -50,7 +74,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
   }>({ teamId: null, email: "", type: undefined });
   const [rejectionReason, setRejectionReason] = useState<string>("");
 
-  // Certificates: selection dialog and bulk sending
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
@@ -60,41 +83,59 @@ export const TeamsManagementTable: React.FC<Props> = ({
     (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
   );
 
-  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
-  // REPLACE ABOVE WITH NEW CATEGORY FILTER
   const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
-  // Function to categorize by teamCode / isExternal
-  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
-    if ((team as any)?.isExternal) return "Externos";
-    const rawCode: string = (team as any)?.teamCode ?? "";
+  const categorizeTeam = (
+    t?: TeamRowData
+  ): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+    if (!t) return undefined;
+    if ((t as any).isExternal) return "Externos";
+    const rawCode: string = (t as any).teamCode ?? "";
     const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
     switch (prefix) {
-      case "N1": return "sem1";
-      case "N2": return "sem2";
-      case "N3": return "sem3";
-      case "N4": return "sem4";
-      default: return undefined;
+      case "N1":
+        return "sem1";
+      case "N2":
+        return "sem2";
+      case "N3":
+        return "sem3";
+      case "N4":
+        return "sem4";
+      default:
+        return undefined;
     }
   };
 
-  // Counters
- const totalTeamsCount = paginationMeta?.totalItems ?? (teams?.length ?? 0);
-  const sem1Count = teams?.filter(t => categorizeTeam(t) === "sem1").length ?? 0;
-  const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
-  const sem3Count = teams?.filter(t => categorizeTeam(t) === "sem3").length ?? 0;
-  const sem4Count = teams?.filter(t => categorizeTeam(t) === "sem4").length ?? 0;
-  const colegiosCount = teams?.filter(t => categorizeTeam(t) === "Externos").length ?? 0;
+  const datasetForCounts: TeamRowData[] = Array.isArray(allTeams) ? allTeams : (teams ?? []);
+  const totalTeamsCount = datasetForCounts.length; // ahora siempre desde allTeams
+  const sem1Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem1").length;
+  const sem2Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem2").length;
+  const sem3Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem3").length;
+  const sem4Count = datasetForCounts.filter((t) => categorizeTeam(t) === "sem4").length;
+  const colegiosCount = datasetForCounts.filter((t) => categorizeTeam(t) === "Externos").length;
 
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    try { return window.innerWidth < 768; } catch { return false; }
-  });
-  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
+  const [clientPage, setClientPage] = useState<number>(1);
+  const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta?.itemsPerPage ?? 10);
+
   useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, [handleResize]);
+    setClientPage(1);
+  }, [categoryFilter]);
+
+  const itemsPerPage = clientPageSize;
+  const currentPage = clientPage;
+  const filteredAllTeams =
+    categoryFilter === "all"
+      ? datasetForCounts
+      : datasetForCounts.filter((t) => categorizeTeam(t) === categoryFilter);
+
+  const totalFiltered = filteredAllTeams.length;
+  const clientTotalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > clientTotalPages) {
+      setClientPage(1);
+    }
+  }, [currentPage, clientTotalPages]);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -201,14 +242,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
     setInternalIsLoading(true);
     try {
-      // Mapear teamCode -> email (fallback a id_equipo si teamCode no existe)
       const targets = certSelectedTeamIds.map((teamCode) => {
         const team = teams?.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
         const email = team?.integrantes?.[0]?.correo ?? "";
         return { teamCode, email };
       });
 
-      // Prepare send promises (each promise returns a result object)
       const sendPromises = targets.map(({ teamCode, email }) => (async () => {
         if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
         try {
@@ -455,7 +494,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
+        const primaryEmail = (team.integrantes?.[0]?.correo)?.toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
@@ -714,7 +753,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "all") return;
                       setCategoryFilter("all");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Todos ({totalTeamsCount})
@@ -723,7 +763,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "sem1") return;
                       setCategoryFilter("sem1");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Primer Semestre ({sem1Count})
@@ -732,7 +773,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "sem2") return;
                       setCategoryFilter("sem2");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Segundo Semestre ({sem2Count})
@@ -741,7 +783,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "sem3") return;
                       setCategoryFilter("sem3");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Tercer Semestre ({sem3Count})
@@ -750,7 +793,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "sem4") return;
                       setCategoryFilter("sem4");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Cuarto Semestre ({sem4Count})
@@ -759,7 +803,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     onClick={() => {
                       if (categoryFilter === "Externos") return;
                       setCategoryFilter("Externos");
-                      try { onPageChange(1); } catch { }
+                      setClientPage(1);
+                      try { onPageChange?.(1); } catch { }
                     }}
                   >
                     Externos ({colegiosCount})
@@ -809,7 +854,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "all") return;
                     setCategoryFilter("all");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -822,7 +868,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "sem1") return;
                     setCategoryFilter("sem1");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -835,7 +882,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "sem2") return;
                     setCategoryFilter("sem2");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -848,7 +896,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "sem3") return;
                     setCategoryFilter("sem3");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -861,7 +910,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "sem4") return;
                     setCategoryFilter("sem4");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -874,7 +924,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (categoryFilter === "Externos") return;
                     setCategoryFilter("Externos");
-                    try { onPageChange(1); } catch {}
+                    setClientPage(1);
+                    try { onPageChange?.(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
@@ -940,7 +991,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && (!teams || teams.length === 0) ? (
+            {showLoader && filteredAllTeams.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -952,25 +1003,21 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && (!teams || teams.length === 0) ? (
+            ) : !showLoader && totalFiltered === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay equipos para mostrar en esta página.
+                  No hay equipos para mostrar con el filtro seleccionado.
                 </TableCell>
               </TableRow>
             ) : (
-              // apply client-side filter now by category
               (() => {
-                const filteredTeams = teams?.filter((team) => {
-                  if (!team) return false;
-                  if (categoryFilter === "all") return true;
-                  return categorizeTeam(team) === categoryFilter;
-                }) ?? [];
-
-                return filteredTeams.map((team) => (
+                const start = (currentPage - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageSlice = filteredAllTeams.slice(start, end);
+                return pageSlice.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(team)}</TableCell>
@@ -1015,63 +1062,59 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        {/* Paginación */}
-        {(() => {
-          const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
-          const currentPage = paginationMeta?.currentPage ?? 1;
-          const totalPages = paginationMeta?.totalPages ?? 0;
+        {/* Paginación (cliente) */}
+        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+          <div className="flex items-center gap-2">
+            <span>Filas</span>
+            <Select
+              value={String(itemsPerPage)}
+              onValueChange={(value) => {
+                const n = parseInt(value, 10);
+                setClientPageSize(n);
+                setClientPage(1);
+                try { onLimitChange?.(n); } catch {}
+              }}
+              disabled={showLoader}
+            >
+              <SelectTrigger className="w-[70px] cursor-pointer">
+                <SelectValue placeholder={itemsPerPage} />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20].map((n) => (
+                  <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          // Always render the pagination bar (but disable actions if there are no pages)
-          return (
-            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-              <div className="flex items-center gap-2">
-                <span>Filas</span>
-                <Select
-                  value={String(itemsPerPage)}
-                  onValueChange={(value) => onLimitChange(parseInt(value, 10))}
-                  disabled={showLoader}
-                >
-                  <SelectTrigger className="w-[70px] cursor-pointer">
-                    <SelectValue placeholder={itemsPerPage} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 15, 20].map((n) => (
-                      <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
-                        {n}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span>
-                  {totalPages > 0 ? currentPage : 0} de {totalPages}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1 || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+          <div className="flex items-center gap-4">
+            <span>
+              {clientTotalPages === 0 ? 0 : currentPage} de {clientTotalPages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                onClick={() => setClientPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1 || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setClientPage(Math.min(clientTotalPages, currentPage + 1))}
+                disabled={currentPage >= clientTotalPages || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          );
-        })()}
+          </div>
+        </div>
       </Card>
 
       <Dialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>
