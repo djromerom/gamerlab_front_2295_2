@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Search } from "lucide-react";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -63,29 +62,26 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
   // REPLACE ABOVE WITH NEW CATEGORY FILTER
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
+  // const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
 
   // Function to categorize by teamCode / isExternal
-  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
-    if ((team as any)?.isExternal) return "Externos";
-    const rawCode: string = (team as any)?.teamCode ?? "";
-    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
-    switch (prefix) {
-      case "N1": return "sem1";
-      case "N2": return "sem2";
-      case "N3": return "sem3";
-      case "N4": return "sem4";
-      default: return undefined;
-    }
-  };
+  // const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+  //   if ((team as any)?.isExternal) return "Externos";
+  //   const rawCode: string = (team as any)?.teamCode ?? "";
+  //   const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
+  //   switch (prefix) {
+  //     case "N1": return "sem1";
+  //     case "N2": return "sem2";
+  //     case "N3": return "sem3";
+  //     case "N4": return "sem4";
+  //     default: return undefined;
+  //   }
+  // };
 
   // Counters
   const totalTeamsCount = teams?.length ?? 0;
-  const sem1Count = teams?.filter(t => categorizeTeam(t) === "sem1").length ?? 0;
-  const sem2Count = teams?.filter(t => categorizeTeam(t) === "sem2").length ?? 0;
-  const sem3Count = teams?.filter(t => categorizeTeam(t) === "sem3").length ?? 0;
-  const sem4Count = teams?.filter(t => categorizeTeam(t) === "sem4").length ?? 0;
-  const colegiosCount = teams?.filter(t => categorizeTeam(t) === "Externos").length ?? 0;
+  const uninorteCount = teams?.filter(t => !(t as any)?.isExternal).length ?? 0;
+  const externalCount = teams?.filter(t => (t as any)?.isExternal).length ?? 0;
 
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -725,57 +721,30 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "all") return;
-                      setCategoryFilter("all");
-                      try { onPageChange(1); } catch { }
+                      if (externalFilter === "all") return;
+                      setExternalFilter("all");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
                     Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "sem1") return;
-                      setCategoryFilter("sem1");
-                      try { onPageChange(1); } catch { }
+                      if (externalFilter === "uninorte") return;
+                      setExternalFilter("uninorte");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
-                    Primer Semestre ({sem1Count})
+                    Uninorte ({uninorteCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (categoryFilter === "sem2") return;
-                      setCategoryFilter("sem2");
-                      try { onPageChange(1); } catch { }
+                      if (externalFilter === "external") return;
+                      setExternalFilter("external");
+                      try { onPageChange(1); } catch {}
                     }}
                   >
-                    Segundo Semestre ({sem2Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "sem3") return;
-                      setCategoryFilter("sem3");
-                      try { onPageChange(1); } catch { }
-                    }}
-                  >
-                    Tercer Semestre ({sem3Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "sem4") return;
-                      setCategoryFilter("sem4");
-                      try { onPageChange(1); } catch { }
-                    }}
-                  >
-                    Cuarto Semestre ({sem4Count})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (categoryFilter === "Externos") return;
-                      setCategoryFilter("Externos");
-                      try { onPageChange(1); } catch { }
-                    }}
-                  >
-                    Externos ({colegiosCount})
+                    Externos ({externalCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -786,7 +755,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 disabled={showLoader}
                 onClick={handleOpenAdd}
               >
-                <Plus className="mr-2 h-4 w-4" /> Agregar
+                <Plus className=" h-4 w-4" />
               </Button>
               <TooltipProvider>
                 <Tooltip>
@@ -809,7 +778,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
         ) : (
           <>
             <div className="flex items-center gap-6">
-              <div>
+              <div className="mr-4">
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
@@ -825,15 +794,14 @@ export const TeamsManagementTable: React.FC<Props> = ({
               </div>
 
               {/* Filtro externo / uninorte */}
-              {/* Grupo de filtros por semestre / Externos */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
-                  variant={categoryFilter === "all" ? "default" : "ghost"}
+                  variant={externalFilter === "all" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
-                    if (categoryFilter === "all") return;
-                    setCategoryFilter("all");
+                    if (externalFilter === "all") return;
+                    setExternalFilter("all");
                     try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
@@ -842,68 +810,29 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </Button>
                 <Button
                   size="sm"
-                  variant={categoryFilter === "sem1" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (externalFilter === "external") return;
-                    setExternalFilter("external");
-                    try { onPageChange(1); } catch { }
-                  }}
-                  disabled={showLoader}
-                >
-                  Primer Semestre ({sem1Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "sem2" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "sem2") return;
-                    setCategoryFilter("sem2");
-                    try { onPageChange(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Segundo Semestre ({sem2Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "sem3" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "sem3") return;
-                    setCategoryFilter("sem3");
-                    try { onPageChange(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Tercer Semestre ({sem3Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "sem4" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (categoryFilter === "sem4") return;
-                    setCategoryFilter("sem4");
-                    try { onPageChange(1); } catch {}
-                  }}
-                  disabled={showLoader}
-                >
-                  Cuarto Semestre ({sem4Count})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={categoryFilter === "Externos" ? "default" : "ghost"}
+                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
                   className="h-8 px-3 text-sm"
                   onClick={() => {
                     if (externalFilter === "uninorte") return;
                     setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch { }
+                    try { onPageChange(1); } catch {}
                   }}
                   disabled={showLoader}
                 >
-                  Externos ({colegiosCount})
+                  Uninorte ({uninorteCount})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={externalFilter === "external" ? "default" : "ghost"}
+                  className="h-8 px-3 text-sm"
+                  onClick={() => {
+                    if (externalFilter === "external") return;
+                    setExternalFilter("external");
+                    try { onPageChange(1); } catch {}
+                  }}
+                  disabled={showLoader}
+                >
+                  Externos ({externalCount})
                 </Button>
               </div>
             </div>
@@ -988,12 +917,13 @@ export const TeamsManagementTable: React.FC<Props> = ({
               </TableRow>
             ) : (
               // filtro por tipo + búsqueda
-              // apply client-side filter now by category
+              // apply client-side filter: only all / uninorte / external
               (() => {
                 const filteredByExternal = teams?.filter((team) => {
                   if (!team) return false;
-                  if (categoryFilter === "all") return true;
-                  return categorizeTeam(team) === categoryFilter;
+                  if (externalFilter === "all") return true;
+                  const isExt = (team as any)?.isExternal === true;
+                  return externalFilter === "external" ? isExt : !isExt;
                 }) ?? [];
 
                 const term = searchTerm.trim().toLowerCase();

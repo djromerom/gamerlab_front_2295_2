@@ -11,6 +11,7 @@ export interface TeamRowData {
   videojuego: VideojuegoData;
   nrc_info?: NrcInfo; 
   materia_info?: MateriaInfo;
+  teamCode?: string;
 }
 
 export interface ConfirmationStatus {
