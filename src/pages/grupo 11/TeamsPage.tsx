@@ -636,7 +636,6 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         }
       } else if (response.status === 400) {
         const errorData = await response.json();
-        console.log(errorData);
         const description = errorData.message.includes("20 likes") ?
           "Este juego no puede recibir más de 20 likes sin video o fotos adicionales." :
           errorData.message.includes("10 likes") ?

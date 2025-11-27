@@ -36,7 +36,6 @@ export const juryManagement = {
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
             })
-            console.log(res)
             const data = await res.json()
             if (!res.ok) {
                 throw new Error(data.message)
@@ -54,9 +53,7 @@ export const juryManagement = {
                 credentials: "include",
                 headers: { "Content-Type": "application/json" }
             })
-            console.log(res)
             const data = await res.json()
-            console.log(data)
             if (!res.ok) {
                 throw new Error(data.message)
             }
@@ -64,8 +61,6 @@ export const juryManagement = {
             return { id: team.id, name: team.nombre, videogame: team.videojuego.nombre }
             })]
 
-            console.log('Estos son lo equipos por jurado', getTeams)
-            console.log('efknfks', getTeams[0])
             const getListTeams = getTeams[0]
             return getListTeams
             }catch (error) {
@@ -80,7 +75,6 @@ export const juryManagement = {
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
             })
-            console.log(res)
             const data = await res.json()
             if (!res.ok) {
                 throw new Error(data.message)
@@ -116,9 +110,6 @@ export const juryManagement = {
     },
 
     manualAssignment: async (jurorId, teamId) => {
-
-        console.log('id jurado: ', jurorId)
-        console.log('id equipo: ', teamId)
         const res = await fetch(`${API_ENDPOINT}/assignments`, {
             method: 'POST',
             credentials: 'include',

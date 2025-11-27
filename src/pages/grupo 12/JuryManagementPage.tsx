@@ -45,7 +45,6 @@ const JuryManagementPage = () => {
         confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
         lastSignInAt: formatDate(jurado.lastSignInAt),
       }));
-      console.log(dataRespond)
       setJurorsData(dataRespond);
 
     } catch (err: any) {

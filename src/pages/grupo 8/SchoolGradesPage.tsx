@@ -81,7 +81,6 @@ const SchoolGradesPage: React.FC = () => {
 
       let dataRespond: PaginatedGames = await res.json();
       const dataExternal = dataRespond.data.filter(item => item.nrc === "9999");
-      console.log("esta es la data: ", dataRespond)
       dataRespond.data = dataExternal
 
       // Si la página actual está vacía pero no es la primera, retroceder
