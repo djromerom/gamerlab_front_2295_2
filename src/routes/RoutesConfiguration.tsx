@@ -36,6 +36,7 @@ import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
+import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 
 type Role =
   | "Profesor"
@@ -161,6 +162,7 @@ const routes: RouteConfig[] = [
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  { path: "/tiebreaker", element: <TiebreakerPage />, roles: ["Administrador"] },
   {
     path: "/profesores",
     element: <ProfessorsPage />,

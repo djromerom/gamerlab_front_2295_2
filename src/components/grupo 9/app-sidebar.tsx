@@ -13,6 +13,7 @@ import {
   Book,
   Settings,
   UniversityIcon,
+  Trophy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -42,8 +43,14 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "NRC's", url: "/nrcs", icon: Binary },
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
         // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
-        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck,},
-        { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings }
+        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck, },
+        { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings },
+        {
+          name: "Criterios de Calificación",
+          url: "/criterios",
+          icon: BookCheck,
+        },
+        { name: "Tiebreaker", url: "/tiebreaker", icon: Trophy },
       ],
     },
     {
@@ -81,9 +88,11 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/colegios-calificar",
           icon: Book
         },
-        { name: "Colegios Evaluados", 
-          url: "/colegios-evaluados", 
-          icon: BookCheck },
+        {
+          name: "Colegios Evaluados",
+          url: "/colegios-evaluados",
+          icon: BookCheck
+        },
       ],
 
     },
