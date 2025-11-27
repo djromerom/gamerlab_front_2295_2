@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon, Download } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", name: "", videogame: ""})
   const [teamsByJuror, setTeamsByJuror] = useState([{id: "", name: "", videogame: ""}])
   const [valueDeleteTeam, setValueDeleteTeam] = useState({id: "", name: "", videogame: ""})
+  const [searchTerm, setSearchTerm] = useState("");
+  const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   useEffect(() => {
 
@@ -50,6 +54,113 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
 }, []);
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isDataLoading || internalIsLoading;
+
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const exportJurors = async () => {
+    if (exportLoading) return;
+    if (!jurors || jurors.length === 0) {
+      toast.info("No hay jurados para exportar.");
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const endpoint = `${apiBaseUrl.replace(/\/$/, "")}/reports/exportJurados`;
+      const res = await fetch(endpoint, { method: "GET", credentials: "include" });
+      if (!res.ok) {
+        let msg = `Error ${res.status}: ${res.statusText}`;
+        try {
+          const body = await res.json();
+          msg = body?.message || msg;
+        } catch {}
+        throw new Error(msg);
+      }
+
+      const blob = await res.blob();
+
+      // Try to extract filename from content-disposition header
+      const disposition = res.headers.get("content-disposition") || "";
+      let filename = "jurados_export";
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const fallback = `jurados_${yyyy}_${mm}_${dd}.xlsx`;
+
+      const filenameMatch = disposition.match(/filename\*=UTF-8''([^;\n\r]+)/i) || disposition.match(/filename="?([^";]+)"?/i);
+      if (filenameMatch) {
+        try {
+          filename = decodeURIComponent(filenameMatch[1]);
+        } catch {
+          filename = filenameMatch[1];
+        }
+      } else {
+        filename = fallback;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Descarga iniciada: ${filename}`);
+    } catch (e: any) {
+      console.error("Export jurors failed:", e);
+      toast.error(e?.message || "Error al exportar jurados.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const filteredJurors = (() => {
+    // If there's a search term, prefer the full jurors list (ignore pagination)
+    const q = (searchTerm || "").trim().toLowerCase();
+    const source = q ? allJurors : jurors;
+    if (!source) return [] as any[];
+    if (!q) return source;
+    return source.filter((j: any) => {
+      const name = `${j.firstName ?? ""} ${j.lastName ?? ""}`.toLowerCase();
+      const email = (j.email ?? "").toLowerCase();
+      return name.includes(q) || email.includes(q) || String(j.id).includes(q);
+    });
+  })();
+
+  // Fetch all jurors when a search is active so we can ignore pagination
+  useEffect(() => {
+    let cancelled = false;
+    const q = (searchTerm || "").trim();
+    if (!q) {
+      // clear previously loaded full list when search is cleared
+      setAllJurors(null);
+      return; // nothing to do
+    }
+    if (allJurors) return; // already loaded
+
+    (async () => {
+      setSearchLoading(true);
+      try {
+        const resp = await juryManagement.getJuries(1, 99999);
+        if (cancelled) return;
+        // `getJuries` returns a paginated response shape
+        const data = resp?.data || resp?.items || [];
+        setAllJurors(data);
+      } catch (err: any) {
+        console.error("Failed to fetch all jurors for search:", err);
+        toast.error(err?.message || "Error loading jurados para búsqueda");
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm]);
 
   const showError = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -515,7 +626,14 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       {/* Encabezado (Título y Botón Agregar) */}
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Jurados</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Buscar jurado por nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64"
+            disabled={showLoader || searchLoading}
+          />
           <Button
               variant="destructive"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
@@ -540,18 +658,42 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             </p>
           </Button>
 
+          {/* Botón Exportar con tooltip */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex justify-center cursor-pointer"
+                  onClick={exportJurors}
+                  disabled={showLoader || exportLoading || !jurors || jurors.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Exportar Jurados</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex justify-center cursor-pointer"
-                disabled={showLoader} // <-- Deshabilitar si no hay data O si está cargando
-              >
-                <Plus className="h-4 w-4" />
-                <UserIcon className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex justify-center cursor-pointer"
+                      disabled={showLoader} 
+                    >
+                      <Plus className="h-4 w-4" />
+                      <UserIcon className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Agregar nuevo jurado</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <DialogContent>
               <form onSubmit={handleAdd}>
                 <DialogHeader>
@@ -671,17 +813,17 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && (!jurors || jurors.length === 0) ? (
+            ) : !showLoader && (!filteredJurors || filteredJurors.length === 0) ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay jurados para mostrar en esta página.
+                  No hay jurados para mostrar.
                 </TableCell>
               </TableRow>
             ) : (
-              jurors?.map((juror) => (
+              filteredJurors?.map((juror) => (
                 <TableRow key={juror.id}>
                   {columnsToDisplay.map(({ key, renderCell }) => (
                     <TableCell key={key}>{renderCell(juror)}</TableCell>
@@ -743,8 +885,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             )}
           </TableBody>
         </Table>
-        {/* Pagination Controls */}
-        {paginationMeta && paginationMeta.totalItems > 0 && (
+        {/* Pagination Controls (hidden while searching) */}
+        {!searchTerm && paginationMeta && paginationMeta.totalItems > 0 && (
           <div className="flex justify-between items-center p-4 text-sm border-t border-border">
             <div className="flex items-center gap-2">
               <span>Filas por página</span>

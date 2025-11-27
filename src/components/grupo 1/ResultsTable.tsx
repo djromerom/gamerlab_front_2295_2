@@ -87,7 +87,7 @@ const TablaResultados = () => {
                   {NOMBRES_CRITERIOS_TABLA.map(c => (
                     <TableHead key={c.key}>{c.display}</TableHead>
                   ))}
-                  <TableHead>Promedio</TableHead>
+                  <TableHead>Puntaje</TableHead>
                   <TableHead>Estado Eval.</TableHead>
                 </TableRow>
               </TableHeader>

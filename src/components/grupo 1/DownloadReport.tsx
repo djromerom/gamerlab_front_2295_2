@@ -22,8 +22,8 @@ const DownloadReport = () => {
                 </TableHeader>
                 <TableBody>
                   <CustomTableRowBeta
-                    title="Reporte General"
-                    description="Datos de videojuegos basados en los filtros activos (materia y/o NRC)."
+                    title="Reporte de Equipos"
+                    description="Exporta un archivo Excel con la información y calificaciones de cada equipo/videojuego"
                   />
                 </TableBody>
               </Table>
