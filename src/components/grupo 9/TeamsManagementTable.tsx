@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -42,6 +42,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [openInfoTeamId, setOpenInfoTeamId] = useState<number | null>(null);
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     try { return window.innerWidth < 768; } catch { return false; }
@@ -492,8 +494,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
-        }`}
+      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}
     >
       <div className="flex justify-between items-center mb-6 px-4">
         {isMobile ? (
@@ -501,6 +502,17 @@ export const TeamsManagementTable: React.FC<Props> = ({
             <h1 className="text-lg font-medium">Equipos Inscritos</h1>
 
             <div className="ml-auto flex items-center gap-2">
+              {/* buscador móvil responsive */}
+              <div className="flex items-center gap-2 border rounded px-2 h-8 w-full max-w-[70vw]">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                  placeholder="Buscar equipo o videojuego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -510,21 +522,8 @@ export const TeamsManagementTable: React.FC<Props> = ({
                     disabled={showLoader}
                     aria-label="Filtros"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="2 0 20 20"
-                      strokeWidth={2.5}
-                      stroke="currentColor"
-                      className="w-6 h-6 block m-auto"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z"
-                        opacity="0.99"
-                      />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="2 0 20 20" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 block m-auto" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z" opacity="0.99" />
                     </svg>
                   </Button>
                 </DropdownMenuTrigger>
@@ -576,7 +575,18 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 <h1 className="text-xl font-medium">Equipos Inscritos</h1>
               </div>
 
-              {/* Filtro externo / uninorte — fila de 3 botones */}
+              {/* buscador desktop */}
+              <div className="flex items-center gap-2 border rounded px-3 h-9 w-full max-w-md">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                  placeholder="Buscar equipo o videojuego..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Filtro externo / uninorte */}
               <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
                 <Button
                   size="sm"
@@ -600,7 +610,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (externalFilter === "external") return;
                     setExternalFilter("external");
-                    try { onPageChange(1); } catch (e) { }
+                    try { onPageChange(1); } catch { }
                   }}
                   disabled={showLoader}
                   aria-pressed={externalFilter === "external"}
@@ -615,7 +625,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   onClick={() => {
                     if (externalFilter === "uninorte") return;
                     setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch (e) { }
+                    try { onPageChange(1); } catch { }
                   }}
                   disabled={showLoader}
                   aria-pressed={externalFilter === "uninorte"}
@@ -692,15 +702,34 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              // aplicar filtro cliente por isExternal
+              // filtro por tipo + búsqueda
               (() => {
-                const filteredTeams = teams?.filter((team) => {
+                const filteredByExternal = teams?.filter((team) => {
                   if (!team) return false;
                   const isExt = (team as any).isExternal === true;
                   if (externalFilter === "all") return true;
                   if (externalFilter === "external") return isExt;
                   return !isExt; // uninorte
                 }) ?? [];
+
+                const term = searchTerm.trim().toLowerCase();
+                const filteredTeams = term
+                  ? filteredByExternal.filter((t) => {
+                      const teamName = (t.nombre_equipo ?? "").toLowerCase();
+                      const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+                      return teamName.includes(term) || gameName.includes(term);
+                    })
+                  : filteredByExternal;
+
+                if (filteredTeams.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={columnsToDisplay.length + 1} className="h-24 text-center">
+                        No hay equipos que coincidan con la búsqueda o filtros.
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
 
                 return filteredTeams.map((team) => (
                   <TableRow key={team.id_equipo}>
