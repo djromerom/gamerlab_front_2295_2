@@ -108,10 +108,31 @@ export const TeamsManagementTable = ({
 
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    try { return window.innerWidth < 768; } catch { return false; }
-  });
-  const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
+  const setCliebtPage = useCallback((page: number) => {
+    try {
+      onPageChange(page);
+    } catch { }
+  }, [onPageChange]);
+  const [clientPage, setClientPage] = useState<number>(1);
+
+  const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta.itemsPerPage);
+
+  // FIX: definir categoryFilter, categorizeTeam y datasetForCounts para evitar errores
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
+  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
+    if ((team as any)?.isExternal) return "Externos";
+    const rawCode: string = (team as any)?.teamCode ?? "";
+    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
+    switch (prefix) {
+      case "N1": return "sem1";
+      case "N2": return "sem2";
+      case "N3": return "sem3";
+      case "N4": return "sem4";
+      default: return undefined;
+    }
+  };
+  const datasetForCounts = teams ?? [];
+
   useEffect(() => {
     setClientPage(1);
   }, [categoryFilter]);
@@ -174,7 +195,7 @@ export const TeamsManagementTable = ({
         console.error("Error fetching subjects:", err);
         setMateriasOptions([]);
 
-      } 
+      }
     };
     load();
   }, [API_ENDPOINT]);
@@ -758,7 +779,7 @@ export const TeamsManagementTable = ({
                     onClick={() => {
                       if (externalFilter === "all") return;
                       setExternalFilter("all");
-                      try { onPageChange(1); } catch {}
+                      try { onPageChange(1); } catch { }
                     }}
                   >
                     Todos ({totalTeamsCount})
@@ -767,7 +788,7 @@ export const TeamsManagementTable = ({
                     onClick={() => {
                       if (externalFilter === "uninorte") return;
                       setExternalFilter("uninorte");
-                      try { onPageChange(1); } catch {}
+                      try { onPageChange(1); } catch { }
                     }}
                   >
                     Uninorte ({uninorteCount})
@@ -776,7 +797,7 @@ export const TeamsManagementTable = ({
                     onClick={() => {
                       if (externalFilter === "external") return;
                       setExternalFilter("external");
-                      try { onPageChange(1); } catch {}
+                      try { onPageChange(1); } catch { }
                     }}
                   >
                     Externos ({externalCount})
@@ -828,7 +849,7 @@ export const TeamsManagementTable = ({
                   onClick={() => {
                     if (externalFilter === "all") return;
                     setExternalFilter("all");
-                    try { onPageChange(1); } catch {}
+                    try { onPageChange(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
@@ -841,7 +862,7 @@ export const TeamsManagementTable = ({
                   onClick={() => {
                     if (externalFilter === "uninorte") return;
                     setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch {}
+                    try { onPageChange(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
@@ -854,7 +875,7 @@ export const TeamsManagementTable = ({
                   onClick={() => {
                     if (externalFilter === "external") return;
                     setExternalFilter("external");
-                    try { onPageChange(1); } catch {}
+                    try { onPageChange(1); } catch { }
                   }}
                   disabled={showLoader}
                 >
@@ -863,17 +884,17 @@ export const TeamsManagementTable = ({
               </div>
             </div>
 
-                          {/* buscador desktop */}
-              
-              <div className="flex items-center gap-2 border rounded px-3 h-9 w-200 max-w-md ">
-                <Search className="h-4 text-muted-foreground shrink-0" />
-                <input
-                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
-                  placeholder="Buscar equipo o videojuego..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+            {/* buscador desktop */}
+
+            <div className="flex items-center gap-2 border rounded px-3 h-9 w-200 max-w-md ">
+              <Search className="h-4 text-muted-foreground shrink-0" />
+              <input
+                className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                placeholder="Buscar equipo o videojuego..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
             <div className="flex items-center gap-3">
               <Button
@@ -967,13 +988,22 @@ export const TeamsManagementTable = ({
                 const term = searchTerm.trim().toLowerCase();
                 const filteredTeams = term
                   ? filteredByExternal.filter((t) => {
-                      const teamName = (t.nombre_equipo ?? "").toLowerCase();
-                      const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-                      return teamName.includes(term) || gameName.includes(term);
-                    })
+                    const teamName = (t.nombre_equipo ?? "").toLowerCase();
+                    const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+                    return teamName.includes(term) || gameName.includes(term);
+                  })
                   : filteredByExternal;
 
-                if (filteredTeams.length === 0) {
+                // APPLY PAGINATION SLICE BASED ON currentPage/itemsPerPage
+                const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
+                const currentPage = paginationMeta?.currentPage ?? 1;
+
+                const startIdx = (currentPage - 1) * itemsPerPage;
+                const pageItems = itemsPerPage === 999999
+                  ? filteredTeams
+                  : filteredTeams.slice(startIdx, startIdx + itemsPerPage);
+
+                if (pageItems.length === 0) {
                   return (
                     <TableRow>
                       <TableCell colSpan={columnsToDisplay.length + 1} className="h-24 text-center">
@@ -983,7 +1013,7 @@ export const TeamsManagementTable = ({
                   );
                 }
 
-                return filteredTeams.map((team) => (
+                return pageItems.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(team)}</TableCell>
@@ -1032,9 +1062,28 @@ export const TeamsManagementTable = ({
         {(() => {
           const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
           const currentPage = paginationMeta?.currentPage ?? 1;
-          const totalPages = paginationMeta?.totalPages ?? 0;
 
-          // Always render the pagination bar (but disable actions if there are no pages)
+          // Recalcular totalPages según el filtro/búsqueda actual
+          const filteredByExternal = teams?.filter((team) => {
+            if (!team) return false;
+            if (externalFilter === "all") return true;
+            const isExt = (team as any)?.isExternal === true;
+            return externalFilter === "external" ? isExt : !isExt;
+          }) ?? [];
+          const term = searchTerm.trim().toLowerCase();
+          const filteredTeams = term
+            ? filteredByExternal.filter((t) => {
+                const teamName = (t.nombre_equipo ?? "").toLowerCase();
+                const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+                return teamName.includes(term) || gameName.includes(term);
+              })
+            : filteredByExternal;
+
+          const totalPages =
+            itemsPerPage === 999999
+              ? filteredTeams.length > 0 ? 1 : 0
+              : Math.ceil(filteredTeams.length / itemsPerPage);
+
           return (
             <div className="flex justify-between items-center p-4 text-sm border-t border-border">
               <div className="flex items-center gap-2">
@@ -1043,7 +1092,6 @@ export const TeamsManagementTable = ({
                   value={String(itemsPerPage)}
                   onValueChange={(value) => {
                     if (value === "all") {
-                      // Use a large limit to fetch everything. Replace with 0 or -1 if your backend supports "no limit".
                       onLimitChange(999999);
                       try { onPageChange(1); } catch {}
                     } else {
@@ -1053,9 +1101,7 @@ export const TeamsManagementTable = ({
                   disabled={showLoader}
                 >
                   <SelectTrigger className="w-[100px] cursor-pointer">
-                    <SelectValue
-                      placeholder={itemsPerPage === 999999 ? "Todos" : String(itemsPerPage)}
-                    />
+                    <SelectValue placeholder={itemsPerPage === 999999 ? "Todos" : String(itemsPerPage)} />
                   </SelectTrigger>
                   <SelectContent>
                     {[5, 10, 15, 20].map((n) => (
@@ -1063,40 +1109,39 @@ export const TeamsManagementTable = ({
                         {n}
                       </SelectItem>
                     ))}
-                    {/* Opción "Todos" */}
-                    <SelectItem className="cursor-pointer" value="all">
-                      Todos
-                    </SelectItem>
+                    <SelectItem className="cursor-pointer" value="all">Todos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-          <div className="flex items-center gap-4">
-            <span>
-              {clientTotalPages === 0 ? 0 : currentPage} de {clientTotalPages}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                onClick={() => setClientPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage <= 1 || showLoader || clientTotalPages === 0}
-                variant="outline"
-                size="icon"
-                className="cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => setClientPage(Math.min(clientTotalPages, currentPage + 1))}
-                disabled={currentPage >= clientTotalPages || showLoader || clientTotalPages === 0}
-                variant="outline"
-                size="icon"
-                className="cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-4">
+                <span>
+                  {totalPages === 0 ? 0 : currentPage} de {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage <= 1 || showLoader || totalPages === 0}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages || showLoader || totalPages === 0}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </Card>
 
       <Dialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>
@@ -1157,15 +1202,15 @@ export const TeamsManagementTable = ({
 
       <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
         <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col text-sm">
-            <DialogHeader>
-              <DialogTitle>Enviar certificados</DialogTitle>
-              <DialogDescription>
-                Seleccione los equipos destinatarios y el tipo de certificado a enviar.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Enviar certificados</DialogTitle>
+            <DialogDescription>
+              Seleccione los equipos destinatarios y el tipo de certificado a enviar.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-3">
-                <div className="flex gap-2 items-center">
+          <div className="space-y-3">
+            <div className="flex gap-2 items-center">
               <div className="w-50">
                 <Select value={certType} onValueChange={(v) => setCertType(v as any)}>
                   <SelectTrigger className="w-full h-8 text-xs">
@@ -1196,19 +1241,19 @@ export const TeamsManagementTable = ({
             <div className="flex items-center justify-between ">
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={certSelectAll}
-                        onChange={(e) => {
-                          const checked = (e.target as HTMLInputElement).checked;
-                          setCertSelectAll(checked);
-                          if (checked) {
-                            const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
-                            setCertSelectedTeamIds(ids);
-                          } else {
-                            setCertSelectedTeamIds([]);
-                          }
-                        }}
-                      />
+                  <Checkbox
+                    checked={certSelectAll}
+                    onChange={(e) => {
+                      const checked = (e.target as HTMLInputElement).checked;
+                      setCertSelectAll(checked);
+                      if (checked) {
+                        const ids = filteredCertTeams.map((t) => String(t.teamCode ?? t.id_equipo));
+                        setCertSelectedTeamIds(ids);
+                      } else {
+                        setCertSelectedTeamIds([]);
+                      }
+                    }}
+                  />
                   <span>Seleccionar todos</span>
                 </label>
               </div>
@@ -1216,36 +1261,36 @@ export const TeamsManagementTable = ({
             </div>
 
             <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
-                  {filteredCertTeams.map((team) => {
-                  const leaderEmail = team.integrantes?.[0]?.correo ?? "";
-                  const code = String(team.teamCode ?? team.id_equipo);
-                  const checked = certSelectedTeamIds.includes(code);
-                  return (
-                    <label key={code} className="flex items-center justify-between p-3 border-b">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={checked}
-                          onChange={(e) => {
-                            const ch = (e.target as HTMLInputElement).checked;
-                            setCertSelectedTeamIds((prev) => {
-                              if (ch) return Array.from(new Set([...prev, code]));
-                              return prev.filter((id) => id !== code);
-                            });
-                            if (!ch) setCertSelectAll(false);
-                          }}
-                        />
-                        <div>
-                          <div className="font-medium">{team.nombre_equipo}</div>
-                          <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
-                        </div>
+              {filteredCertTeams.map((team) => {
+                const leaderEmail = team.integrantes?.[0]?.correo ?? "";
+                const code = String(team.teamCode ?? team.id_equipo);
+                const checked = certSelectedTeamIds.includes(code);
+                return (
+                  <label key={code} className="flex items-center justify-between p-3 border-b">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={checked}
+                        onChange={(e) => {
+                          const ch = (e.target as HTMLInputElement).checked;
+                          setCertSelectedTeamIds((prev) => {
+                            if (ch) return Array.from(new Set([...prev, code]));
+                            return prev.filter((id) => id !== code);
+                          });
+                          if (!ch) setCertSelectAll(false);
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium">{team.nombre_equipo}</div>
+                        <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
-                    </label>
-                  );
-                })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
+                  </label>
+                );
+              })}
             </div>
 
-            </div>
+          </div>
 
           <DialogFooter className="pt-0 pb-0 mt-auto">
             <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
