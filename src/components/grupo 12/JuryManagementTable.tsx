@@ -146,8 +146,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       try {
         const resp = await juryManagement.getJuries(1, 99999);
         if (cancelled) return;
-        // `getJuries` returns a paginated response shape
-        const data = resp?.data || resp?.items || [];
+        // `getJuries` may return either an array or a paginated response with `.data`
+        const data: any = Array.isArray(resp) ? resp : resp?.data ?? [];
         setAllJurors(data);
       } catch (err: any) {
         console.error("Failed to fetch all jurors for search:", err);
@@ -632,7 +632,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-64"
-            disabled={showLoader || searchLoading}
+            disabled={showLoader}
           />
           <Button
               variant="destructive"
