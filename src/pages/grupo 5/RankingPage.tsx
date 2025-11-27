@@ -1,10 +1,9 @@
 "use client";
 
 import NavBar from "@/components/grupo 5/NavBar";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 type Team = {
   id: number;
@@ -12,7 +11,6 @@ type Team = {
   score: number;
   logo?: string;
   teamCode?: string;
-  tiebreakerScore?: number;
 };
 
 // Estilos para el borde luminoso mejorado
@@ -101,7 +99,7 @@ const glowStyles = `
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const API_ENDPOINT = `${API_BASE_URL}/reports`;
-// const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || false;
+const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || true;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
@@ -109,8 +107,26 @@ export default function PodioGamer() {
   const [fairEnded, setFairEnded] = useState(false);
   const [activeSemester, setActiveSemester] = useState<string>("all");
 
-  // console.log("fairEnded:", fairEnded);
-  // console.log("canViewScores from global state:", canViewScores);
+  const isRankingVisible = async () => {
+    const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
+      method: 'GET',
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      throw new Error('Ocurrió un error.')
+    }
+
+    const isVisible = await res.json()
+    console.log('Esta es la respuesta: ', isVisible)
+    setFairEnded(isVisible.showRanking)
+  }
+
+  useEffect(() => { //
+      // setFairEnded(FAIR_ENDED);
+      isRankingVisible()
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
@@ -131,8 +147,10 @@ export default function PodioGamer() {
           score: team.promedio,
           logo: team.logoUrl,
           teamCode: team.codigoEquipo,
-          tiebreakerScore: team.tiebreakerScore || 999,
         }));
+
+        console.log("Equipos formateados:", formattedTeams);
+        console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
 
         setTeams(formattedTeams);
       } catch (error) {
@@ -147,7 +165,9 @@ export default function PodioGamer() {
   const getSemesterFromTeamCode = (teamCode?: string): string | null => {
     if (!teamCode) return null;
     const match = teamCode.match(/^[Nn](\d+)/);
-    return match ? match[1] : null;
+    const result = match ? match[1] : null;
+    console.log(`TeamCode: ${teamCode} -> Semestre: ${result}`);
+    return result;
   };
 
   // Filtrar equipos según el semestre activo
@@ -163,14 +183,11 @@ export default function PodioGamer() {
     
     return semester === activeSemester;
   });
-  const sortedTeams = [...filteredTeams].sort((a, b) => {
-    // Ordenar por puntaje descendente
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-    // Si tienen el mismo puntaje, ordenar por tiebreaker ascendente (menor es mejor)
-    return (a.tiebreakerScore || 999) - (b.tiebreakerScore || 999);
-  });
+
+  console.log("Semestre activo:", activeSemester);
+  console.log("Equipos filtrados:", filteredTeams.length);
+
+  const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -181,7 +198,6 @@ export default function PodioGamer() {
       document.head.removeChild(styleElement);
     };
   }, []);
-
 
   return (
     <>
