@@ -119,7 +119,7 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --selected: oklch(0.83 0.0819 269.31);
-  --selected-foreground: oklch(0.18 0.0386 291.6);
+  --selected-foreground: rgb(18, 14, 33);
   --selected-hover: oklch(0.8 0.0984 270.09);
   --graded: oklch(60% 0.2 250 / 0);
   --toast-success: oklch(0.73 0.1999 146.98);

@@ -258,7 +258,7 @@ export default function TeamsPage() {
           <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
             <button
               onClick={() => setActiveTeamType("all")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
                   ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -267,7 +267,7 @@ export default function TeamsPage() {
             </button>
             <button
               onClick={() => setActiveTeamType("uninorte")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
                   ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -276,7 +276,7 @@ export default function TeamsPage() {
             </button>
             <button
               onClick={() => setActiveTeamType("externo")}
-              className={`px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
+              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
                   ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
@@ -321,7 +321,11 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
         <Input
           type="text"
           value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setFilterText(v);
+            onFilter(v);
+          }}
           placeholder="Busca por nombre de equipo o videojuego"
           className="w-64 md:w-96 pl-10"
         />
@@ -369,7 +373,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
         onClick={() => setIsOpen(true)}
         className="cursor-pointer"
       >
-        <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-40">
+        <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-auto min-h-[180px] md:h-52">
           {/* Badge de tipo de equipo */}
           <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
               ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
@@ -378,7 +382,7 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
             {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
 
-          <CardContent className="flex space-x-5 py-6 px-8 h-full">
+          <CardContent className="flex space-x-5 py-6 px-8 h-full min-h-[180px] md:min-h-0">
             <div className="flex items-center">
               <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
                 <AvatarImage
@@ -511,7 +515,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
             {/* Botón anterior - Solo visible en desktop */}
             <button
               onClick={prevSlide}
-              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+              className="cursor-pointer hidden md:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -519,7 +523,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
             {/* Botón siguiente - Solo visible en desktop */}
             <button
               onClick={nextSlide}
-              className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
+              className="cursor-pointer hidden md:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 transition-all z-10"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -547,7 +551,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
                       alt={`Video miniatura ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="cursor-pointer absolute inset-0 bg-black/30 flex items-center justify-center">
                       <div className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center">
                         <div className="w-0 h-0 border-l-4 border-l-black border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
                       </div>
@@ -557,7 +561,7 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
                   <img
                     src={item.src}
                     alt={`Miniatura ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="cursor-pointer w-full h-full object-cover"
                   />
                 )}
               </button>
@@ -630,6 +634,15 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
+      } else if (response.status === 400) {
+        const errorData = await response.json();
+        const description = errorData.message.includes("20 likes") ?
+          "Este juego no puede recibir más de 20 likes sin video o fotos adicionales." :
+          errorData.message.includes("10 likes") ?
+            "Este juego no puede recibir más de 10 likes sin logo." :
+          "Error al procesar el like. Intenta de nuevo.";
+          console.error('Failed to toggle like:', errorData.message);
+          toast.error(description, { id: 1 });
       } else {
         console.error('Failed to toggle like:', response.status);
         toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
@@ -669,7 +682,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
           {/* Botón X de cerrar - Oculto en móvil */}
           <button
             onClick={handleClose}
-            className="hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+            className="cursor-pointer hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -774,7 +787,7 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
                     <Button
                       variant="outline"
                       onClick={() => window.open(team.repo, "_blank")}
-                      className="w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                      className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Ver repositorio en GitHub

@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Pencil, X } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function GradeWeightsPage() {
 	const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
-
+	const navigate = useNavigate();
 
 	const [seniorPercent, setSeniorPercent] = useState<string>("");
 	const [juniorPercent, setJuniorPercent] = useState<string>("");
@@ -19,7 +20,8 @@ export default function GradeWeightsPage() {
 	const [editing, setEditing] = useState<boolean>(false);
 
 	const breadcrumbs = [
-		{ label: "Ponderado de calificaciones", href: "/ponderado-calificaciones" },
+		{ label: "Configuración", href: "/configuracion-evento" },
+		{ label: "Ponderación", href: "/ponderado-calificaciones" },
 	];
 
 	// load() se extrae para permitir recargar desde otros handlers (p. ej. Cancel)
@@ -133,6 +135,7 @@ export default function GradeWeightsPage() {
 			<div className="p-4 space-y-6">
 				<div className="flex justify-between items-center mb-6 px-4">
 					<h1 className="text-xl font-medium">Ponderación general</h1>
+					
 					{/* Edit button: enable editing mode */}
 					{!editing ? (
 						<Button
@@ -222,6 +225,15 @@ export default function GradeWeightsPage() {
 						)}
 					</div>
 				</Card>
+
+				<div className="flex justify-start">
+					<Button
+						className="bg-card border-2 hover:bg-accent dark:hover:bg-accent-dark text-foreground cursor-pointer" 
+						onClick={() => navigate("/configuracion-evento")}
+						>
+							Configuración del evento
+					</Button>
+				</div>
 			</div>
 		</LayoutAplication>
 		);

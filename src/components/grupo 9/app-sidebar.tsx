@@ -10,6 +10,9 @@ import {
   ChartLine,
   Sliders,
   Users,
+  Book,
+  Settings,
+  UniversityIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -38,9 +41,9 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
-        { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
+        // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
         { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck,},
-        { name: "Configuracion de Evento", url: "/configuracion-evento", icon: FileUser }
+        { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings }
       ],
     },
     {
@@ -69,15 +72,18 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Proyectos",
       items: [
         {
-          name: "Calificaciones",
+          name: "Calificaciones Uninorte",
           url: "/home-profesor",
-          icon: Binary
+          icon: UniversityIcon
         },
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: Binary
-        }
+          icon: Book
+        },
+        { name: "Colegios Evaluados", 
+          url: "/colegios-evaluados", 
+          icon: BookCheck },
       ],
 
     },

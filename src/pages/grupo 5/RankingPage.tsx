@@ -10,7 +10,8 @@ type Team = {
   id: number;
   name: string;
   score: number;
-  logo?: string; // Changed: color property removed, logo is optional string
+  logo?: string;
+  teamCode?: string;
 };
 
 // Estilos para el borde luminoso mejorado
@@ -67,12 +68,11 @@ const glowStyles = `
   .gradient-border-gold::after, .gradient-border-gold::before {
     background-image: conic-gradient(
   from var(--angle),
-  #6A0DAD,
-  #8E2DE2,
-  #A55EEA,
-  #C084FC,
-  #3C1361,
-  #6A0DAD
+  #FFD700,
+  #FFC700,
+  #FFB700,
+  #FFA700,
+  #FFD700
 );
 
   }
@@ -105,8 +105,8 @@ const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
-  // const [fairEnded, setFairEnded] = useState(false);
-  const { canViewRanking } = useGlobalState()
+  const [fairEnded, setFairEnded] = useState(false);
+  const [activeSemester, setActiveSemester] = useState<string>("all");
 
   // console.log("fairEnded:", fairEnded);
   // console.log("canViewScores from global state:", canViewScores);
@@ -128,7 +128,8 @@ export default function PodioGamer() {
           id: team.id,
           name: team.nombre,
           score: team.promedio,
-          logo: team.logoUrl, // Use logoUrl for the logo
+          logo: team.logoUrl,
+          teamCode: team.codigoEquipo,
         }));
 
         setTeams(formattedTeams);
@@ -140,7 +141,27 @@ export default function PodioGamer() {
     fetchData();
   }, []);
 
-  const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+  // Función para extraer el semestre del código de equipo
+  const getSemesterFromTeamCode = (teamCode?: string): string | null => {
+    if (!teamCode) return null;
+    const match = teamCode.match(/^[Nn](\d+)/);
+    return match ? match[1] : null;
+  };
+
+  // Filtrar equipos según el semestre activo
+  const filteredTeams = teams.filter((team) => {
+    if (activeSemester === "all") return true;
+    
+    const semester = getSemesterFromTeamCode(team.teamCode);
+    
+    // Para colegios, verificamos si no tiene número de semestre o si es 0
+    if (activeSemester === "colegio") {
+      return !semester || semester === "0";
+    }
+    
+    return semester === activeSemester;
+  });
+  const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -166,11 +187,80 @@ export default function PodioGamer() {
         </div>
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
-            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            Ranking de videojuegos
-
+            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
+            <span className="hidden md:inline"> - </span>
+            <span className="block md:inline">Ranking de Videojuegos</span>
           </h1>
-          {!canViewRanking ? (
+          
+          {/* Filtro por semestre */}
+          {fairEnded && (
+            <div className="w-full max-w-4xl mb-8">
+              <div className="flex justify-center gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
+                <button
+                  onClick={() => setActiveSemester("all")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "all"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setActiveSemester("1")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "1"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Primer Semestre
+                </button>
+                <button
+                  onClick={() => setActiveSemester("2")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "2"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Segundo Semestre
+                </button>
+                <button
+                  onClick={() => setActiveSemester("3")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "3"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Tercer Semestre
+                </button>
+                <button
+                  onClick={() => setActiveSemester("4")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "4"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Cuarto Semestre
+                </button>
+                <button
+                  onClick={() => setActiveSemester("colegio")}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "colegio"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
+                >
+                  Colegios
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {!fairEnded ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
                 <div className="gradient-border-inner"></div>
@@ -186,9 +276,11 @@ export default function PodioGamer() {
             </div>
           ) : (
             <>
-              <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
-                {/* Segundo lugar */}
-                {sortedTeams[1] && (
+              {/* Podio - solo se muestra cuando NO está en "Todos" */}
+              {activeSemester !== "all" && (
+                <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
+                  {/* Segundo lugar */}
+                  {sortedTeams[1] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
                       <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center">
@@ -224,7 +316,7 @@ export default function PodioGamer() {
                 {sortedTeams[0] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#AC7CFF] bg-gray-800 flex items-center justify-center">
+                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#FFD700] bg-gray-800 flex items-center justify-center">
                         {sortedTeams[0].logo ? (
                           <img
                             src={sortedTeams[0].logo}
@@ -240,7 +332,7 @@ export default function PodioGamer() {
                       <p className="text-center text-xl font-semibold">
                         {sortedTeams[0].name}
                       </p>
-                      <p className="text-center text-2xl font-bold text-[#AC7CFF]">
+                      <p className="text-center text-2xl font-bold text-[#FFD700]">
                         {sortedTeams[0].score.toFixed(3)}
                       </p>
                     </div>
@@ -257,7 +349,7 @@ export default function PodioGamer() {
                 {sortedTeams[2] && (
                   <div className="flex w-full flex-col items-center">
                     <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center"> 
+                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-gray-800 flex items-center justify-center"> 
                         {sortedTeams[2].logo ? (
                           <img
                             src={sortedTeams[2].logo}
@@ -273,11 +365,11 @@ export default function PodioGamer() {
                       <p className="text-center text-base font-semibold">
                         {sortedTeams[2].name}
                       </p>
-                      <p className="text-center text-lg font-bold text-[#c0c0c0]">
+                      <p className="text-center text-lg font-bold text-[#CD7F32]">
                         {sortedTeams[2].score.toFixed(3)}
                       </p>
                     </div>
-                    <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
+                    <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
                       <div className="gradient-border-inner"></div>
                       <div className="flex h-full items-center justify-center relative z-10">
                         <span className="text-5xl font-bold text-white">3</span>
@@ -286,10 +378,12 @@ export default function PodioGamer() {
                   </div>
                 )}
               </div>
+              )}
+              
               {/* Lista de equipos en otras posiciones */}
               <div className="mt-8 w-full max-w-4xl">
                 <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
-                  Otras Posiciones
+                  {activeSemester === "all" ? "Ranking General" : "Otras Posiciones"}
                 </h2>
                 <div className="w-16 h-1 bg-purple-500 mx-auto mb-4 rounded-full"></div>
                 <div className="bg-[#060312] border-1 border-gray-700 rounded-lg shadow-lg overflow-hidden">
@@ -308,10 +402,10 @@ export default function PodioGamer() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedTeams.slice(3).map((team, index) => (
+                      {sortedTeams.slice(activeSemester === "all" ? 0 : 3).map((team, index) => (
                         <tr key={team.id} className="border-t border-gray-700">
                           <td className="px-4 py-3 text-sm text-gray-300">
-                            {index + 4}
+                            {activeSemester === "all" ? index + 1 : index + 4}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center">
@@ -336,7 +430,7 @@ export default function PodioGamer() {
                           </td>
                         </tr>
                       ))}
-                      {sortedTeams.slice(3).length === 0 && (
+                      {sortedTeams.slice(activeSemester === "all" ? 0 : 3).length === 0 && (
                         <tr>
                           <td
                             colSpan={3}

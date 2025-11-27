@@ -46,7 +46,7 @@ interface SearchResults {
 
 const PendingSchoolGradesPage: React.FC = () => {
   const breadcrumbs = [
-    { label: "Colegios por Evaluar", href: "/colegios-calificar" },
+    { label: "Pendientes por calificar", href: "/colegios-calificar" },
   ];
   const [gamesData, setGamesData] = useState<PaginatedGames | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -65,34 +65,29 @@ const PendingSchoolGradesPage: React.FC = () => {
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const fetchGames = async (page: number, limit: number) => {
-    
     setIsPageLoading(true);
     setError(null);
 
     try {
       const res = await fetch(
-        `${API_BASE_URL}/pending-schools?page=${page}&limit=${limit}`,
+        `${API_BASE_URL}/pending-games?page=${page}&limit=${limit}`,
         {
           method: "GET",
           credentials: "include",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}` 
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       if (!res.ok) {
-        let errorMsg;
+        let errorMsg = `Error ${res.status}: Failed to fetch pending games`;
         try {
-          //const errorBody = await res.json();
-          //errorMsg = errorBody.message || errorMsg;
-          errorMsg = "This feature is coming soon.";
+          const errorBody = await res.json();
+          errorMsg = errorBody.message || errorMsg;
         } catch (e) {
+          /* ignore */
         }
         throw new Error(errorMsg);
       }
-      
 
       const dataRespond: PaginatedGames = await res.json();
 
@@ -125,9 +120,9 @@ const PendingSchoolGradesPage: React.FC = () => {
     setError(null);
 
     try {
-      // URL CORREGIDA: usar pending-schools/search en lugar de search-games
+      // URL CORREGIDA: usar pending-games/search en lugar de search-games
       const res = await fetch(
-        `${API_BASE_URL}/pending-schools/search?q=${encodeURIComponent(query)}`,
+        `${API_BASE_URL}/pending-games/search?q=${encodeURIComponent(query)}`,
         {
           method: "GET",
           credentials: "include",
@@ -136,11 +131,10 @@ const PendingSchoolGradesPage: React.FC = () => {
       );
 
       if (!res.ok) {
-        let errorMsg;
+        let errorMsg = `Error ${res.status}: Failed to search games`;
         try {
-          //const errorBody = await res.json();
-          //errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
-          errorMsg = "This feature is coming soon.";
+          const errorBody = await res.json();
+          errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;
         } catch (e) {
           /* ignore */
         }
@@ -216,8 +210,8 @@ const PendingSchoolGradesPage: React.FC = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata.currentPage || 1}`}
+            page="/colegios-calificar"
           />
-
 
           {/* Solo muestra paginación si NO estás en búsqueda */}
           {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
@@ -251,7 +245,7 @@ const PendingSchoolGradesPage: React.FC = () => {
                 }
               </div>
             )}
-          {error && !gamesData && (
+          {/* {error && !gamesData && (
             <div className="flex justify-center items-center min-h-[200px]">
               <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
                 <svg
@@ -267,7 +261,7 @@ const PendingSchoolGradesPage: React.FC = () => {
                 <span>{error}</span>
               </div>
             </div>
-          )}
+          )} */}
         </>
       )}
     </LayoutAplication>

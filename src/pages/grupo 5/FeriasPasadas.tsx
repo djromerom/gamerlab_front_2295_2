@@ -418,9 +418,9 @@ export default function CompetitionInfo() {
 
           {/* Previous Edition Section (CHECK BRITO)*/}
           <div className="w-full max-w-4xl mt-0">
-            <div className="flex items-center gap-4 mb-6 justify-center">
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-6 justify-center">
               {/* ComboBox alineado con el título */}
-              <div className="relative gradient-border gradient-border-purple w-fit" style={{ padding: '8px', marginBottom: 0 }}>
+              <div className="relative gradient-border gradient-border-purple w-full md:w-fit" style={{ padding: '8px', marginBottom: 0 }}>
                 <div className="gradient-border-inner"></div>
                 <select
                   value={edicionSeleccionada.id}
@@ -428,8 +428,8 @@ export default function CompetitionInfo() {
                     const ed = ediciones.find((ed) => ed.id === e.target.value);
                     if (ed) setEdicionSeleccionada(ed);
                   }}
-                  className="relative z-10 bg-[#110D20] text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#AC7CFF]"
-                  style={{ minWidth: '180px', border: 'none', boxShadow: 'none' }}
+                  className="relative z-10 bg-[#110D20] text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#AC7CFF] w-full"
+                  style={{ border: 'none', boxShadow: 'none' }}
                 >
                   {ediciones.map((ed) => (
                     <option key={ed.id} value={ed.id}>
@@ -438,10 +438,12 @@ export default function CompetitionInfo() {
                   ))}
                 </select>
               </div>
-              <History className="w-6 h-6 text-[#AC7CFF]" />
-              <h2 className="text-2xl font-bold text-center">
-                Edicion {edicionSeleccionada.id}, {edicionSeleccionada.semestre}
-              </h2>
+              <div className="flex items-center gap-2">
+                <History className="w-6 h-6 text-[#AC7CFF]" />
+                <h2 className="text-2xl font-bold text-center">
+                  Edicion {edicionSeleccionada.id}, {edicionSeleccionada.semestre}
+                </h2>
+              </div>
             </div>
 
             {/* Main info about previous edition (CHECK BRITO)*/}

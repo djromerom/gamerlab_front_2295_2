@@ -265,15 +265,15 @@ export const ProfessorsTable: React.FC<Props> = ({
     }
   };
 
-  const handleResendEmail = async (professorId: string) => {
+  const handleResendEmail = async (professorEmail: string) => {
     setInternalIsLoading(true);
     try {
       const response = await customFetch(
-        `${apiBaseUrl}/auth/reset-token-expiration`,
+        `${apiBaseUrl}/auth/resend-confirmation`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: professorId }),
+          body: JSON.stringify({ email: professorEmail }),
         }
       );
       if (!response.ok) {
@@ -467,7 +467,7 @@ export const ProfessorsTable: React.FC<Props> = ({
                           </DropdownMenuItem>
                           {professor.confirmationStatusId === 2 && ( // Solo mostrar si el estado es PENDIENTE
                             <DropdownMenuItem
-                              onClick={() => handleResendEmail(professor.id)}
+                              onClick={() => handleResendEmail(professor.email)}
                               disabled={internalIsLoading}
                               className="cursor-pointer text-blue-600 focus:text-blue-700 focus:bg-blue-50"
                             >

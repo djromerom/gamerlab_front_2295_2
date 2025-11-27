@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 /* ────────────────────────────────────────────────────────────────────
    Tabla principal + uso del Wizard
 ──────────────────────────────────────────────────────────────────── */
-export const TeamsManagementTable: React.FC<Props> = ({
+export const TeamsManagementTable = ({
   teams,
   paginationMeta,
   apiBaseUrl,
@@ -28,6 +28,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  allTeams,
   statusEmailLeader,
 }) => {
 
@@ -38,6 +39,29 @@ export const TeamsManagementTable: React.FC<Props> = ({
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const handler = (ev: MediaQueryListEvent | MediaQueryList) => setIsMobile((ev as any).matches === true);
+    setIsMobile(mq.matches);
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handler as any);
+    } else if (typeof (mq as any).addListener === "function") {
+      (mq as any).addListener(handler as any);
+    }
+    return () => {
+      if (typeof mq.removeEventListener === "function") {
+        mq.removeEventListener("change", handler as any);
+      } else if (typeof (mq as any).removeListener === "function") {
+        (mq as any).removeListener(handler as any);
+      }
+    };
+  }, []);
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
@@ -50,7 +74,6 @@ export const TeamsManagementTable: React.FC<Props> = ({
   }>({ teamId: null, email: "", type: undefined });
   const [rejectionReason, setRejectionReason] = useState<string>("");
 
-  // Certificates: selection dialog and bulk sending
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
@@ -90,10 +113,24 @@ export const TeamsManagementTable: React.FC<Props> = ({
   });
   const handleResize = useCallback(() => setIsMobile(window.innerWidth < 768), []);
   useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, [handleResize]);
+    setClientPage(1);
+  }, [categoryFilter]);
+
+  const itemsPerPage = clientPageSize;
+  const currentPage = clientPage;
+  const filteredAllTeams =
+    categoryFilter === "all"
+      ? datasetForCounts
+      : datasetForCounts.filter((t) => categorizeTeam(t) === categoryFilter);
+
+  const totalFiltered = filteredAllTeams.length;
+  const clientTotalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > clientTotalPages) {
+      setClientPage(1);
+    }
+  }, [currentPage, clientTotalPages]);
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -200,14 +237,12 @@ export const TeamsManagementTable: React.FC<Props> = ({
 
     setInternalIsLoading(true);
     try {
-      // Mapear teamCode -> email (fallback a id_equipo si teamCode no existe)
       const targets = certSelectedTeamIds.map((teamCode) => {
         const team = teams?.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
         const email = team?.integrantes?.[0]?.correo ?? "";
         return { teamCode, email };
       });
 
-      // Prepare send promises (each promise returns a result object)
       const sendPromises = targets.map(({ teamCode, email }) => (async () => {
         if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
         try {
@@ -454,7 +489,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
       key: "emailConfirm",
       label: "Confirmación del Lider",
       renderCell: (team: TeamRowData) => {
-        const primaryEmail = (team.integrantes?.[0]?.correo).toLowerCase() ?? "";
+        const primaryEmail = (team.integrantes?.[0]?.correo)?.toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
         const cached = statusEmailLeader(primaryEmail);
 
@@ -897,7 +932,7 @@ export const TeamsManagementTable: React.FC<Props> = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && (!teams || teams.length === 0) ? (
+            {showLoader && filteredAllTeams.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -909,13 +944,13 @@ export const TeamsManagementTable: React.FC<Props> = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && (!teams || teams.length === 0) ? (
+            ) : !showLoader && totalFiltered === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay equipos para mostrar en esta página.
+                  No hay equipos para mostrar con el filtro seleccionado.
                 </TableCell>
               </TableRow>
             ) : (
@@ -1036,34 +1071,32 @@ export const TeamsManagementTable: React.FC<Props> = ({
                 </Select>
               </div>
 
-              <div className="flex items-center gap-4">
-                <span>
-                  {totalPages > 0 ? currentPage : 0} de {totalPages}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1 || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages || totalPages === 0 || showLoader}
-                    variant="outline"
-                    size="icon"
-                    className="cursor-pointer"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+          <div className="flex items-center gap-4">
+            <span>
+              {clientTotalPages === 0 ? 0 : currentPage} de {clientTotalPages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                onClick={() => setClientPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1 || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setClientPage(Math.min(clientTotalPages, currentPage + 1))}
+                disabled={currentPage >= clientTotalPages || showLoader || clientTotalPages === 0}
+                variant="outline"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          );
-        })()}
+          </div>
+        </div>
       </Card>
 
       <Dialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>

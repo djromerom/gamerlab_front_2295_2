@@ -108,13 +108,13 @@ export default function navBar(): React.ReactElement {
                   <div className="absolute right-0 mt-2 w-40 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg py-2 shadow-lg">
                     <Link
                       to="/inicio"
-                      className="block px-4 py-2 text-sm text-gray-200 hover:bg-white/10 transition"
+                      className="cursor-pointer block px-4 py-2 text-sm text-gray-200 hover:bg-white/10 transition"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Mi dashboard
                     </Link>
                     <button
-                      className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-white/10 transition"
+                      className="cursor-pointer w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-white/10 transition"
                       onClick={async () => {
                         setDropdownOpen(false);
                         await logout();
