@@ -161,9 +161,10 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setCanViewJudges(false);
     const fetchPermission = async () => {
       try {
+        // Usamos apiFetch para que, si el jurado lleva mucho tiempo inactivo,
+        // la sesión se refresque automáticamente antes de cargar los permisos.
         const res = await apiFetch(endpoint, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
         });
@@ -267,30 +268,27 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setIsLoading(true);
     setError(null);
     try {
+      // Cargamos todos los datos globales (videojuegos, materias, NRCs, etc.)
+      // usando apiFetch para garantizar que la comunicación sea resiliente a errores 401.
       const responses = await Promise.all([
         apiFetch(`${API_ENDPOINT}/videojuegoData`, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
         apiFetch(`${API_ENDPOINT}/MateriaData`, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
         apiFetch(`${API_ENDPOINT}/NRCData`, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
         apiFetch(`${API_ENDPOINT}/DatosGraficoMateria`, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
         apiFetch(`${API_ENDPOINT}/JuradosData`, {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }),
       ]);

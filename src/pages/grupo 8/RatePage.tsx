@@ -270,6 +270,8 @@ export default function RatePage() {
       details: parsedDetails,
     };
     // evaluacion exitosa no existe
+    // Enviamos la evaluación usando apiFetch para proteger el trabajo del jurado.
+    // Si la sesión expiró justo antes de dar 'Confirmar', apiFetch la recuperará automáticamente.
     try {
       const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/with-details`,

@@ -2,6 +2,8 @@ import { apiFetch } from "@/lib/api";
 
 export async function fetchCriterionAverages(videogameId: number) {
   try {
+    // Usamos apiFetch en lugar de fetch nativo para que la petición sea resiliente.
+    // Si el token expira, apiFetch intentará renovarlo automáticamente.
     const response = await apiFetch(
       `/api/videogames/${videogameId}/criterion-averages`,
     );

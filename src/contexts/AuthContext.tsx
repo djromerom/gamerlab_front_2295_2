@@ -139,15 +139,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
+    // 1. Definimos la acción de refresco automático (latido)
     const executeRefresh = async () => {
-      console.log("Heartbeat: Refrescando sesión automáticamente...");
-      await contextRefreshAccessToken().catch(() => {});
+      console.log("Heartbeat: Refrescando sesión automáticamente para evitar expiración...");
+      await contextRefreshAccessToken().catch(() => {
+        console.warn("Heartbeat: No se pudo refrescar la sesión (posiblemente expiró el refresh token o no hay red).");
+      });
     };
 
+    // 2. Ejecución inmediata al cargar la app para asegurar un token fresco
     executeRefresh();
-    const intervalId = setInterval(executeRefresh, 300000); // 5 minutos
 
+    // 3. Programamos el intervalo de 5 minutos (300,000ms)
+    // Esto mantiene la sesión viva mientras la pestaña esté abierta
+    const intervalId = setInterval(executeRefresh, 300000);
+
+    // 4. Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
     return () => {
+      console.log("Heartbeat: Deteniendo el intervalo de refresco...");
       clearInterval(intervalId);
     };
   }, []);

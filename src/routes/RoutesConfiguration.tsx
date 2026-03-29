@@ -204,6 +204,9 @@ const routes: RouteConfig[] = [
 const RoutesConfiguration: React.FC = () => {
   const { loading } = useAuth();
   
+  // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
+  // Si el AuthContext aún está verificando la sesión (loading=true), 
+  // mostramos una pantalla de carga elegante antes de procesar las rutas.
   if (loading) {
     return <LoadingScreen text="Cargando experiencia..." />;
   }

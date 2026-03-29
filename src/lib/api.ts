@@ -1,4 +1,5 @@
 export async function apiFetch(url: string, options: RequestInit = {}) {
+  // 1. Configuramos opciones por defecto para incluir cookies en todas las peticiones (DRY)
   const defaultOptions: RequestInit = {
     credentials: "include",
     ...options,
@@ -6,18 +7,19 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
 
   let response = await fetch(url, defaultOptions);
 
-  // 2. Interceptor de error 401
+  // 2. Interceptor de error 401 (Sesión expirada)
   if (response.status === 401) {
-    console.warn("401 detectado. Intentando refrescar sesión...");
+    console.warn("401 detectado. Intentando refrescar sesión automáticamente...");
     try {
+      // Intentamos renovar el token llamando al endpoint de refresh
       const refreshResponse = await fetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
         { method: "POST", credentials: "include" },
       );
 
       if (refreshResponse.ok) {
-        console.log("Refresco exitoso. Reintentando petición original...");
-        // Reintentamos la petición original y actualizamos la variable response
+        console.log("Refresco exitoso. Reintentando la petición original que falló...");
+        // Si el refresh funcionó, reintentamos la petición original exactamante como era
         response = await fetch(url, defaultOptions);
       }
     } catch (error) {
