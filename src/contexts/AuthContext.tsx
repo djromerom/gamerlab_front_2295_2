@@ -12,6 +12,7 @@ import {
   Role,
   UserProfile,
 } from "@/types/auth";
+import { apiFetch } from "@/lib/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,11 +25,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
         {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }
       );
@@ -93,11 +93,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
         {
           method: "POST",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         }
@@ -128,9 +127,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
+      await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
-        credentials: "include",
       });
     } catch (error) {
       console.error("AuthContext: Logout API call failed:", error);
@@ -141,7 +139,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
-    contextRefreshAccessToken().catch(() => {});
+    const executeRefresh = async () => {
+      console.log("Heartbeat: Refrescando sesión automáticamente...");
+      await contextRefreshAccessToken().catch(() => {});
+    };
+
+    executeRefresh();
+    const intervalId = setInterval(executeRefresh, 300000); // 5 minutos
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   const userRole: Role | null = user?.role.name ?? null;
