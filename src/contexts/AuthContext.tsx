@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       if (res.ok) {
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         {
           method: "POST",
           credentials: "include",
-        }
+        },
       );
 
       if (!res.ok) {
@@ -66,8 +66,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       const data = await res.json();
-      
-      
 
       if (data.accessToken && typeof data.accessToken === "string") {
         setAccessToken(data.accessToken);
@@ -78,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setAccessToken(null);
         setLoading(false);
         throw new Error(
-          "Access token not found or invalid in refresh response"
+          "Access token not found or invalid in refresh response",
         );
       }
     } catch (error) {
@@ -99,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
-        }
+        },
       );
 
       const log = await res.json();
@@ -141,18 +139,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     // 1. Definimos la acción de refresco automático (latido)
     const executeRefresh = async () => {
-      console.log("Heartbeat: Refrescando sesión automáticamente para evitar expiración...");
+      console.log(
+        "Heartbeat: Refrescando sesión automáticamente para evitar expiración...",
+      );
       await contextRefreshAccessToken().catch(() => {
-        console.warn("Heartbeat: No se pudo refrescar la sesión (posiblemente expiró el refresh token o no hay red).");
+        console.warn(
+          "Heartbeat: No se pudo refrescar la sesión (posiblemente expiró el refresh token o no hay red).",
+        );
       });
     };
 
     // 2. Ejecución inmediata al cargar la app para asegurar un token fresco
     executeRefresh();
 
-    // 3. Programamos el intervalo de 5 minutos (300,000ms)
+    // 3. Programamos el intervalo de 14 minutos (840000ms)
     // Esto mantiene la sesión viva mientras la pestaña esté abierta
-    const intervalId = setInterval(executeRefresh, 300000);
+    const intervalId = setInterval(executeRefresh, 840000);
 
     // 4. Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
     return () => {
@@ -173,7 +175,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       refreshAccessToken: contextRefreshAccessToken,
       logout,
     }),
-    [user, userRole, loading, accessToken]
+    [user, userRole, loading, accessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
