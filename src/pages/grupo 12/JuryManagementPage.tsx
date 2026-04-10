@@ -30,27 +30,37 @@ const JuryManagementPage = () => {
     setError(null);
     const includeInactive = false;
 
-    try {      
-      const dataRespond: PaginatedJurors = await juryManagement.getJuries(page, limit)
-      
+    try {
+      const dataRespond: PaginatedJurors = await juryManagement.getJuries(
+        page,
+        limit,
+      );
+
       // If the current page is empty (e.g., after deleting the last item)
       // and it's not the first page, fetch the previous page.
-      if (dataRespond.data.length === 0 && page > 1 && dataRespond.metadata.totalItems > 0) {
+      if (
+        dataRespond.data.length === 0 &&
+        page > 1 &&
+        dataRespond.metadata.totalItems > 0
+      ) {
         // Check totalItems to prevent infinite loop if backend returns 0 items always
         return fetchJurors(page - 1, limit);
       }
 
-      dataRespond.data = dataRespond.data.map((jurado: any): JurorRowData => ({
-        ...jurado,
-        confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
-        lastSignInAt: formatDate(jurado.lastSignInAt),
-      }));
+      dataRespond.data = dataRespond.data.map(
+        (jurado: any): JurorRowData => ({
+          ...jurado,
+          confirmationStatusId: mapConfirmationStatus(
+            jurado.confirmationStatusId,
+          ),
+          lastSignInAt: formatDate(jurado.lastSignInAt),
+        }),
+      );
       setJurorsData(dataRespond);
-
     } catch (err: any) {
       console.error("Error fetching jurors:", err);
       setError(
-        err.message || "An unknown error occurred while loading the jurors."
+        err.message || "An unknown error occurred while loading the jurors.",
       );
       setJurorsData(null);
     } finally {
@@ -77,12 +87,12 @@ const JuryManagementPage = () => {
 
   const automaticAssignment = async () => {
     try {
-      const response = await juryManagement.automaticAssignment()
-      setError(response.message)
+      const response = await juryManagement.automaticAssignment();
+      setError(response.message);
     } catch (error) {
-      setError (error)
+      setError(error);
     }
-  }
+  };
 
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
@@ -115,11 +125,14 @@ const JuryManagementPage = () => {
           )}
 
           {/* No results message (will show if activeRows is empty) */}
-          {!isPageLoading && !error && jurorsData && jurorsData.metadata.totalItems === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No se encontraron jurados. {/* Optional: Update message */}
-            </div>
-          )}
+          {!isPageLoading &&
+            !error &&
+            jurorsData &&
+            jurorsData.metadata.totalItems === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                No se encontraron jurados. {/* Optional: Update message */}
+              </div>
+            )}
         </>
       )}
     </LayoutAplication>

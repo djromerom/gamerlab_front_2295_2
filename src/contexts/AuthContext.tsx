@@ -51,9 +51,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const contextRefreshAccessToken = async (): Promise<string | null> => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`, //ESTO ES LO QUE HACE EL FRONT
+        // USAR EL AWAIT FETCH("EL ENDPOINT QUE CREAMOS EN EL BACKEND Y")
         {
-          method: "POST",
+          method: "POST", //INCLUIR EL TIPO DE HTTP QUE SE HARA
+          // En caso de que el endpoint requiera un parametro se le envia a traves de las llaves
           credentials: "include",
         },
       );
@@ -96,9 +98,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password }), //O a traves de un JSON.stringify como en este
         },
-      );
+      ); /* const res = await fetch(`${API_ENDPOINT}/available-for-team/${teamId}`, {
+    method: 'GET',
+    credentials: 'include',           // Necesario para enviar la cookie JWT
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  // Eso fue todo, igual les pasare el codigo que esta al lado por si aca, bye
+
+       */
 
       const log = await res.json();
 
