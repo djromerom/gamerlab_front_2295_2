@@ -34,9 +34,8 @@ jobs:
           uses: docker/build-push-action@v6
           with:
             context: .
-            file: ./apps/${{ matrix.services }}/Dockerfile 
+            file: ./Dockerfile
             tags: ${{ steps.sha-tag.outputs.tags }}
-            platforms: linux/arm64
             push: true
             no-cache: true
             secrets: |
