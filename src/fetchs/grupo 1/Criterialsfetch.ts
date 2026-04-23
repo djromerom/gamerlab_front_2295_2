@@ -1,11 +1,19 @@
-export async function fetchCriterionAverages(videogameId:number) {
+import { apiFetch } from "@/lib/api";
+
+export async function fetchCriterionAverages(videogameId: number) {
   try {
-    const response = await fetch(`/api/videogames/${videogameId}/criterion-averages`);
+    // Usamos apiFetch en lugar de fetch nativo para que la petición sea resiliente.
+    // Si el token expira, apiFetch intentará renovarlo automáticamente.
+    const response = await apiFetch(
+      `/api/videogames/${videogameId}/criterion-averages`,
+    );
 
     if (!response.ok) {
       // Manejar errores de HTTP (4xx, 5xx)
       const errorData = await response.json();
-      console.error(`Error ${response.status}: ${errorData.message || response.statusText}`);
+      console.error(
+        `Error ${response.status}: ${errorData.message || response.statusText}`,
+      );
       // Podrías lanzar un error o devolver un estado de error para la UI
       return null;
     }
@@ -17,12 +25,11 @@ export async function fetchCriterionAverages(videogameId:number) {
     //   { criterionId: 2, criterionName: "Gráficos", averageScore: 3.8 },
     //   ...
     // ]
-    
-    return data; // Estos son los datos que puedes usar para mostrar y cachear
 
+    return data; // Estos son los datos que puedes usar para mostrar y cachear
   } catch (error) {
     // Manejar errores de red u otros errores inesperados
-    console.error('Failed to fetch criterion averages:', error);
+    console.error("Failed to fetch criterion averages:", error);
     return null;
   }
 }

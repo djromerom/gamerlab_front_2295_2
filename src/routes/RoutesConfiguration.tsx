@@ -37,6 +37,8 @@ import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+import { useAuth } from "@/contexts/AuthContext";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
 type Role =
   | "Profesor"
@@ -200,6 +202,15 @@ const routes: RouteConfig[] = [
 ];
 
 const RoutesConfiguration: React.FC = () => {
+  const { loading } = useAuth();
+  
+  // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
+  // Si el AuthContext aún está verificando la sesión (loading=true), 
+  // mostramos una pantalla de carga elegante antes de procesar las rutas.
+  if (loading) {
+    return <LoadingScreen text="Cargando experiencia..." />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>

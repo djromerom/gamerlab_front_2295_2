@@ -1,5 +1,5 @@
-// src/hooks/useCriteria.ts (or similar path)
 import { useState, useEffect } from 'react';
+import { apiFetch } from "@/lib/api";
 
 interface ApiCriterion {
   id: number;
@@ -24,11 +24,12 @@ export function useCriteria() {
 
     async function fetchCriteria() {
       try {
-        const response = await fetch(
+        // Se utiliza apiFetch para manejar automáticamente el refresco de sesión si el token expira (401)
+        const response = await apiFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/criteria/select-options`
         );
         if (!response.ok) {
-          throw new Error('Failed to fetch criteria');
+          throw new Error('Error al obtener los criterios de evaluación');
         }
         const data: ApiCriterion[] = await response.json();
         

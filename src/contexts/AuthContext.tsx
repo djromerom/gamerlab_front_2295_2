@@ -12,6 +12,7 @@ import {
   Role,
   UserProfile,
 } from "@/types/auth";
+import { apiFetch } from "@/lib/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,13 +25,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
         {
           method: "GET",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       if (res.ok) {
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         {
           method: "POST",
           credentials: "include",
-        }
+        },
       );
 
       if (!res.ok) {
@@ -66,8 +66,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       const data = await res.json();
-      
-      
 
       if (data.accessToken && typeof data.accessToken === "string") {
         setAccessToken(data.accessToken);
@@ -78,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setAccessToken(null);
         setLoading(false);
         throw new Error(
-          "Access token not found or invalid in refresh response"
+          "Access token not found or invalid in refresh response",
         );
       }
     } catch (error) {
@@ -93,14 +91,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async ({ email, password }: LoginCredentials) => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
         {
           method: "POST",
-          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
-        }
+        },
       );
 
       const log = await res.json();
@@ -128,9 +125,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
+      await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
-        credentials: "include",
       });
     } catch (error) {
       console.error("AuthContext: Logout API call failed:", error);
@@ -141,7 +137,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
-    contextRefreshAccessToken().catch(() => {});
+    // 1. Definimos la acción de refresco automático (latido)
+    const executeRefresh = async () => {
+      console.log(
+        "Heartbeat: Refrescando sesión automáticamente para evitar expiración...",
+      );
+      await contextRefreshAccessToken().catch(() => {
+        console.warn(
+          "Heartbeat: No se pudo refrescar la sesión (posiblemente expiró el refresh token o no hay red).",
+        );
+      });
+    };
+
+    // 2. Ejecución inmediata al cargar la app para asegurar un token fresco
+    executeRefresh();
+
+    // 3. Programamos el intervalo de 14 minutos (840000ms)
+    // Esto mantiene la sesión viva mientras la pestaña esté abierta
+    const intervalId = setInterval(executeRefresh, 840000);
+
+    // 4. Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
+    return () => {
+      console.log("Heartbeat: Deteniendo el intervalo de refresco...");
+      clearInterval(intervalId);
+    };
   }, []);
 
   const userRole: Role | null = user?.role.name ?? null;
@@ -156,7 +175,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       refreshAccessToken: contextRefreshAccessToken,
       logout,
     }),
-    [user, userRole, loading, accessToken]
+    [user, userRole, loading, accessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
