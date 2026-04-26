@@ -14,7 +14,7 @@ import GraphicDisplay from "@/components/grupo 1/GraphicsDisplay"
 import TablaRanking from "@/components/grupo 1/RankingTable"
 import TablaResultados from "@/components/grupo 1/ResultsTable"
 import FiltrosPanel from "@/components/grupo 1/FilterPanel"
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
+import { useGlobalState } from "@/fetchs/GlobalStateContext"
 import DownloadReport from "@/components/grupo 1/DownloadReport"
 import TablaPorJurado from "@/components/grupo 1/JudgesTable"
 

@@ -19,7 +19,7 @@ import {
   //   videojuegosCompletos: string[]; // Nombres
   // }
   Jurados as JuradoData // Usamos el alias JuradoData
-} from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+} from "@/fetchs/GlobalStateContext"; // Ajusta la ruta
 //import { TabsContent } from '@/components/ui/tabs';
 import { UserCheck, UserX, AlertCircle, Loader2 } from "lucide-react";
 

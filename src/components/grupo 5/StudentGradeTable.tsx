@@ -25,6 +25,9 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { useProfessorSubjects } from "@/hooks/useProfessorSubjects";
+import downloadGradingTemplate from "@/fetchs/downloadGradingTemplate";
+import exportToExcel from "@/fetchs/exportToExcel";
 
 interface Props {
   initialNRC?: string;
@@ -41,20 +44,10 @@ interface PaginationMetadata {
 export default function StudentGradeTable({ initialNRC }: Props) {
   const defaultNRC = initialNRC || "-";
 
-  // Selection states: primero Materia, luego NRC (NRC depende de la materia)
-  const [selectedNRC, setSelectedNRC] = useState<string>("");
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
-
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
   const [paginationMetadata, setPaginationMetadata] = useState<PaginationMetadata | null>(null);
-
-  // Available options
-  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
-  // Guarda la lista completa de NRCs recibida inicialmente para poder aplicar filtros locales
-  const [allNRCs, setAllNRCs] = useState<any[]>([]);
-  const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
 
   // Data cache - keeps fetched data to avoid re-fetching
   const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<Record<string, any[]>>({});
@@ -62,7 +55,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  //const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noStudents, setNoStudents] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -78,72 +71,24 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   // por lo que no necesitamos llamar a `/professors/my-nrcs` por separado. Inicializamos `allNRCs`
   // cuando cargamos las materias en el efecto de abajo.
 
-  // Initialize available subjects
-  useEffect(() => {
-    const fetchAvailableSubjects = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/my-subjects`, {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
 
-        if (!response.ok) {
-          throw new Error("Error fetching available subjects");
-        }
+  // Selection states: primero Materia, luego NRC (NRC depende de la materia)
+  //const [selectedNRC, setSelectedNRC] = useState<string>("");
+  //const [selectedSubject, setSelectedSubject] = useState<string>("");
+  // 'allNRCs' Guarda la lista completa de NRCs recibida inicialmente para poder aplicar filtros locales
+  const {
+    allNRCs, //All NRCs currently available to the teacher
+    availableSubjects, //All subjects that contain those NRCs
+    selectedSubject, 
+    availableNRCs, // NRCs that are available to teacher
+    selectedNRC, // currently selected NRC
+    initialLoading, // page loading status
 
-        const data = await response.json();
-        setAvailableSubjects(data);
+    setAvailableNRCs, //setters
+    setSelectedNRC,
+    setSelectedSubject
+  } = useProfessorSubjects(defaultNRC);
 
-        // Extraer todos los NRCs incluidos en cada materia y anexar info de la materia
-        const allNrcsFromSubjects = (data || []).flatMap((subject: any) => {
-          const subjectId = subject.id || subject._id || subject.code;
-          const subjectName = subject.name || subject.title || "";
-          const nrcs = subject.nrcs || [];
-          return nrcs.map((nrc: any) => ({
-            ...nrc,
-            subject: { id: subjectId, name: subjectName },
-          }));
-        });
-
-        // Guardamos todos los NRCs en el estado (se usará para filtrado local)
-        setAllNRCs(allNrcsFromSubjects);
-
-        if (data.length > 0) {
-          const initialSubjectName = data[0].name;
-          setSelectedSubject(initialSubjectName);
-          // Inicialmente filtramos los NRCs para la materia seleccionada
-          const filtered = allNrcsFromSubjects.filter((n: any) => {
-            const name = n.subject?.name || n.subjectName || n.name || "";
-            return name && String(name).toLowerCase() === String(initialSubjectName).toLowerCase();
-          });
-          setAvailableNRCs(filtered);
-          // Si hay exactamente un NRC para la materia, auto-seleccionarlo (salvo que venga initialNRC explícito)
-          if (filtered.length === 1) {
-            if (!(defaultNRC && defaultNRC !== "-")) {
-              setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
-            }
-          }
-          // Si se pasó un NRC por props (defaultNRC), lo aplicamos si existe (tiene prioridad)
-          if (defaultNRC && defaultNRC !== "-") {
-            const match = allNrcsFromSubjects.find((x: any) => String(x.code) === String(defaultNRC) || String(x.id) === String(defaultNRC));
-            if (match) setSelectedNRC(defaultNRC);
-          }
-        } else {
-          toast.info("No se encontraron materias disponibles");
-        }
-      } catch (err) {
-        console.error("Error fetching available Subjects:", err);
-        toast.error("Error al cargar las materias");
-      }
-      finally {
-        // Desactivamos la pantalla inicial de carga
-        setInitialLoading(false);
-      }
-    };
-
-    fetchAvailableSubjects();
-  }, []);
 
   // When the selected subject changes, try to narrow the list of NRCs to that subject.
   useEffect(() => {
@@ -502,84 +447,30 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   };
 
   // Export to Excel function
-  const exportToExcel = () => {
+  const handleExportToExcel = () => {
     setDownloading(true);
-
-    // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
-    toast(`Preparando exportación global (todos los NRCs)...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
-
-    fetch(endpoint, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error('Error al exportar a Excel');
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-  a.download = `Reporte_Calificaciones_FeriaGamer_${new Date().toISOString().slice(0,10)}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-  toast.success(`Reporte global exportado correctamente`);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
-      })
-      .finally(() => {
-        setDownloading(false);
-      });
-  };
+    try {
+      exportToExcel()
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   // Download grading template
-  const downloadGradingTemplate = () => {
+  const handleDownloadTemplate = () => {
     setDownloadingTemplate(true);
-
-    // Descargar plantilla GLOBAL: ignorar filtros
-    toast(`Preparando plantilla de calificaciones global...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
-
-    fetch(endpoint, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error('Error al descargar plantilla');
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success('Plantilla descargada. Completa las notas y súbela de vuelta.');
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        toast.error(`Error al descargar plantilla: ${error.message || 'No se pudo completar la descarga'}`);
-      })
-      .finally(() => {
-        setDownloadingTemplate(false);
-      });
-  };
+    try {
+      downloadGradingTemplate()
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(`Error al descargar plantilla: ${error.message || 'No se pudo completar la descarga'}`);
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  }
 
   // Upload grading file
   const uploadGradingFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -773,7 +664,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           variant="outline"
           size="sm"
           className="cursor-pointer"
-          onClick={exportToExcel}
+          onClick={handleExportToExcel}
           aria-label="Exportar todas las calificaciones"
           disabled={downloading}
         >
@@ -798,7 +689,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           variant="default"
           size="sm"
           className="cursor-pointer"
-          onClick={downloadGradingTemplate}
+          onClick={handleDownloadTemplate}
           aria-label="Descargar plantilla de calificaciones"
           disabled={downloadingTemplate}
         >
