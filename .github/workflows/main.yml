@@ -61,6 +61,6 @@ jobs:
             tags: ${{ steps.sha-tag.outputs.tags }}
             push: true
             no-cache: true
-            secrets: |
+            build-args: |
               "VITE_ENDPOINT_BACKEND=${{  secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP  }}"
               "VITE_SITE_KEY=${{  secrets.VITE_SITE_KEY_TEMP  }}"
