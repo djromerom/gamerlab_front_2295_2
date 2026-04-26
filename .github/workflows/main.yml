@@ -1,4 +1,4 @@
-name: Deploy-test
+name: build-front
 
 # Controls when the action will run. 
 on:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: 'Branch target (dev or prod)'
+        description: 'Branch target (dev-deploy or main)'
         required: true
         type: choice
         options:
@@ -20,6 +20,9 @@ on:
 jobs:
   docker-image:
       runs-on: ubuntu-latest
+      outputs:
+        tag-name: ${{  steps.resolve-tag.outputs.tag  }}
+        branch: ${{  steps.resolve-tag.outputs.branch  }}
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
@@ -30,37 +33,70 @@ jobs:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        - name: Get branch tag
-          id: get-branch
+        - name: Resolve deploy tag
+          id: resolve-tag
           run: |
-              BRANCH="${{ github.event_name == 'workflow_dispatch' && inputs.target_branch || github.base_ref }}"
-              echo "branch: $BRANCH"
-              echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-
-        - name: post dinamic env value
-          id: dinamic-env
-          run: |
-            IMAGE_TAG=$(echo "$BRANCH_IMAGE_TAGS" | jq -r ".\"${{ steps.get-branch.outputs.branch }}\".tag")
+            set -euo pipefail
+            BRANCH="${{ github.event_name == 'workflow_dispatch' && inputs.target_branch || github.base_ref }}"
+            if [ -z "$BRANCH" ]; then
+              echo "ERROR: branch could not be resolved"
+              exit 1
+            fi
+            echo "Resolved branch: $BRANCH"
             
-            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            IMAGE_SUFFIX=$(echo "$BRANCH_IMAGE_TAGS" | jq -r ".\"$BRANCH\".tag")
+            if [ "$IMAGE_SUFFIX" = "null" ] || [ -z "$IMAGE_SUFFIX" ]; then
+              echo "ERROR: No image suffix configured for branch '$BRANCH'"
+              exit 1
+            fi
+            TAG="sha-${GITHUB_SHA::7}-${IMAGE_SUFFIX}"
+            echo "Resolved image tag: $TAG"
+  
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
           env:
             BRANCH_IMAGE_TAGS: ${{ secrets.BRANCH_IMAGE_TAGS }}
-          
-        - name: Creation of the SHA tag 
-          uses: docker/metadata-action@v5
-          id: sha-tag
-          with:
-            images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
-            tags: type=sha,prefix=sha-,suffix=-${{  steps.dinamic-env.outputs.image_tag  }}
-
+            
         - name: Build and push base image
           uses: docker/build-push-action@v6
           with:
             context: .
             file: ./Dockerfile
-            tags: ${{ steps.sha-tag.outputs.tags }}
+            tags: ${{ steps.resolve-tag.outputs.tag }}
             push: true
             no-cache: true
             build-args: |
               "VITE_ENDPOINT_BACKEND=${{  secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP  }}"
               "VITE_SITE_KEY=${{  secrets.VITE_SITE_KEY_TEMP  }}"
+
+  test-dispatch:
+    needs: docker-image
+    if: needs.docker-image.outputs.branch == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch_send
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{  secrets.DEPLOY_PAT  }}
+          repository: ${{  secrets.REPO_DISPATCH_TARGET  }}
+          event-type: test-image-published
+          client-payload: |
+            {
+              "tag": "${{  needs.docker-image.outputs.tag-name  }}"
+            }
+            
+  prod-dispatch:
+    needs: docker-image
+    if: needs.docker-image.outputs.branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch_send
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{  secrets.DEPLOY_PAT  }}
+          repository: ${{  secrets.REPO_DISPATCH_TARGET  }}
+          event-type: prod-image-published
+          client-payload: |
+            {
+              "tag": "${{  needs.docker-image.outputs.tag-name  }}"
+            }
