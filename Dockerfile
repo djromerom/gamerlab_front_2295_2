@@ -17,7 +17,7 @@ COPY . .
 # Build-time env vars (passed as --build-arg). These will be written to a .env
 # so Vite can replace import.meta.env.VITE_* during build.
 RUN --mount=type=secret,id=VITE_ENDPOINT_BACKEND,env=VITE_ENDPOINT_BACKEND \
-    --mount=type=secret,id=VITE_SITE_KEY,env=VITE_SITE_KEY &&\
+    --mount=type=secret,id=VITE_SITE_KEY,env=VITE_SITE_KEY \
     npm run build
 
 ## Production stage: nginx serving the built files
