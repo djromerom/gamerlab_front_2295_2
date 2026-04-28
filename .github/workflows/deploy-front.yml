@@ -62,7 +62,7 @@ jobs:
           with:
             context: .
             file: ./Dockerfile
-            tags: ${{ steps.resolve-tag.outputs.tag }}
+            tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ steps.resolve-tag.outputs.tag }}
             push: true
             no-cache: true
             secrets: |
