@@ -1,11 +1,11 @@
 name: build-front
-
-# Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  pull_request:
+  # Trigger the workflow on push to dev-deploy or main branches
+  # By default, dev-deploy and main branches are protected, so only approved PRs can trigger the workflow
+  push:
     branches: [ dev-deploy , main ]
 
+  # Allow manual triggering of the workflow with a specified target branch (dev-deploy or main)
   workflow_dispatch:
     inputs:
       target_branch:
@@ -16,8 +16,8 @@ on:
           - dev-deploy
           - main
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # Job to build and push the Docker image, tagged based on the branch and commit SHA
   docker-image:
       runs-on: ubuntu-latest
       outputs:
@@ -69,6 +69,7 @@ jobs:
               "VITE_ENDPOINT_BACKEND=${{  secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP  }}"
               "VITE_SITE_KEY=${{  secrets.VITE_SITE_KEY_TEMP  }}"
 
+  # Conditional job to dispatch repository events for test deployment (dev-deploy branch)
   test-dispatch:
     needs: docker-image
     if: needs.docker-image.outputs.branch == 'dev'
@@ -85,6 +86,7 @@ jobs:
               "tag": "${{  needs.docker-image.outputs.tag-name  }}"
             }
             
+  # Conditional job to dispatch repository events for production deployment (main branch)
   prod-dispatch:
     needs: docker-image
     if: needs.docker-image.outputs.branch == 'main'
