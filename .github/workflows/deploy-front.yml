@@ -72,7 +72,7 @@ jobs:
   # Conditional job to dispatch repository events for test deployment (dev-deploy branch)
   test-dispatch:
     needs: docker-image
-    if: needs.docker-image.outputs.branch == 'dev'
+    if: needs.docker-image.outputs.branch == 'dev-deploy'
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch_send
