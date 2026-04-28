@@ -65,7 +65,7 @@ jobs:
             tags: ${{ steps.resolve-tag.outputs.tag }}
             push: true
             no-cache: true
-            build-args: |
+            secrets: |
               "VITE_ENDPOINT_BACKEND=${{  secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP  }}"
               "VITE_SITE_KEY=${{  secrets.VITE_SITE_KEY_TEMP  }}"
 
