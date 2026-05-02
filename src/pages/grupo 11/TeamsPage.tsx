@@ -598,8 +598,12 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
 
   // Check if the game is already liked on component mount
   useEffect(() => {
-    const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
-    setIsLiked(likedGames.includes(team.id));
+    const visitorId = localStorage.getItem('visitor_id');
+    if (!visitorId) {
+      setIsLiked(false);
+      return;
+    }
+    setIsLiked(false);
   }, [team.id]);
 
   const handleClose = () => {
@@ -608,52 +612,40 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
   };
   
   const toggleLike = async () => {
-    if (isTogglingLike) return; // Prevent multiple simultaneous requests
-    
+    if (isTogglingLike) return;
     setIsTogglingLike(true);
-    
     try {
+      let visitorId = localStorage.getItem('visitor_id');
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem('visitor_id', visitorId);
+      }
       const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like/${!isLiked}`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like`,
         {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitorId }),
         }
       );
-
       if (response.status === 201 || response.status === 200) {
         const data = await response.json();
-        
-        // Update localStorage
-        const likedGames = JSON.parse(localStorage.getItem('likedGames') || '[]');
-        if (!isLiked) {
-          // Add to liked games
-          likedGames.push(team.id);
-          setIsLiked(true);
-          setLikesCount(prev => prev + 1);
-          localStorage.setItem('likedGames', JSON.stringify(likedGames));
-        } else {
-          // Remove from liked games
-          const updatedLikedGames = likedGames.filter((id: number) => id !== team.id);
-          setIsLiked(false);
-          setLikesCount(prev => prev - 1);
-          localStorage.setItem('likedGames', JSON.stringify(updatedLikedGames));
-        }
-        
-        // Update likes count from server response if available
+        setIsLiked(data.liked);
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
+      } else if (response.status === 409) {
+        setIsLiked(true);
       } else if (response.status === 400) {
         const errorData = await response.json();
-        const description = errorData.message.includes("20 likes") ?
-          "Este juego no puede recibir más de 20 likes sin video o fotos adicionales." :
-          errorData.message.includes("10 likes") ?
-            "Este juego no puede recibir más de 10 likes sin logo." :
-          "Error al procesar el like. Intenta de nuevo.";
-          console.error('Failed to toggle like:', errorData.message);
-          toast.error(description, { id: 1 });
+        const description = errorData.message.includes("20 likes")
+          ? "Este juego no puede recibir más de 20 likes sin video o fotos adicionales."
+          : errorData.message.includes("10 likes")
+          ? "Este juego no puede recibir más de 10 likes sin logo."
+          : "Error al procesar el like. Intenta de nuevo.";
+        console.error('Failed to toggle like:', errorData.message);
+        toast.error(description, { id: 1 });
       } else {
         console.error('Failed to toggle like:', response.status);
         toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
