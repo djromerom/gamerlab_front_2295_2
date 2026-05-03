@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { toast, Toaster } from "sonner";
 import { useLikesSocket } from "@/hooks/useLikesSocket";
+import { useSocket } from "@/contexts/SocketContext";
 
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
@@ -612,9 +613,28 @@ interface GameDetailModalProps {
 function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModalProps) {
   const customFetch = useFetch();
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  // Synchronize the like heart icon across multiple tabs for the same user
+  useEffect(() => {
+    if (!socket || !user) return;
+    const handleLikesUpdated = (payload: any) => {
+      if (
+        payload.videogameId === team.id &&
+        payload.triggerUserId === user.id &&
+        payload.liked !== undefined
+      ) {
+        setIsLiked(payload.liked);
+      }
+    };
+    socket.on('likes:updated', handleLikesUpdated);
+    return () => {
+      socket.off('likes:updated', handleLikesUpdated);
+    };
+  }, [socket, user, team.id]);
 
   // Keep the counter in sync with the parent's WebSocket map
   useEffect(() => {
