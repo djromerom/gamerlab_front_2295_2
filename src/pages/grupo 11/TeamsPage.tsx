@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { toast, Toaster } from "sonner";
+import { useLikesSocket } from "@/hooks/useLikesSocket";
 
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
@@ -49,6 +50,13 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTeamType, setActiveTeamType] = useState<string>("all");
   const customFetch = useFetch();
+
+  // Initial REST snapshot - syncs only the first time it loads
+  const initialLikes = useMemo(
+    () => Object.fromEntries(teams.map((t) => [t.id, t.likes ?? 0])),
+    [teams],
+  );
+  const liveLikes = useLikesSocket(initialLikes);
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   // Función para mapear estados numéricos o strings a los valores correctos
@@ -295,7 +303,12 @@ export default function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} onRefresh={fetchTeams} />
+                <TeamCard
+                  key={team.id}
+                  team={team}
+                  onRefresh={fetchTeams}
+                  liveLikeCount={liveLikes[team.id] ?? team.likes ?? 0}
+                />
               ))}
             </div>
           )}
@@ -345,6 +358,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
 interface TeamCardProps {
   team: Team;
   onRefresh: () => void;
+  liveLikeCount: number;
 }
 
 // Función para extraer el semestre del código de equipo
@@ -354,7 +368,7 @@ const getSemesterFromTeamCode = (teamCode?: string): string | null => {
   return match ? match[1] : null;
 };
 
-function TeamCard({ team, onRefresh }: TeamCardProps) {
+function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const getStatusInfo = (status: TeamStatus) => {
@@ -415,17 +429,20 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
               </div>
             </div>
           </CardContent>
-          {team.likes !== undefined && (
-            <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
-              <Heart size={20} fill="currentColor" />
-              <span className="text-sm font-bold">{team.likes}</span>
-            </div>
-          )}
+          <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
+            <Heart size={20} fill="currentColor" />
+            <span className="text-sm font-bold">{liveLikeCount}</span>
+          </div>
         </Card>
       </motion.div>
 
       {isOpen && (
-        <GameDetailModal team={team} onClose={() => setIsOpen(false)} onRefresh={onRefresh} />
+        <GameDetailModal
+          team={team}
+          onClose={() => setIsOpen(false)}
+          onRefresh={onRefresh}
+          liveCount={liveLikeCount}
+        />
       )}
     </>
   );
@@ -589,14 +606,22 @@ interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
   onRefresh: () => void;
+  liveCount?: number;
 }
 
-function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
+function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModalProps) {
   const customFetch = useFetch();
   const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(team.likes || 0);
+  const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  // Keep the counter in sync with the parent's WebSocket map
+  useEffect(() => {
+    if (liveCount !== undefined) {
+      setLikesCount(liveCount);
+    }
+  }, [liveCount]);
 
   // Check if the game is already liked on component mount.
   // Only meaningful when the user has a session — guests can't like.
