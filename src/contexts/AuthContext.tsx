@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const contextRefreshAccessToken = async (): Promise<string | null> => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh?silent=true`,
         {
           method: "POST",
           credentials: "include",
@@ -108,7 +108,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         );
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes("status 401")) {
+      if (
+        error instanceof Error &&
+        (error.message.includes("status 401") ||
+          error.message.includes("Access token not found"))
+      ) {
         // No imprimimos error en rojo porque es normal (ej. primera carga sin estar logueado)
       } else {
         console.error("AuthContext: Failed to refresh access token:", error);
@@ -156,10 +160,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    // [MODIFICADO]: Se detiene explícitamente el temporizador de refresco antes de limpiar la sesión
-    // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
+    // 1. Detener el temporizador de refresco
     stopHeartbeat();
 
+    // 2. Borrar inmediatamente el token del storage para evitar que reviva si el usuario recarga la página antes de que termine el fetch
+    sessionStorage.removeItem("dev_token");
+    setAccessToken(null);
+    setUser(null);
+
+    // 3. Avisar al backend que destruya las cookies
     try {
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
@@ -167,8 +176,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       console.error("AuthContext: Logout API call failed:", error);
     }
-    setUser(null);
-    setAccessToken(null);
     setLoading(false);
   };
 
