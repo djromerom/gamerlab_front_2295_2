@@ -20,7 +20,8 @@ import { useSocket } from "@/contexts/SocketContext";
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
 export interface Team {
-  id: number;
+  id: number; // id del equipo
+  videogameId: number; // id real del videojuego
   gameName: string;
   teamName: string;
   teamCode: string;
@@ -54,7 +55,7 @@ export default function TeamsPage() {
 
   // Initial REST snapshot - syncs only the first time it loads
   const initialLikes = useMemo(
-    () => Object.fromEntries(teams.map((t) => [t.id, t.likes ?? 0])),
+    () => Object.fromEntries(teams.map((t) => [t.videogameId, t.likes ?? 0])),
     [teams],
   );
   const liveLikes = useLikesSocket(initialLikes);
@@ -194,8 +195,11 @@ export default function TeamsPage() {
         // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
         const isExternal = Boolean(team.isExternal || team.externo);
 
+        const resolvedVideogameId = videogame.id ?? item.id;
+
         return {
           id: team.id,
+          videogameId: resolvedVideogameId,
           gameName: videogame.name || team.teamName || "Sin nombre",
           teamName: team.teamName || "Sin equipo",
           status: mappedStatus,
@@ -203,7 +207,6 @@ export default function TeamsPage() {
           repo: videogame.repoUrl || videogame.repo_url,
           teamCode: team.teamCode || team.code || "",
           members: teamMembers.map((m: any) => {
-            // Probar diferentes nombres de campos para nombre y apellido
             const firstName = m.firstName || m.nombre || m.first_name || '';
             const lastName = m.lastName || m.apellido || m.last_name || '';
             const fullName = `${firstName} ${lastName}`.trim();
@@ -308,7 +311,7 @@ export default function TeamsPage() {
                   key={team.id}
                   team={team}
                   onRefresh={fetchTeams}
-                  liveLikeCount={liveLikes[team.id] ?? team.likes ?? 0}
+                  liveLikeCount={liveLikes[team.videogameId] ?? team.likes ?? 0}
                 />
               ))}
             </div>
@@ -623,7 +626,7 @@ function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModa
     if (!socket || !user) return;
     const handleLikesUpdated = (payload: any) => {
       if (
-        payload.videogameId === team.id &&
+        payload.videogameId === team.videogameId &&
         payload.triggerUserId === user.id &&
         payload.liked !== undefined
       ) {
@@ -634,7 +637,7 @@ function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModa
     return () => {
       socket.off('likes:updated', handleLikesUpdated);
     };
-  }, [socket, user, team.id]);
+  }, [socket, user, team.videogameId]);
 
   // Keep the counter in sync with the parent's WebSocket map
   useEffect(() => {
@@ -653,13 +656,13 @@ function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModa
 
     //Get the like status of the current user
     customFetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/my-like`,
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.videogameId}/my-like`,
       { method: "GET", credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
       .then((data: { liked: boolean }) => setIsLiked(data.liked))
       .catch(() => setIsLiked(false));
-  }, [team.id, user]);
+  }, [team.videogameId, user]);
 
   const handleClose = () => {
     onRefresh(); // Refresh the teams data to get updated like counts
@@ -677,7 +680,7 @@ function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModa
     setIsTogglingLike(true);
     try {
       const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.videogameId}/toggle-like`,
         {
           method: "POST",
           credentials: "include",
