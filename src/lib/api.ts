@@ -15,7 +15,7 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     try {
       // Intentamos renovar el token llamando al endpoint de refresh
       const refreshResponse = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh?silent=true`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
         { method: "POST", credentials: "include" },
       );
 

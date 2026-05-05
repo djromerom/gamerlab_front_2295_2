@@ -35,18 +35,19 @@ export const NavContent: React.FC<Props> = ({ menu }) => {
         {menuItem.title}
       </SidebarGroupLabel>
       <SidebarMenu>
-        {menuItem.items.map((item, i) => {
+        {menuItem.items.map((item) => {
           const isActive = location.pathname === item.url;
 
           return (
-            <SidebarMenuItem key={`${item.name}-${i}`}>
+            <SidebarMenuItem key={item.name}>
               <SidebarMenuButton
                 asChild
                 tooltip={item.name}
-                className={`${isActive
+                className={`${
+                  isActive
                     ? "bg-[var(--selected)] text-[var(--selected-foreground)] hover:bg-[var(--selected-hover)] hover:text-[var(--selected-foreground)] font-semibold"
                     : "hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-                  } transition-colors`}
+                } transition-colors`}
               >
                 <Link to={item.url}>
                   <item.icon />
