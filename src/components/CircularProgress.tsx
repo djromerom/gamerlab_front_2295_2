@@ -27,19 +27,21 @@ export default function CircularProgress({
 
 
     const getNumberCalifications = async () => {
-        const resTeam = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
-            method: 'GET',
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-        })
+        try {
+            if (!user?.id) return null;
+            
+            const resTeam = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
+                method: 'GET',
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+            })
 
-        const getTeam = await resTeam.json()
+            if (!resTeam.ok) {
+                return null;
+            }
 
-        if (!resTeam.ok) {
-            throw new Error('Hubo un error al obtener los datos')
-        }
-
-        const idTeam = getTeam.id
+            const getTeam = await resTeam.json()
+            const idTeam = getTeam.id
 
 
         const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/juror/teams/${idTeam}/evaluation-stats`, {
@@ -66,12 +68,18 @@ console.log('Esta es la data: ')
 
 
         return data
+        } catch (error) {
+            // Silenciado para evitar llenar la consola
+            return null;
+        }
     }
 
     useEffect(() => {
-        getNumberCalifications()
+        if (user?.id && userRole === "Estudiante") {
+            getNumberCalifications()
+        }
         setNow(new Date())
-    }, [])
+    }, [user, userRole])
 
     if (startDate > now) {
         return null;
