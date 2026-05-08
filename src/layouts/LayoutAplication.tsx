@@ -2,7 +2,6 @@
 
 import { AppSidebar } from "@/components/grupo 9/app-sidebar"
 import Breadcrumbs from "@/components/grupo 9/BreadCrums"
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 
@@ -26,7 +25,6 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
             <SidebarTrigger className="-ml-1 z-20" />
             <Breadcrumbs items={breadcrumbs} />
           </div>
-          <TextSizeControls />
         </header>
         {children}
         

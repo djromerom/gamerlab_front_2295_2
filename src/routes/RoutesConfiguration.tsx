@@ -6,6 +6,7 @@ import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
+import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
 import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
 import TeamsPage from "@/pages/grupo 11/TeamsPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
@@ -24,7 +25,20 @@ import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
+import ResetPassword from "@/pages/grupo 9/ResetPassword";
+import SchoolRate from "@/pages/grupo 8/SchoolRate";
+import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
+import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
+import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
+import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+import { useAuth } from "@/contexts/AuthContext";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
 type Role =
   | "Profesor"
@@ -41,6 +55,7 @@ interface RouteConfig {
 
 const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
+  { path: "/auth-error", element: <AuthErrorPage /> },
   {
     path: "/profesor",
     element: <ProfessorPage />,
@@ -55,7 +70,7 @@ const routes: RouteConfig[] = [
   {
     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-  },
+   },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -73,12 +88,24 @@ const routes: RouteConfig[] = [
     element: <InformationPage />,
   },
   {
+    path: "/ediciones-pasadas",
+    element: <FeriasPasadas />,
+  },
+  {
     path: "/contribuidores",
     element: <CreditsPage />,
   },
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/OlvidastePassword",
+    element: <ForgetPassword />
+  },
+  {
+    path: "/establecer-contrasena",
+    element: <ResetPassword />,
   },
   {
     path: "/inicio",
@@ -97,6 +124,12 @@ const routes: RouteConfig[] = [
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
+    path: "/equipos-inscritos",
+    element: <TeamsManagementPage />,
+    roles: ["Administrador"],
+  },
+
+  {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
     roles: ["Jurado"],
@@ -106,10 +139,32 @@ const routes: RouteConfig[] = [
     element: <RatePage />,
     roles: ["Jurado"],
   },
+
+
+  {
+    path: "/colegios-calificar",
+    element: <PendingSchoolGradesPage />,
+    roles: ["Profesor"],
+  },
+  {
+    path: "/colegios-calificar/:id",
+    element: <SchoolRate />,
+    roles: ["Profesor"],
+  },
+  {
+    path: "/colegios-evaluados",
+    element: < SchoolGradesPage />,
+    roles: ["Profesor"],
+  },
+
+
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
+  
+  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  { path: "/tiebreaker", element: <TiebreakerPage />, roles: ["Administrador"] },
   {
     path: "/profesores",
     element: <ProfessorsPage />,
@@ -129,9 +184,33 @@ const routes: RouteConfig[] = [
     element: <HomeTeacherPage />,
     roles: ["Profesor"],
   },
+  {
+    path: "/editar-equipo",
+    element: <EditTeamPage />,
+    roles: ["Estudiante"],
+  },
+  {
+    path: "/ponderado-calificaciones",
+    element: <GradeWeightsPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/configuracion-evento",
+    element: <EventConfigurationPage />,
+    roles: ["Administrador"],
+  }
 ];
 
 const RoutesConfiguration: React.FC = () => {
+  const { loading } = useAuth();
+  
+  // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
+  // Si el AuthContext aún está verificando la sesión (loading=true), 
+  // mostramos una pantalla de carga elegante antes de procesar las rutas.
+  if (loading) {
+    return <LoadingScreen text="Cargando experiencia..." />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>

@@ -1,19 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, FileSpreadsheet, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { useMediaQuery } from "@/hooks/use-media-querry";
+import { FileSpreadsheet, Loader2, ChevronLeft, ChevronRight, Upload, Download, Edit, Save, X } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -21,68 +17,68 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed: single flow Subject -> NRC
 import { AlertTriangle } from "lucide-react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import { toast } from "sonner"; // Importamos toast de sonner
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 interface Props {
   initialNRC?: string;
 }
 
-export default function StudentGradeTable({ initialNRC }: Props) {
-  const defaultNRC = initialNRC || "-"; 
-  // Modos de visualización: 'nrc' o 'subject'
-  const [viewMode, setViewMode] = useState<"nrc" | "subject">("nrc");
+interface PaginationMetadata {
+  totalItems: number;
+  itemsOnCurrentPage: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+}
 
-  // Estados para selección de NRC y materia
-  
+export default function StudentGradeTable({ initialNRC }: Props) {
+  const defaultNRC = initialNRC || "-";
+
+  // Selection states: primero Materia, luego NRC (NRC depende de la materia)
+  const [selectedNRC, setSelectedNRC] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [paginationMetadata, setPaginationMetadata] = useState<PaginationMetadata | null>(null);
+
+  // Available options
+  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
+  // Guarda la lista completa de NRCs recibida inicialmente para poder aplicar filtros locales
+  const [allNRCs, setAllNRCs] = useState<any[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
-  // Estados para los datos de estudiantes y carga
+
+  // Data cache - keeps fetched data to avoid re-fetching
   const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<Record<string, any[]>>({});
   const [fetchedStudentsBySubject, setFetchedStudentsBySubject] = useState<Record<string, any[]>>({});
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noStudents, setNoStudents] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // Estado para la carga inicial
-
-  const navigate = useNavigate();
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
-  const [selectedNRC, setSelectedNRC] = useState<string>("");
+  const [uploadingGrades, setUploadingGrades] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   
-  
-  useEffect(() => {
-    const fetchAvailableNRCs = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/my-nrcs`, {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) {
-          throw new Error("Error fetching available NRCs");
-        }
-        const data = await response.json();
-        setAvailableNRCs(data);
-        if (data.length > 0) {
-          setSelectedNRC(data[0].code); // Set the first NRC as selected if available
-        } else {
-          toast.info("No se encontraron NRCs disponibles");
-        }
-      } catch (err) {
-        console.log("Error fetching available NRCs:", err);
-        toast.error("Error al cargar los NRCs");
-      } finally {
-        setInitialLoading(false); // Finalizamos la carga inicial después de obtener los NRCs
-      }
-    };
+  // Inline editing states
+  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
+  const [editedGrade, setEditedGrade] = useState<string>("");
+  const [savingGrade, setSavingGrade] = useState(false);
 
-    fetchAvailableNRCs();
-  }, []);
+  // Nota: ahora usamos únicamente el endpoint `/professors/my-subjects` (cada materia incluye sus NRCs)
+  // por lo que no necesitamos llamar a `/professors/my-nrcs` por separado. Inicializamos `allNRCs`
+  // cuando cargamos las materias en el efecto de abajo.
 
+  // Initialize available subjects
   useEffect(() => {
     const fetchAvailableSubjects = async () => {
       try {
@@ -91,113 +87,120 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
+
         if (!response.ok) {
           throw new Error("Error fetching available subjects");
         }
+
         const data = await response.json();
         setAvailableSubjects(data);
-        console.log("Available subjects:", data.map((subject: any) => subject.name));
+
+        // Extraer todos los NRCs incluidos en cada materia y anexar info de la materia
+        const allNrcsFromSubjects = (data || []).flatMap((subject: any) => {
+          const subjectId = subject.id || subject._id || subject.code;
+          const subjectName = subject.name || subject.title || "";
+          const nrcs = subject.nrcs || [];
+          return nrcs.map((nrc: any) => ({
+            ...nrc,
+            subject: { id: subjectId, name: subjectName },
+          }));
+        });
+
+        // Guardamos todos los NRCs en el estado (se usará para filtrado local)
+        setAllNRCs(allNrcsFromSubjects);
+
         if (data.length > 0) {
-          setSelectedSubject(data[0].name);
+          const initialSubjectName = data[0].name;
+          setSelectedSubject(initialSubjectName);
+          // Inicialmente filtramos los NRCs para la materia seleccionada
+          const filtered = allNrcsFromSubjects.filter((n: any) => {
+            const name = n.subject?.name || n.subjectName || n.name || "";
+            return name && String(name).toLowerCase() === String(initialSubjectName).toLowerCase();
+          });
+          setAvailableNRCs(filtered);
+          // Si hay exactamente un NRC para la materia, auto-seleccionarlo (salvo que venga initialNRC explícito)
+          if (filtered.length === 1) {
+            if (!(defaultNRC && defaultNRC !== "-")) {
+              setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
+            }
+          }
+          // Si se pasó un NRC por props (defaultNRC), lo aplicamos si existe (tiene prioridad)
+          if (defaultNRC && defaultNRC !== "-") {
+            const match = allNrcsFromSubjects.find((x: any) => String(x.code) === String(defaultNRC) || String(x.id) === String(defaultNRC));
+            if (match) setSelectedNRC(defaultNRC);
+          }
         } else {
           toast.info("No se encontraron materias disponibles");
         }
       } catch (err) {
-        console.log("Error fetching available Subjects:", err);
+        console.error("Error fetching available Subjects:", err);
         toast.error("Error al cargar las materias");
       }
+      finally {
+        // Desactivamos la pantalla inicial de carga
+        setInitialLoading(false);
+      }
     };
+
     fetchAvailableSubjects();
   }, []);
 
-
+  // When the selected subject changes, try to narrow the list of NRCs to that subject.
   useEffect(() => {
-    setNoStudents(false);
-    // Inicialmente, si no hay NRC seleccionado, no intentamos cargar datos
-    if (selectedNRC === "-" || !selectedNRC) {
-      setIsLoading(false);
-      return;
-    }
+    if (!selectedSubject) return;
 
-    if (viewMode === "nrc") {
-      setIsLoading(true);
-      setError(null);
-      setNoStudents(false);
-      
-      // Verificar si ya tenemos estos datos en caché
-      if (fetchedStudentsByNRC[selectedNRC]) {
-        // Si tenemos datos en caché pero están vacíos, mostramos mensaje de "no hay estudiantes"
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      const fetchStudentsByNRC = async () => {
-        try {
-          const response = await fetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${selectedNRC}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-          
-          toast.dismiss();
-          
-          // Manejar caso específico de 404 (sin estudiantes)
-          if (response.status === 404) {
-            setFetchedStudentsByNRC(prev => ({
-              ...prev,
-              [selectedNRC]: []
-            }));
-            setNoStudents(true);
-            toast.info(`No hay videojuegos registrados para el NRC ${selectedNRC}`);
-            setIsLoading(false);
-            return;
-          }
-          
-          if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          
-          // Actualizar el estado con los datos obtenidos
-          setFetchedStudentsByNRC(prev => ({
-            ...prev,
-            [selectedNRC]: (data.data || [])
-          }));
-          
-          if (data.data && data.data.length > 0) {
-            toast.success(`${data.data.length} registros cargados para el NRC ${selectedNRC}`);
-          } else {
-            toast.info(`No hay información registrada para el NRC ${selectedNRC}`);
-            setNoStudents(true);
-          }
-          
-        } catch (err) {
-          console.error("Error fetching students:", err);
-          const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos";
-          setError(errorMsg);
-          toast.error(`Error: ${errorMsg}`);
-          // Asegurarse de que se establezca un valor predeterminado si hay un error
-          setFetchedStudentsByNRC(prev => ({
-            ...prev,
-            [selectedNRC]: []
-          }));
-        } finally {
-          // Siempre establecer loading a false al final
-          setIsLoading(false);
+    const fetchNRCsBySubject = async () => {
+      // Usamos la lista completa `allNRCs` (que ya contiene `subject` si pedimos includeSubjects=true)
+      const subjObj = availableSubjects.find((s: any) => String(s.name).toLowerCase() === String(selectedSubject).toLowerCase());
+      const subjectId = subjObj?.id || subjObj?.subjectId || subjObj?._id || subjObj?.code || null;
+
+      const filtered = allNRCs.filter((nrc: any) => {
+        if (!nrc) return false;
+        // Si el backend incluyó subject, comparamos por subject.id
+        if (nrc.subject && (nrc.subject.id || nrc.subject._id)) {
+          const nrcSubjectId = nrc.subject.id || nrc.subject._id;
+          if (subjectId) return String(nrcSubjectId) === String(subjectId);
         }
-      };
-      
-      fetchStudentsByNRC();
-    }
-  }, [selectedNRC, viewMode]);
+        // Si no hay id, buscamos claves comunes en el objeto nrc
+        const nrcSubjectIdAlt = nrc.subjectId || nrc.subject_id || nrc.materiaId || nrc.materia_id || nrc.signatureId || nrc.signature_id;
+        if (subjectId && nrcSubjectIdAlt) return String(nrcSubjectIdAlt) === String(subjectId);
 
-  useEffect(() => {
-    if (viewMode !== "subject" || !selectedSubject) {
+        // Fallback por nombre de materia
+        const name = nrc.subject?.name || nrc.subjectName || nrc.name || nrc.signature || "";
+        return name && String(name).toLowerCase() === String(selectedSubject).toLowerCase();
+      });
+
+      if (filtered.length > 0) {
+        setAvailableNRCs(filtered);
+        // Si solo hay un NRC disponible para la materia, auto-seleccionarlo
+        if (filtered.length === 1) {
+          setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
+        } else {
+          // Varios NRCs: mostramos la opción "Todos los NRCs" por defecto
+          setSelectedNRC("");
+        }
+      } else {
+        setAvailableNRCs([]);
+        setSelectedNRC("");
+      }
+    };
+
+    fetchNRCsBySubject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubject]);
+
+  // Fetch students by NRC
+  const fetchStudentsByNRC = useCallback(async (nrc: string, page: number = 1) => {
+    if (!nrc || nrc === "-") return;
+
+    const cacheKey = `${nrc}-${page}`;
+    
+    // Check cache first
+    if (fetchedStudentsByNRC[cacheKey]) {
+      const cached = fetchedStudentsByNRC[cacheKey] || [];
+      // Reflect cached state in the UI (avoid stale "no projects" view)
+      setNoStudents(!cached || cached.length === 0);
+      setPaginationMetadata((prev) => prev || null);
       return;
     }
 
@@ -205,132 +208,287 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setError(null);
     setNoStudents(false);
 
-    // Verificar si ya tenemos estos datos en caché
-    if (fetchedStudentsBySubject[selectedSubject]) {
-      if (fetchedStudentsBySubject[selectedSubject].length === 0) {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${nrc}?page=${page}&limit=${itemsPerPage}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      toast.dismiss();
+
+      if (response.status === 404) {
+        setFetchedStudentsByNRC(prev => ({
+          ...prev,
+          [cacheKey]: []
+        }));
         setNoStudents(true);
+        setPaginationMetadata(null);
+        toast.info(`No hay videojuegos registrados para el NRC ${nrc}`);
+        return;
       }
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const studentsData = data.data || [];
+      const metadata = data.metadata;
+      setFetchedStudentsByNRC(prev => ({
+        ...prev,
+        [cacheKey]: studentsData
+      }));
+
+      setPaginationMetadata(metadata);
+
+      if (studentsData.length > 0) {
+        // Calcular número de registros en la tabla (equipos únicos) a partir de los estudiantes recibidos
+        const teamSet = new Set<string>();
+        studentsData.forEach((s: any) => {
+          const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
+          teamSet.add(String(teamCode));
+        });
+        const teamCount = teamSet.size;
+        toast.success(`${teamCount} equipos en la tabla cargados para el NRC ${nrc}`);
+      } else {
+        setNoStudents(true);
+        toast.info(`No hay información registrada para el NRC ${nrc}`);
+      }
+
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos";
+      setError(errorMsg);
+      toast.error(`Error: ${errorMsg}`);
+
+      setFetchedStudentsByNRC(prev => ({
+        ...prev,
+        [cacheKey]: []
+      }));
+      setPaginationMetadata(null);
+    } finally {
       setIsLoading(false);
+    }
+  }, [itemsPerPage]);
+
+  // Fetch students by subject
+  const fetchStudentsBySubject = useCallback(async (subject: string, page: number = 1) => {
+    if (!subject) return;
+
+    const cacheKey = `${subject}-${page}`;
+    
+    // Check cache first
+    if (fetchedStudentsBySubject[cacheKey]) {
+      const cached = fetchedStudentsBySubject[cacheKey] || [];
+      // Reflect cached state in the UI immediately
+      setNoStudents(!cached || cached.length === 0);
+      setPaginationMetadata((prev) => prev || null);
       return;
     }
 
-    const fetchStudentsBySubject = async () => {
-      try {
-        
-        const response = await fetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(selectedSubject)}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+    setIsLoading(true);
+    setError(null);
+    setNoStudents(false);
 
-        toast.dismiss();
-        
-        // Manejar caso específico de 404 (sin estudiantes)
-        if (response.status === 404) {
-          setFetchedStudentsBySubject(prev => ({
-            ...prev,
-            [selectedSubject]: []
-          }));
-          setNoStudents(true);
-          toast.info(`No hay videojuegos registrados para la materia ${selectedSubject}`);
-          setIsLoading(false);
-          return;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
         }
+      );
 
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
+      toast.dismiss();
 
-        const data = await response.json();
-        // Si la respuesta es { data: [...] }
-        const studentsArray = Array.isArray(data) ? data : data.data || [];
-        
-        console.log("Fetched students by subject:", studentsArray);
-
+      if (response.status === 404) {
         setFetchedStudentsBySubject(prev => ({
           ...prev,
-          [selectedSubject]: studentsArray
+          [cacheKey]: []
         }));
-
-        if (!studentsArray || studentsArray.length === 0) {
-          setNoStudents(true);
-          toast.info(`No hay información registrada para la materia ${selectedSubject}`);
-        } else {
-          toast.success(`${studentsArray.length} registros cargados para la materia ${selectedSubject}`);
-        }
-
-      } catch (err) {
-        console.error("Error fetching students by subject:", err);
-        const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos por materia";
-        setError(errorMsg);
-        toast.error(`Error: ${errorMsg}`);
-        setFetchedStudentsBySubject(prev => ({
-          ...prev,
-          [selectedSubject]: []
-        }));
-      } finally {
-        setIsLoading(false);
+        setNoStudents(true);
+        setPaginationMetadata(null);
+        toast.info(`No hay videojuegos registrados para la materia ${subject}`);
+        return;
       }
-    };
 
-    fetchStudentsBySubject();
-  }, [selectedSubject, viewMode]);
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
 
-  useEffect(() => {
-    // Inicialización cuando el componente se monta
-    if (defaultNRC && defaultNRC !== "-") {
-      // Si tenemos un NRC inicial válido, iniciamos el proceso de carga
-      // El efecto dependiente de selectedNRC se encargará de la carga real
-      setSelectedNRC(defaultNRC);
-    } else {
-      // Si no hay NRC inicial, simplemente desactivamos el estado de carga
+      const data = await response.json();
+      const studentsArray = data.data || [];
+      const metadata = data.metadata;
+
+      setFetchedStudentsBySubject(prev => ({
+        ...prev,
+        [cacheKey]: studentsArray
+      }));
+
+      setPaginationMetadata(metadata);
+
+      if (!studentsArray || studentsArray.length === 0) {
+        setNoStudents(true);
+        toast.info(`No hay información registrada para la materia ${subject}`);
+      } else {
+       // Agrupar por equipo para contar registros en la tabla
+        const teamSet = new Set<string>();
+        studentsArray.forEach((s: any) => {
+          const teamCode = s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
+          teamSet.add(String(teamCode));
+        });
+        const teamCount = teamSet.size;
+        toast.success(`${teamCount} equipos en la tabla cargados para la materia ${subject}`);
+      }
+
+    } catch (err) {
+      console.error("Error fetching students by subject:", err);
+      const errorMsg = err instanceof Error ? err.message : "Error al cargar videojuegos por materia";
+      setError(errorMsg);
+      toast.error(`Error: ${errorMsg}`);
+
+      setFetchedStudentsBySubject(prev => ({
+        ...prev,
+        [cacheKey]: []
+      }));
+      setPaginationMetadata(null);
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [itemsPerPage]);
 
+  // Handle data fetching when selection changes: priorizamos materia, pero si hay NRC seleccionado usamos ese reporte
   useEffect(() => {
+    setError(null);
     setNoStudents(false);
-  }, [selectedNRC, selectedSubject, viewMode]);
+    setCurrentPage(1);
+    setPaginationMetadata(null);
 
-  // Obtener los estudiantes según el modo de visualización (usar datos fetcheados o de respaldo)
-  const students = viewMode === "nrc"
-    ? (fetchedStudentsByNRC[selectedNRC] || [])
-    : (fetchedStudentsBySubject[selectedSubject] || []);
+    // Si hay NRC específico seleccionado, usamos ese
+    if (selectedNRC && selectedNRC !== "") {
+      fetchStudentsByNRC(selectedNRC, 1);
+    } 
+    // Si no hay NRC o está vacío, pero hay materia, cargamos por materia (todos los NRCs)
+    else if (selectedSubject) {
+      fetchStudentsBySubject(selectedSubject, 1);
+    }
+  }, [selectedNRC, selectedSubject, fetchStudentsByNRC, fetchStudentsBySubject]);
 
-  // Mostrar estado de carga inicial completa (cuando aún se están cargando los NRCs)
+  // Handle page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      if (selectedNRC && selectedNRC !== "") {
+        fetchStudentsByNRC(selectedNRC, currentPage);
+      } else if (selectedSubject) {
+        fetchStudentsBySubject(selectedSubject, currentPage);
+      }
+    }
+  }, [currentPage, selectedNRC, selectedSubject, fetchStudentsByNRC, fetchStudentsBySubject]);
+
+  // Get current students data
+  const getCurrentStudents = () => {
+    const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
+    if (selectedNRC) {
+      return fetchedStudentsByNRC[cacheKey] || [];
+    }
+    return fetchedStudentsBySubject[cacheKey] || [];
+  };
+
+  const students = getCurrentStudents();
+
+  // Agrupar estudiantes por equipo (soporta varios shapes: teamCode, team, teamName)
+  // Agrupar por equipo usando los campos del backend (teamCode, nrc, team, integrantes, etc.)
+  const teams = useMemo(() => {
+    const map = new Map<string, any>();
+    students.forEach((s: any) => {
+      // Usar teamCode como clave principal, si no existe usar team o un identificador único
+      const teamCode = s.teamCode ?? s.team ?? s.videogameId ?? s.videogame ?? `TEAM_${s.nrc ?? ''}_${s.team ?? ''}`;
+      if (!map.has(teamCode)) {
+        map.set(teamCode, {
+          teamCode: s.teamCode ?? s.team ?? '-',
+          nrc: s.nrc ?? '-',
+          teamName: s.team ?? '-',
+          integrantes: s.integrantes ? s.integrantes.split(',').map((x:any) => x.trim()) : [],
+          videogame: s.videogame ?? '-',
+          calificacionFeria: s.calificacionFeria ?? null,
+          calificacionDocente: s.calificacionDocente ?? null,
+          videogameId: s.videogameId ?? null,
+          // Para edición inline, guardar todos los objetos originales
+          _rows: [s],
+        });
+      } else {
+        // Si ya existe el equipo, solo agregamos integrantes adicionales si vienen separados
+        const t = map.get(teamCode);
+        if (s.integrantes) {
+          const nuevos = s.integrantes.split(',').map((x:any) => x.trim());
+          t.integrantes = Array.from(new Set([...t.integrantes, ...nuevos]));
+        }
+        t._rows.push(s);
+      }
+    });
+    return Array.from(map.values());
+  }, [students]);
+
+  // No view mode: la navegación es Materia -> NRC
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (paginationMetadata && currentPage < paginationMetadata.totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Show initial loading screen
   if (initialLoading) {
     return <LoadingScreen text="Cargando información de videojuegos..." />;
   }
 
-  // Mostrar estado de carga para datos específicos
+  // Show loading for data fetching
   if (isLoading) {
-    return <LoadingScreen text={`Cargando datos para ${viewMode === "nrc" ? `NRC ${selectedNRC}` : `materia ${selectedSubject}`}...`} />;
+    return <LoadingScreen text={`Cargando datos para ${selectedNRC ? `NRC ${selectedNRC}` : `materia ${selectedSubject}`}...`} />;
   }
 
-  // Mostrar error si existe
+  // Show error state
   if (error) {
     return (
-      <div className="bg-red-50 text-red-800 p-4 rounded-md">
+      <div className="p-4 rounded-md border">
         <h3 className="text-lg font-semibold">Error al cargar datos</h3>
         <p>{error}</p>
-        <Button 
-          variant="outline" 
-          className="mt-2 cursor-pointer" 
+        <Button
+          variant="outline"
+          className="mt-2 cursor-pointer"
           onClick={() => {
             setError(null);
-            setFetchedStudentsByNRC({});
-            if (viewMode === "nrc") {
-              // Refrescar datos de NRC
-              setSelectedNRC(selectedNRC);
-              toast.info("Intentando cargar los datos nuevamente...");
+            // Clear cache to force refresh
+            const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
+
+            if (selectedNRC) {
+              setFetchedStudentsByNRC(prev => {
+                const newCache = { ...prev };
+                delete newCache[cacheKey];
+                return newCache;
+              });
+              fetchStudentsByNRC(selectedNRC, currentPage);
             } else {
-              // Refrescar datos de materia
-              setSelectedSubject(selectedSubject);
-              toast.info("Intentando cargar los datos nuevamente...");
+              setFetchedStudentsBySubject(prev => {
+                const newCache = { ...prev };
+                delete newCache[cacheKey];
+                return newCache;
+              });
+              fetchStudentsBySubject(selectedSubject, currentPage);
             }
+            toast.info("Intentando cargar los datos nuevamente...");
           }}
         >
           Reintentar
@@ -339,343 +497,648 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     );
   }
 
-  // Componente para mostrar cuando no hay estudiantes
-  const NoStudentsMessage = (
-    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-      <div className="mb-4 p-4 rounded-full bg-blue-50 flex items-center justify-center">
-        <AlertTriangle className="h-12 w-12 text-yellow-500" />
-      </div>
-      <h2 className="text-xl font-semibold mb-2">No hay videojuegos registrados</h2>
-      <p className="text-gray-600 mb-6">
-        No se han encontrado videojuegos para este {viewMode === "nrc" ? "NRC" : "curso"}.
-      </p>
-    </div>
-  );
-
-  const viewStudentDetails = (id: string, nrc?: string) => {
-    const useNRC = viewMode === "nrc" ? selectedNRC : nrc;
-    navigate(`/home-estudiante?nrc=${useNRC}&studentId=${id}`);
+  const getGradeStatus = (_grade: number) => {
+    return "";
   };
 
-  const getGradeStatus = (grade: number) => {
-    if (grade >= 4.5) return "text-green-600 font-medium";
-    if (grade >= 4.0) return "text-blue-600 font-medium";
-    if (grade >= 3.0) return "text-yellow-600 font-medium";
-    return "text-red-600 font-medium";
-  };
-
-  // Función para exportar a Excel
+  // Export to Excel function
   const exportToExcel = () => {
-    setDownloading(true); // Inicia el loader
-    
-    toast(
-      `Preparando exportación ${viewMode === "nrc" ? `del NRC ${selectedNRC}` : `de la materia ${selectedSubject}`}...`
-    );
+    setDownloading(true);
 
-    // Si la vista es por NRC, usa el endpoint actual
-    if (viewMode === "nrc") {
-      fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportNRC/${selectedNRC}`, {
-        method: 'GET',
+    // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
+    toast(`Preparando exportación global (todos los NRCs)...`);
+
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
+
+    fetch(endpoint, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then((response) => {
+        toast.dismiss();
+        if (!response.ok) {
+          throw new Error('Error al exportar a Excel');
+        }
+        return response.blob();
       })
-        .then((response) => {
-          toast.dismiss();
-          if (!response.ok) {
-            throw new Error('Error al exportar a Excel');
+      .then((blob) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+  a.download = `Reporte_Calificaciones_FeriaGamer_${new Date().toISOString().slice(0,10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+  toast.success(`Reporte global exportado correctamente`);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
+      })
+      .finally(() => {
+        setDownloading(false);
+      });
+  };
+
+  // Download grading template
+  const downloadGradingTemplate = () => {
+    setDownloadingTemplate(true);
+
+    // Descargar plantilla GLOBAL: ignorar filtros
+    toast(`Preparando plantilla de calificaciones global...`);
+
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
+
+    fetch(endpoint, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then((response) => {
+        toast.dismiss();
+        if (!response.ok) {
+          throw new Error('Error al descargar plantilla');
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast.success('Plantilla descargada. Completa las notas y súbela de vuelta.');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        toast.error(`Error al descargar plantilla: ${error.message || 'No se pudo completar la descarga'}`);
+      })
+      .finally(() => {
+        setDownloadingTemplate(false);
+      });
+  };
+
+  // Upload grading file
+  const uploadGradingFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    
+    if (!validTypes.includes(file.type)) {
+      toast.error('Por favor, sube un archivo Excel válido (.xlsx o .xls)');
+      return;
+    }
+
+    setUploadingGrades(true);
+    toast('Subiendo calificaciones...');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    // Nota: subida GLOBAL — no añadimos filtros (nrc/subject) al formData
+
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
+
+    fetch(endpoint, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    })
+      .then((response) => {
+        toast.dismiss();
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Error al subir calificaciones');
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        toast.success(`Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`);
+        
+        // Clear all caches to force a global refresh (subida fue global)
+        setFetchedStudentsByNRC({});
+        setFetchedStudentsBySubject({});
+        // Re-fetch current view depending on selection
+        if (selectedNRC && selectedNRC !== "") {
+          fetchStudentsByNRC(selectedNRC, currentPage);
+        } else if (selectedSubject) {
+          fetchStudentsBySubject(selectedSubject, currentPage);
+        }
+        
+        // Reset file input
+        event.target.value = '';
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        toast.error(`Error al subir calificaciones: ${error.message || 'No se pudo completar la carga'}`);
+      })
+      .finally(() => {
+        setUploadingGrades(false);
+      });
+  };
+
+  // Start editing a team row
+  const startEditing = (index: number, currentGrade?: number) => {
+    setEditingRowIndex(index);
+    setEditedGrade(currentGrade != null ? String(currentGrade) : "");
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingRowIndex(null);
+    setEditedGrade("");
+  };
+
+  // Save edited grade (now for a team)
+  const saveGrade = async (team: any) => {
+  // Asegura que gradeValue tenga solo un decimal
+  const gradeValue = parseFloat(Number(editedGrade).toFixed(1));
+    
+    // Validate grade
+    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 5) {
+      toast.error("La nota debe ser un número entre 0 y 5");
+      return;
+    }
+
+    setSavingGrade(true);
+    toast("Guardando calificación...");
+
+    try {
+      // Ahora simplemente usamos el campo videogameId del equipo
+      const finalVideogameId = team.videogameId;
+      if (!finalVideogameId) {
+        toast.error('No se encontró videogameId para el equipo.');
+        setSavingGrade(false);
+        return;
+      }
+      const payload: any = {
+        videogameId: finalVideogameId,
+        score: gradeValue,
+        isSenior: true,
+      };
+
+      // Use the new inline endpoint that expects { teamId, score }.
+      const teamEvalEndpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation`;
+
+      // Build headers: Content-Type required; include Authorization Bearer if cookie `access-token` exists
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      try {
+        if (typeof document !== 'undefined' && document.cookie) {
+          const match = document.cookie.match('(?:^|; )access-token=([^;]+)');
+          if (match && match[1]) {
+            const token = decodeURIComponent(match[1]);
+            headers['Authorization'] = `Bearer ${token}`;
           }
-          return response.blob();
-        })
-        .then((blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'videojuegos.xlsx';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          toast.success(`Reporte de videojuegos del NRC ${selectedNRC} exportado correctamente`);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
-        })
-        .finally(() => {
-          setDownloading(false); // Detiene el loader
-        });
-    } else {
-      // Si la vista es por materia, usa el endpoint para exportar por materia
-      fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/exportSubject/${encodeURIComponent(selectedSubject)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        }
+      } catch (e) {
+        // ignore cookie read errors
+        console.debug('No se pudo leer cookie access-token', e);
+      }
+
+      const response = await fetch(teamEvalEndpoint, {
+        method: 'POST',
         credentials: 'include',
-      })
-        .then((response) => {
-          toast.dismiss();
-          if (!response.ok) {
-            throw new Error('Error al exportar a Excel');
-          }
-          return response.blob();
-        })
-        .then((blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'videojuegos_materia.xlsx';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          toast.success(`Reporte de videojuegos de la materia ${selectedSubject} exportado correctamente`);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          toast.error(`Error al exportar: ${error.message || 'No se pudo completar la exportación'}`);
-        })
-        .finally(() => {
-          setDownloading(false); // Detiene el loader
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      toast.dismiss();
+
+      // Try to parse JSON body safely; backend may return empty body on 204 or on errors
+      let parsed: any = null;
+      try {
+        parsed = await response.json();
+      } catch (e) {
+        // ignore parse errors — we'll rely on status code and fallback messages
+        parsed = null;
+      }
+
+      if (!response.ok) {
+        const msg = parsed?.message || `Error ${response.status} al guardar calificación`;
+        throw new Error(msg);
+      }
+
+  toast.success(`Calificación guardada: ${gradeValue}`);
+      // After saving the senior grade we prefer to reload the authoritative
+      // data for the current page from the backend instead of trying to
+      // patch the local cache. This avoids sync issues when backend alters
+      // shapes or computes derived fields.
+      const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
+
+      if (selectedNRC) {
+        // Remove cached page and re-fetch from backend
+        setFetchedStudentsByNRC(prev => {
+          const updated = { ...prev };
+          delete updated[cacheKey];
+          return updated;
         });
+        // Await refetch so UI updates immediately with server data
+        await fetchStudentsByNRC(selectedNRC, currentPage);
+      } else {
+        setFetchedStudentsBySubject(prev => {
+          const updated = { ...prev };
+          delete updated[cacheKey];
+          return updated;
+        });
+        await fetchStudentsBySubject(selectedSubject, currentPage);
+      }
+
+      // Reset editing state
+      cancelEditing();
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(`Error: ${error instanceof Error ? error.message : 'No se pudo guardar la calificación'}`);
+    } finally {
+      setSavingGrade(false);
     }
   };
 
-  // Selector de NRC (para modo de visualización por NRC)
-  const NRCSelector = (
-    <div className="mb-4 w-full sm:w-64 cursor-pointer">
-      <label className="block text-sm font-medium mb-1">Selecciona el NRC:</label>
-      <Select 
-        value={selectedNRC} 
-        onValueChange={(nrc) => {
-          setSelectedNRC(nrc);
-        }}
-        disabled={availableNRCs.length === 0}
-      >
-        <SelectTrigger className="cursor-pointer">
-          <SelectValue placeholder={availableNRCs.length === 0 ? "Cargando NRCs..." : "Selecciona NRC"} />
-        </SelectTrigger>
-        <SelectContent>
-          {availableNRCs.length > 0 ? (
-            availableNRCs.map((nrc) => (
-              <SelectItem className="cursor-pointer" key={nrc.code} value={nrc.code}>
-                {nrc.code} 
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="no-nrcs" disabled>
-              No hay NRCs disponibles
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  // Selector de Materia (para modo de visualización por materia)
-  const SubjectSelector = (
-    <div className="mb-4 w-full sm:w-64">
-      <label className="block text-sm font-medium mb-1">
-        Selecciona la Materia:
-      </label>
-      <Select 
-        value={selectedSubject} 
-        onValueChange={(subject) => {
-          setSelectedSubject(subject);
-        }}
-      >
-        <SelectTrigger className="cursor-pointer">
-          <SelectValue placeholder="Selecciona Materia" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableSubjects.map((subject) => (
-            <SelectItem key={subject.name} value={subject.name} className="cursor-pointer">
-              {subject.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  // Botón de exportación a Excel
+  // Export Button
   const ExportButton = (
-    <Button 
-      variant="outline" 
-      className="ml-auto mb-4 cursor-pointer" 
-      onClick={exportToExcel}
-      disabled={students.length === 0 || downloading}
-    >
-      {downloading ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-      ) : (
-        <FileSpreadsheet className="h-4 w-4 mr-2" />
-      )}
-      {downloading ? "Descargando..." : "Exportar a Excel"}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={exportToExcel}
+          aria-label="Exportar todas las calificaciones"
+          disabled={downloading}
+        >
+          {downloading ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
+          )}
+          <span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span>
+          <span className="sm:hidden">Excel</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Exportar todas las calificaciones a Excel</TooltipContent>
+    </Tooltip>
   );
 
-
-  // Interfaz móvil
-  if (isMobile) {
-    return (
-      <div className="container mx-auto py-6 px-4">
-        <h1 className="text-xl font-bold mb-4">
-          {viewMode === "nrc"
-            ? `Lista de Videojuegos - NRC ${selectedNRC}`
-            : `Lista de Videojuegos - Materia: ${selectedSubject}`}
-        </h1>
-
-        <Tabs
-          value={viewMode}
-          onValueChange={(value) => {
-            setViewMode(value as "nrc" | "subject");
-          }}
-          className="mb-4"
+  // Download Template Button
+  const DownloadTemplateButton = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="default"
+          size="sm"
+          className="cursor-pointer"
+          onClick={downloadGradingTemplate}
+          aria-label="Descargar plantilla de calificaciones"
+          disabled={downloadingTemplate}
         >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="nrc">Por NRC</TabsTrigger>
-            <TabsTrigger value="subject">Por Materia</TabsTrigger>
-          </TabsList>
+          {downloadingTemplate ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-1.5" />
+          )}
+          {downloadingTemplate ? "Descargando..." : "Plantilla"}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Descargar plantilla de calificaciones</TooltipContent>
+    </Tooltip>
+  );
 
-          <TabsContent value="nrc" className="pt-2 ">
-            {NRCSelector}
-          </TabsContent>
+  // Upload Grades Button
+  const UploadGradesButton = (
+    <div className="relative">
+      <Input
+        id="upload-grades"
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={uploadGradingFile}
+        disabled={uploadingGrades}
+        className="hidden"
+      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Label htmlFor="upload-grades">
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              disabled={uploadingGrades}
+              asChild
+            >
+              <span>
+                {uploadingGrades ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1.5" />
+                )}
+                {uploadingGrades ? "Subiendo..." : "Subir"}
+              </span>
+            </Button>
+          </Label>
+        </TooltipTrigger>
+        <TooltipContent side="top">Subir calificaciones (Excel)</TooltipContent>
+      </Tooltip>
+    </div>
+  );
 
-          <TabsContent value="subject" className="pt-2">
-            {SubjectSelector}
-          </TabsContent>
-        </Tabs>
-
-        {noStudents ? (
-          NoStudentsMessage
-        ) : students.length > 0 ? (
-          <>
-            {ExportButton}
-            <div className="space-y-3">
-              {students.map((student: any) => (
-                <Card key={student.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <p className="font-medium text-sm text-muted-foreground">
-                          ID: {student.id}
-                        </p>
-                        <p className="font-semibold">{student.name}</p>
-                        {student.additionalInfo && (
-                          <p className="text-xs text-muted-foreground">
-                            {student.additionalInfo}
-                          </p>
-                        )}
-                      </div>
-                      <div
-                        className={`text-center px-3 py-1 rounded-full text-sm ${getGradeStatus(
-                          student.grade
-                        )} bg-muted`}
-                      >
-                        {student.grade}
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2"
-                      onClick={() => {
-                        viewStudentDetails(student.id, student.nrc);
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver detalles
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        ) : null}
-      </div>
-    );
-  }
-
-  // Interfaz de escritorio
+  // Unified table view (used for both mobile and desktop)
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6">
-      <h1 className="text-2xl font-bold mb-6">
-        {viewMode === "nrc"
-          ? `Lista de Videojuegos - NRC ${selectedNRC}`
-          : `Lista de Videojuegos - Materia: ${selectedSubject}`}
-      </h1>
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6">
-        <Tabs
-          value={viewMode}
-          onValueChange={(value) => {
-            setViewMode(value as "nrc" | "subject");
-          }}
-          className="w-full sm:w-auto"
-        >
-          <TabsList className="grid w-full sm:w-[300px] grid-cols-2">
-            <TabsTrigger
-              className="cursor-pointer hover:bg-[var(--accent)] hover:text-primary transition-colors"
-              value="nrc"
-            >
-              Por NRC
-            </TabsTrigger>
-            <TabsTrigger
-              className="cursor-pointer hover:bg-[var(--accent)] hover:text-primary transition-colors"
-              value="subject"
-            >
-              Por Materia
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="nrc" className="pt-4">
-            {NRCSelector}
-          </TabsContent>
-
-          <TabsContent value="subject" className="pt-4">
-            {SubjectSelector}
-          </TabsContent>
-        </Tabs>
-
-        {students.length > 0 && ExportButton}
+    <div className="bg-background text-foreground min-h-screen p-4">
+      {/* Header */}
+      <div className="mb-6 px-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-medium">Panel de Calificaciones</h1>
+            <p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p>
+          </div>
+          <div className="flex items-start sm:items-center">
+            {/* Export button in the top-right corner of the header */}
+            <div className="ml-2">{ExportButton}</div>
+          </div>
+        </div>
       </div>
 
-      {noStudents ? (
-        NoStudentsMessage
-      ) : students.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableCaption>
-              {viewMode === "nrc"
-                ? `Lista de videojuegos y calificaciones - NRC ${selectedNRC}`
-                : `Lista de videojuegos y calificaciones - Materia: ${selectedSubject}`}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>
-                  {viewMode === "nrc" ? "Materia" : "NRC"}
-                </TableHead>
-                <TableHead className="text-center">Calificación</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students.map((student: any) => (
-                <TableRow key={`${student.studentCode}-${student.nrc || ""}`}>
-                  <TableCell className="font-medium">{student.studentCode}</TableCell>
-                  <TableCell>{student.student}</TableCell>
-                  <TableCell>
-                    {viewMode === "nrc"
-                      ? (student.subject  || "") // Muestra la materia en vista NRC
-                      : (student.nrc || student.NRC || "")}
-                  </TableCell>
-                  <TableCell className={`text-center ${getGradeStatus(student.grade)}`}>
-                    {student.grade === null || student.grade === undefined ? "No calificado" : student.grade}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Barra de Filtros y Acciones */}
+      <Card className="rounded-lg overflow-hidden bg-card mb-6">
+        <div className="p-5 space-y-4">
+          {/* Gestión de Calificaciones Jurado Senior*/}
+          {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
+          {selectedSubject && (
+            <div className="pt-0 pb-4 border-b border-border">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Calificación Jurado Senior</h3>
+                    <p className="text-xs opacity-70 mt-0.5">
+                      Descarga una plantilla, completa las notas y súbelas, o edita directamente en la tabla
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DownloadTemplateButton}
+                  {UploadGradesButton}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Fila única: Materia | Filtrar por NRC (pills) */}
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+            {/* Materia */}
+            <div className="w-full lg:w-1/3">
+              <label className="block text-xs font-medium mb-1.5 opacity-70">
+                Materia
+              </label>
+              <Select
+                value={selectedSubject}
+                onValueChange={setSelectedSubject}
+              >
+                <SelectTrigger className="cursor-pointer h-9">
+                  <SelectValue placeholder="Selecciona Materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubjects.map((subject) => (
+                    <SelectItem key={subject.name} value={subject.name} className="cursor-pointer">
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* NRC pills + label */}
+            <div className="w-full lg:w-1/3">
+              {selectedSubject && availableNRCs.length > 0 && (
+                <>
+                  <div className="flex items-center justify-start gap-3 mb-2">
+                    <label className="block text-xs font-medium opacity-70">Filtrar por NRC</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableNRCs.length > 1 && (
+                      <Button
+                        variant={selectedNRC === "" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedNRC("")}
+                        className="cursor-pointer"
+                      >
+                        Todos los NRCs
+                      </Button>
+                    )}
+                    {availableNRCs.map((nrc) => (
+                      <Button
+                        key={nrc.code}
+                        variant={selectedNRC === nrc.code ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedNRC(nrc.code)}
+                        className="cursor-pointer"
+                      >
+                        {nrc.code}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="w-full lg:w-1/3" />
+          </div>
         </div>
-      ) : null}
+      </Card>
+
+      {/* Contenido principal */}
+      {noStudents ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
+          <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+          </div>
+          <p className="font-semibold text-lg mb-1">No hay proyectos registrados</p>
+          <p className="text-sm opacity-70">Verifica que tus estudiantes hayan inscrito sus videojuegos</p>
+        </div>
+      ) : students.length > 0 ? (
+        <>
+          <Card className="rounded-lg overflow-hidden bg-card">
+            <Table>
+              <TableHeader className="bg-[var(--color-primary)] [&_th]:!text-white dark:bg-blue-900/30 dark:text-[var(--card-foreground)] border-b border-border">
+                <TableRow>
+                    <TableHead>Team Code</TableHead>
+                    <TableHead>NRC</TableHead>
+                    <TableHead>Equipo</TableHead>
+                    <TableHead>Integrantes</TableHead>
+                    <TableHead>Videojuego</TableHead>
+                    <TableHead className="text-center">Calificación Feria</TableHead>
+                    <TableHead className="text-center">Calificación Docente</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teams.map((t: any, i: number) => (
+                  <TableRow key={t.teamCode} className="hover:bg-muted/50">
+                    <TableCell>{t.teamCode}</TableCell>
+                    <TableCell>{t.nrc}</TableCell>
+                    <TableCell>{t.teamName}</TableCell>
+                    <TableCell>
+                      <div className="text-sm opacity-80">
+                        {Array.isArray(t.integrantes) ? t.integrantes.join(', ') : t.integrantes || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell>{t.videogame}</TableCell>
+                    <TableCell className={`text-center ${getGradeStatus(t.calificacionFeria ?? 0)}`}>
+                      {t.calificacionFeria != null ? (
+                        t.calificacionFeria.toFixed(1)
+                      ) : (
+                        <span className="text-orange-600 font-medium">Pendiente</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {editingRowIndex === i ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            value={editedGrade}
+                            onChange={(e) => setEditedGrade(e.target.value)}
+                            className="w-20 h-8 text-center"
+                            placeholder="0.0"
+                            autoFocus
+                            disabled={savingGrade}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                            onClick={() => saveGrade(t)}
+                            disabled={savingGrade}
+                          >
+                            {savingGrade ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4 text-green-600" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            onClick={cancelEditing}
+                            disabled={savingGrade}
+                          >
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span>
+                          {t.calificacionDocente != null ? (
+                            <span>{t.calificacionDocente.toFixed(1)}</span>
+                          ) : (
+                            <span className="text-orange-600 font-medium">Pendiente</span>
+                          )}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {editingRowIndex !== i && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                              onClick={() => startEditing(i, t.calificacionDocente)}
+                              aria-label="Editar calificación docente"
+                              disabled={savingGrade || editingRowIndex !== null}
+                            >
+                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">Editar calificación docente</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Paginación integrada en el Card */}
+            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+              <div className="flex items-center gap-2">
+                <span>Filas por página</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={() => {
+                    // itemsPerPage es fijo en 20, no se cambia dinámicamente
+                  }}
+                  disabled={true}
+                >
+                  <SelectTrigger className="w-[70px] cursor-pointer">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 30, 50].map((n) => (
+                      <SelectItem
+                        className="cursor-pointer"
+                        key={n}
+                        value={n.toString()}
+                      >
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span>
+                  Página {paginationMetadata ? paginationMetadata.currentPage : 0} de{" "}
+                  {paginationMetadata ? paginationMetadata.totalPages : 0}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1 || isLoading}
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={handleNextPage}
+                    disabled={
+                      !paginationMetadata ||
+                      currentPage === paginationMetadata.totalPages ||
+                      isLoading
+                    }
+                    variant="outline"
+                    size="icon"
+                    className="cursor-pointer"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </>
+      ) : (
+        <LoadingScreen text="Cargando calificaciones de la Feria Gamer..." />
+      )}
     </div>
   );
 }

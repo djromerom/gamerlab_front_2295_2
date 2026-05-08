@@ -7,17 +7,16 @@ import { Form } from "@/components/ui/form";
 import { MultiFormProvider } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
-import { useState } from "react";
-import supabase from "@/supabase/client";
+import { useState, useEffect } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
-
-const BUCKET_NAME = "imagenes";
+import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const customFetch = useFetch();
   const navigate = useNavigate();
+
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
     defaultValues: {
@@ -32,16 +31,45 @@ export default function MultiStepWizard() {
         },
       ],
       gameName: "",
+      YoutubeUrl: "",
+      RepoUrl: "",
       description: "",
       files: [] as File[],
+      additionalFiles: [] as File[],
       recaptcha: "",
     },
   });
 
+  // Set default values only once on mount
+  useEffect(() => {
+    methods.reset({
+      teamName: "",
+      members: [
+        {
+          nombre: "",
+          apellido: "",
+          correo: "",
+          codigoEstudiantil: "",
+          nrc: [],
+        },
+      ],
+      gameName: "",
+      YoutubeUrl: "",
+      RepoUrl: "",
+      description: "",
+      files: [] as File[],
+      additionalFiles: [] as File[],
+      recaptcha: "",
+    });
+  }, []); // Empty dependency array = runs only once on mount
+
   async function onSubmit(data: CombinedFormValues) {
+    
+    
+    
+
     const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${
-        data.gameName
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
     );
     const exists = await res.json();
@@ -51,33 +79,46 @@ export default function MultiStepWizard() {
     }
 
     setIsLoading(true);
-    const uploadToastId =
-      data.files && data.files.length > 0
-        ? toast.loading("Subiendo archivos...")
-        : undefined;
+    const preUploadedUrls = (data as any).uploadedFileUrls as string[] | undefined;
+    const willUploadFiles = !preUploadedUrls || preUploadedUrls.length === 0;
+
+    const totalFiles = (data.files?.length || 0) + (data.additionalFiles?.length || 0);
+    const uploadToastId = willUploadFiles && totalFiles > 0
+      ? toast.loading("Subiendo archivos...")
+      : undefined;
 
     try {
       const uploadedFileUrls: string[] = [];
-      if (data.files && data.files.length > 0) {
-        const uploads = Array.from(data.files).map(async (file) => {
-          const path = `uploads/${Date.now()}-${file.name.replace(
-            /\s+/g,
-            "_"
-          )}`;
-          const { error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file, { cacheControl: "3600", upsert: false });
-          if (uploadError) throw new Error(`Error al subir ${file.name}`);
-          const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-          return urlData?.publicUrl ?? null;
-        });
-        (await Promise.all(uploads))
-          .filter((u): u is string => !!u)
-          .forEach((u) => uploadedFileUrls.push(u));
-        if (uploadToastId)
-          toast.success("Archivos subidos", { id: uploadToastId });
+      const uploadedAdditionalFileUrls: string[] = [];
+
+      // If the step already uploaded files and stored their URLs in the form
+      // (e.g. MembersStep executed uploads), prefer those and skip uploading again.
+      if (preUploadedUrls && preUploadedUrls.length > 0) {
+        uploadedFileUrls.push(...preUploadedUrls);
+      } else {
+        // Upload logo files (files)
+        if (data.files && data.files.length > 0) {
+          for (const file of data.files) {
+            const uploadResult = await uploadImage(file);
+            const urlResult = await getImageUrl(uploadResult.id);
+            uploadedFileUrls.push(urlResult.url);
+          }
+        }
+
+        if (data.additionalFiles && data.additionalFiles.length > 0) {
+          for (let i = 0; i < data.additionalFiles.length; i++) {
+            const file = data.additionalFiles[i];
+            const uploadResult = await uploadImage(file);
+            const urlResult = await getImageUrl(uploadResult.id); 
+            uploadedAdditionalFileUrls.push(urlResult.url);
+          }
+        }
+
+        if (uploadToastId) {
+          toast.success("Archivos subidos correctamente", {
+            id: uploadToastId,
+          });
+        }
       }
 
       const payload = {
@@ -92,7 +133,10 @@ export default function MultiStepWizard() {
         videogame: {
           vgName: data.gameName,
           description: data.description,
-          logoURL: uploadedFileUrls[0] || "",
+          logoUrl: uploadedFileUrls[0] || "",
+          videoUrl: data.YoutubeUrl && data.YoutubeUrl.trim() !== "" ? data.YoutubeUrl.trim() : "",
+          repoUrl: data.RepoUrl && data.RepoUrl.trim() !== "" ? data.RepoUrl.trim() : "",
+          additionalImages: uploadedAdditionalFileUrls,
         },
         recaptchaToken: data.recaptcha,
       };
@@ -113,7 +157,7 @@ export default function MultiStepWizard() {
       } else {
         const errorData = await response.json();
         let errorMessage = "Error en el registro";
-        
+
         if (errorData && errorData.message) {
           // Manejar diferentes mensajes de error
           if (typeof errorData.message === 'string') {
@@ -124,13 +168,19 @@ export default function MultiStepWizard() {
             errorMessage = Object.values(errorData.message).join(', ');
           }
         }
-        
+
         throw new Error(errorMessage || `Error ${response.status}`);
       }
     } catch (e) {
       if (uploadToastId) toast.dismiss(uploadToastId);
+      let description = "Error inesperado";
+      if (e instanceof Error && e.message.includes("413")) {
+        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
+      } else {
+        description = e instanceof Error ? e.message : String(e);
+      }
       toast.error("Error en el registro", {
-        description: (e as Error).message || "Error inesperado",
+        description: description,
         duration: 5000,
       });
     } finally {

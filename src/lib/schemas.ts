@@ -31,7 +31,10 @@ export const CombinedSchema = z.object({
     .min(1, { message: "El nombre del videojuego es obligatorio" })
     .max(30, { message: "El nombre del videjuego supera los 30 caracteres." }),
   description: z.string(),
+  YoutubeUrl: z.string().optional().default(""),
+  RepoUrl: z.string().optional().default(""),
   files: z.array(z.instanceof(File)).default([]),
+  additionalFiles: z.array(z.instanceof(File)).default([]),
   recaptcha: z
     .string()
     .min(1, { message: "La verificación de reCAPTCHA es obligatoria" }),
@@ -49,6 +52,9 @@ export type CombinedFormValues = {
   }[];
   gameName: string;
   description: string;
+  YoutubeUrl?: string | undefined;
+  RepoUrl?: string | undefined;
   files: File[];
+  additionalFiles: File[];
   recaptcha: string;
 };

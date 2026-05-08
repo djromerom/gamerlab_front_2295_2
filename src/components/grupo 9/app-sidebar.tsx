@@ -8,7 +8,14 @@ import {
   FileUser,
   Gavel,
   ChartLine,
+  Sliders,
+  Users,
+  Book,
+  Settings,
+  UniversityIcon,
+  Trophy,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
 import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
 import {
@@ -34,11 +41,16 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
+        { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
+        // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
+        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck, },
+        { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings },
         {
           name: "Criterios de Calificación",
           url: "/criterios",
           icon: BookCheck,
         },
+        { name: "Tiebreaker", url: "/tiebreaker", icon: Trophy },
       ],
     },
     {
@@ -65,7 +77,24 @@ const MENU: Record<Role, MenuItem[]> = {
   Profesor: [
     {
       title: "Proyectos",
-      items: [{ name: "Calificación", url: "/home-profesor", icon: Binary }],
+      items: [
+        {
+          name: "Calificaciones Uninorte",
+          url: "/home-profesor",
+          icon: UniversityIcon
+        },
+        {
+          name: "Colegios por Evaluar",
+          url: "/colegios-calificar",
+          icon: Book
+        },
+        {
+          name: "Colegios Evaluados",
+          url: "/colegios-evaluados",
+          icon: BookCheck
+        },
+      ],
+
     },
   ],
   Estudiante: [
@@ -73,9 +102,14 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Información",
       items: [
         {
-          name: "Mi equipo",
+          name: "Mis Calificaciones",
           url: "/mi-equipo",
           icon: LibraryBig,
+        },
+        {
+          name: "Editar equipo",
+          url: "/editar-equipo",
+          icon: FileUser,
         },
       ],
     },
@@ -102,7 +136,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Logo />
+        <Link to="/">
+          <Logo />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <NavContent menu={MENU[userRole]} />

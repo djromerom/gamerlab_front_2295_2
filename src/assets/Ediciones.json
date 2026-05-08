@@ -1,0 +1,86 @@
+[
+    {
+        "titulo": "Feria Gamer 2025 - S1",
+        "id": "2025-10",
+        "año": 2025,
+        "semestre": "Primer semestre",
+        "nombre": "Feria Gamer 2024 - S1",
+        "fecha": "Junio 2025",
+        "descripcion": "La innovación y la conciencia ecológica se unieron en la III Feria Gamer del Programa de Ingeniería de Software y Computación de la Universidad del Norte, un espacio donde los videojuegos se convirtieron en herramientas para inspirar el cuidado del planeta.",
+        "descripcion2": "Estudiantes de primer a tercer semestre presentaron el jueves, 5 de junio de 2025, sus proyectos finales: experiencias interactivas diseñadas para promover la sostenibilidad, el respeto por los recursos naturales y la protección del medio ambiente. Con propuestas centradas en temas como conservación, reciclaje, biodiversidad y prácticas responsables, los participantes demostraron no solo su creatividad y habilidades técnicas, sino también su compromiso con formar una generación más consciente y preparada para enfrentar los retos ambientales del futuro.",
+        "Juegos Destacados": "EcoPlay;EcoLoops;Purge The Poison;Last Sigh",
+        "alt": "Feria Gamer 2025-10",
+        "podio": [
+            {
+                "puesto": 1,
+                "equipo": "Equipo Alpha",
+                "juego": "Aventura Espacial",
+                "puntuacion": 4.8
+            },
+            {
+                "puesto": 2,
+                "equipo": "Equipo Beta",
+                "juego": "Mundo Submarino",
+                "puntuacion": 4.5
+            },
+            {
+                "puesto": 3,
+                "equipo": "Equipo Gamma",
+                "juego": "Ciudad Futurista",
+                "puntuacion": 4.2
+            }
+        ],
+        "enfoquesEducativos": [
+            {
+                "titulo": "Medio Ambiental",
+                "descripcion": "Experiencias educativas que fomentan la conciencia ecológica, enseñando cómo nuestras acciones impactan el planeta y qué prácticas sostenibles podemos adoptar para proteger los recursos naturales y preservar los ecosistemas."
+            }
+        ]
+    },
+    {
+        "titulo": "Feria Gamer 2024 - S2",
+        "id": "2024-30",
+        "año": 2024,
+        "semestre": "Segundo semestre",
+        "nombre": "Feria Gamer 2024 - S2",
+        "fecha": "Abril 2024",
+        "descripcion": "Innovación y aprendizaje se fusionaron en la II Feria Gamer del Programa de Ingeniería de Software y Computación de la Universidad Del Norte, evento donde los videojuegos se transformaron en herramientas para educar sobre los peligros del mundo digital.",
+        "descripcion2": "Estudiantes de primer a tercer semestre presentaron el jueves, 24 de abril de 2024, sus proyectos finales, una serie de videojuegos diseñados para generar conciencia sobre riesgos como el grooming, phishing y ciberacoso, mientras demostraban su creatividad y dominio técnico en programación.",
+        "Juegos Destacados": "Dulce y Burbujas;Leyendas de Papel, Páginas de Aventura;Carrot Mania;Musical Bubble Coffee",
+        "alt": "Feria Gamer 2024-30",
+        "podio": [
+            {
+                "puesto": 1,
+                "equipo": "Equipo Delta",
+                "juego": "Dulce y Burbujas",
+                "puntuacion": 4.9
+            },
+            {
+                "puesto": 2,
+                "equipo": "Equipo Epsilon",
+                "juego": "Leyendas de Papel, Páginas de Aventura",
+                "puntuacion": 4.6
+            },
+            {
+                "puesto": 3,
+                "equipo": "Equipo Zeta",
+                "juego": "Carrot Mania",
+                "puntuacion": 4.3
+            }
+        ],
+        "enfoquesEducativos": [
+            {
+                "titulo": "Anti-Ciberacoso",
+                "descripcion": "Juegos que concientizan sobre el impacto del acoso en línea y cómo combatirlo efectivamente."
+            },
+            {
+                "titulo": "Anti-Grooming",
+                "descripcion": "Videojuegos que enseñan a identificar y prevenir el acoso en línea por parte de adultos hacia menores."
+            },
+            {
+                "titulo": "Anti-Phishing",
+                "descripcion": "Experiencias interactivas para reconocer intentos de suplantación de identidad y estafas en línea."
+            }
+        ]
+    }
+]

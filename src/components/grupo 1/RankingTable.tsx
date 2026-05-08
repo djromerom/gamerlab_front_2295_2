@@ -108,7 +108,7 @@ const TablaRanking = () => {
                   <TableHead className="whitespace-nowrap">Videojuego</TableHead>
                   <TableHead className="whitespace-nowrap">Materia</TableHead>
                   <TableHead className="whitespace-nowrap">NRC</TableHead>
-                  <TableHead className="text-center whitespace-nowrap">Promedio</TableHead>
+                  <TableHead className="text-center whitespace-nowrap">Puntaje</TableHead>
                   <TableHead className="text-center whitespace-nowrap">Estado Eval.</TableHead>
                 </TableRow>
               </TableHeader>
