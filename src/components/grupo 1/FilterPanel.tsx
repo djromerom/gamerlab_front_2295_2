@@ -4,7 +4,7 @@
 import { useEffect } from "react"; // Solo necesitamos useEffect para el reseteo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useGlobalState, VideojuegoData } from "@/fetchs/GlobalStateContext";
+import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateContext";
 
 const FiltrosPanel = () => {
   const {

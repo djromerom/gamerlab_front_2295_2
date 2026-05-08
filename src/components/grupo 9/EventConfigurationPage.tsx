@@ -4,7 +4,7 @@ import EventSetupCard from "./EventSetupCard";
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "../grupo 8/boton";
-import { useGlobalState } from "@/fetchs/GlobalStateContext";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 
 const EventConfigurationPage: React.FC = () => {

@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
-import { useGlobalState } from "@/fetchs/GlobalStateContext";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 interface CriterioChartData {
     criterio: string;

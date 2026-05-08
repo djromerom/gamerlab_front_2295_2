@@ -2,6 +2,9 @@ import React, { JSX } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
 import LoginPage from "@/pages/grupo 9/LoginPage";
+import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
+import JuryPage from "@/pages/grupo 11/JuryPage";
+import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
 import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
 import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
@@ -53,8 +56,19 @@ interface RouteConfig {
 const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
   { path: "/auth-error", element: <AuthErrorPage /> },
-  { // Disabled temporarily
-     path: "/registro-equipo",
+  {
+    path: "/profesor",
+    element: <ProfessorPage />,
+    roles: ["Administrador", "Profesor"],
+  },
+  { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
+  {
+    path: "/consultor",
+    element: <ConsultantPage />,
+    roles: ["Consultor"],
+  },
+  {
+    path: "/registro-equipo",
     element: <TeamRegisterPage />,
    },
   {
