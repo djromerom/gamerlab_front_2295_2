@@ -42,14 +42,9 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Materias", url: "/materias", icon: LibraryBig },
         { name: "NRC's", url: "/nrcs", icon: Binary },
         { name: "Equipos Inscritos", url: "/equipos-inscritos", icon: Users },
-        // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
-        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck, },
+        // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders },
+        { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck },
         { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings },
-        {
-          name: "Criterios de Calificación",
-          url: "/criterios",
-          icon: BookCheck,
-        },
         { name: "Tiebreaker", url: "/tiebreaker", icon: Trophy },
       ],
     },
@@ -57,7 +52,8 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Personal",
       items: [
         { name: "Profesores", url: "/profesores", icon: FileUser },
-        { name: "Jurados", url: "/jurados", icon: Gavel },
+        
+        { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Sliders },
       ],
     },
   ],
@@ -81,20 +77,19 @@ const MENU: Record<Role, MenuItem[]> = {
         {
           name: "Calificaciones Uninorte",
           url: "/home-profesor",
-          icon: UniversityIcon
+          icon: UniversityIcon,
         },
         {
           name: "Colegios por Evaluar",
           url: "/colegios-calificar",
-          icon: Book
+          icon: Book,
         },
         {
           name: "Colegios Evaluados",
           url: "/colegios-evaluados",
-          icon: BookCheck
+          icon: BookCheck,
         },
       ],
-
     },
   ],
   Estudiante: [
