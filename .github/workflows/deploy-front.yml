@@ -69,7 +69,7 @@ jobs:
             elif [ "${{ steps.resolve-tag.outputs.branch }}" = "main" ]; then
               echo "Using prod secrets"
               echo "DOCKERFILE_PATH=./Dockerfile.prod" >> $GITHUB_ENV
-              echo "VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_PROD_TEMP }}" >> $GITHUB_ENV
+              echo "VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_PROD_V3 }}" >> $GITHUB_ENV
               echo "VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEMP }}" >> $GITHUB_ENV
             else
               echo "ERROR: Unrecognized branch '${{ steps.resolve-tag.outputs.branch }}'"
@@ -94,8 +94,6 @@ jobs:
     if: needs.docker-image.outputs.branch == 'dev-deploy'
     runs-on: ubuntu-latest
     steps:
-
-
       - name: Dispatch_send
         uses: peter-evans/repository-dispatch@v4
         with:
