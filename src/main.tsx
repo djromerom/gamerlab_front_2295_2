@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { GlobalStateProvider } from './fetchs/GlobalStateContext.tsx'
 import { TextSizeProvider } from './contexts/TextSizeContext.tsx'
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <GlobalStateProvider>
       <TextSizeProvider>
@@ -13,4 +13,4 @@ createRoot(document.getElementById('root')!).render(
       </TextSizeProvider>
     </GlobalStateProvider>
   </StrictMode>,
-)
+);

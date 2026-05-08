@@ -11,18 +11,14 @@ COPY package-lock.json ./
 # Install dependencies
 RUN npm ci --silent
 
-# Build-time env vars (passed as --build-arg). These will be written to a .env
-# so Vite can replace import.meta.env.VITE_* during build.
-
-ARG VITE_ENDPOINT_BACKEND
-ARG VITE_SITE_KEY
-
-RUN echo "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND" > .env && \
-    echo "VITE_SITE_KEY=$VITE_SITE_KEY" >> .env
-
 # Copy the rest of the source code and build
 COPY . .
-RUN npm run build
+
+# Build-time env vars (passed as --build-arg). These will be written to a .env
+# so Vite can replace import.meta.env.VITE_* during build.
+RUN --mount=type=secret,id=VITE_ENDPOINT_BACKEND,env=VITE_ENDPOINT_BACKEND \
+    --mount=type=secret,id=VITE_SITE_KEY,env=VITE_SITE_KEY \
+    npm run build
 
 ## Production stage: nginx serving the built files
 FROM nginx:1.25.2-alpine AS prod
@@ -32,7 +28,6 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy built files from previous stage
-COPY --from=build /app/.env .
 COPY --from=build /app/dist/ .
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
