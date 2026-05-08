@@ -80,7 +80,7 @@ jobs:
           uses: docker/build-push-action@v6
           with:
             context: .
-            file: ${DOCKERFILE_PATH}
+            file: ${{  env.DOCKERFILE_PATH  }}
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ steps.resolve-tag.outputs.tag }}
             push: true
             no-cache: true
