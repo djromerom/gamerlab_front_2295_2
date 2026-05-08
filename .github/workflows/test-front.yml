@@ -1,4 +1,4 @@
-name: test-front
+name: Test-front
 on:
   # Trigger the workflow on pull request to dev-deploy or main branches
   pull_request:
