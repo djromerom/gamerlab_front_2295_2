@@ -85,8 +85,8 @@ jobs:
             push: true
             no-cache: true
             secrets: |
-              "VITE_ENDPOINT_BACKEND=$VITE_ENDPOINT_BACKEND"
-              "VITE_SITE_KEY=$VITE_SITE_KEY"      
+              "VITE_ENDPOINT_BACKEND=${{ env.VITE_ENDPOINT_BACKEND  }}"
+              "VITE_SITE_KEY=${{ env.VITE_SITE_KEY  }}"      
 
   # Conditional job to dispatch repository events for test deployment (dev-deploy branch)
   test-dispatch:
