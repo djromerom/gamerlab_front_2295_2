@@ -63,10 +63,12 @@ jobs:
             set -euo pipefail
             if [ "${{ steps.resolve-tag.outputs.branch }}" = "dev-deploy" ]; then
               echo "Using dev secrets"
+              echo "DOCKERFILE_PATH=./Dockerfile" >> $GITHUB_ENV
               echo "VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_TEST_TEMP }}" >> $GITHUB_ENV
               echo "VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEMP }}" >> $GITHUB_ENV
             elif [ "${{ steps.resolve-tag.outputs.branch }}" = "main" ]; then
               echo "Using prod secrets"
+              echo "DOCKERFILE_PATH=./Dockerfile.prod" >> $GITHUB_ENV
               echo "VITE_ENDPOINT_BACKEND=${{ secrets.VITE_ENDPOINT_BACKEND_PROD_TEMP }}" >> $GITHUB_ENV
               echo "VITE_SITE_KEY=${{ secrets.VITE_SITE_KEY_TEMP }}" >> $GITHUB_ENV
             else
@@ -78,7 +80,7 @@ jobs:
           uses: docker/build-push-action@v6
           with:
             context: .
-            file: ./Dockerfile
+            file: ${DOCKERFILE_PATH}
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ steps.resolve-tag.outputs.tag }}
             push: true
             no-cache: true
