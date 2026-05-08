@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
-  RefreshCw,
   UserX,
   UserPlus,
   Shield,
@@ -21,10 +20,22 @@ import {
 } from "@/components/ui/sidebar";
 
 const API_BASE = "http://localhost:3000";
+type JurorType = "OFFICIAL" | "BACKUP";
+type JurorCategory = "JUNIOR" | "SENIOR";
+type DashboardFilter =
+  | "todos"
+  | "oficiales"
+  | "remanentes"
+  | "asignados"
+  | "equipos-ok"
+  | "remanentes-uso";
 
-type JurorType = "oficial" | "remanente";
-type JurorStatus = "disponible" | "ausente";
-type JurorRole = "principal" | "auxiliar";
+type AssignmentAuditAction =
+  | "ASSIGN"
+  | "UNASSIGN"
+  | "REASSIGN"
+  | "UNASSIGN_ALL"
+  | "UNASSIGN_ALL_FROM_EVALUATOR";
 
 interface Jurado {
   id: string;
@@ -33,10 +44,8 @@ interface Jurado {
   name: string;
   email: string;
   avatar: string;
-  specialty: string;
-  tipo: JurorType;
-  status: JurorStatus;
-  rol?: JurorRole;
+  tipo: JurorType | null;
+  jurorCategory?: JurorCategory | null;
   lastSignInAt?: string;
   confirmationStatusId?: number | null;
   evaluatedCount: number;
@@ -50,10 +59,32 @@ interface Team {
   name: string;
   game: string;
   semester: string;
+  level?: number | null;
   leaderName: string;
   leaderEmail: string;
   jurados: Jurado[];
   requiredJurados: number;
+}
+
+interface AssignmentAuditLog {
+  id?: number | string;
+  action?: AssignmentAuditAction | string;
+  teamId?: number | string | null;
+  jurorId?: string | null;
+  previousJurorId?: string | null;
+  newJurorId?: string | null;
+  actorUserId?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  creado_en?: string;
+  timestamp?: string;
+}
+
+interface CurrentUser {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
 }
 
 let isRefreshingToken = false;
@@ -61,7 +92,7 @@ let refreshTokenPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/auth/refresh-token`, {
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       credentials: "include",
       cache: "no-store",
@@ -131,7 +162,7 @@ async function apiRequest<T>(
       typeof parsedBody === "string"
         ? parsedBody
         : (parsedBody as { message?: string })?.message ||
-        `Error ${response.status}`;
+          `Error ${response.status}`;
 
     throw new Error(errorMessage);
   }
@@ -156,6 +187,7 @@ function extractArray(payload: unknown): any[] {
     if (Array.isArray(obj.jurors)) return obj.jurors;
     if (Array.isArray(obj.jurados)) return obj.jurados;
     if (Array.isArray(obj.teams)) return obj.teams;
+    if (Array.isArray(obj.logs)) return obj.logs;
   }
 
   return [];
@@ -167,6 +199,14 @@ function safeString(value: unknown, fallback = ""): string {
 
 function safeNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && !Number.isNaN(value) ? value : fallback;
+}
+
+function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  if (typeof value === "string" && value.trim() && !Number.isNaN(Number(value))) {
+    return Number(value);
+  }
+  return null;
 }
 
 function buildFullName(firstName: string, lastName: string, email: string): string {
@@ -210,12 +250,91 @@ function getAssignmentKey(teamId: number, jurorId: string): string {
   return `${teamId}-${jurorId}`;
 }
 
+function normalizeJurorCategory(value: unknown): JurorCategory | null {
+  return value === "JUNIOR" || value === "SENIOR" ? value : null;
+}
+
+function normalizeJurorType(value: unknown): JurorType | null {
+  if (value === "OFFICIAL" || value === "BACKUP") return value;
+  if (value === "OFFICIAL") return "OFFICIAL";
+  if (value === "BACKUP") return "BACKUP";
+  return null;
+}
+
+function getJurorTypeLabel(value?: JurorType | null): string {
+  if (value === "OFFICIAL") return "Oficial";
+  if (value === "BACKUP") return "Remanente";
+  return "Sin tipo";
+}
+
+function getJurorCategoryLabel(value?: JurorCategory | null): string {
+  if (value === "JUNIOR") return "Junior";
+  if (value === "SENIOR") return "Senior";
+  return "Sin categoría";
+}
+
+function getPersonDisplayName(person?: { firstName?: string | null; lastName?: string | null; email?: string | null } | null): string {
+  if (!person) return "N/A";
+  const name = `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim();
+  return name || person.email || "N/A";
+}
+
+function normalizeAuditAction(value?: string): string {
+  const labels: Record<string, string> = {
+    ASSIGN: "Asignación",
+    UNASSIGN: "Desasignación",
+    REASSIGN: "Reasignación",
+    UNASSIGN_ALL: "Limpieza total",
+    UNASSIGN_ALL_FROM_EVALUATOR: "Limpieza por jurado",
+  };
+
+  return value ? labels[value] ?? value : "Sin acción";
+}
+
+function getFilterLabel(filter: DashboardFilter): string {
+  const labels: Record<DashboardFilter, string> = {
+    todos: "Todos",
+    oficiales: "Oficiales disponibles",
+    remanentes: "Remanentes disponibles",
+    asignados: "Equipos con jurados asignados",
+    "equipos-ok": "Equipos completos",
+    "remanentes-uso": "Equipos con remanentes en uso",
+  };
+
+  return labels[filter];
+}
+
+function isColegioTeam(team: Team): boolean {
+  const normalizedSemester = team.semester.toLowerCase();
+  const normalizedName = team.name.toLowerCase();
+  const normalizedGame = team.game.toLowerCase();
+
+  return (
+    team.level === 0 ||
+    normalizedSemester.includes("colegio") ||
+    normalizedSemester.includes("n0") ||
+    normalizedName.includes("colegio") ||
+    normalizedGame.includes("colegio")
+  );
+}
+
+function canAssignJurorToTeam(jurado: Jurado, team: Team): boolean {
+  if (!jurado.jurorCategory) return false;
+
+  if (isColegioTeam(team) && jurado.jurorCategory === "JUNIOR") {
+    return false;
+  }
+
+  return true;
+}
+
 function mapJurorFromApi(raw: any, previousJurados: Jurado[]): Jurado {
   const firstName = safeString(raw.firstName ?? raw.name ?? raw.fullName);
   const lastName = safeString(raw.lastName);
-  const email = safeString(raw.email);
+  const email = safeString(raw.email ?? raw.correo);
+  const id = String(raw.id ?? raw.id_usuario ?? email ?? firstName);
   const existing = previousJurados.find(
-    (j) => j.id === String(raw.id ?? email ?? firstName)
+    (j) => j.id === id || j.email === email
   );
 
   const fallbackName = safeString(raw.nombre ?? raw.name ?? raw.fullName);
@@ -226,7 +345,7 @@ function mapJurorFromApi(raw: any, previousJurados: Jurado[]): Jurado {
   const name = buildFullName(resolvedFirstName, resolvedLastName, email);
 
   return {
-    id: String(raw.id ?? email ?? name),
+    id,
     firstName: resolvedFirstName,
     lastName: resolvedLastName,
     name,
@@ -234,12 +353,17 @@ function mapJurorFromApi(raw: any, previousJurados: Jurado[]): Jurado {
     avatar:
       existing?.avatar ??
       safeString(raw.avatar ?? raw.photoUrl ?? raw.profilePicture, ""),
-    specialty:
-      existing?.specialty ??
-      safeString(raw.specialty ?? raw.area ?? raw.expertise, "Sin especialidad"),
-    tipo: existing?.tipo ?? "oficial",
-    status: existing?.status ?? "disponible",
-    rol: existing?.rol,
+    tipo:
+      normalizeJurorType(raw.jurorType) ??
+      normalizeJurorType(raw.tipo_jurado) ??
+      normalizeJurorType(raw.tipo) ??
+      existing?.tipo ??
+      null,
+    jurorCategory:
+      normalizeJurorCategory(raw.jurorCategory) ??
+      normalizeJurorCategory(raw.categoria_jurado) ??
+      existing?.jurorCategory ??
+      null,
     lastSignInAt:
       safeString(raw.lastSignInAt ?? raw.lastLogin ?? raw.lastSeen, "") ||
       undefined,
@@ -270,7 +394,7 @@ function mapTeamAssignedJuror(
   const assignedName = safeString(
     rawAssignedJuror.nombre ?? rawAssignedJuror.name ?? rawAssignedJuror.fullName
   );
-  const assignedEmail = safeString(rawAssignedJuror.email);
+  const assignedEmail = safeString(rawAssignedJuror.email ?? rawAssignedJuror.correo);
 
   const fromGlobal =
     allJurados.find((jurado) => jurado.id === assignedId) ??
@@ -288,7 +412,6 @@ function mapTeamAssignedJuror(
   if (fromGlobal) {
     return {
       ...fromGlobal,
-      rol: "principal",
     };
   }
 
@@ -301,10 +424,15 @@ function mapTeamAssignedJuror(
     name: assignedName || assignedEmail || "Jurado",
     email: assignedEmail,
     avatar: "",
-    specialty: "Sin especialidad",
-    tipo: "oficial",
-    status: "disponible",
-    rol: "principal",
+    tipo:
+      normalizeJurorType(rawAssignedJuror.jurorType) ??
+      normalizeJurorType(rawAssignedJuror.tipo_jurado) ??
+      normalizeJurorType(rawAssignedJuror.tipo) ??
+      null,
+    jurorCategory:
+      normalizeJurorCategory(rawAssignedJuror.jurorCategory) ??
+      normalizeJurorCategory(rawAssignedJuror.categoria_jurado) ??
+      normalizeJurorCategory(rawAssignedJuror.categoria),
     evaluatedCount: 0,
     evaluatedGameNames: [],
     unevaluatedCount: 0,
@@ -315,10 +443,11 @@ function mapTeamAssignedJuror(
 function mapTeamFromApi(raw: any, allJurados: Jurado[], previousTeams: Team[]): Team {
   const rawAssigned = extractArray(
     raw.juradosAsignados ??
-    raw.assignedJurors ??
-    raw.jurors ??
-    raw.assigned_jurors ??
-    []
+      raw.jurados ??
+      raw.assignedJurors ??
+      raw.jurors ??
+      raw.assigned_jurors ??
+      []
   );
 
   const leader =
@@ -329,7 +458,8 @@ function mapTeamFromApi(raw: any, allJurados: Jurado[], previousTeams: Team[]): 
     raw.team_owner ??
     {};
 
-  const teamId = Number(raw.id ?? raw.teamId ?? 0);
+  const teamId = Number(raw.id ?? raw.teamId ?? raw.teamIdNumber ?? raw.id_equipo ?? 0);
+  const level = parseOptionalNumber(raw.level ?? raw.nivel ?? raw.teamLevel);
 
   const mappedJurados = rawAssigned.map((item) =>
     mapTeamAssignedJuror(item, allJurados, previousTeams, teamId)
@@ -337,24 +467,25 @@ function mapTeamFromApi(raw: any, allJurados: Jurado[], previousTeams: Team[]): 
 
   return {
     id: teamId,
-    name: safeString(raw.nombre ?? raw.name ?? raw.teamName, "Equipo sin nombre"),
+    name: safeString(raw.nombre ?? raw.name ?? raw.teamName ?? raw.equipo, "Equipo sin nombre"),
     game: safeString(
       raw.videojuego ??
-      raw.game ??
-      raw.gameName ??
-      raw.videogameName ??
-      raw.videogame?.name ??
-      raw.projectName,
+        raw.game ??
+        raw.gameName ??
+        raw.videogameName ??
+        raw.videogame?.name ??
+        raw.projectName,
       "Sin videojuego"
     ),
     semester: safeString(
       raw.semester ?? raw.level ?? raw.nivel ?? raw.course ?? "Sin semestre"
     ),
+    level,
     leaderName: safeString(
       leader.nombre ?? leader.name ?? leader.fullName,
       "Sin líder"
     ),
-    leaderEmail: safeString(leader.email, ""),
+    leaderEmail: safeString(leader.email ?? leader.correo, ""),
     jurados: mappedJurados,
     requiredJurados: safeNumber(
       raw.requiredJurados ?? raw.requiredJurors ?? raw.jurorSlots,
@@ -368,13 +499,22 @@ export function JuradosAssignment() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [showJuradoModal, setShowJuradoModal] = useState(false);
-  const [asignarComoAuxiliar, setAsignarComoAuxiliar] = useState(false);
   const [showJuradosListModal, setShowJuradosListModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showAllTeamsModal, setShowAllTeamsModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AssignmentAuditLog[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [jurorSearch, setJurorSearch] = useState("");
   const [openJurorMenuId, setOpenJurorMenuId] = useState<string | null>(null);
+  const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>("todos");
+  const [reassignContext, setReassignContext] = useState<{
+    teamId: number;
+    currentJurorId: string;
+    currentJurorName: string;
+  } | null>(null);
 
   const [showCreateJurorModal, setShowCreateJurorModal] = useState(false);
   const [showEditJurorModal, setShowEditJurorModal] = useState(false);
@@ -384,12 +524,16 @@ export function JuradosAssignment() {
     firstName: "",
     lastName: "",
     email: "",
+    jurorCategory: "" as "" | JurorCategory,
+    tipo: "" as "" | JurorType,
   });
 
   const [editJurorForm, setEditJurorForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
+    jurorCategory: "" as "" | JurorCategory,
+    tipo: "" as "" | JurorType,
   });
 
   const loadData = async () => {
@@ -397,13 +541,14 @@ export function JuradosAssignment() {
       setIsLoading(true);
       setLoadError(null);
 
-      const [jurorsResponse, teamsResponse] = await Promise.all([
+      const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
         apiRequest<any>("/juror?includeInactive=false&limit=100&page=1", {
           method: "GET",
         }),
-        apiRequest<any>("/teams/incomplete-jurors", {
+        apiRequest<any>("/juror/evaluation-tracking", {
           method: "GET",
         }),
+        apiRequest<any>("/auth/me", { method: "GET" }).catch(() => null),
       ]);
 
       const incomingJurors = extractArray(jurorsResponse).map((raw) =>
@@ -416,6 +561,14 @@ export function JuradosAssignment() {
 
       setJurados(incomingJurors);
       setTeams(incomingTeams);
+      if (meResponse) {
+        setCurrentUser({
+          id: String(meResponse.id ?? ""),
+          firstName: safeString(meResponse.firstName),
+          lastName: safeString(meResponse.lastName),
+          email: safeString(meResponse.email),
+        });
+      }
     } catch (error) {
       console.error(error);
       setLoadError(
@@ -433,44 +586,29 @@ export function JuradosAssignment() {
   }, []);
 
   const getJuradosDisponibles = (tipo?: JurorType) => {
-    const asignados = teams.flatMap((team) => team.jurados.map((jurado) => jurado.id));
-
     return jurados.filter((jurado) => {
-      const disponible =
-        jurado.status === "disponible" && !asignados.includes(jurado.id);
+      const usable = Boolean(jurado.jurorCategory) && Boolean(jurado.tipo);
 
       if (tipo) {
-        return disponible && jurado.tipo === tipo;
+        return usable && jurado.tipo === tipo;
       }
 
-      return disponible;
+      return usable;
     });
   };
 
   const juradosOficialesDisponibles = useMemo(
-    () => getJuradosDisponibles("oficial"),
+    () => getJuradosDisponibles("OFFICIAL"),
     [jurados, teams]
   );
 
   const juradosRemanentesDisponibles = useMemo(
-    () => getJuradosDisponibles("remanente"),
+    () => getJuradosDisponibles("BACKUP"),
     [jurados, teams]
   );
 
-  const juradosAusentes = useMemo(
-    () => jurados.filter((jurado) => jurado.status === "ausente"),
-    [jurados]
-  );
-
   const totalAsignados = useMemo(
-    () =>
-      teams.reduce(
-        (sum, team) =>
-          sum +
-          team.jurados.filter((jurado) => !jurado.rol || jurado.rol === "principal")
-            .length,
-        0
-      ),
+    () => teams.reduce((sum, team) => sum + team.jurados.length, 0),
     [teams]
   );
 
@@ -480,42 +618,56 @@ export function JuradosAssignment() {
   );
 
   const equiposCompletos = useMemo(
-    () =>
-      teams.filter(
-        (team) =>
-          team.jurados.filter(
-            (jurado) => !jurado.rol || jurado.rol === "principal"
-          ).length >= team.requiredJurados
-      ).length,
+    () => teams.filter((team) => team.jurados.length >= team.requiredJurados).length,
     [teams]
   );
 
   const remanentesEnUso = useMemo(
     () =>
-      teams.flatMap((team) => team.jurados).filter((jurado) => jurado.tipo === "remanente")
+      teams.flatMap((team) => team.jurados).filter((jurado) => jurado.tipo === "BACKUP")
         .length,
     [teams]
   );
 
-  const auxiliaresEnUso = useMemo(
-    () =>
-      teams.flatMap((team) => team.jurados).filter((jurado) => jurado.rol === "auxiliar")
-        .length,
-    [teams]
-  );
+
+  const filteredTeams = useMemo(() => {
+    if (dashboardFilter === "todos") return teams;
+
+    if (dashboardFilter === "asignados") {
+      return teams.filter((team) => team.jurados.length > 0);
+    }
+
+    if (dashboardFilter === "equipos-ok") {
+      return teams.filter((team) => team.jurados.length >= team.requiredJurados);
+    }
+
+    if (dashboardFilter === "remanentes-uso") {
+      return teams.filter((team) =>
+        team.jurados.some((jurado) => jurado.tipo === "BACKUP")
+      );
+    }
+
+    return teams;
+  }, [teams, dashboardFilter]);
 
   const juradosFiltrados = useMemo(() => {
     const term = jurorSearch.trim().toLowerCase();
 
-    if (!term) return jurados;
-
     return jurados.filter((jurado) => {
-      return (
+      const matchesTerm =
+        !term ||
         jurado.name.toLowerCase().includes(term) ||
-        jurado.email.toLowerCase().includes(term)
-      );
+        jurado.email.toLowerCase().includes(term);
+
+      const matchesDashboard =
+        dashboardFilter === "todos" ||
+        (dashboardFilter === "oficiales" && jurado.tipo === "OFFICIAL") ||
+        (dashboardFilter === "remanentes" && jurado.tipo === "BACKUP") ||
+        !["oficiales", "remanentes"].includes(dashboardFilter);
+
+      return matchesTerm && matchesDashboard;
     });
-  }, [jurados, jurorSearch]);
+  }, [jurados, jurorSearch, dashboardFilter]);
 
   const juradosDisponiblesParaModal = useMemo(() => {
     if (!selectedTeam) return [];
@@ -523,47 +675,44 @@ export function JuradosAssignment() {
     const teamAssignedIds = new Set(selectedTeam.jurados.map((jurado) => jurado.id));
 
     return jurados.filter((jurado) => {
-      const notAssignedAnywhere = !teams
-        .flatMap((team) => team.jurados)
-        .some((assigned) => assigned.id === jurado.id);
-
       const alreadyInThisTeam = teamAssignedIds.has(jurado.id);
 
       return (
-        jurado.status === "disponible" &&
         !alreadyInThisTeam &&
-        notAssignedAnywhere
+        Boolean(jurado.jurorCategory) &&
+        Boolean(jurado.tipo) &&
+        canAssignJurorToTeam(jurado, selectedTeam)
       );
     });
-  }, [jurados, teams, selectedTeam]);
+  }, [jurados, selectedTeam]);
 
-  const openJuradoModal = (team: Team, esAuxiliar = false) => {
+  const openJuradoModal = (
+    team: Team,
+    _esAuxiliar = false,
+    reassignData?: {
+      currentJurorId: string;
+      currentJurorName: string;
+    }
+  ) => {
     setSelectedTeam(team);
-    setAsignarComoAuxiliar(esAuxiliar);
+
+    if (reassignData) {
+      setReassignContext({
+        teamId: team.id,
+        currentJurorId: reassignData.currentJurorId,
+        currentJurorName: reassignData.currentJurorName,
+      });
+    } else {
+      setReassignContext(null);
+    }
+
     setShowJuradoModal(true);
   };
 
   const closeJuradoModal = () => {
     setSelectedTeam(null);
-    setAsignarComoAuxiliar(false);
+    setReassignContext(null);
     setShowJuradoModal(false);
-  };
-
-  const assignJuradosAutomatically = async () => {
-    try {
-      setIsSubmitting(true);
-      await apiRequest("/juror/evaluations-assignment", { method: "GET" });
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "No se pudo ejecutar la asignación automática."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const addJuradoToTeam = async (teamId: number, jurado: Jurado) => {
@@ -578,26 +727,7 @@ export function JuradosAssignment() {
         }),
       });
 
-      setTeams((prevTeams) =>
-        prevTeams.map((team) => {
-          if (team.id !== teamId) return team;
-
-          const juradosPrincipales = team.jurados.filter(
-            (item) => !item.rol || item.rol === "principal"
-          );
-
-          const rol: JurorRole =
-            asignarComoAuxiliar || juradosPrincipales.length >= team.requiredJurados
-              ? "auxiliar"
-              : "principal";
-
-          return {
-            ...team,
-            jurados: [...team.jurados, { ...jurado, rol }],
-          };
-        })
-      );
-
+      await loadData();
       closeJuradoModal();
     } catch (error) {
       console.error(error);
@@ -611,9 +741,40 @@ export function JuradosAssignment() {
     }
   };
 
+  const reassignJuradoOnTeam = async (
+    teamId: number,
+    currentJurorId: string,
+    newJuror: Jurado
+  ) => {
+    try {
+      setIsSubmitting(true);
+
+      await apiRequest("/juror/assignments/reassign", {
+        method: "PATCH",
+        body: JSON.stringify({
+          teamId,
+          currentJurorId,
+          newJurorId: newJuror.id,
+        }),
+      });
+
+      await loadData();
+      closeJuradoModal();
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "No se pudo reasignar el jurado."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const removeJuradoFromTeam = async (teamId: number, jurorId: string) => {
     const confirmed = window.confirm(
-      "¿Seguro que deseas remover este jurado del equipo?"
+      "¿Seguro que deseas desasignar este jurado del equipo?"
     );
     if (!confirmed) return;
 
@@ -628,77 +789,22 @@ export function JuradosAssignment() {
         }),
       });
 
-      setTeams((prevTeams) =>
-        prevTeams.map((team) =>
-          team.id === teamId
-            ? {
-              ...team,
-              jurados: team.jurados.filter((jurado) => jurado.id !== jurorId),
-            }
-            : team
-        )
-      );
+      await loadData();
     } catch (error) {
       console.error(error);
       window.alert(
         error instanceof Error
           ? error.message
-          : "No se pudo remover el jurado del equipo."
+          : "No se pudo desasignar el jurado del equipo."
       );
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const markJuradoAsAusent = async (jurorId: string) => {
-    const confirmed = window.confirm(
-      "¿Marcar este jurado como ausente? Se removerá de todos los equipos y podrás reemplazarlo con un remanente."
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setIsSubmitting(true);
-
-      await apiRequest(`/juror/${jurorId}/assignments`, {
-        method: "DELETE",
-      });
-
-      setJurados((prevJurados) =>
-        prevJurados.map((item) =>
-          item.id === jurorId ? { ...item, status: "ausente" } : item
-        )
-      );
-
-      setTeams((prevTeams) =>
-        prevTeams.map((team) => ({
-          ...team,
-          jurados: team.jurados.filter((item) => item.id !== jurorId),
-        }))
-      );
-    } catch (error) {
-      console.error(error);
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "No se pudo marcar el jurado como ausente."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const restoreJurado = (jurorId: string) => {
-    setJurados((prevJurados) =>
-      prevJurados.map((jurado) =>
-        jurado.id === jurorId ? { ...jurado, status: "disponible" } : jurado
-      )
-    );
   };
 
   const resetAllAssignments = async () => {
     const confirmed = window.confirm(
-      "¿Estás seguro de que quieres eliminar todas las asignaciones?"
+      "¿Estás seguro de que quieres eliminar todas las asignaciones manuales?"
     );
     if (!confirmed) return;
 
@@ -709,12 +815,7 @@ export function JuradosAssignment() {
         method: "DELETE",
       });
 
-      setTeams((prevTeams) =>
-        prevTeams.map((team) => ({
-          ...team,
-          jurados: [],
-        }))
-      );
+      await loadData();
     } catch (error) {
       console.error(error);
       window.alert(
@@ -727,14 +828,37 @@ export function JuradosAssignment() {
     }
   };
 
+  const loadAuditLog = async () => {
+    try {
+      setIsSubmitting(true);
+
+      const response = await apiRequest<any>(
+        "/juror/assignments/audit?page=1&limit=20",
+        { method: "GET" }
+      );
+
+      setAuditLogs(extractArray(response) as AssignmentAuditLog[]);
+      setShowAuditModal(true);
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar el historial de cambios."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const exportJurorsToCsv = () => {
     const headers = [
       "Nombres",
       "Apellidos",
       "Nombre completo",
       "Correo",
-      "Tipo",
-      "Estado",
+      "Tipo operativo",
+      "Categoría",
       "Último ingreso",
       "Evaluados",
       "Pendientes",
@@ -745,8 +869,8 @@ export function JuradosAssignment() {
       jurado.lastName,
       jurado.name,
       jurado.email,
-      jurado.tipo,
-      jurado.status,
+      getJurorTypeLabel(jurado.tipo),
+      getJurorCategoryLabel(jurado.jurorCategory),
       formatDate(jurado.lastSignInAt),
       jurado.evaluatedGameNames.join(" | "),
       jurado.unevaluatedGameNames.join(" | "),
@@ -777,6 +901,8 @@ export function JuradosAssignment() {
       firstName: "",
       lastName: "",
       email: "",
+      jurorCategory: "",
+      tipo: "",
     });
     setOpenJurorMenuId(null);
     setShowCreateJurorModal(true);
@@ -786,21 +912,25 @@ export function JuradosAssignment() {
     if (
       !createJurorForm.firstName.trim() ||
       !createJurorForm.lastName.trim() ||
-      !createJurorForm.email.trim()
+      !createJurorForm.email.trim() ||
+      !createJurorForm.jurorCategory ||
+      !createJurorForm.tipo
     ) {
-      window.alert("Debes completar nombres, apellidos y correo electrónico.");
+      window.alert("Debes completar nombres, apellidos, correo electrónico, categoría y tipo de jurado.");
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      await apiRequest("/juror", {
+      await apiRequest<any>("/juror", {
         method: "POST",
         body: JSON.stringify({
           firstName: createJurorForm.firstName.trim(),
           lastName: createJurorForm.lastName.trim(),
           email: createJurorForm.email.trim(),
+          jurorCategory: createJurorForm.jurorCategory,
+          jurorType: createJurorForm.tipo,
         }),
       });
 
@@ -809,7 +939,9 @@ export function JuradosAssignment() {
     } catch (error) {
       console.error(error);
       window.alert(
-        error instanceof Error ? error.message : "No se pudo crear el jurado."
+        error instanceof Error
+          ? error.message
+          : "No se pudo crear el jurado. Si aparece en la lista, el error puede estar relacionado con el envío del correo de confirmación."
       );
     } finally {
       setIsSubmitting(false);
@@ -823,6 +955,8 @@ export function JuradosAssignment() {
       firstName: jurado.firstName,
       lastName: jurado.lastName,
       email: jurado.email,
+      jurorCategory: jurado.jurorCategory ?? "",
+      tipo: jurado.tipo ?? "",
     });
     setShowEditJurorModal(true);
   };
@@ -830,8 +964,13 @@ export function JuradosAssignment() {
   const handleEditJurorSubmit = async () => {
     if (!editingJuror) return;
 
-    if (!editJurorForm.firstName.trim() || !editJurorForm.lastName.trim()) {
-      window.alert("Debes completar nombres y apellidos.");
+    if (
+      !editJurorForm.firstName.trim() ||
+      !editJurorForm.lastName.trim() ||
+      !editJurorForm.jurorCategory ||
+      !editJurorForm.tipo
+    ) {
+      window.alert("Debes completar nombres, apellidos, categoría y tipo de jurado.");
       return;
     }
 
@@ -843,6 +982,8 @@ export function JuradosAssignment() {
         body: JSON.stringify({
           firstName: editJurorForm.firstName.trim(),
           lastName: editJurorForm.lastName.trim(),
+          jurorCategory: editJurorForm.jurorCategory,
+          jurorType: editJurorForm.tipo,
         }),
       });
 
@@ -898,12 +1039,7 @@ export function JuradosAssignment() {
         method: "DELETE",
       });
 
-      setTeams((prevTeams) =>
-        prevTeams.map((team) => ({
-          ...team,
-          jurados: team.jurados.filter((jurado) => jurado.id !== jurorId),
-        }))
-      );
+      await loadData();
     } catch (error) {
       console.error(error);
       window.alert(
@@ -930,16 +1066,7 @@ export function JuradosAssignment() {
         method: "DELETE",
       });
 
-      setJurados((prevJurados) =>
-        prevJurados.filter((jurado) => jurado.id !== jurorId)
-      );
-
-      setTeams((prevTeams) =>
-        prevTeams.map((team) => ({
-          ...team,
-          jurados: team.jurados.filter((jurado) => jurado.id !== jurorId),
-        }))
-      );
+      await loadData();
     } catch (error) {
       console.error(error);
       window.alert(
@@ -950,34 +1077,85 @@ export function JuradosAssignment() {
     }
   };
 
-  const toggleJurorType = (jurorId: string) => {
-    setJurados((prevJurados) =>
-      prevJurados.map((jurado) =>
-        jurado.id === jurorId
-          ? {
-            ...jurado,
-            tipo: jurado.tipo === "oficial" ? "remanente" : "oficial",
-          }
-          : jurado
-      )
-    );
+  const toggleJurorType = async (jurado: Jurado) => {
+    if (!jurado.tipo) {
+      window.alert("Este jurado no tiene tipo operativo asignado.");
+      return;
+    }
 
-    setTeams((prevTeams) =>
-      prevTeams.map((team) => ({
-        ...team,
-        jurados: team.jurados.map((jurado) =>
-          jurado.id === jurorId
-            ? {
-              ...jurado,
-              tipo: jurado.tipo === "oficial" ? "remanente" : "oficial",
-            }
-            : jurado
-        ),
-      }))
-    );
+    const nextTipo: JurorType = jurado.tipo === "OFFICIAL" ? "BACKUP" : "OFFICIAL";
 
-    setOpenJurorMenuId(null);
+    try {
+      setIsSubmitting(true);
+      setOpenJurorMenuId(null);
+
+      await apiRequest(`/juror/${jurado.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          jurorType: nextTipo,
+        }),
+      });
+
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el tipo operativo del jurado."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const DashboardCard = ({
+    label,
+    value,
+    detail,
+    icon,
+    onClick,
+  }: {
+    label: string;
+    value: string | number;
+    detail: string;
+    icon?: any;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left bg-card border border-border rounded-xl p-3 md:p-4 hover:bg-accent transition-colors"
+    >
+      <div className="text-xs mb-1 flex items-center gap-1 text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="text-xl md:text-2xl">{value}</div>
+      <div className="text-xs text-muted-foreground">{detail}</div>
+    </button>
+  );
+
+  const getJurorNameById = (id?: string | null) => {
+    if (!id) return "N/A";
+    const jurado = jurados.find((item) => item.id === id);
+    return jurado?.name || id;
+  };
+
+  const getTeamNameById = (id?: number | string | null) => {
+    if (id === undefined || id === null) return "N/A";
+    const numericId = Number(id);
+    const team = teams.find((item) => item.id === numericId);
+    return team ? `${team.name} (${team.game})` : String(id);
+  };
+
+  const getActorNameById = (id?: string | null) => {
+    if (!id) return "N/A";
+    if (currentUser?.id === id) return getPersonDisplayName(currentUser);
+    const jurado = jurados.find((item) => item.id === id);
+    return jurado?.name || id;
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -1007,7 +1185,7 @@ export function JuradosAssignment() {
                 </li>
 
                 <li className="inline-flex items-center gap-1.5">
-                  <span className="text-foreground">Asignación de Jurados</span>
+                  <span className="text-foreground">Asignación Manual de Jurados</span>
                 </li>
               </ol>
             </nav>
@@ -1017,12 +1195,11 @@ export function JuradosAssignment() {
         <div className="bg-background text-foreground min-h-screen p-4">
           <div className="px-4 py-2">
             <h1 className="text-xl font-medium mb-2">
-              Gestión de Jurados - Asignación de Equipos
+              Gestión Manual de Asignación de Jurados
             </h1>
 
             <p className="text-muted-foreground mb-8 text-sm md:text-base">
-              Asigna jurados oficiales automáticamente y usa jurados remanentes
-              como respaldo. También puedes agregar auxiliares por equipo.
+              Administra la asignación manual durante la feria. Un jurado puede evaluar varios equipos, pero no puede repetirse dentro del mismo equipo.
             </p>
 
             {isLoading && (
@@ -1037,58 +1214,75 @@ export function JuradosAssignment() {
               </div>
             )}
 
-            <div className="max-w-7xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4 mb-6 md:mb-8">
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 flex items-center gap-1 text-muted-foreground">
-                  <Shield className="w-3 h-3" />
-                  <span>Oficiales</span>
-                </div>
-                <div className="text-xl md:text-2xl">
-                  {juradosOficialesDisponibles.length}
-                </div>
-                <div className="text-xs text-muted-foreground">disponibles</div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 flex items-center gap-1 text-muted-foreground">
-                  <AlertTriangle className="w-3 h-3" />
-                  <span>Remanentes</span>
-                </div>
-                <div className="text-xl md:text-2xl">
-                  {juradosRemanentesDisponibles.length}
-                </div>
-                <div className="text-xs text-muted-foreground">disponibles</div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 text-muted-foreground">Asignados</div>
-                <div className="text-xl md:text-2xl">
-                  {totalAsignados}/{totalRequeridos}
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 text-muted-foreground">Equipos OK</div>
-                <div className="text-xl md:text-2xl">
-                  {equiposCompletos}/{teams.length}
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 text-muted-foreground">Rem. en uso</div>
-                <div className="text-xl md:text-2xl">{remanentesEnUso}</div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 text-muted-foreground">Auxiliares</div>
-                <div className="text-xl md:text-2xl">{auxiliaresEnUso}</div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-3 md:p-4">
-                <div className="text-xs mb-1 text-muted-foreground">Ausentes</div>
-                <div className="text-xl md:text-2xl">{juradosAusentes.length}</div>
+            <div className="max-w-7xl mb-6 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              <div className="font-medium text-foreground mb-2">Uso rápido</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>1. Selecciona un equipo y pulsa <span className="text-foreground font-medium">Agregar Jurado</span>.</div>
+                <div>2. Elige un jurado disponible para ese equipo. Puede estar asignado a otros equipos.</div>
+                <div>3. Usa <span className="text-foreground font-medium">Reasignar</span> o <span className="text-foreground font-medium">Quitar</span> para ajustar en tiempo real.</div>
               </div>
             </div>
+
+            <div className="max-w-7xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+              <DashboardCard
+                label="Oficiales"
+                value={juradosOficialesDisponibles.length}
+                detail="ver disponibles"
+                icon={<Shield className="w-3 h-3" />}
+                onClick={() => {
+                  setDashboardFilter("oficiales");
+                  setShowJuradosListModal(true);
+                }}
+              />
+
+              <DashboardCard
+                label="Remanentes"
+                value={juradosRemanentesDisponibles.length}
+                detail="ver disponibles"
+                icon={<AlertTriangle className="w-3 h-3" />}
+                onClick={() => {
+                  setDashboardFilter("remanentes");
+                  setShowJuradosListModal(true);
+                }}
+              />
+
+              <DashboardCard
+                label="Jurados asignados"
+                value={`${totalAsignados}/${totalRequeridos}`}
+                detail="cupos cubiertos"
+                onClick={() => setDashboardFilter("asignados")}
+              />
+
+              <DashboardCard
+                label="Equipos completos"
+                value={`${equiposCompletos}/${teams.length}`}
+                detail="con cupos cubiertos"
+                onClick={() => setDashboardFilter("equipos-ok")}
+              />
+
+              <DashboardCard
+                label="Remanentes en uso"
+                value={remanentesEnUso}
+                detail="asignados como respaldo"
+                onClick={() => setDashboardFilter("remanentes-uso")}
+              />
+
+            </div>
+
+            {dashboardFilter !== "todos" && (
+              <div className="max-w-7xl mb-4 flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
+                <span className="text-muted-foreground">
+                  Filtro activo: <span className="text-foreground font-medium">{getFilterLabel(dashboardFilter)}</span>
+                </span>
+
+                <button
+                  onClick={() => setDashboardFilter("todos")}
+                  className="rounded-md border px-3 py-1.5 hover:bg-accent"
+                >
+                  Ver todos
+                </button>
+              </div>
+            )}
 
             <div className="max-w-7xl flex flex-wrap gap-3 md:gap-4 mb-8 md:mb-12">
               <button
@@ -1101,13 +1295,19 @@ export function JuradosAssignment() {
               </button>
 
               <button
-                onClick={assignJuradosAutomatically}
+                onClick={() => void loadAuditLog()}
                 disabled={isLoading || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
               >
-                <RefreshCw className="w-4 md:w-5 h-4 md:h-5" />
-                <span className="hidden sm:inline">Asignar Jurados Oficiales</span>
-                <span className="sm:hidden">Asignar</span>
+                Historial de cambios
+              </button>
+
+              <button
+                onClick={() => setShowAllTeamsModal(true)}
+                disabled={isLoading || isSubmitting}
+                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
+              >
+                Ver todos los equipos
               </button>
 
               <button
@@ -1124,41 +1324,34 @@ export function JuradosAssignment() {
               <div className="lg:col-span-3 order-2 lg:order-1">
                 <h2 className="text-xl md:text-2xl mb-4 md:mb-6 flex items-center gap-2">
                   <Users className="w-6 md:w-7 h-6 md:h-7" />
-                  Equipos ({teams.length})
+                  Equipos ({filteredTeams.length}/{teams.length})
                 </h2>
 
-                {teams.length === 0 ? (
+                {filteredTeams.length === 0 ? (
                   <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
-                    No hay equipos cargados.
+                    No hay equipos para este filtro.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {teams.map((team) => {
-                      const juradosPrincipales = team.jurados.filter(
-                        (jurado) => !jurado.rol || jurado.rol === "principal"
-                      );
-                      const juradosAuxiliares = team.jurados.filter(
-                        (jurado) => jurado.rol === "auxiliar"
-                      );
-                      const isComplete =
-                        juradosPrincipales.length >= team.requiredJurados;
+                    {filteredTeams.map((team) => {
+                      const isComplete = team.jurados.length >= team.requiredJurados;
                       const isEmpty = team.jurados.length === 0;
                       const hasRemanentes = team.jurados.some(
-                        (jurado) => jurado.tipo === "remanente"
+                        (jurado) => jurado.tipo === "BACKUP"
                       );
-                      const hasAuxiliares = juradosAuxiliares.length > 0;
 
                       return (
                         <div
                           key={team.id}
-                          className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${isComplete
+                          className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${
+                            isComplete
                               ? hasRemanentes
                                 ? "border-amber-500/50"
                                 : "border-green-500/50"
                               : isEmpty
                                 ? "border-red-500/30"
                                 : "border-yellow-500/30"
-                            }`}
+                          }`}
                         >
                           <div className="mb-3 md:mb-4 pb-3 md:pb-4 border-b border-border">
                             <div className="flex items-start justify-between gap-2 mb-2">
@@ -1179,13 +1372,14 @@ export function JuradosAssignment() {
 
                               <div className="flex flex-col gap-1 items-end flex-shrink-0">
                                 <div className="px-2 md:px-3 py-1 rounded-full text-xs border bg-muted">
-                                  {juradosPrincipales.length}/{team.requiredJurados}
-                                  {hasAuxiliares && (
-                                    <span className="ml-1">
-                                      +{juradosAuxiliares.length}
-                                    </span>
-                                  )}
+                                  {team.jurados.length}/{team.requiredJurados}
                                 </div>
+
+                                {isColegioTeam(team) && (
+                                  <div className="px-2 py-1 rounded-full text-xs border border-blue-500/30 text-blue-500">
+                                    Colegio
+                                  </div>
+                                )}
 
                                 {hasRemanentes && (
                                   <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
@@ -1196,16 +1390,6 @@ export function JuradosAssignment() {
                                     <span className="md:hidden">Remanente</span>
                                   </div>
                                 )}
-
-                                {hasAuxiliares && (
-                                  <div className="px-2 py-1 rounded-full text-xs border flex items-center gap-1">
-                                    <Users className="w-3 h-3" />
-                                    <span className="hidden md:inline">
-                                      Con auxiliares
-                                    </span>
-                                    <span className="md:hidden">Aux.</span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1214,12 +1398,11 @@ export function JuradosAssignment() {
                             {team.jurados.map((jurado) => (
                               <div
                                 key={getAssignmentKey(team.id, jurado.id)}
-                                className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${jurado.rol === "auxiliar"
-                                    ? "bg-card border-cyan-500/30"
-                                    : jurado.tipo === "oficial"
-                                      ? "bg-card border-blue-500/30"
-                                      : "bg-card border-amber-500/30"
-                                  }`}
+                                className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${
+                                  jurado.tipo === "OFFICIAL"
+                                    ? "bg-card border-blue-500/30"
+                                    : "bg-card border-amber-500/30"
+                                }`}
                               >
                                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs md:text-sm font-medium flex-shrink-0">
                                   {getInitials(jurado.name)}
@@ -1231,19 +1414,12 @@ export function JuradosAssignment() {
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     <span className="hidden md:inline">
-                                      {jurado.specialty} •{" "}
-                                      {jurado.rol === "auxiliar"
-                                        ? "Auxiliar"
-                                        : jurado.tipo === "oficial"
-                                          ? "Oficial"
-                                          : "Remanente"}
+                                      {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                      {getJurorTypeLabel(jurado.tipo)}
                                     </span>
                                     <span className="md:hidden">
-                                      {jurado.rol === "auxiliar"
-                                        ? "Auxiliar"
-                                        : jurado.tipo === "oficial"
-                                          ? "Oficial"
-                                          : "Remanente"}
+                                      {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                      {getJurorTypeLabel(jurado.tipo)}
                                     </span>
                                   </div>
                                   <div className="text-[10px] md:text-xs text-muted-foreground truncate">
@@ -1253,12 +1429,26 @@ export function JuradosAssignment() {
 
                                 <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                   <button
-                                    onClick={() => void markJuradoAsAusent(jurado.id)}
+                                    onClick={() =>
+                                      openJuradoModal(team, false, {
+                                        currentJurorId: jurado.id,
+                                        currentJurorName: jurado.name,
+                                      })
+                                    }
                                     disabled={isSubmitting}
-                                    className="p-1.5 md:p-2 rounded-lg border hover:bg-accent transition-all disabled:opacity-50"
-                                    title="Marcar ausente"
+                                    className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                    title="Reasignar jurado"
                                   >
-                                    <UserX className="w-3 md:w-4 h-3 md:h-4" />
+                                    Reasignar
+                                  </button>
+
+                                  <button
+                                    onClick={() => void removeJuradoFromTeam(team.id, jurado.id)}
+                                    disabled={isSubmitting}
+                                    className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                    title="Desasignar jurado"
+                                  >
+                                    Quitar
                                   </button>
                                 </div>
                               </div>
@@ -1267,7 +1457,7 @@ export function JuradosAssignment() {
                             {Array.from({
                               length: Math.max(
                                 0,
-                                team.requiredJurados - juradosPrincipales.length
+                                team.requiredJurados - team.jurados.length
                               ),
                             }).map((_, idx) => (
                               <button
@@ -1281,18 +1471,6 @@ export function JuradosAssignment() {
                                 <span className="md:hidden">Agregar</span>
                               </button>
                             ))}
-
-                            {isComplete && (
-                              <button
-                                onClick={() => openJuradoModal(team, true)}
-                                disabled={isSubmitting}
-                                className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                              >
-                                <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
-                                <span className="hidden md:inline">Agregar Auxiliar</span>
-                                <span className="md:hidden">+ Auxiliar</span>
-                              </button>
-                            )}
                           </div>
                         </div>
                       );
@@ -1332,7 +1510,7 @@ export function JuradosAssignment() {
                               {jurado.name}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {jurado.specialty}
+                              {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
                             </div>
                           </div>
                         </div>
@@ -1380,7 +1558,7 @@ export function JuradosAssignment() {
                               {jurado.name}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {jurado.specialty}
+                              {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
                             </div>
                           </div>
                         </div>
@@ -1394,44 +1572,6 @@ export function JuradosAssignment() {
                     )}
                   </div>
                 </div>
-
-                {juradosAusentes.length > 0 && (
-                  <div>
-                    <h3 className="text-sm md:text-base mb-2 md:mb-3 flex items-center gap-1.5">
-                      <UserX className="w-4 md:w-5 h-4 md:h-5" />
-                      <span>Ausentes ({juradosAusentes.length})</span>
-                    </h3>
-
-                    <div className="space-y-1.5 md:space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                      {juradosAusentes.map((jurado) => (
-                        <div
-                          key={jurado.id}
-                          className="bg-card border border-border rounded-lg p-2 md:p-2.5 group"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-border grayscale flex items-center justify-center bg-muted text-[10px] md:text-xs font-medium">
-                              {getInitials(jurado.name)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[11px] md:text-xs font-medium truncate">
-                                {jurado.name}
-                              </div>
-                              <div className="text-muted-foreground text-[10px] md:text-xs">
-                                {jurado.tipo === "oficial" ? "Oficial" : "Remanente"}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => restoreJurado(jurado.id)}
-                              className="px-1.5 py-0.5 rounded border hover:bg-accent text-[10px] md:text-xs opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1488,7 +1628,6 @@ export function JuradosAssignment() {
                       title="Agregar jurado"
                     >
                       <UserPlus className="w-6 h-6" />
-                      
                     </button>
                   </div>
 
@@ -1512,9 +1651,14 @@ export function JuradosAssignment() {
                               Último ingreso: {formatDate(jurado.lastSignInAt)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Tipo: {jurado.tipo === "oficial" ? "Oficial" : "Remanente"} · Estado:{" "}
-                              {jurado.status === "disponible" ? "Disponible" : "Ausente"}
+                              Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
                             </div>
+
+                            {!jurado.jurorCategory && (
+                              <div className="mt-2 rounded-lg border border-yellow-500/30 px-3 py-2 text-xs text-yellow-600">
+                                Este jurado no puede asignarse hasta tener categoría JUNIOR/SENIOR.
+                              </div>
+                            )}
 
                             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div className="rounded-xl border border-border p-3">
@@ -1565,7 +1709,7 @@ export function JuradosAssignment() {
                                   onClick={() => handleEditJuror(jurado)}
                                   className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                                 >
-                                  Editor
+                                  Editar
                                 </button>
 
                                 <button
@@ -1585,19 +1729,12 @@ export function JuradosAssignment() {
                                 </button>
 
                                 <button
-                                  onClick={() => toggleJurorType(jurado.id)}
+                                  onClick={() => void toggleJurorType(jurado)}
                                   className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                                 >
-                                  {jurado.tipo === "oficial"
+                                  {jurado.tipo === "OFFICIAL"
                                     ? "Marcar como remanente"
                                     : "Marcar como oficial"}
-                                </button>
-
-                                <button
-                                  onClick={() => void markJuradoAsAusent(jurado.id)}
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
-                                >
-                                  Marcar ausente
                                 </button>
 
                                 <button
@@ -1632,11 +1769,16 @@ export function JuradosAssignment() {
                 <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
                   <div>
                     <h2 className="text-lg md:text-xl font-medium">
-                      {asignarComoAuxiliar ? "Agregar Auxiliar" : "Asignar Jurado"}
+                      {reassignContext ? "Reasignar Jurado" : "Asignar Jurado"}
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Equipo: {selectedTeam.name} · Videojuego: {selectedTeam.game}
                     </p>
+                    {reassignContext && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Reemplazando a: {reassignContext.currentJurorName}
+                      </p>
+                    )}
                   </div>
 
                   <button
@@ -1651,13 +1793,13 @@ export function JuradosAssignment() {
                   <div className="mb-4 rounded-xl border border-border bg-card p-4">
                     <div className="text-sm font-medium">{selectedTeam.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {
-                        selectedTeam.jurados.filter(
-                          (jurado) => !jurado.rol || jurado.rol === "principal"
-                        ).length
-                      }
-                      /{selectedTeam.requiredJurados} jurados principales
+                      {selectedTeam.jurados.length}/{selectedTeam.requiredJurados} jurados asignados
                     </div>
+                    {isColegioTeam(selectedTeam) && (
+                      <div className="mt-2 text-xs text-blue-500">
+                        Equipo de colegio: los jurados Junior no aparecerán como opción disponible.
+                      </div>
+                    )}
                   </div>
 
                   <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
@@ -1676,7 +1818,7 @@ export function JuradosAssignment() {
                             {jurado.email}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            Tipo: {jurado.tipo === "oficial" ? "Oficial" : "Remanente"}
+                            Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Último ingreso: {formatDate(jurado.lastSignInAt)}
@@ -1684,22 +1826,162 @@ export function JuradosAssignment() {
                         </div>
 
                         <button
-                          onClick={() => void addJuradoToTeam(selectedTeam.id, jurado)}
+                          onClick={() =>
+                            reassignContext
+                              ? void reassignJuradoOnTeam(
+                                  selectedTeam.id,
+                                  reassignContext.currentJurorId,
+                                  jurado
+                                )
+                              : void addJuradoToTeam(selectedTeam.id, jurado)
+                          }
                           disabled={isSubmitting}
                           className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 text-sm disabled:opacity-50"
                         >
                           <UserPlus className="w-4 h-4" />
-                          {asignarComoAuxiliar ? "Agregar Auxiliar" : "Asignar"}
+                          {reassignContext ? "Reasignar" : "Asignar"}
                         </button>
                       </div>
                     ))}
 
                     {juradosDisponiblesParaModal.length === 0 && (
                       <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-                        No hay jurados disponibles para asignar.
+                        No hay jurados disponibles para asignar. Recuerda que deben tener categoría JUNIOR/SENIOR.
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+          {showAllTeamsModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+              <div className="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                  <div>
+                    <h2 className="text-lg md:text-xl font-medium">Todos los equipos y jurados asignados</h2>
+                    <p className="text-sm text-muted-foreground">Vista completa de equipos cargados desde la base de datos.</p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowAllTeamsModal(false)}
+                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                <div className="p-4 md:p-6 max-h-[72vh] overflow-y-auto space-y-4">
+                  {teams.map((team) => (
+                    <div key={team.id} className="rounded-2xl border border-border bg-card p-4">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 border-b border-border pb-3 mb-3">
+                        <div>
+                          <div className="font-medium">{team.name}</div>
+                          <div className="text-sm text-muted-foreground">Videojuego: {team.game}</div>
+                          <div className="text-xs text-muted-foreground">Líder: {team.leaderName}</div>
+                        </div>
+                        <div className="rounded-full border px-3 py-1 text-xs w-fit">
+                          {team.jurados.length}/{team.requiredJurados} jurados
+                        </div>
+                      </div>
+
+                      {team.jurados.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">Este equipo no tiene jurados asignados.</div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {team.jurados.map((jurado) => (
+                            <div key={getAssignmentKey(team.id, jurado.id)} className="rounded-xl border border-border p-3">
+                              <div className="font-medium text-sm">{jurado.name}</div>
+                              <div className="text-xs text-muted-foreground truncate">{jurado.email}</div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {getJurorCategoryLabel(jurado.jurorCategory)} · {getJurorTypeLabel(jurado.tipo)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showAuditModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+              <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                  <div>
+                    <h2 className="text-lg md:text-xl font-medium">
+                      Historial de cambios manuales
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Registro de asignaciones, desasignaciones y reasignaciones.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowAuditModal(false)}
+                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                <div className="p-4 md:p-6 max-h-[70vh] overflow-y-auto space-y-3">
+                  {auditLogs.length === 0 ? (
+                    <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+                      No hay registros de auditoría.
+                    </div>
+                  ) : (
+                    auditLogs.map((log, index) => (
+                      <div
+                        key={log.id ?? index}
+                        className="rounded-xl border border-border bg-card p-4 text-sm"
+                      >
+                        <div className="font-medium">
+                          Acción: {normalizeAuditAction(String(log.action ?? ""))}
+                        </div>
+
+                        <div className="text-muted-foreground mt-1">
+                          Equipo: {getTeamNameById(log.teamId)}
+                        </div>
+
+                        <div className="text-muted-foreground">
+                          Jurado: {getJurorNameById(log.jurorId ?? log.newJurorId)}
+                        </div>
+
+                        {log.previousJurorId && (
+                          <div className="text-muted-foreground">
+                            Jurado anterior: {getJurorNameById(log.previousJurorId)}
+                          </div>
+                        )}
+
+                        {log.newJurorId && (
+                          <div className="text-muted-foreground">
+                            Jurado nuevo: {getJurorNameById(log.newJurorId)}
+                          </div>
+                        )}
+
+                        <div className="text-muted-foreground">
+                          Usuario que realizó el cambio: {getActorNameById(log.actorUserId)}
+                        </div>
+
+                        <div className="text-muted-foreground">
+                          Fecha: {formatDate(String(log.createdAt ?? log.creado_en ?? log.timestamp ?? ""))}
+                        </div>
+
+                        {log.notes && (
+                          <div className="text-muted-foreground mt-1">
+                            Nota: {String(log.notes)}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -1714,7 +1996,7 @@ export function JuradosAssignment() {
                       Agregar Nuevo Jurado
                     </h2>
                     <p className="text-muted-foreground text-sm md:text-base mt-2">
-                      Complete los datos del nuevo jurado.
+                      Complete todos los datos del nuevo jurado. La categoría y el tipo son obligatorios.
                     </p>
                   </div>
 
@@ -1727,9 +2009,9 @@ export function JuradosAssignment() {
                 </div>
 
                 <div className="px-5 pb-6 md:px-8 md:pb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
                     <label className="text-foreground text-sm md:text-base font-medium">
-                      Nombres
+                      Nombres *
                     </label>
                     <input
                       type="text"
@@ -1744,7 +2026,7 @@ export function JuradosAssignment() {
                     />
 
                     <label className="text-foreground text-sm md:text-base font-medium">
-                      Apellidos
+                      Apellidos *
                     </label>
                     <input
                       type="text"
@@ -1759,7 +2041,7 @@ export function JuradosAssignment() {
                     />
 
                     <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Correo electrónico
+                      Correo electrónico *
                     </label>
                     <input
                       type="email"
@@ -1772,6 +2054,42 @@ export function JuradosAssignment() {
                       }
                       className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
                     />
+
+                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                      Categoría *
+                    </label>
+                    <select
+                      value={createJurorForm.jurorCategory}
+                      onChange={(e) =>
+                        setCreateJurorForm((prev) => ({
+                          ...prev,
+                          jurorCategory: e.target.value as "" | JurorCategory,
+                        }))
+                      }
+                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      <option value="JUNIOR">Junior</option>
+                      <option value="SENIOR">Senior</option>
+                    </select>
+
+                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                      Tipo operativo *
+                    </label>
+                    <select
+                      value={createJurorForm.tipo}
+                      onChange={(e) =>
+                        setCreateJurorForm((prev) => ({
+                          ...prev,
+                          tipo: e.target.value as "" | JurorType,
+                        }))
+                      }
+                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Selecciona un tipo</option>
+                      <option value="OFFICIAL">Oficial</option>
+                      <option value="BACKUP">Remanente</option>
+                    </select>
                   </div>
 
                   <div className="flex justify-end gap-3 mt-8">
@@ -1860,6 +2178,42 @@ export function JuradosAssignment() {
                       disabled
                       className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base text-muted-foreground outline-none opacity-80"
                     />
+
+                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                      Categoría
+                    </label>
+                    <select
+                      value={editJurorForm.jurorCategory}
+                      onChange={(e) =>
+                        setEditJurorForm((prev) => ({
+                          ...prev,
+                          jurorCategory: e.target.value as "" | JurorCategory,
+                        }))
+                      }
+                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      <option value="JUNIOR">Junior</option>
+                      <option value="SENIOR">Senior</option>
+                    </select>
+
+                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                      Tipo operativo
+                    </label>
+                    <select
+                      value={editJurorForm.tipo}
+                      onChange={(e) =>
+                        setEditJurorForm((prev) => ({
+                          ...prev,
+                          tipo: e.target.value as "" | JurorType,
+                        }))
+                      }
+                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Selecciona un tipo</option>
+                      <option value="OFFICIAL">Oficial</option>
+                      <option value="BACKUP">Remanente</option>
+                    </select>
                   </div>
 
                   <div className="flex justify-end gap-3 mt-8">
