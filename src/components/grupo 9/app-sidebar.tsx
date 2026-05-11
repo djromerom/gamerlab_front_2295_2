@@ -45,11 +45,6 @@ const MENU: Record<Role, MenuItem[]> = {
         // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
         { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck, },
         { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings },
-        {
-          name: "Criterios de Calificación",
-          url: "/criterios",
-          icon: BookCheck,
-        },
         { name: "Tiebreaker", url: "/tiebreaker", icon: Trophy },
       ],
     },
