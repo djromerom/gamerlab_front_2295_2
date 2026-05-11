@@ -93,7 +93,7 @@ export default function StatisticsPage() {
           )}
 
           {/* Contenido principal */}
-          <div className="container mx-auto py-6 p-10">
+          <div className="w-full py-6 px-4 md:px-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
@@ -123,32 +123,32 @@ export default function StatisticsPage() {
             {/* Cards de Resumen */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
-                <CardHeader className="pb-2 pt-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-sm font-medium min-h-[2.5rem]">
                     Total de Videojuegos
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pb-4">
                   <div className="text-2xl font-bold">{totalVideojuegos}</div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2 pt-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-sm font-medium min-h-[2.5rem]">
                     Promedio General
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pb-4">
                   <div className="text-2xl font-bold">{promedioGeneral}</div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2 pt-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-sm font-medium min-h-[2.5rem]">
                     Progreso de Evaluación
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pb-2">
+                <CardContent className="pb-4">
                   <div className="text-2xl font-bold">
                     {totalEvaluaciones} / {totalJuradosAsignadosGeneral}
                   </div>
@@ -164,7 +164,7 @@ export default function StatisticsPage() {
             <div className="mb-6">
               <Tabs defaultValue="tabla" className="w-full">
                 <div className="flex flex-wrap items-center gap-4 mb-4">
-                  <TabsList>
+                  <TabsList className="flex-wrap h-auto">
                     <TabsTrigger
                       className="cursor-pointer hover:bg-accent"
                       value="tabla"
