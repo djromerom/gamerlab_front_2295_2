@@ -45,9 +45,9 @@ export default function StatisticsPage() {
   const promedioGeneral =
     totalVideojuegos > 0
       ? (
-          listaVideojuegos.reduce((acc, game) => acc + game.promedio, 0) /
-          totalVideojuegos
-        ).toFixed(2)
+        listaVideojuegos.reduce((acc, game) => acc + game.promedio, 0) /
+        totalVideojuegos
+      ).toFixed(2)
       : "0.00";
 
   const totalEvaluaciones = listaVideojuegos.reduce(
@@ -160,12 +160,11 @@ export default function StatisticsPage() {
               </Card>
             </div>
 
-            {/* Cuerpo Principal: Filtros y Tabs */}
-            <div className="grid grid-cols-12 gap-6 mb-6">
-              <FiltrosPanel />
-              <div className="col-span-12 md:col-span-9">
-                <Tabs defaultValue="tabla" className="w-full">
-                  <TabsList className="mb-4">
+            {/* Cuerpo Principal: Tabs con Filtros en la barra */}
+            <div className="mb-6">
+              <Tabs defaultValue="tabla" className="w-full">
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <TabsList>
                     <TabsTrigger
                       className="cursor-pointer hover:bg-accent"
                       value="tabla"
@@ -191,20 +190,21 @@ export default function StatisticsPage() {
                       Tabla de Jurados
                     </TabsTrigger>
                   </TabsList>
-                  <TabsContent value="tabla">
-                    <TablaResultados />
-                  </TabsContent>
-                  <TabsContent value="ranking">
-                    <TablaRanking />
-                  </TabsContent>
-                  <TabsContent value="graficos">
-                    <GraphicDisplay />
-                  </TabsContent>
-                  <TabsContent value={VALUE_Jurados}>
-                    <TablaPorJurado />
-                  </TabsContent>
-                </Tabs>
-              </div>
+                  <FiltrosPanel />
+                </div>
+                <TabsContent value="tabla">
+                  <TablaResultados />
+                </TabsContent>
+                <TabsContent value="ranking">
+                  <TablaRanking />
+                </TabsContent>
+                <TabsContent value="graficos">
+                  <GraphicDisplay />
+                </TabsContent>
+                <TabsContent value={VALUE_Jurados}>
+                  <TablaPorJurado />
+                </TabsContent>
+              </Tabs>
             </div>
 
             <DownloadReport />
