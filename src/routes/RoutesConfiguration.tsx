@@ -39,6 +39,7 @@ import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import GamePlayerPage from "@/pages/gamePlayer/GamePlayerPage";
 
 type Role =
   | "Profesor"
@@ -198,6 +199,10 @@ const routes: RouteConfig[] = [
     path: "/configuracion-evento",
     element: <EventConfigurationPage />,
     roles: ["Administrador"],
+  },
+  {
+    path: "/play-game",
+    element: <GamePlayerPage />,
   }
 ];
 
