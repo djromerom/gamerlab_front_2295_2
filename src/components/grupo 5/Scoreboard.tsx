@@ -10,7 +10,7 @@ import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import Review from "@/components/grupo 5/Review"
 
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
-import { useGlobalState } from "@/fetchs/GlobalStateContext"
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Team } from "@/pages/grupo 11/TeamsPage";
 import { date } from "zod"

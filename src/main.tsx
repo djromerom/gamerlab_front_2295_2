@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-import { GlobalStateProvider } from "./fetchs/GlobalStateContext.tsx";
+import { GlobalStateProvider } from "./fetchs/grupo 1/GlobalStateContext.tsx";
 import { TextSizeProvider } from "./contexts/TextSizeContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
