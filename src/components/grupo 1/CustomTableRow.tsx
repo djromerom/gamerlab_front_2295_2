@@ -5,7 +5,7 @@ import { useState } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+import { useGlobalState } from "@/fetchs/GlobalStateContext"; // Ajusta la ruta
 import { toast } from "sonner";
 
 interface CustomTableRowProps {
