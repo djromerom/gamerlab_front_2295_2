@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 type JurorType = "OFFICIAL" | "BACKUP";
 type JurorCategory = "JUNIOR" | "SENIOR";
 type DashboardFilter =
