@@ -5,7 +5,6 @@ import React, {
   useEffect,
   ReactNode,
   useMemo,
-  useRef,
 } from "react";
 import {
   LoginCredentials,
@@ -23,31 +22,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  // [MODIFICACIÓN]: Referencia para mantener el control del temporizador de refresco y poder detenerlo al cerrar sesión
-  // [AUTOR]: IA  |  [FECHA]: 2026-05-02
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  function stopHeartbeat() {
-    if (refreshIntervalRef.current) {
-      console.log("Heartbeat: Deteniendo el intervalo de refresco...");
-      clearInterval(refreshIntervalRef.current);
-      refreshIntervalRef.current = null;
-    }
-  }
-
-  function startHeartbeat() {
-    if (!refreshIntervalRef.current) {
-      console.log("Heartbeat: Iniciando el intervalo de refresco...");
-      refreshIntervalRef.current = setInterval(async () => {
-        console.log("Heartbeat: Refrescando sesión automáticamente para evitar expiración...");
-        await contextRefreshAccessToken().catch(() => {
-          console.warn("Heartbeat: Falló el refresco automático. Deteniendo reloj.");
-          stopHeartbeat();
-        });
-      }, 840000);
-    }
-  }
 
   const fetchProfile = async () => {
     try {
@@ -96,8 +70,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (data.accessToken && typeof data.accessToken === "string") {
         setAccessToken(data.accessToken);
         await fetchProfile();
-        // [MODIFICADO]: Iniciar o asegurar que el temporizador esté activo si tenemos sesión válida
-        startHeartbeat();
         return data.accessToken;
       } else {
         setUser(null);
@@ -108,11 +80,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         );
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes("status 401")) {
-        // No imprimimos error en rojo porque es normal (ej. primera carga sin estar logueado)
-      } else {
-        console.error("AuthContext: Failed to refresh access token:", error);
-      }
+      console.error("AuthContext: Failed to refresh access token:", error);
       setUser(null);
       setAccessToken(null);
       setLoading(false);
@@ -156,10 +124,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    // [MODIFICADO]: Se detiene explícitamente el temporizador de refresco antes de limpiar la sesión
-    // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
-    stopHeartbeat();
-
     try {
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
@@ -173,18 +137,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
-    // 1. Ejecución inmediata al cargar la app para intentar recuperar la sesión
-    const initSession = async () => {
+    // 1. Definimos la acción de refresco automático (latido)
+    const executeRefresh = async () => {
+      console.log(
+        "Heartbeat: Refrescando sesión automáticamente para evitar expiración...",
+      );
       await contextRefreshAccessToken().catch(() => {
-        // Silencioso, no pasa nada si no hay sesión inicial
+        console.warn(
+          "Heartbeat: No se pudo refrescar la sesión (posiblemente expiró el refresh token o no hay red).",
+        );
       });
     };
 
-    initSession();
+    // 2. Ejecución inmediata al cargar la app para asegurar un token fresco
+    executeRefresh();
 
-    // Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
+    // 3. Programamos el intervalo de 14 minutos (840000ms)
+    // Esto mantiene la sesión viva mientras la pestaña esté abierta
+    const intervalId = setInterval(executeRefresh, 840000);
+
+    // 4. Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
     return () => {
-      stopHeartbeat();
+      console.log("Heartbeat: Deteniendo el intervalo de refresco...");
+      clearInterval(intervalId);
     };
   }, []);
 
