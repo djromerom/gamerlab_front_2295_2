@@ -101,7 +101,7 @@ const SubjectsPage = () => {
     setPagination({ page: 1, limit });
   };
 
-  const breadcrumbs = [{ label: "Materias", href: "/subjects" }];
+  const breadcrumbs = [{ label: "Materias", href: "/materias" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>

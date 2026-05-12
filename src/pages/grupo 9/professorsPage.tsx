@@ -111,7 +111,7 @@ export const ProfessorsPage: React.FC = () => {
     setPagination({ page: 1, limit: newLimit });
   };
 
-  const breadcrumbs = [{ label: "Profesores", href: "/professors" }];
+  const breadcrumbs = [{ label: "Profesores", href: "/profesores" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>

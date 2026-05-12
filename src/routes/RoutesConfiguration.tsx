@@ -39,7 +39,6 @@ import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import { JuradosAssignment } from "@/pages/JuradosAssignment";
 
 type Role =
   | "Profesor"
@@ -71,7 +70,7 @@ const routes: RouteConfig[] = [
   {
     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-  },
+   },
   {
     path: "/equipos",
     element: <TeamsPage />,
@@ -79,11 +78,6 @@ const routes: RouteConfig[] = [
   {
     path: "/",
     element: <LandingPage />,
-  },
-  {
-    path: "/jurados-assignment",
-    element: <JuradosAssignment />,
-    roles: ["Administrador"],
   },
   {
     path: "/ranking",
@@ -134,6 +128,7 @@ const routes: RouteConfig[] = [
     element: <TeamsManagementPage />,
     roles: ["Administrador"],
   },
+
   {
     path: "/pendientes-calificar",
     element: <PendingGradesPage />,
@@ -144,6 +139,8 @@ const routes: RouteConfig[] = [
     element: <RatePage />,
     roles: ["Jurado"],
   },
+
+
   {
     path: "/colegios-calificar",
     element: <PendingSchoolGradesPage />,
@@ -156,10 +153,14 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/colegios-evaluados",
-    element: <SchoolGradesPage />,
+    element: < SchoolGradesPage />,
     roles: ["Profesor"],
   },
+
+
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
+
+  
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
@@ -202,7 +203,7 @@ const routes: RouteConfig[] = [
 
 const RoutesConfiguration: React.FC = () => {
   const { loading } = useAuth();
-
+  
   // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
   // Si el AuthContext aún está verificando la sesión (loading=true), 
   // mostramos una pantalla de carga elegante antes de procesar las rutas.
