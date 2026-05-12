@@ -46,7 +46,7 @@ export default function TiebreakerPage() {
 
       if (response.ok) {
         const data = await response.json();
-
+        
         const formattedTeams: Team[] = data.map((item: any) => ({
           id: item.id,
           teamName: item.nombre,
@@ -196,7 +196,7 @@ export default function TiebreakerPage() {
   return (
     <LayoutAplication
       breadcrumbs={[
-        //{ label: "Inicio", href: "/inicio" },
+        { label: "Inicio", href: "/inicio" },
         { label: "Tiebreaker", href: "/tiebreaker" },
       ]}
     >
@@ -258,7 +258,7 @@ export default function TiebreakerPage() {
                   Equipos Empatados ({tiedGroups.length} {tiedGroups.length === 1 ? 'grupo' : 'grupos'})
                 </h3>
               </div>
-
+              
               {tiedGroups.map(([score, tiedTeams]) => (
                 <div key={score} className="border rounded-lg p-4 bg-muted/30 relative">
                   <div className="flex items-center justify-between mb-3 pb-3 border-b">
