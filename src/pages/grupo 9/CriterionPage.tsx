@@ -100,7 +100,7 @@ const CriteriaPage = () => {
     setPagination({ page: 1, limit });
   };
 
-  const breadcrumbs = [{ label: "Criterios", href: "/criteria" }];
+  const breadcrumbs = [{ label: "Criterios", href: "/criterios" }];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
