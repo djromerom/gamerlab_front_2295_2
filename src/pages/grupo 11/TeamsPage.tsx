@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, X, ExternalLink, Users, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,14 @@ import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { toast, Toaster } from "sonner";
+import { useLikesSocket } from "@/hooks/useLikesSocket";
+import { useSocket } from "@/contexts/SocketContext";
 
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";
 
 export interface Team {
-  id: number;
+  id: number; // id del equipo
+  videogameId: number; // id real del videojuego
   gameName: string;
   teamName: string;
   teamCode: string;
@@ -49,6 +52,13 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTeamType, setActiveTeamType] = useState<string>("all");
   const customFetch = useFetch();
+
+  // Initial REST snapshot - syncs only the first time it loads
+  const initialLikes = useMemo(
+    () => Object.fromEntries(teams.map((t) => [t.videogameId, t.likes ?? 0])),
+    [teams],
+  );
+  const liveLikes = useLikesSocket(initialLikes);
   const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
   // Función para mapear estados numéricos o strings a los valores correctos
@@ -87,12 +97,12 @@ export default function TeamsPage() {
 
   const fetchTeams = async () => {
     setLoading(true);
-    
+
     try {
       // Intentar obtener equipos desde el endpoint de teams primero
       let rawData = [];
       let videogamesData = [];
-      
+
       try {
         const teamsRes = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams?sortByLikes=true`,
@@ -109,7 +119,7 @@ export default function TeamsPage() {
           throw new Error(`Teams endpoint failed: ${teamsRes.status}`);
         }
       } catch (teamsError) {
-        
+
         // Fallback: obtener desde videogames y luego equipos por separado
         const videogamesRes = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames`,
@@ -119,9 +129,9 @@ export default function TeamsPage() {
             headers: { "Content-Type": "application/json" },
           }
         );
-        
+
         videogamesData = await videogamesRes.json();
-        
+
         // Ahora intentamos obtener información de equipos para el campo isExternal
         try {
           const teamsInfoRes = await customFetch(
@@ -132,10 +142,10 @@ export default function TeamsPage() {
               headers: { "Content-Type": "application/json" },
             }
           );
-          
+
           if (teamsInfoRes.ok) {
             const teamsInfo = await teamsInfoRes.json();
-            
+
             // Mapear videogames con información de equipos
             rawData = videogamesData.map((videogame: any) => {
               const teamInfo = teamsInfo.find((t: any) => t.id === videogame.teamId || t.videogame?.id === videogame.id);
@@ -163,41 +173,44 @@ export default function TeamsPage() {
       }
 
       // Los miembros ya vienen incluidos en los datos de teams desde el backend
-      
+
       const data: Team[] = rawData.map((item: any) => {
         // FALLBACK: Imágenes de ejemplo para equipos de prueba (cuando no hay additionalImages del backend)
         let fallbackImages: string[] = [];
-        
+
         // Determinar si los datos vienen del endpoint de teams o videogames
         const isFromTeamsEndpoint = item.videogame !== undefined;
         const team = isFromTeamsEndpoint ? item : item;
         const videogame = isFromTeamsEndpoint ? item.videogame || {} : item;
-        const likeCount = videogame.likes;
-        
+        // Likes come from the relation count (_count.likedBy) — no denormalized field
+        const likeCount = videogame._count?.likedBy ?? 0;
+
         // Determinar el estado del equipo
         const statusField = team.videogame?.videogameStatusId || videogamesData.find((vg: any) => vg.teamId === team.id)?.videogameStatusId;
         const mappedStatus = mapStatusToString(statusField);
-        
+
         // Obtener integrantes que ya vienen incluidos en los datos del equipo
         const teamMembers = team.members || [];
-        
+
         // Usar el campo isExternal del backend (campo 'isExternal' o 'externo' de la tabla equipos)
         const isExternal = Boolean(team.isExternal || team.externo);
-        
+
+        const resolvedVideogameId = videogame.id ?? item.id;
+
         return {
           id: team.id,
+          videogameId: resolvedVideogameId,
           gameName: videogame.name || team.teamName || "Sin nombre",
-          teamName: team.teamName || "Sin equipo", 
+          teamName: team.teamName || "Sin equipo",
           status: mappedStatus,
           video: videogame.videoUrl || videogame.video_url,
           repo: videogame.repoUrl || videogame.repo_url,
           teamCode: team.teamCode || team.code || "",
           members: teamMembers.map((m: any) => {
-            // Probar diferentes nombres de campos para nombre y apellido
             const firstName = m.firstName || m.nombre || m.first_name || '';
             const lastName = m.lastName || m.apellido || m.last_name || '';
             const fullName = `${firstName} ${lastName}`.trim();
-            
+
             return fullName || 'Sin nombre';
           }),
           description: videogame.descripcion || videogame.description || "Sin descripción disponible.",
@@ -207,10 +220,10 @@ export default function TeamsPage() {
           likes: likeCount || 0,
         };
       });
-      
+
       // Filtrar equipos rechazados - solo mostrar pendientes y confirmados
       const teamsToShow = data.filter(team => team.status !== "RECHAZADO");
-      
+
       setTeams(teamsToShow);
     } catch (error) {
       setTeams([]);
@@ -259,8 +272,8 @@ export default function TeamsPage() {
             <button
               onClick={() => setActiveTeamType("all")}
               className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
-                  ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+                ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
+                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
             >
               Todos ({teams.length})
@@ -268,8 +281,8 @@ export default function TeamsPage() {
             <button
               onClick={() => setActiveTeamType("uninorte")}
               className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+                ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
+                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
             >
               Uninorte ({teams.filter(t => !t.isExternal).length})
@@ -277,8 +290,8 @@ export default function TeamsPage() {
             <button
               onClick={() => setActiveTeamType("externo")}
               className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
-                  ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
+                ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
+                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
             >
               Externos ({teams.filter(t => t.isExternal).length})
@@ -294,7 +307,12 @@ export default function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} onRefresh={fetchTeams} />
+                <TeamCard
+                  key={team.id}
+                  team={team}
+                  onRefresh={fetchTeams}
+                  liveLikeCount={liveLikes[team.videogameId] ?? team.likes ?? 0}
+                />
               ))}
             </div>
           )}
@@ -344,6 +362,7 @@ function Filters({ onFilter, initialFilter }: FiltersProps) {
 interface TeamCardProps {
   team: Team;
   onRefresh: () => void;
+  liveLikeCount: number;
 }
 
 // Función para extraer el semestre del código de equipo
@@ -353,7 +372,7 @@ const getSemesterFromTeamCode = (teamCode?: string): string | null => {
   return match ? match[1] : null;
 };
 
-function TeamCard({ team, onRefresh }: TeamCardProps) {
+function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const getStatusInfo = (status: TeamStatus) => {
@@ -386,8 +405,8 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
         <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-auto min-h-[180px] md:h-52">
           {/* Badge de tipo de equipo */}
           <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
-              ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
-              : "bg-green-500/20 text-green-300 border border-green-400/30"
+            ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
+            : "bg-green-500/20 text-green-300 border border-green-400/30"
             }`}>
             {!team.isExternal ? "Uninorte" : "Externo"}
           </div>
@@ -414,17 +433,20 @@ function TeamCard({ team, onRefresh }: TeamCardProps) {
               </div>
             </div>
           </CardContent>
-          {team.likes !== undefined && (
-            <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
-              <Heart size={20} fill="currentColor" />
-              <span className="text-sm font-bold">{team.likes}</span>
-            </div>
-          )}
+          <div className="absolute flex justify-center bottom-9 right-7 gap-1 text-red-400">
+            <Heart size={20} fill="currentColor" />
+            <span className="text-sm font-bold">{liveLikeCount}</span>
+          </div>
         </Card>
       </motion.div>
 
       {isOpen && (
-        <GameDetailModal team={team} onClose={() => setIsOpen(false)} onRefresh={onRefresh} />
+        <GameDetailModal
+          team={team}
+          onClose={() => setIsOpen(false)}
+          onRefresh={onRefresh}
+          liveCount={liveLikeCount}
+        />
       )}
     </>
   );
@@ -551,8 +573,8 @@ function MediaCarousel({ video, images }: MediaCarouselProps) {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${index === currentIndex
-                    ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
-                    : 'opacity-70 hover:opacity-100'
+                  ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
+                  : 'opacity-70 hover:opacity-100'
                   }`}
               >
                 {item.type === 'video' ? (
@@ -588,45 +610,81 @@ interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
   onRefresh: () => void;
+  liveCount?: number;
 }
 
-function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
+function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModalProps) {
   const customFetch = useFetch();
+  const { user } = useAuth();
+  const { socket } = useSocket();
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(team.likes || 0);
+  const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
 
-  // Check if the game is already liked on component mount
+  // Synchronize the like heart icon across multiple tabs for the same user
   useEffect(() => {
-    const visitorId = localStorage.getItem('visitor_id');
-    if (!visitorId) {
+    if (!socket || !user) return;
+    const handleLikesUpdated = (payload: any) => {
+      if (
+        payload.videogameId === team.videogameId &&
+        payload.triggerUserId === user.id &&
+        payload.liked !== undefined
+      ) {
+        setIsLiked(payload.liked);
+      }
+    };
+    socket.on('likes:updated', handleLikesUpdated);
+    return () => {
+      socket.off('likes:updated', handleLikesUpdated);
+    };
+  }, [socket, user, team.videogameId]);
+
+  // Keep the counter in sync with the parent's WebSocket map
+  useEffect(() => {
+    if (liveCount !== undefined) {
+      setLikesCount(liveCount);
+    }
+  }, [liveCount]);
+
+  // Check if the game is already liked on component mount.
+  // Only meaningful when the user has a session — guests can't like.
+  useEffect(() => {
+    if (!user) {
       setIsLiked(false);
       return;
     }
-    setIsLiked(false);
-  }, [team.id]);
+
+    //Get the like status of the current user
+    customFetch(
+      `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.videogameId}/my-like`,
+      { method: "GET", credentials: "include" },
+    )
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((data: { liked: boolean }) => setIsLiked(data.liked))
+      .catch(() => setIsLiked(false));
+  }, [team.videogameId, user]);
 
   const handleClose = () => {
     onRefresh(); // Refresh the teams data to get updated like counts
     onClose(); // Close the modal
   };
-  
+
   const toggleLike = async () => {
+    // Only authenticated users can like
+    if (!user) {
+      toast.info("¡Inicia sesión para dar like!", { id: "like-auth" });
+      return;
+    }
+
     if (isTogglingLike) return;
     setIsTogglingLike(true);
     try {
-      let visitorId = localStorage.getItem('visitor_id');
-      if (!visitorId) {
-        visitorId = crypto.randomUUID();
-        localStorage.setItem('visitor_id', visitorId);
-      }
       const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.id}/toggle-like`,
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.videogameId}/toggle-like`,
         {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitorId }),
         }
       );
       if (response.status === 201 || response.status === 200) {
@@ -635,6 +693,8 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         if (data.likeCount !== undefined) {
           setLikesCount(data.likeCount);
         }
+      } else if (response.status === 401) {
+        toast.info("Tu sesión expiró. Inicia sesión de nuevo.", { id: "like-auth" });
       } else if (response.status === 409) {
         setIsLiked(true);
       } else if (response.status === 400) {
@@ -642,12 +702,13 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
         const description = errorData.message.includes("20 likes")
           ? "Este juego no puede recibir más de 20 likes sin video o fotos adicionales."
           : errorData.message.includes("10 likes")
-          ? "Este juego no puede recibir más de 10 likes sin logo."
-          : "Error al procesar el like. Intenta de nuevo.";
+            ? "Este juego no puede recibir más de 10 likes sin logo."
+            : "Error al procesar el like. Intenta de nuevo.";
         console.error('Failed to toggle like:', errorData.message);
         toast.error(description, { id: 1 });
       } else {
-        console.error('Failed to toggle like:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to toggle like:', response.status, errorData);
         toast.error("Error al procesar el like. Intenta de nuevo.", { id: 1 });
       }
     } catch (error) {
@@ -659,48 +720,50 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
   };
 
   return (
-  <>
-    <Toaster
-      richColors={false}
-      toastOptions={{
-        unstyled: true,
-        classNames: {
-          error: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
-        },
-      }} />
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+    <>
+      <Toaster
+        position="bottom-center"
+        richColors={false}
+        toastOptions={{
+          unstyled: true,
+          classNames: {
+            error: 'bg-[var(--toast-error)] border border-rose-800 w-[356px] text-foreground flex flex-justify gap-2 items-center px-3 py-3 rounded-md shadow-md',
+            info: 'bg-[#181a20] border border-[#AC7CFF] w-[356px] text-white flex gap-3 items-center px-4 py-3 rounded-xl shadow-[0_0_20px_rgba(172,124,255,0.3)] font-medium',
+          },
+        }} />
+      <AnimatePresence>
         <motion.div
-          className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[85vh] md:h-[600px] max-h-[85vh] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 120, damping: 12 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          {/* Botón X de cerrar - Oculto en móvil */}
-          <button
-            onClick={handleClose}
-            className="cursor-pointer hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+          <motion.div
+            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[85vh] md:h-[600px] max-h-[85vh] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 120, damping: 12 }}
           >
-            <X className="w-6 h-6" />
-          </button>
+            {/* Botón X de cerrar - Oculto en móvil */}
+            <button
+              onClick={handleClose}
+              className="cursor-pointer hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
 
-          {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
-          <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
-            <MediaCarousel
-              video={team.video}
-              images={team.additionalImages || []}
-            />
-          </div>
+            {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
+            <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
+              <MediaCarousel
+                video={team.video}
+                images={team.additionalImages || []}
+              />
+            </div>
 
-          {/* 🧾 Información del equipo */}
-          <div className="w-full md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
-            <div className="p-4 pt-4 md:p-6 md:pt-6 overflow-y-auto flex-1
+            {/* 🧾 Información del equipo */}
+            <div className="w-full md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+              <div className="p-4 pt-4 md:p-6 md:pt-6 overflow-y-auto flex-1
               [&::-webkit-scrollbar]:w-2 pr-2
               [&::-webkit-scrollbar-track]:rounded-full
               [&::-webkit-scrollbar-track]:bg-gray-800
@@ -708,109 +771,108 @@ function GameDetailModal({ team, onClose, onRefresh }: GameDetailModalProps) {
               [&::-webkit-scrollbar-thumb]:bg-[#AC7CFF]/50
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
 
-              <div className="space-y-4">
-                <div className="flex justify-center mb-2 md:mb-4">
-                  <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
-                    {team.logo ? (
-                      <img
-                        src={team.logo}
-                        alt={`${team.teamName} logo`}
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] flex items-center justify-center">
-                        <span className="text-white font-bold text-4xl">
-                          {team.gameName.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                <div className="space-y-4">
+                  <div className="flex justify-center mb-2 md:mb-4">
+                    <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
+                      {team.logo ? (
+                        <img
+                          src={team.logo}
+                          alt={`${team.teamName} logo`}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#AC7CFF] to-[#7C3AED] flex items-center justify-center">
+                          <span className="text-white font-bold text-4xl">
+                            {team.gameName.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>       
-                <div className="flex row justify-between gap-3.5">
-                  <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
-                    {team.gameName}
-                  </h2>
-                  {/* Like Button */}
-                  <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
-                    <button
-                      onClick={toggleLike}
-                      disabled={isTogglingLike}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-300 ${
-                        isLiked 
-                          ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30' 
+                  <div className="flex row justify-between gap-3.5">
+                    <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
+                      {team.gameName}
+                    </h2>
+                    {/* Like Button */}
+                    <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
+                      <button
+                        onClick={toggleLike}
+                        disabled={isTogglingLike}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-300 ${isLiked
+                          ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30'
                           : 'bg-gray-500/20 text-gray-400 border border-gray-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30'
-                      } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <Heart
+                          size={20}
+                          fill={isLiked ? "currentColor" : "none"}
+                          className={`transition-all duration-300 ${isTogglingLike ? 'animate-pulse' : ''}`}
+                        />
+                        <span className="font-medium">
+                          {isTogglingLike ? '...' : likesCount}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Equipo:{" "}
+                    <span className="text-white font-semibold">
+                      {team.teamName}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Estado:{" "}
+                    <span className="capitalize text-gray-200">{team.status}</span>
+                  </p>
+
+                  <div className="mt-2">
+                    <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-3">
+                      {team.description || "Sin descripción disponible."}
+                    </p>
+                  </div>
+
+                  {team.members && team.members.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-5 h-5 text-[#AC7CFF]" />
+                        <h4 className="text-lg font-semibold">Integrantes</h4>
+                      </div>
+                      <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                        {team.members.map((member, index) => (
+                          <li key={index}>{member}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* 🔗 Botones */}
+                  <div className="flex flex-col items-center gap-3 mt-8 pb-4 pr-4">
+                    {team.repo && (
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(team.repo, "_blank")}
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Ver repositorio en GitHub
+                      </Button>
+                    )}
+
+                    {/* Botón Cerrar - Solo visible en móvil */}
+                    <button
+                      onClick={handleClose}
+                      className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
                     >
-                      <Heart 
-                        size={20} 
-                        fill={isLiked ? "currentColor" : "none"} 
-                        className={`transition-all duration-300 ${isTogglingLike ? 'animate-pulse' : ''}`}
-                      />
-                      <span className="font-medium">
-                        {isTogglingLike ? '...' : likesCount}
-                      </span>
+                      Cerrar
                     </button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400 mb-3">
-                  Equipo:{" "}
-                  <span className="text-white font-semibold">
-                    {team.teamName}
-                  </span>
-                </p>
-                <p className="text-sm text-gray-400 mb-4">
-                  Estado:{" "}
-                  <span className="capitalize text-gray-200">{team.status}</span>
-                </p>
-
-                <div className="mt-2">
-                  <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed mb-3">
-                    {team.description || "Sin descripción disponible."}
-                  </p>
-                </div>
-
-                {team.members && team.members.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-5 h-5 text-[#AC7CFF]" />
-                      <h4 className="text-lg font-semibold">Integrantes</h4>
-                    </div>
-                    <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
-                      {team.members.map((member, index) => (
-                        <li key={index}>{member}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* 🔗 Botones */}
-                <div className="flex flex-col items-center gap-3 mt-8 pb-4 pr-4">
-                  {team.repo && (
-                    <Button
-                      variant="outline"
-                      onClick={() => window.open(team.repo, "_blank")}
-                      className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Ver repositorio en GitHub
-                    </Button>
-                  )}
-
-                  {/* Botón Cerrar - Solo visible en móvil */}
-                  <button
-                    onClick={handleClose}
-                    className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
-                  >
-                    Cerrar
-                  </button>
-                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </AnimatePresence>
     </>
   );
 }

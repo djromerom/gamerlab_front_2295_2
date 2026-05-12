@@ -68,8 +68,8 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  { // Disabled temporarily
-     path: "/registro-equipo",
+  {
+    path: "/registro-equipo",
     element: <TeamRegisterPage />,
    },
   {

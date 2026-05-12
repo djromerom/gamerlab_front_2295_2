@@ -62,8 +62,6 @@ export default function TeamWizardForm(props: any) {
   const [pendingDeleteIdx, setPendingDeleteIdx] = useState<number | null>(null);
   const [isDeletingMember, setIsDeletingMember] = useState(false);
   const [savingAllMembers, setSavingAllMembers] = useState(false);
-  const [currentLikes, setCurrentLikes] = useState<number>(0);
-  const [likesInput, setLikesInput] = useState<string>("");
 
   // Generador de códigos estudiantiles (colegio) similar al submitTeamsAdmin
   const randomStudentCode = (() => {
@@ -77,107 +75,6 @@ export default function TeamWizardForm(props: any) {
       return String(n);
     };
   })();
-
-  // Get current likes for the videogame
-  async function getCurrentLikes() {
-    const mode = methods.getValues("mode");
-    if (mode !== "edit") return;
-
-    const teamId = 
-      methods.getValues("id_equipo") ||
-      methods.getValues("id") ||
-      methods.getValues("team_id") ||
-      methods.getValues("teamId") ||
-      props?.initialData?.id_equipo ||
-      props?.initialData?.id ||
-      null;
-
-    if (!teamId) return;
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/teams/${teamId}/full`, {
-        method: 'GET',
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const likes = data?.videogame?.likes || 0;
-        setCurrentLikes(likes);
-        setLikesInput(String(likes));
-      }
-    } catch (error) {
-      console.error('Error fetching current likes:', error);
-    }
-  }
-
-  // Update likes for the videogame (separate from form submission)
-  const updateLikes = useCallback(async () => {
-    if (!likesInput || likesInput.trim() === "") {
-      return; // No likes to update
-    }
-
-    const likesValue = parseInt(likesInput) || 0;
-    
-    // Skip if likes value hasn't changed
-    if (likesValue === currentLikes) {
-      return;
-    }
-
-    // Get videogame ID from team data
-    const teamId = 
-      methods.getValues("id_equipo") ||
-      methods.getValues("id") ||
-      methods.getValues("team_id") ||
-      methods.getValues("teamId") ||
-      props?.initialData?.id_equipo ||
-      props?.initialData?.id ||
-      null;
-
-    if (!teamId) {
-      console.error('No team ID found for likes update');
-      return;
-    }
-
-    try {
-      // Get team data to find videogame ID
-      const teamResponse = await fetch(`${apiBaseUrl}/teams/${teamId}/full`, {
-        method: 'GET',
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!teamResponse.ok) {
-        throw new Error('Failed to fetch team data for likes update');
-      }
-
-      const teamData = await teamResponse.json();
-      const videogameId = teamData?.videogame?.id_videojuego || teamData?.videogame?.id;
-
-      if (!videogameId) {
-        console.error('No videogame ID found for likes update');
-        return;
-      }
-
-      // Make PUT request to update likes
-      const response = await fetch(`${apiBaseUrl}/videogames/${videogameId}/likes`, {
-        method: 'PUT',
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ likes: likesValue }),
-      });
-
-      if (response.ok) {
-        setCurrentLikes(likesValue);
-      } else {
-        const errorText = await response.text();
-        console.error('Error updating likes:', errorText);
-      }
-    } catch (error) {
-      console.error('Error updating likes:', error);
-    }
-  }, [likesInput, currentLikes, methods, props?.initialData]);
 
   function buildNrcArray(member: any): string[] {
     const isExternalTeam = !!methods.getValues("isExternal");
@@ -269,7 +166,7 @@ export default function TeamWizardForm(props: any) {
         }
         const body = buildMemberPayload(m);
         const url = `${apiBaseUrl}/teams/${teamId}/member`;
-  
+
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -281,11 +178,11 @@ export default function TeamWizardForm(props: any) {
           try {
             const j = await res.json();
             msg = j?.message || msg;
-          } catch {}
-            toast.error(msg);
-            setEditingIndex(i);
-            setSavingAllMembers(false);
-            return;
+          } catch { }
+          toast.error(msg);
+          setEditingIndex(i);
+          setSavingAllMembers(false);
+          return;
         }
         const data = await res.json().catch(() => ({}));
         const newId = data?.member?.id || data?.id || data?.memberId;
@@ -403,7 +300,7 @@ export default function TeamWizardForm(props: any) {
             try {
               const errJson = await res.json();
               errMsg = errJson?.message || errMsg;
-            } catch {}
+            } catch { }
             toast.error(errMsg);
             return;
           }
@@ -431,18 +328,6 @@ export default function TeamWizardForm(props: any) {
     }
   }
 
-  // Load current likes when component mounts or when in edit mode
-  useEffect(() => {
-    getCurrentLikes();
-  }, [methods.watch("mode")]);
-
-  // Pass updateLikes function to parent component
-  useEffect(() => {
-    if (props.setUpdateLikesFunction) {
-      props.setUpdateLikesFunction(updateLikes);
-    }
-  }, [props.setUpdateLikesFunction, updateLikes]);
-
   return (
     <form
       onSubmit={async (e) => {
@@ -461,7 +346,7 @@ export default function TeamWizardForm(props: any) {
         methods.setValue("videojuego._remove_gallery", [], { shouldDirty: false });
 
         try {
-          // Enviar el formulario (backend) - updateLikes will be called after success
+          // Enviar el formulario (backend)
           await handleFormSubmit(e);
         } catch (err) {
           console.error("Error submitting form:", err);
@@ -719,16 +604,6 @@ export default function TeamWizardForm(props: any) {
                   );
                 })()}
               </div>
-            </div>
-
-            <div className="flex flex-col gap-1 sm:w-1/3">
-              <Label>Likes</Label>
-              <Input 
-                inputMode="numeric" 
-                placeholder={currentLikes > 0 ? String(currentLikes) : "0"} 
-                value={likesInput}
-                onChange={(e) => setLikesInput(e.target.value.replace(/\D/g, ""))}
-              />
             </div>
           </div>
         </div>

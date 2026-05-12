@@ -7,8 +7,10 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
 
   let response = await fetch(url, defaultOptions);
 
-  // 2. Interceptor de error 401 (Sesión expirada)
-  if (response.status === 401) {
+  // [MODIFICADO]: Se agregó una condición para ignorar los endpoints de autenticación y evitar bucles infinitos en el login/logout
+  // [ANTES]: if (response.status === 401) {
+  const isAuthRoute = url.includes("/auth/");
+  if (response.status === 401 && !isAuthRoute) {
     console.warn("401 detectado. Intentando refrescar sesión automáticamente...");
     try {
       // Intentamos renovar el token llamando al endpoint de refresh
