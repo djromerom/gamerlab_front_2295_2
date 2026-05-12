@@ -4,7 +4,7 @@ import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGlobalState } from "@/fetchs/GlobalStateContext"
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 
 interface VideogameDetails {
   videogameId: number;
