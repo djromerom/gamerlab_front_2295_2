@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, user, loading } = useAuth();
   const navigate = useNavigate();
-  
+
   // Redirect to home if user is already authenticated
   useEffect(() => {
     if (!loading && user) {
@@ -40,7 +40,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [ show, setShow ] = useState(false);
+  const [show, setShow] = useState(false);
 
   const handleLogIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -117,13 +117,30 @@ export default function LoginPage() {
               ¡Hola, qué bien que estés de vuelta!
             </CardTitle>
             <CardDescription className="text-sm sm:text-[15px] mt-2">
-              Introduce tu correo electrónico para acceder a tu cuenta
+              Si eres usuario Uninorte, puedes:
             </CardDescription>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2 cursor-pointer"
+              onClick={outlookLogin}
+              disabled={isSubmitting}
+            >
+              <img
+                src="/assets/Microsoft_icon.svg"
+                alt="Microsoft Icon"
+                className="h-5 w-5"
+              />
+              Iniciar Sesión con Outlook
+            </Button>
           </CardHeader>
 
           <CardContent className="w-full p-0">
             <form onSubmit={handleLogIn}>
               <div className="flex flex-col gap-3 sm:gap-4 items-center w-full">
+                <CardDescription className="text-sm sm:text-[15px] mt-2">
+                  O inicia sesión con tu correo electrónico
+                </CardDescription>
                 <div className="flex flex-col w-full items-start gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -151,9 +168,9 @@ export default function LoginPage() {
                       className="w-full"
                     />
                     <button type="button"
-                          onClick={() => setShow(!show)}
-                          className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
-                            {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                      onClick={() => setShow(!show)}
+                      className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                      {show ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
 
@@ -176,34 +193,16 @@ export default function LoginPage() {
                     </Button>
                   )}
                 </div>
-                <CardDescription className="text-sm sm:text-[15px] mt-2">
-                   Si eres usuario Uninorte, puedes:
-                </CardDescription>
-               
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full mt-2 cursor-pointer"
-                  onClick={outlookLogin}
-                  disabled={isSubmitting}
-                >
-                  <img
-                    src="/assets/Microsoft_icon.svg"
-                    alt="Microsoft Icon"
-                    className="h-5 w-5"
-                  />
-                  Iniciar Sesión con Outlook
-                </Button>
               </div>
             </form>
           </CardContent>
           <CardFooter className="w-full justify-center p-0 mt-2 sm:mt-4 text-center">
-              <Link
-                to="/OlvidastePassword"
-                className="text-[#B3C7FF] hover:text-[#8a70ff] text-sm sm:text-[15px]"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
+            <Link
+              to="/OlvidastePassword"
+              className="text-[#B3C7FF] hover:text-[#8a70ff] text-sm sm:text-[15px]"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
           </CardFooter>
         </Card>
         <TextSizeControls />
