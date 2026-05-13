@@ -5,6 +5,7 @@ import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
 import { Team } from "../../types/Team";
@@ -21,6 +22,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
   const customFetch = useFetch();
   const { user } = useAuth();
   const { socket } = useSocket();
+  const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
@@ -262,6 +264,13 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                         Ver repositorio en GitHub
                       </Button>
                     )}
+
+                    <Button
+                      onClick={() => navigate(`/play-game/${team.videogameId}`)}
+                      className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
+                    >
+                      Jugar
+                    </Button>
 
                     {/* Botón Cerrar - Solo visible en móvil */}
                     <button

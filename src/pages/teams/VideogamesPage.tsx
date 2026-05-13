@@ -6,11 +6,11 @@ import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { useLikesSocket } from "@/hooks/useLikesSocket";
-import { Team, TeamStatus } from "../../types/Team";
+import { Team, TeamStatus } from "@/types/Team";
 import { TeamCard } from "@/components/videogamePage/TeamCard";
 import { Filters } from "@/components/videogamePage/Filters";
 
-export default function TeamsPage() {
+export default function VideogamesPage() {
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
