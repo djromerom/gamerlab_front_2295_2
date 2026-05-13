@@ -16,8 +16,8 @@ function Landing(): React.ReactElement {
   const [eventEnded, setEventEnded] = useState<boolean>(false)
   const [showConfetti, setShowConfetti] = useState<boolean>(false)
   const [confettiFadingOut, setConfettiFadingOut] = useState<boolean>(false)
-  const startDate = new Date("2025-11-27T08:30:00")
-  const endDate = new Date("2025-11-27T12:30:00") 
+  const startDate = new Date("2026-05-28T08:00:00")
+  const endDate = new Date("2026-05-28T12:00:00")
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
