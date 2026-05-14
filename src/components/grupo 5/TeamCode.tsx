@@ -52,16 +52,30 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
 
     }, [user?.id, teams]);
 
-
-
+    // [MODIFICACIÓN]: Función para extraer y mostrar solo el tercer fragmento (XXX) del código
+    // si el usuario pertenece a un equipo "NO colegio" (formato NY-AAA-XXX).
+    // [AUTOR]: IA  |  [FECHA]: 2026-05-12
+    const formatDisplayTeamCode = (code?: string) => {
+        if (!code) return "Cargando...";
+        const isUniversityTeam = /^[Nn]\d+-/.test(code);
+        if (isUniversityTeam) {
+            const parts = code.split("-");
+            if (parts.length >= 3) {
+                return parts[2];
+            }
+        }
+        return code;
+    };
 
     if (variant === "default") {
         return (
             <div className="flex justify-start ml-0 m-4 min-w-[350px]">
                 <div className="flex justify-between gap-3 rounded-2xl p-0 text-xl border-2 border-border bg-card">
                     <p className="pl-4 p-2 font-semibold text-base text-foreground">Codigo del equipo:</p>
+                    {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
+                    {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
-                        {team?.teamCode ?? "Cargando..."}
+                        {formatDisplayTeamCode(team?.teamCode)}
                     </p>
                 </div>
             </div>
@@ -73,8 +87,10 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                     <h1 className="font-bold tracking-tighter">Equipo</h1>
                 </div>
                 <div className="flex justify-center ">
+                    {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
+                    {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl p-5 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
-                        {team?.teamCode ?? "Cargando..."}
+                        {formatDisplayTeamCode(team?.teamCode)}
                     </p>
                 </div>
             </div>
