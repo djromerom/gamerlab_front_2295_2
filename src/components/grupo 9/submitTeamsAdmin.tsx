@@ -83,18 +83,11 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     const emailMessages: string[] = [];
     (data.integrantes || []).forEach((m: any, idx: number) => {
       const correo = (m?.correo || "").trim();
-      if (!isValidEmail(correo) && data.isExternal === true) {
+      if (!isValidEmail(correo)) {
         const msg = "Ingresa un correo válido";
         methods.setError(`integrantes.${idx}.correo`, { type: "client", message: msg });
         emailMessages.push(`Miembro ${idx + 1}: ${msg}`);
         return;
-      }
-      if (data.isExternal === false) {
-        if (!correo.toLowerCase().endsWith("@uninorte.edu.co")) {
-          const msg = "El correo debe ser institucional (@uninorte.edu.co)";
-          methods.setError(`integrantes.${idx}.correo`, { type: "client", message: msg });
-          emailMessages.push(`Miembro ${idx + 1}: ${msg}`);
-        }
       }
     });
     if (emailMessages.length) {

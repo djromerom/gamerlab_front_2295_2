@@ -6,10 +6,7 @@ export const MemberSchema = z.object({
   correo: z
     .string()
     .min(1, { message: "El correo es obligatorio" })
-    .email({ message: "El correo debe ser válido" })
-    .refine((email) => email.endsWith("@uninorte.edu.co"), {
-      message: "El correo debe ser institucional (@uninorte.edu.co)",
-    }),
+    .email({ message: "El correo debe ser válido" }),
   codigoEstudiantil: z
     .string()
     .min(1, { message: "El código estudiantil es obligatorio" }),
