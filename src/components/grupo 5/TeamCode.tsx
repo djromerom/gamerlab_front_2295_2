@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Team } from "@/pages/teams/VideogamesPage";
-import { ThemeProvider } from "@/components/grupo 11/theme-provider"
+import { Team } from "@/types/Team";
 
 interface TeamCodeProps {
     variant?: "default" | "title";
