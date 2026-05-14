@@ -55,8 +55,8 @@ export const WizardSchema = z.object({
       ctx.addIssue({ code: "custom", path: ["integrantes"], message: "Agrega al menos un miembro" });
     }
     data.integrantes?.forEach((m, i) => {
-      if (!uninorteEmail(m?.correo || "")) {
-        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Debe ser @uninorte.edu.co" });
+      if (!emailValid(m?.correo || "")) {
+        ctx.addIssue({ code: "custom", path: ["integrantes", i, "correo"], message: "Ingresa un correo válido" });
       }
       if (!onlyDigits(m?.codigo_estudiantil || "")) {
         ctx.addIssue({ code: "custom", path: ["integrantes", i, "codigo_estudiantil"], message: "Solo números" });

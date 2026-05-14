@@ -59,7 +59,7 @@ export default function FormEditMembers ({
                         <Input
                             value={editEmail}
                             onChange={(e) => setEditEmail(e.target.value)}
-                            placeholder="usuario@uninorte.edu.co"
+                            placeholder="usuario@ejemplo.com"
                             // Si este estudiante es el principal y debe bloquearse:
                             disabled={user?.email === editStudent?.email}
                         />
@@ -151,8 +151,8 @@ export default function FormEditMembers ({
                                 toast.error("El correo es obligatorio");
                                 return;
                             }
-                            if (!/^[A-Z0-9._%+-]+@uninorte\.edu\.co$/i.test(editEmail)) {
-                                toast.error("El correo debe ser @uninorte.edu.co");
+                            if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(editEmail)) {
+                                toast.error("El correo ingresado no es válido");
                                 return;
                             }
                             if (!editStudentCode.trim()) {
