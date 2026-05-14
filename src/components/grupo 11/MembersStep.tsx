@@ -229,7 +229,7 @@ export default function MembersStep() {
                       <Input
                         {...field}
                         type="email"
-                        placeholder="correo@uninorte.edu.co"
+                        placeholder="correo@ejemplo.com"
                       />
                     </FormControl>
                     <FormMessage />

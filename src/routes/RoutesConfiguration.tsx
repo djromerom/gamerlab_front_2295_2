@@ -7,8 +7,8 @@ import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
 import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
-import TeamRegisterPage from "@/pages/grupo 11/TeamRegisterPage";
-import TeamsPage from "@/pages/grupo 11/TeamsPage";
+import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
+import VideogamesPage from "@/pages/teams/VideogamesPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
 import InformationPage from "@/pages/grupo 5/InformationPage";
@@ -39,6 +39,8 @@ import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
+import { JuradosAssignment } from "@/pages/JuradosAssignment";
 
 type Role =
   | "Profesor"
@@ -61,6 +63,11 @@ const routes: RouteConfig[] = [
     element: <ProfessorPage />,
     roles: ["Administrador", "Profesor"],
   },
+  {
+    path: "/jurados-assignment",
+    element: <JuradosAssignment />,
+    roles: ["Administrador"],
+  },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
     path: "/consultor",
@@ -70,10 +77,10 @@ const routes: RouteConfig[] = [
   {
     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-   },
+  },
   {
     path: "/equipos",
-    element: <TeamsPage />,
+    element: <VideogamesPage />,
   },
   {
     path: "/",
@@ -160,7 +167,7 @@ const routes: RouteConfig[] = [
 
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
-  
+
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
@@ -198,12 +205,16 @@ const routes: RouteConfig[] = [
     path: "/configuracion-evento",
     element: <EventConfigurationPage />,
     roles: ["Administrador"],
+  },
+  {
+    path: "/play-game/:videogameID",
+    element: <GamePlayerPage />,
   }
 ];
 
 const RoutesConfiguration: React.FC = () => {
   const { loading } = useAuth();
-  
+
   // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
   // Si el AuthContext aún está verificando la sesión (loading=true), 
   // mostramos una pantalla de carga elegante antes de procesar las rutas.
