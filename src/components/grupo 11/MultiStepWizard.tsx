@@ -64,9 +64,9 @@ export default function MultiStepWizard() {
   }, []); // Empty dependency array = runs only once on mount
 
   async function onSubmit(data: CombinedFormValues) {
-    
-    
-    
+
+
+
 
     const res = await fetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
@@ -87,6 +87,7 @@ export default function MultiStepWizard() {
       ? toast.loading("Subiendo archivos...")
       : undefined;
 
+    //TODO - GAMEEMBED: workflow: upload gamefiles to azure and THEN talk to backend. awful
     try {
       const uploadedFileUrls: string[] = [];
       const uploadedAdditionalFileUrls: string[] = [];
@@ -109,7 +110,7 @@ export default function MultiStepWizard() {
           for (let i = 0; i < data.additionalFiles.length; i++) {
             const file = data.additionalFiles[i];
             const uploadResult = await uploadImage(file);
-            const urlResult = await getImageUrl(uploadResult.id); 
+            const urlResult = await getImageUrl(uploadResult.id);
             uploadedAdditionalFileUrls.push(urlResult.url);
           }
         }
