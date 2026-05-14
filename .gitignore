@@ -135,6 +135,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-# do not push mock-up games to the repo
-/public/games/*
