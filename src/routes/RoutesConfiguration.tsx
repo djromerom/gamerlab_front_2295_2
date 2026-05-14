@@ -40,6 +40,7 @@ import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
+import { JuradosAssignment } from "@/pages/JuradosAssignment";
 
 type Role =
   | "Profesor"
@@ -61,6 +62,11 @@ const routes: RouteConfig[] = [
     path: "/profesor",
     element: <ProfessorPage />,
     roles: ["Administrador", "Profesor"],
+  },
+  {
+    path: "/jurados-assignment",
+    element: <JuradosAssignment />,
+    roles: ["Administrador"],
   },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
