@@ -12,8 +12,7 @@ import Review from "@/components/grupo 5/Review"
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { Team } from "@/pages/teams/VideogamesPage";
-import { date } from "zod"
+import { Team } from "@/types/Team";
 
 export default function Scoreboard() {
   const [rawRatingsAll, setRawRatingsAll] = useState<number[]>([])
