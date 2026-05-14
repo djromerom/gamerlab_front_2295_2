@@ -12,8 +12,7 @@ import Review from "@/components/grupo 5/Review"
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { Team } from "@/pages/grupo 11/TeamsPage";
-import { date } from "zod"
+import { Team } from "@/types/Team";
 
 export default function Scoreboard() {
   const [rawRatingsAll, setRawRatingsAll] = useState<number[]>([])
@@ -22,8 +21,8 @@ export default function Scoreboard() {
   const { canViewScores } = useGlobalState()
   const [loading, setLoading] = useState(true)
   const progressBarRef = useRef<HTMLDivElement | null>(null)
-  /*other portion of code to calculate the circle*/ 
-  
+  /*other portion of code to calculate the circle*/
+
   const [generalGrade, setGeneralGrade] = useState<number>(0);
   const [seniorGrade, setSeniorGrade] = useState<number>(0);
   const [juniorGrade, setJuniorGrade] = useState<number>(0);
@@ -34,104 +33,104 @@ export default function Scoreboard() {
   const { user, userRole } = useAuth();
 
   if (userRole === undefined) {
-      return null;
-  } 
+    return null;
+  }
 
   if (userRole !== "Estudiante") {
-      return null;
+    return null;
   }
 
 
   // 1. Traer todos los teams
   useEffect(() => {
-      const fetchData = async () => {
-          try {
-              const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
-                  method: "GET",
-                  credentials: "include",
-                  headers: { "Content-Type": "application/json" }
-              });
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" }
+        });
 
-              if (!response.ok) throw new Error("Error fetching teams");
+        if (!response.ok) throw new Error("Error fetching teams");
 
-              const data = await response.json();
-              setTeams(data); // guardas todos los equipos
-          } catch (error) {
-              console.error(error);
-          }
-      };
+        const data = await response.json();
+        setTeams(data); // guardas todos los equipos
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-      fetchData();
-  }, []); 
+    fetchData();
+  }, []);
 
   //   2. Filtrar team cuando user.id YA EXISTE y teams YA ESTÁN CARGADOS
   useEffect(() => {
-      if (!user?.id || teams.length === 0) return;
+    if (!user?.id || teams.length === 0) return;
 
-      const userTeam = teams.find(t => t.userId === user.id) || null;
-      setTeam(userTeam);
+    const userTeam = teams.find(t => t.userId === user.id) || null;
+    setTeam(userTeam);
 
   }, [user?.id, teams]);
 
-  
+
   useEffect(() => {
-  if (!team || !canViewScores) {
-    setGeneralGrade(0);
-    setJuniorGrade(0);
-    setSeniorGrade(0);
-    setLoading(false);
-    return;
-  }
-
-  // cancelar petición previa y crear una nueva controller local
-  ratingsACRef.current?.abort();
-  const controller = new AbortController();
-  ratingsACRef.current = controller;
-  setLoading(true);
-
-  (async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/final-score/team/${team.id}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-        }
-      );
-
-      if (!response.ok) {
-        console.warn("Error fetching team scores:", response.status);
-        setGeneralGrade(0);
-        setJuniorGrade(0);
-        setSeniorGrade(0);
-        return;
-      }
-
-      const data = await response.json().catch(() => null);
-      const item = Array.isArray(data) && data.length > 0 ? data[0] : null;
-
-      const finalScoreVar = item?.finalScore != null ? Number(item.finalScore.toFixed(2)) : 0;
-      const avgJuniorVar = item?.avgJunior != null ? Number(item.avgJunior.toFixed(2)) : 0;
-      const avgSeniorVar = item?.avgSenior != null ? Number(item.avgSenior.toFixed(2)) : 0;
-
-      setGeneralGrade(finalScoreVar);
-      setJuniorGrade(avgJuniorVar);
-      setSeniorGrade(avgSeniorVar);
-      console.log("Fetched team scores:", item);
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        // petición abortada intencionalmente — ignorar
-        return;
-      }
-      console.error("Error fetching team scores:", err);
+    if (!team || !canViewScores) {
       setGeneralGrade(0);
       setJuniorGrade(0);
       setSeniorGrade(0);
-    } finally {
       setLoading(false);
+      return;
     }
+
+    // cancelar petición previa y crear una nueva controller local
+    ratingsACRef.current?.abort();
+    const controller = new AbortController();
+    ratingsACRef.current = controller;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/final-score/team/${team.id}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          console.warn("Error fetching team scores:", response.status);
+          setGeneralGrade(0);
+          setJuniorGrade(0);
+          setSeniorGrade(0);
+          return;
+        }
+
+        const data = await response.json().catch(() => null);
+        const item = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+        const finalScoreVar = item?.finalScore != null ? Number(item.finalScore.toFixed(2)) : 0;
+        const avgJuniorVar = item?.avgJunior != null ? Number(item.avgJunior.toFixed(2)) : 0;
+        const avgSeniorVar = item?.avgSenior != null ? Number(item.avgSenior.toFixed(2)) : 0;
+
+        setGeneralGrade(finalScoreVar);
+        setJuniorGrade(avgJuniorVar);
+        setSeniorGrade(avgSeniorVar);
+        console.log("Fetched team scores:", item);
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          // petición abortada intencionalmente — ignorar
+          return;
+        }
+        console.error("Error fetching team scores:", err);
+        setGeneralGrade(0);
+        setJuniorGrade(0);
+        setSeniorGrade(0);
+      } finally {
+        setLoading(false);
+      }
     })();
 
     return () => {
@@ -140,8 +139,8 @@ export default function Scoreboard() {
   }, [team, canViewScores]);
 
 
-  
-  
+
+
   /**
    * Final portion of code to calculate the circle
    */
@@ -200,12 +199,12 @@ export default function Scoreboard() {
       ratingsACRef.current?.abort()
     }
   }, [canViewScores, fetchRatings])
-  
-
- 
 
 
-  let averagePercent = Math.min(100,Math.max(0, (generalGrade / 5) * 100));
+
+
+
+  let averagePercent = Math.min(100, Math.max(0, (generalGrade / 5) * 100));
   const progressPercent = Number.isFinite(averagePercent) ? averagePercent : 0
 
   const renderStars = (rating: number) => {
@@ -250,7 +249,7 @@ export default function Scoreboard() {
   // Update progress bar width
   // when progressPercent changes
   useEffect(() => {
-    console.log("Updating progress bar to:", progressBarRef.current )
+    console.log("Updating progress bar to:", progressBarRef.current)
     if (progressBarRef.current) {
       progressBarRef.current.style.width = `${progressPercent.toFixed(0)}%`
     }
@@ -285,15 +284,15 @@ export default function Scoreboard() {
   if (loading) {
     return <LoadingScreen text="Cargando información de calificaciones..." />
   }
-  
+
   return (
     <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 min-w-[350px]">
-        {/* Team code */}
-        <TeamCode variant="default" />
-        {/* finished teamCode */}
+      {/* Team code */}
+      <TeamCode variant="default" />
+      {/* finished teamCode */}
       <Card className="w-full shadow-sm border  ">
         <CardHeader className="p-4 sm:p-6 pb-2">
-          
+
           <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
           <CardDescription className="text-xs sm:text-sm text-foreground/50">
             Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tu proyecto a continuación.
@@ -303,7 +302,7 @@ export default function Scoreboard() {
         <CardContent className="p-3 sm:p-6 pt-2 space-y-3 sm:space-y-4">
           <div className="flex flex-col items-center mb-6 sm:mb-10">
             <div className="relative w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60">
-                  <svg className="absolute inset-0 w-full h-full border-accent rounded-full border-0" viewBox="0 0 100 100">
+              <svg className="absolute inset-0 w-full h-full border-accent rounded-full border-0" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" fill="none" stroke="#e5e7eb" strokeWidth="6" />
                 <circle
                   cx="50"
@@ -313,7 +312,7 @@ export default function Scoreboard() {
                   stroke="#facc15"
                   strokeWidth="6"
                   strokeDasharray="289.026"
-                  strokeDashoffset={289.026 - (289.026 * (isNaN(generalGrade) ? 0 : generalGrade) / 5 )}
+                  strokeDashoffset={289.026 - (289.026 * (isNaN(generalGrade) ? 0 : generalGrade) / 5)}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                 />
@@ -343,9 +342,9 @@ export default function Scoreboard() {
             </div>
           </div>
 
-        
 
-         <div className="space-y-2">
+
+          <div className="space-y-2">
             {/* Progress Bars: Total, Junior, Senior */}
             {[
               {
