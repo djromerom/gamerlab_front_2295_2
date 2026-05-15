@@ -102,6 +102,7 @@ export default function MultiStepWizard() {
           for (const file of data.files) {
             const uploadResult = await uploadImage(file);
             const urlResult = await getImageUrl(uploadResult.id);
+            urlResult.url = urlResult.url.replace("azurite", "localhost");
             uploadedFileUrls.push(urlResult.url);
           }
         }
