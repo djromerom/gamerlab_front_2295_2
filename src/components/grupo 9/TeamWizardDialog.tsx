@@ -79,7 +79,7 @@ async function uploadFilesToAzure(filesList: File[]) {
       filesList.map(async (file) => {
         const up = await uploadImage(file);
         const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" }));
-        const url = urlObj?.url ?? "";
+        const url = (urlObj?.url ?? "").replace("azurite", "localhost");
         return {
           blobName: url,
           filename: file.name,
@@ -204,7 +204,7 @@ function buildPayload(
     additionalImages: finalUrls, // string[]
     videoUrl: data.videojuego?.video_demo_url ?? data.videojuego?.video_demo_url ?? null,
   };
-  
+
   delete videogamePayload._remove_gallery;
   delete videogamePayload._remove_logo;
 
