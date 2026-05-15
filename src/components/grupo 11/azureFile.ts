@@ -54,5 +54,10 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   }
 
   const urlResult = (await res.json()) as UrlResult;
+
+  //bad
+  urlResult.url = urlResult.url.replace("http://azurite:1000/", BACKEND_BASE.replace(/\/$/, ''))
+
+
   return urlResult;
 }

@@ -79,7 +79,7 @@ async function uploadFilesToAzure(filesList: File[]) {
       filesList.map(async (file) => {
         const up = await uploadImage(file);
         const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" }));
-        const url = (urlObj?.url ?? "").replace("azurite", "localhost");
+        const url = (urlObj?.url ?? "");
         return {
           blobName: url,
           filename: file.name,

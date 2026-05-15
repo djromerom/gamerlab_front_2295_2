@@ -65,9 +65,6 @@ export default function MultiStepWizard() {
 
   async function onSubmit(data: CombinedFormValues) {
 
-
-
-
     const res = await fetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
@@ -102,7 +99,6 @@ export default function MultiStepWizard() {
           for (const file of data.files) {
             const uploadResult = await uploadImage(file);
             const urlResult = await getImageUrl(uploadResult.id);
-            urlResult.url = urlResult.url.replace("azurite", "localhost");
             uploadedFileUrls.push(urlResult.url);
           }
         }
