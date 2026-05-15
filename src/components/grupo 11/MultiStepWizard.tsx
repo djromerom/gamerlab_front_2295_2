@@ -65,9 +65,6 @@ export default function MultiStepWizard() {
 
   async function onSubmit(data: CombinedFormValues) {
 
-
-
-
     const res = await fetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
