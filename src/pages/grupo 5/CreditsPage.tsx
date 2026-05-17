@@ -17,11 +17,12 @@ import {
   Calendar,
   PcCase,
   Container,
-  
+
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { developers, departments, technologies, projectStats } from "@/data/contributorsData";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -344,9 +345,8 @@ export default function DevelopersCredits() {
   // Update carousel position when currentTeamSlide changes
   useEffect(() => {
     if (teamCarouselRef.current) {
-      teamCarouselRef.current.style.transform = `translateX(-${
-        currentTeamSlide * 100
-      }%)`;
+      teamCarouselRef.current.style.transform = `translateX(-${currentTeamSlide * 100
+        }%)`;
     }
   }, [currentTeamSlide]);
 
@@ -369,378 +369,34 @@ export default function DevelopersCredits() {
     };
   }, []);
 
-  // Datos de los desarrolladores agrupados por departamento
-  const departments = [
-    {
-      id: "frontend",
-      name: "Frontend",
-      icon: <Code className="w-5 h-5" />,
-      description:
-        "Responsables de la interfaz de usuario y experiencia de usuario de la plataforma.",
-    },
-    {
-      id: "backend",
-      name: "Backend",
-      icon: <Database className="w-5 h-5" />,
-      description: "Encargados de la lógica de negocio, APIs y bases de datos.",
-    },
-    {
-      id: "design",
-      name: "UX & UI",
-      icon: <Palette className="w-5 h-5" />,
-      description: "Creadores de la identidad visual y experiencia de usuario.",
-    },
-    {
-      id: "sa",
-      name: "Software Architecture",
-      icon: <Star className="w-5 h-5" />,
-      description: "Responsable de la arquitectura y diseño del software.",
-    },
-    {
-      id: "devops",
-      name: "DevOps",
-      icon: <Cpu className="w-5 h-5" />,
-      description:
-        "Responsable de la infraestructura, despliegue y operaciones.",
-    },
-     {
-      id: "fullstacks",
-      name: "FullStacks",
-      icon: <PcCase className="w-5 h-5" />,
-      description:
-        "Desarrolladores encargados tanto del frontend como del backend de la plataforma.",
-    },
-    {
-      id: "scrum",
-      name: "Scrum Master",
-      icon: <Users className="w-5 h-5" />,
-      description:
-        "Facilitadores del proceso ágil y coordinadores del equipo de desarrollo.",
-    }
-  ];
 
-  const developers = [ 
-    {
-      id: 28,
-      name: "Natalia Carpintero",
-      role: "Scrum Master",
-      department: "scrum",
-      version: ["2.0"],
-      github: "https://github.com/Carpinteron",
-      email: "carpinteron@uninorte.edu.co",
-    },
-    {
-      id: 26,
-      name: "Kevin Torregrosa",
-      role: "Backend Leader",
-      department: "backend",
-      version: ["2.0"],
-      github: "https://github.com/MrManini",
-      email: "kjtorregrosa@uninorte.edu.co",
-    },
-    {
-      id: 23,
-      name: "Carlos Arango",
-      role: "Frontend Leader",
-      department: "frontend",
-      version: ["2.0"],
-      github: "https://github.com/carlosam7",
-      email: "arangocarlos@uninorte.edu.co",
-    },
-    {
-      id: 27,
-      name: "Isabella Arrieta",
-      role: "FullStack Developer",
-      department: "fullstacks",
-      version: ["2.0"],
-      github: "https://github.com/IsaAJ05",
-      email: "isabellajuliao@uninorte.edu.co",
-    },
-    
-    {
-      id: 29,
-      name: "Sebastian Brito",
-      role: "FullStack Developer",
-      department: "fullstacks",
-      version: ["2.0"],
-      github: "https://github.com/sbritoa20",
-      email: "sbritoa@uninorte.edu.co",
-    },
-    {
-      id: 21,
-      name: "Andres Monserrat",
-      role: "Frontend Developer",
-      department: "frontend",
-      version: ["2.0"],
-      github: "https://github.com/andresmonserrat",
-      email: "monserrata@uninorte.edu.co",
-    },
-    {
-      id: 24,
-      name: "Judith Perez",
-      role: "Frontend Developer",
-      department: "frontend",
-      version: ["2.0"],
-      github: "https://github.com/judithpc23",
-      email: "jiconde@uninorte.edu.co",
-    },
-    {
-      id: 22,
-      name: "Esteban Dadul",
-      role: "Backend Developer",
-      department: "backend",
-      version: ["2.0"],
-      github: "https://github.com/edadul",
-      email: "edadul@uninorte.edu.co",
-    },
-    {
-      id: 25,
-      name: "Nicolas Muvdi",
-      role: "Backend Developer",
-      department: "backend",
-      version: ["2.0"],
-      github: "https://github.com/muvdi1805",
-      email: "namuvdi@uninorte.edu.co",
-    },
-    
-   
-    {
-      id: 1,
-      name: "Alejandra Valencia",
-      role: "Scrum Master",
-      department: "scrum",
-      version: ["1.0"],
-      github: "https://github.com/alejavalerua",
-      email: "alejandrarua@uninorte.edu.co",
-    },
-    {
-      id: 2,
-      name: "Juan Povea",
-      role: "Backend Leader",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/J-Povea21",
-      email: "japovea@uninorte.edu.co",
-    },
-    {
-      id: 3,
-      name: "Jorge Sánchez",
-      role: "Frontend Leader",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/jorgeluissanchez",
-      email: "jlbarreneche@uninorte.edu.co",
-    },
-    {
-      id: 4,
-      name: "Carlos López",
-      role: "UX/UI & Frontend developer",
-      department: "design",
-      version: ["1.0"],
-      github: "https://github.com/cegallardo0405",
-      email: "cegallardo@uninorte.edu.co",
-    },
-    {
-      id: 5,
-      name: "Yovany Zhu",
-      role: "UX/UI & Frontend developer",
-      department: "design",
-      version: ["1.0"],
-      github: "https://github.com/yzhuye",
-      email: "yzhu@uninorte.edu.co",
-    },
-    {
-      id: 6,
-      name: "Jhonatan Romero",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/jhonatanrp05",
-      email: "jpachecos@uninorte.edu.co",
-    },
-    {
-      id: 7,
-      name: "Juan Carrasquilla",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/JuanMicarras",
-      email: "jmcarrasquilla@uninorte.edu.co",
-    },
-    {
-      id: 8,
-      name: "Camilo Navarro",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/NavarroCamilo",
-      email: "navarrocamilo@uninorte.edu.co",
-    },
-    {
-      id: 9,
-      name: "Manuel Yepes",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/amyepes",
-      email: "amyepes@uninorte.edu.co",
-    },
-    {
-      id: 10,
-      name: "Juan Pardo",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/JuanPar063",
-      email: "anzolas@uninorte.edu.co",
-    },
-    {
-      id: 11,
-      name: "Santiago Hoyos",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/santiagohoyos20",
-      email: "hoyosjs@uninorte.edu.co",
-    },
-    {
-      id: 12,
-      name: "Presly Romero",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/PreslyR",
-      email: "preslyr@uninorte.edu.co",
-    },
-    {
-      id: 13,
-      name: "Jesús Cabrera",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/JesusC25",
-      email: "jcabrerad@uninorte.edu.co",
-    },
-    {
-      id: 14,
-      name: "Bernardo Álvarez",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/Bern723",
-      email: "abernardo@uninorte.edu.co",
-    },
-    {
-      id: 15,
-      name: "Keiver Miranda",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/keiver213",
-      email: "mkeiver@uninorte.edu.co",
-    },
-    {
-      id: 16,
-      name: "Sandro Torres",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/sandrotg",
-      email: "tsandro@uninorte.edu.co",
-    },
-    {
-      id: 17,
-      name: "Camilo de la Rosa",
-      role: "DevOps Engineer",
-      department: "devops",
-      version: ["1.0", "2.0"],
-      github: "https://github.com/CamiloDlRM",
-      email: "amovillac@uninorte.edu.co",
-    },
-    {
-      id: 18,
-      name: "María Osorno",
-      role: "Frontend developer",
-      department: "frontend",
-      version: ["1.0"],
-      github: "https://github.com/cosnor",
-      email: "osornoc@uninorte.edu.co",
-    },
-    {
-      id: 19,
-      name: "Alberto Sandoval",
-      role: "Backend developer",
-      department: "backend",
-      version: ["1.0"],
-      github: "https://github.com/albertojs7",
-      email: "albertojs@uninorte.edu.co",
-    },
-    {
-      id: 20,
-      name: "Daniel Romero Martínez",
-      role: "Software Architect",
-      department: "sa",
-      version: ["1.0", "2.0"],
-      github: "https://github.com/djromerom",
-      email: "djromero@uninorte.edu.co",
-    },
-    
-  ];
+
+
 
   const [activeDepartment, setActiveDepartment] = useState<string>("all");
-  const [activeVersion, setActiveVersion] = useState<string>("all");
+  const [activeVersion, setActiveVersion] = useState<number | "all">("all");
 
   // Función para filtrar desarrolladores por departamento
   const filteredDevelopers =
     developers.filter((dev) => {
-      const byDept = activeDepartment === "all" ? true : dev.department === activeDepartment;
+      const byDept = activeDepartment === "all" ? true : dev.department.includes(activeDepartment);
       const byVersion = activeVersion === "all" ? true : dev.version.includes(activeVersion);
       return byDept && byVersion;
+    }).sort((a, b) => {
+      if (activeVersion === "all") {
+        const maxA = Math.max(...a.version);
+        const maxB = Math.max(...b.version);
+        return maxB - maxA;
+      }
+      return 0;
     });
 
   // Función para contar desarrolladores por departamento
   const getDepartmentCount = (deptId: string) => {
-    return developers.filter((dev) => dev.department === deptId && (activeVersion === 'all' ? true : dev.version.includes(activeVersion))).length;
+    return developers.filter((dev) => dev.department.includes(deptId) && (activeVersion === 'all' ? true : dev.version.includes(activeVersion))).length;
   };
 
-  // Tecnologías utilizadas
-  const technologies = [
-    { name: "React", icon: <Code className="w-4 h-4" /> },
-    { name: "TypeScript", icon: <Code className="w-4 h-4" /> },
-    { name: "Tailwind CSS", icon: <Palette className="w-4 h-4" /> },
-    { name: "Nest.js", icon: <Cpu className="w-4 h-4" /> },
-    { name: "Vite", icon: <Rocket className="w-4 h-4" /> },
-    { name: "PostgreSQL", icon: <Database className="w-4 h-4" /> },
-    { name: "Vercel", icon: <Globe className="w-4 h-4" /> },
-    { name: "GitHub", icon: <Github className="w-4 h-4" /> },
-    { name: "Figma", icon: <Camera className="w-4 h-4" /> },
-    { name: "Prisma", icon: <Database className="w-4 h-4" /> },
-    { name: "Docker", icon: <Container className="w-4 h-4" /> },
-  ];
 
-  // Estadísticas del proyecto
-  const projectStats = [
-    {
-      value: "29",
-      label: "Desarrolladores",
-      icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
-    },
-    {
-      value: "5",
-      label: "Semanas de Desarrollo",
-      icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
-    },
-    {
-      value: "999+",
-      label: "Commits",
-      icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
-    },
-    {
-      value: "∞",
-      label: "Líneas de Código",
-      icon: <Code className="w-6 h-6 text-[#AC7CFF]" />,
-    },
-  ];
 
   return (
     <>
@@ -821,16 +477,22 @@ export default function DevelopersCredits() {
                     Todas
                   </button>
                   <button
-                    onClick={() => setActiveVersion("1.0")}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "1.0" ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    onClick={() => setActiveVersion(1)}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 1 ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     v1
                   </button>
                   <button
-                    onClick={() => setActiveVersion("2.0")}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "2.0" ? "bg-green-500/20 text-purple-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                    onClick={() => setActiveVersion(2)}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 2 ? "bg-green-500/20 text-green-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
                   >
                     v2
+                  </button>
+                  <button
+                    onClick={() => setActiveVersion(3)}
+                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 3 ? "bg-yellow-500/20 text-yellow-300 border border-yellow-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
+                  >
+                    v3
                   </button>
                 </div>
                 <div className="ml-auto text-sm text-gray-400">Total: {developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length} desarrolladores</div>
@@ -842,11 +504,10 @@ export default function DevelopersCredits() {
               <div className="bg-[#110D20] p-2 rounded-lg flex flex-wrap gap-2">
                 <button
                   onClick={() => setActiveDepartment("all")}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${
-                    activeDepartment === "all"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${activeDepartment === "all"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   <Globe className="w-5 h-5" />
                   Todos ({developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length})
@@ -855,18 +516,16 @@ export default function DevelopersCredits() {
                   <button
                     key={dept.id}
                     onClick={() => setActiveDepartment(dept.id)}
-                    className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${
-                      activeDepartment === dept.id
-                        ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                        : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                    className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${activeDepartment === dept.id
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                      }`}
                   >
                     <span
-                      className={`transition-colors ${
-                        activeDepartment === dept.id
-                          ? "text-[#060312]"
-                          : "text-[#AC7CFF]"
-                      }`}
+                      className={`transition-colors ${activeDepartment === dept.id
+                        ? "text-[#060312]"
+                        : "text-[#AC7CFF]"
+                        }`}
                     ></span>
                     {dept.icon}
                     {dept.name} ({getDepartmentCount(dept.id)})
@@ -903,8 +562,8 @@ export default function DevelopersCredits() {
                       {dev.version && dev.version.length > 0 && (
                         <div className="flex gap-2">
                           {dev.version.map((v) => (
-                            <span key={v} className={`px-2 py-0.5 rounded text-xs font-medium ${v === "1.0" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"}`}>
-                              v{v}
+                            <span key={v} className={`px-2 py-0.5 rounded text-xs font-medium ${v === 1 ? "bg-blue-500/20 text-blue-300" : v === 2 ? "bg-green-500/20 text-green-300" : "bg-yellow-500/20 text-yellow-300"}`}>
+                              v{v}.0
                             </span>
                           ))}
                         </div>
