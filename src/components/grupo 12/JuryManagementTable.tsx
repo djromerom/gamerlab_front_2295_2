@@ -706,9 +706,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                       Complete los datos del nuevo jurado.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4 px-6">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="add-firstName" className="text-right">
+                  <div className="flex flex-col gap-4 py-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="add-firstName" className="text-left font-medium">
                         Nombres
                       </Label>
                       <Input
@@ -720,13 +720,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                             firstName: e.target.value,
                           }))
                         }
-                        className="col-span-3"
+                        className="w-full"
                         required
                         disabled={internalIsLoading}
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="add-lastName" className="text-right">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="add-lastName" className="text-left font-medium">
                         Apellidos
                       </Label>
                       <Input
@@ -738,13 +738,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                             lastName: e.target.value,
                           }))
                         }
-                        className="col-span-3"
+                        className="w-full"
                         required
                         disabled={internalIsLoading}
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="add-email" className="text-right">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="add-email" className="text-left font-medium">
                         Email
                       </Label>
                       <Input
@@ -757,7 +757,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                             email: e.target.value,
                           }))
                         }
-                        className="col-span-3"
+                        className="w-full"
                         required
                         disabled={internalIsLoading}
                       />
@@ -967,9 +967,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   Modifique los datos del jurado. El email no se puede editar.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4 px-6">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-firstName" className="text-right">
+              <div className="flex flex-col gap-4 py-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit-firstName" className="text-left font-medium">
                     Nombres
                   </Label>
                   <Input
@@ -980,13 +980,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         prev ? { ...prev, firstName: e.target.value } : null
                       )
                     }
-                    className="col-span-3"
+                    className="w-full"
                     required
                     disabled={internalIsLoading}
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-lastName" className="text-right">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit-lastName" className="text-left font-medium">
                     Apellidos
                   </Label>
                   <Input
@@ -997,20 +997,20 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         prev ? { ...prev, lastName: e.target.value } : null
                       )
                     }
-                    className="col-span-3"
+                    className="w-full"
                     required
                     disabled={internalIsLoading}
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-email" className="text-right">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit-email" className="text-left font-medium">
                     Email
                   </Label>
                   <Input
                     id="edit-email"
                     type="email"
                     value={editingJuror.email || ""}
-                    className="col-span-3"
+                    className="w-full"
                     disabled
                     readOnly
                   />
