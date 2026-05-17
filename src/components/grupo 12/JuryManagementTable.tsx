@@ -30,28 +30,28 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
   const [loading, setLoading] = useState(false)
   const [teams, setTeams] = useState(null)
-  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({id: "", name: "", videogame: ""})
-  const [teamsByJuror, setTeamsByJuror] = useState([{id: "", name: "", videogame: ""}])
-  const [valueDeleteTeam, setValueDeleteTeam] = useState({id: "", name: "", videogame: ""})
+  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({ id: "", name: "", videogame: "" })
+  const [teamsByJuror, setTeamsByJuror] = useState([{ id: "", name: "", videogame: "" }])
+  const [valueDeleteTeam, setValueDeleteTeam] = useState({ id: "", name: "", videogame: "" })
   const [searchTerm, setSearchTerm] = useState("");
   const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  
+
   useEffect(() => {
 
     const arrayTeams = async () => {
       try {
         const data: any = await juryManagement.getIncompleteJurors();
-        const getTeams:[{ id: string, name:string, videogame: string }] | null  = [data.map((team) => {
-            return { id: team.id, name: team.nombre, videogame: team.videojuego }
-          })]
-          setTeams(getTeams)
-      }catch (error) {
-        toast.error(error, {id: 111})
+        const getTeams: [{ id: string, name: string, videogame: string }] | null = [data.map((team) => {
+          return { id: team.id, name: team.nombre, videogame: team.videojuego }
+        })]
+        setTeams(getTeams)
+      } catch (error) {
+        toast.error(error, { id: 111 })
       }
     }
     arrayTeams()
-}, []);
+  }, []);
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isDataLoading || internalIsLoading;
 
@@ -73,7 +73,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         try {
           const body = await res.json();
           msg = body?.message || msg;
-        } catch {}
+        } catch { }
         throw new Error(msg);
       }
 
@@ -227,10 +227,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                     <TableCell>{game}</TableCell>
                   </TableRow>
                 )) || (
-                  <TableRow>
-                    <TableCell>No hay juegos revisados</TableCell>
-                  </TableRow>
-                )}
+                    <TableRow>
+                      <TableCell>No hay juegos revisados</TableCell>
+                    </TableRow>
+                  )}
               </TableBody>
             </Table>
           </DialogContent>
@@ -265,10 +265,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                     <TableCell>{game}</TableCell>
                   </TableRow>
                 )) || (
-                  <TableRow>
-                    <TableCell>No hay juegos pendientes</TableCell>
-                  </TableRow>
-                )}
+                    <TableRow>
+                      <TableCell>No hay juegos pendientes</TableCell>
+                    </TableRow>
+                  )}
               </TableBody>
             </Table>
           </DialogContent>
@@ -282,10 +282,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         <Dialog>
           <DialogTrigger asChild>
             <Button
-                variant={"home"}
-                size="sm"
+              variant={"home"}
+              size="sm"
             >
-                Asignar equipo
+              Asignar equipo
             </Button>
           </DialogTrigger>
 
@@ -323,10 +323,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                       {team.name}
                     </option>
                   )) || (
-                    <option value="opcion1" className="bg-white dark:bg-[#120e21]">
-                      No hay equipos
-                    </option>
-                  ) : []}
+                      <option value="opcion1" className="bg-white dark:bg-[#120e21]">
+                        No hay equipos
+                      </option>
+                    ) : []}
                 </select>
                 <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
                   ▼
@@ -334,21 +334,21 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               </div>
 
               <div className="flex justify-between items-center w-full gap-2">
-                  <Input
-                    placeholder="Nombre del videojuego"
-                    disabled
-                    value={valueFormAssignTeam?.videogame || ""}
-                  />
+                <Input
+                  placeholder="Nombre del videojuego"
+                  disabled
+                  value={valueFormAssignTeam?.videogame || ""}
+                />
               </div>
               <Button
                 variant={"home"}
-                onClick={async ()=>{
+                onClick={async () => {
                   const res = await juryManagement.manualAssignment(juror.id, valueFormAssignTeam.id)
                   toast.message(res.message)
                   if (res.success) {
                     setTimeout(() => {
-                    window.location.reload();
-                  }, 500) 
+                      window.location.reload();
+                    }, 500)
                   }
                 }}
                 className="w-full"
@@ -367,14 +367,14 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         <Dialog>
           <DialogTrigger asChild>
             <Button
-                onClick={async () => {
-                  const teamsByJuror = await juryManagement.getTeamsByJuror(juror.id)
-                  setTeamsByJuror(teamsByJuror)
-                }}
-                variant={"destructive"}
-                size="sm"
+              onClick={async () => {
+                const teamsByJuror = await juryManagement.getTeamsByJuror(juror.id)
+                setTeamsByJuror(teamsByJuror)
+              }}
+              variant={"destructive"}
+              size="sm"
             >
-                <BadgeXIcon/>
+              <BadgeXIcon />
             </Button>
           </DialogTrigger>
 
@@ -412,10 +412,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                       {team.name}
                     </option>
                   )) || (
-                    <option value="opcion1" className="bg-white dark:bg-[#120e21]">
-                      No hay equipos
-                    </option>
-                  ) : []}
+                      <option value="opcion1" className="bg-white dark:bg-[#120e21]">
+                        No hay equipos
+                      </option>
+                    ) : []}
                 </select>
                 <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
                   ▼
@@ -423,21 +423,21 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               </div>
 
               <div className="flex justify-between items-center w-full">
-                  <Input
-                    placeholder="Nombre del videojuego"
-                    disabled
-                    value={valueDeleteTeam?.videogame || ""}
-                  />
+                <Input
+                  placeholder="Nombre del videojuego"
+                  disabled
+                  value={valueDeleteTeam?.videogame || ""}
+                />
               </div>
               <Button
                 variant={"destructive"}
-                onClick={async ()=>{
+                onClick={async () => {
                   const res = await juryManagement.deleteAnAssignment(juror.id, valueDeleteTeam.id)
                   toast.message(res.message)
                   if (res.success) {
                     setTimeout(() => {
-                    window.location.reload();
-                  }, 500) 
+                      window.location.reload();
+                    }, 500)
                   }
                 }}
                 className="w-full"
@@ -570,7 +570,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   };
 
   const handleResendEmail = async (jurorEmail: string) => {
-    
+
     setInternalIsLoading(true);
     try {
       const response = await customFetch(
@@ -597,7 +597,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const automaticAssignment = async () => {
     try {
       if (loading) {
-        toast.loading('Asignando equipos', {id: 111})
+        toast.loading('Asignando equipos', { id: 111 })
       }
       const response = await juryManagement.automaticAssignment()
       if (response.success) {
@@ -605,187 +605,192 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         toast.success(response.message)
         setTimeout(() => {
           window.location.reload();
-        }, 500) 
+        }, 500)
       } else {
         setLoading(false)
         toast.error(response.message)
       }
     } catch (error) {
       setLoading(false)
-      toast.error(error, {id: 111})
+      toast.error(error, { id: 111 })
     }
   }
 
   return (
     // Añade un contenedor div si data es null para mantener la estructura
     <div
-      className={`bg-background text-foreground min-h-screen min-w-[350px] p-4 ${
-        showLoader ? "opacity-75" : ""
-      }`}
+      className={`bg-background text-foreground min-h-screen min-w-[350px] p-4 ${showLoader ? "opacity-75" : ""
+        }`}
     >
       {/* Encabezado (Título y Botón Agregar) */}
-      <div className="flex justify-between items-center mb-6 px-4">
-        <h1 className="text-xl font-medium">Jurados</h1>
-        <div className="flex gap-2 items-center">
+      <div className="flex flex-col gap-4 mb-6 px-4">
+        {/* Fila 1: Título */}
+        <div>
+          <h1 className="text-xl font-medium">Jurados</h1>
+        </div>
+
+        {/* Fila 2: Buscador y Botones de acción */}
+        <div className="flex items-center justify-between gap-2 md:gap-4 w-full">
           <Input
             placeholder="Buscar jurado por nombre o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
+            className="flex-1 min-w-[80px] md:max-w-md text-sm"
             disabled={showLoader}
           />
-          <Button
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            <Button
               variant="destructive"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
-              className="flex justify-center items-center cursor-pointer"
-              onClick={() => {setLoading(true); juryManagement.deleteAllAssignments(setLoading)}}
-              
-          >
-            <p className="hidden lg:flex">
-              Desasignar todos
-            </p>
-          </Button>
-          <Button
+              className="flex justify-center items-center cursor-pointer gap-1.5 px-2.5 lg:px-4"
+              onClick={() => { setLoading(true); juryManagement.deleteAllAssignments(setLoading) }}
+            >
+              <BadgeXIcon className="h-4 w-4" />
+              <p className="hidden lg:block">
+                Desasignar todos
+              </p>
+            </Button>
+            <Button
               variant="default"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
-              className="flex justify-center items-center cursor-pointer"
-              onClick={() => {setLoading(true); automaticAssignment()}}
-              
-          >
-            <UserPen className="h-4 w-4" />
-            <p className="hidden lg:flex">
-              Asignar a todos
-            </p>
-          </Button>
+              className="flex justify-center items-center cursor-pointer gap-1.5 px-2.5 lg:px-4"
+              onClick={() => { setLoading(true); automaticAssignment() }}
+            >
+              <UserPen className="h-4 w-4" />
+              <p className="hidden lg:block">
+                Asignar todos
+              </p>
+            </Button>
 
-          {/* Botón Exportar con tooltip */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="flex justify-center cursor-pointer"
-                  onClick={exportJurors}
-                  disabled={showLoader || exportLoading || !jurors || jurors.length === 0}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Exportar Jurados</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            {/* Botón Exportar con tooltip */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="flex justify-center cursor-pointer"
-                      disabled={showLoader} 
-                    >
-                      <Plus className="h-4 w-4" />
-                      <UserIcon className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
+                  <Button
+                    variant="outline"
+                    className="flex justify-center cursor-pointer"
+                    onClick={exportJurors}
+                    disabled={showLoader || exportLoading || !jurors || jurors.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent>Agregar nuevo jurado</TooltipContent>
+                <TooltipContent>Exportar Jurados</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <DialogContent>
-              <form onSubmit={handleAdd}>
-                <DialogHeader>
-                  <DialogTitle>Agregar Nuevo Jurado</DialogTitle>
-                  <DialogDescription>
-                    Complete los datos del nuevo jurado.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4 px-6">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-firstName" className="text-right">
-                      Nombres
-                    </Label>
-                    <Input
-                      id="add-firstName"
-                      value={newJuror.firstName}
-                      onChange={(e) =>
-                        setNewJuror((prev) => ({
-                          ...prev,
-                          firstName: e.target.value,
-                        }))
-                      }
-                      className="col-span-3"
-                      required
-                      disabled={internalIsLoading}
-                    />
+
+            {/* Botón Agregar - Deshabilitado si data no existe o si está cargando */}
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex justify-center cursor-pointer"
+                        disabled={showLoader}
+                      >
+                        <Plus className="h-4 w-4" />
+                        <UserIcon className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Agregar nuevo jurado</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DialogContent>
+                <form onSubmit={handleAdd}>
+                  <DialogHeader>
+                    <DialogTitle>Agregar Nuevo Jurado</DialogTitle>
+                    <DialogDescription>
+                      Complete los datos del nuevo jurado.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4 px-6">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="add-firstName" className="text-right">
+                        Nombres
+                      </Label>
+                      <Input
+                        id="add-firstName"
+                        value={newJuror.firstName}
+                        onChange={(e) =>
+                          setNewJuror((prev) => ({
+                            ...prev,
+                            firstName: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                        disabled={internalIsLoading}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="add-lastName" className="text-right">
+                        Apellidos
+                      </Label>
+                      <Input
+                        id="add-lastName"
+                        value={newJuror.lastName}
+                        onChange={(e) =>
+                          setNewJuror((prev) => ({
+                            ...prev,
+                            lastName: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                        disabled={internalIsLoading}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="add-email" className="text-right">
+                        Email
+                      </Label>
+                      <Input
+                        id="add-email"
+                        type="email"
+                        value={newJuror.email}
+                        onChange={(e) =>
+                          setNewJuror((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        className="col-span-3"
+                        required
+                        disabled={internalIsLoading}
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-lastName" className="text-right">
-                      Apellidos
-                    </Label>
-                    <Input
-                      id="add-lastName"
-                      value={newJuror.lastName}
-                      onChange={(e) =>
-                        setNewJuror((prev) => ({
-                          ...prev,
-                          lastName: e.target.value,
-                        }))
-                      }
-                      className="col-span-3"
-                      required
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      className="cursor-pointer"
+                      variant="outline"
+                      onClick={() => {
+                        setAddDialogOpen(false);
+                        setNewJuror({ firstName: "", lastName: "", email: "" });
+                      }}
                       disabled={internalIsLoading}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-email" className="text-right">
-                      Email
-                    </Label>
-                    <Input
-                      id="add-email"
-                      type="email"
-                      value={newJuror.email}
-                      onChange={(e) =>
-                        setNewJuror((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      className="col-span-3"
-                      required
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
+                      type="submit"
                       disabled={internalIsLoading}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    className="cursor-pointer"
-                    variant="outline"
-                    onClick={() => {
-                      setAddDialogOpen(false);
-                      setNewJuror({ firstName: "", lastName: "", email: "" });
-                    }}
-                    disabled={internalIsLoading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    className="cursor-pointer bg-[var(--selected)] hover:bg-[var(--selected-hover)]"
-                    type="submit"
-                    disabled={internalIsLoading}
-                  >
-                    {internalIsLoading && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {internalIsLoading ? "Guardando..." : "Guardar"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                    >
+                      {internalIsLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {internalIsLoading ? "Guardando..." : "Guardar"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
@@ -861,12 +866,12 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                            onClick={() => {setLoading(true); juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading)}}
-                            disabled={internalIsLoading}
-                            className="cursor-pointer"
-                          >
-                            Quitar equipos
-                          </DropdownMenuItem>
+                          onClick={() => { setLoading(true); juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading) }}
+                          disabled={internalIsLoading}
+                          className="cursor-pointer"
+                        >
+                          Quitar equipos
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             setDeletingId(juror.id);
@@ -887,9 +892,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         </Table>
         {/* Pagination Controls (hidden while searching) */}
         {!searchTerm && paginationMeta && paginationMeta.totalItems > 0 && (
-          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-            <div className="flex items-center gap-2">
-              <span>Filas por página</span>
+          <div className="flex justify-between items-center p-4 text-sm border-t border-border gap-2">
+            <div className="flex items-center gap-1 min-[450px]:gap-2">
+              <span className="w-12 min-[450px]:w-auto text-center min-[450px]:text-left leading-tight break-words">
+                Filas por página
+              </span>
               <Select
                 value={paginationMeta.itemsPerPage.toString()}
                 onValueChange={(value) => {
@@ -913,13 +920,14 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-4">
-              <span>
-                Página{" "}
-                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
-                de {paginationMeta.totalPages}
+            <div className="flex items-center gap-2 min-[450px]:gap-4 shrink-0">
+              <span className="text-center min-[450px]:text-left leading-tight">
+                <span className="block min-[450px]:inline">Página </span>
+                <span className="block min-[450px]:inline">
+                  {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0} de {paginationMeta.totalPages}
+                </span>
               </span>
-              <div className="flex gap-1">
+              <div className="flex gap-1 shrink-0">
                 <Button
                   onClick={() => onPageChange(paginationMeta.currentPage - 1)}
                   disabled={paginationMeta.currentPage === 1 || showLoader}
@@ -1038,39 +1046,39 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       </Dialog>
 
       {/* Delete Dialog */}
-    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción eliminará (o desactivará) al jurado. Confirme para
-            proceder.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel
-            onClick={() => {
-              setDeleteDialogOpen(false);
-              setDeletingId(null);
-            }}
-            disabled={internalIsLoading}
-            className="cursor-pointer"
-          >
-            Cancelar
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmDelete}
-            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-            disabled={internalIsLoading}
-          >
-            {internalIsLoading && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            {internalIsLoading ? "Procesando..." : "Confirmar"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará (o desactivará) al jurado. Confirme para
+              proceder.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletingId(null);
+              }}
+              disabled={internalIsLoading}
+              className="cursor-pointer"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+              disabled={internalIsLoading}
+            >
+              {internalIsLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {internalIsLoading ? "Procesando..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
