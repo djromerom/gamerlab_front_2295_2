@@ -202,6 +202,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     {
       key: "evaluatedCount",
       label: "Juegos revisados",
+      align: "center",
       renderCell: (juror: JurorRowData) => (
         <Dialog>
           <DialogTrigger asChild>
@@ -240,6 +241,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     {
       key: "unevaluatedCount",
       label: "Juegos pendientes",
+      align: "center",
       renderCell: (juror: JurorRowData) => (
         <Dialog>
           <DialogTrigger asChild>
@@ -278,6 +280,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     {
       key: "manualAssigment",
       label: "Asignar equipo",
+      align: "center",
       renderCell: (juror: JurorRowData) => (
         <Dialog>
           <DialogTrigger asChild>
@@ -363,6 +366,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     {
       key: "manualDelete",
       label: "Quitar un equipo",
+      align: "center",
       renderCell: (juror: JurorRowData) => (
         <Dialog>
           <DialogTrigger asChild>
@@ -799,8 +803,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         <Table>
           <TableHeader className="bg-card border-b border-border">
             <TableRow>
-              {columnsToDisplay.map(({ key, label }) => (
-                <TableHead key={key}>{label}</TableHead>
+              {columnsToDisplay.map(({ key, label, align }) => (
+                <TableHead key={key} className={align === "center" ? "text-center" : ""}>
+                  {label}
+                </TableHead>
               ))}
               <TableHead className="w-[50px] text-right"></TableHead>
             </TableRow>
@@ -830,8 +836,12 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             ) : (
               filteredJurors?.map((juror) => (
                 <TableRow key={juror.id}>
-                  {columnsToDisplay.map(({ key, renderCell }) => (
-                    <TableCell key={key}>{renderCell(juror)}</TableCell>
+                  {columnsToDisplay.map(({ key, renderCell, align }) => (
+                    <TableCell key={key} className={align === "center" ? "text-center" : ""}>
+                      <div className={align === "center" ? "flex justify-center" : ""}>
+                        {renderCell(juror)}
+                      </div>
+                    </TableCell>
                   ))}
                   <TableCell className="text-right">
                     <DropdownMenu>
