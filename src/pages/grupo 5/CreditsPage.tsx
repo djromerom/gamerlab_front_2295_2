@@ -383,12 +383,20 @@ export default function DevelopersCredits() {
       const byVersion = activeVersion === "all" ? true : dev.version.includes(activeVersion);
       return byDept && byVersion;
     }).sort((a, b) => {
-      if (activeVersion === "all") {
-        const maxA = Math.max(...a.version);
-        const maxB = Math.max(...b.version);
+      // First, people with fewer versions
+      if (a.version.length !== b.version.length) {
+        return a.version.length - b.version.length;
+      }
+
+      // If they have the same number of versions, sort by the most recent version
+      const maxA = Math.max(...a.version);
+      const maxB = Math.max(...b.version);
+      if (maxB !== maxA) {
         return maxB - maxA;
       }
-      return 0;
+
+      // Alphabetical order to be consistent
+      return a.name.localeCompare(b.name);
     });
 
   // Función para contar desarrolladores por departamento
@@ -430,7 +438,7 @@ export default function DevelopersCredits() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>29 Desarrolladores</span>
+                    <span>{developers.length} Desarrolladores</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Heart className="w-5 h-5 text-[#AC7CFF]" />
@@ -467,9 +475,9 @@ export default function DevelopersCredits() {
 
             {/* Version selector (prominent) */}
             <div className="w-full max-w-4xl mb-4">
-              <div className="bg-[#110D20] p-3 rounded-lg flex items-center gap-3">
-                <span className="text-sm text-gray-300 font-medium">Versión:</span>
-                <div className="flex items-center gap-2">
+              <div className="bg-[#110D20] p-3 rounded-lg flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-gray-300 font-medium mr-1">Versión:</span>
                   <button
                     onClick={() => setActiveVersion("all")}
                     className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
@@ -495,7 +503,9 @@ export default function DevelopersCredits() {
                     v3
                   </button>
                 </div>
-                <div className="ml-auto text-sm text-gray-400">Total: {developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length} desarrolladores</div>
+                <div className="md:ml-auto text-sm text-gray-400 whitespace-nowrap mt-1 md:mt-0">
+                  Total: {developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length} desarrolladores
+                </div>
               </div>
             </div>
 

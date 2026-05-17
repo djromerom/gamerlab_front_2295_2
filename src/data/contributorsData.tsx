@@ -77,28 +77,6 @@ export const technologies = [
   { name: "Docker", icon: <Container className="w-4 h-4" /> },
 ];
 
-export const projectStats = [
-  {
-    value: "29",
-    label: "Desarrolladores",
-    icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
-  },
-  {
-    value: "5",
-    label: "Semanas de Desarrollo",
-    icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
-  },
-  {
-    value: "999+",
-    label: "Commits",
-    icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
-  },
-  {
-    value: "∞",
-    label: "Líneas de Código",
-    icon: <Code className="w-6 h-6 text-[#AC7CFF]" />,
-  },
-];
 
 export const developers = [
   {
@@ -384,7 +362,7 @@ export const developers = [
     id: 32,
     name: "Samuel Camargo",
     role: "Frontend Leader",
-    department: ["frontend", "fullstacks"],
+    department: ["frontend"],
     version: [3],
     github: "https://github.com/kicconsu",
     email: "sicamargo@uninorte.edu.co",
@@ -420,7 +398,7 @@ export const developers = [
     id: 36,
     name: "Juan Borja",
     role: "Backend Leader",
-    department: ["backend", "fullstacks"],
+    department: ["backend"],
     version: [3],
     github: "https://github.com/jdborjac",
     email: "jborjad@uninorte.edu.co",
@@ -440,7 +418,30 @@ export const developers = [
     role: "Scrum Master",
     department: ["scrum"],
     version: [3],
-    github: "https://github.com/placeholder123456",
+    github: "https://github.com/jlobo0210",
     email: "joshual@uninorte.edu.co",
+  },
+];
+
+export const projectStats = [
+  {
+    value: developers.length.toString(),
+    label: "Desarrolladores",
+    icon: <Users className="w-6 h-6 text-[#AC7CFF]" />,
+  },
+  {
+    value: "5",
+    label: "Semanas de Desarrollo",
+    icon: <Calendar className="w-6 h-6 text-[#AC7CFF]" />,
+  },
+  {
+    value: "999+",
+    label: "Commits",
+    icon: <Github className="w-6 h-6 text-[#AC7CFF]" />,
+  },
+  {
+    value: "∞",
+    label: "Líneas de Código",
+    icon: <Code className="w-6 h-6 text-[#AC7CFF]" />,
   },
 ];
