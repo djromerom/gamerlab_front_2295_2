@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -55,10 +55,17 @@ export const TeamsManagementTable = ({
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
+  const [debouncedCertSearchTerm, setDebouncedCertSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCertSearchTerm(certSearchTerm), 200);
+    return () => clearTimeout(timer);
+  }, [certSearchTerm]);
+
   const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<string[]>([]);
   const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
   const filteredCertTeams = (teams ?? []).filter((t) =>
-    (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
+    (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
@@ -79,12 +86,44 @@ export const TeamsManagementTable = ({
   //   }
   // };
 
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleFilterChange = useCallback((filter: "all" | "uninorte" | "external") => {
+    if (externalFilter === filter) return;
+    setTimeout(() => {
+      setExternalFilter(filter);
+      try { onPageChange(1); } catch { }
+    }, 300);
+  }, [externalFilter, onPageChange]);
+
+  const filteredTeamsGlobal = useMemo(() => {
+    const filteredByExternal = (teams ?? []).filter((team) => {
+      if (!team) return false;
+      if (externalFilter === "all") return true;
+      const isExt = (team as any)?.isExternal === true;
+      return externalFilter === "external" ? isExt : !isExt;
+    });
+
+    const term = debouncedSearchTerm.trim().toLowerCase();
+    return term
+      ? filteredByExternal.filter((t) => {
+        const teamName = (t.nombre_equipo ?? "").toLowerCase();
+        const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+        return teamName.includes(term) || gameName.includes(term);
+      })
+      : filteredByExternal;
+  }, [teams, externalFilter, debouncedSearchTerm]);
+
   // Counters
   const totalTeamsCount = teams?.length ?? 0;
   const uninorteCount = teams?.filter(t => !(t as any)?.isExternal).length ?? 0;
   const externalCount = teams?.filter(t => (t as any)?.isExternal).length ?? 0;
-
-  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const setCliebtPage = useCallback((page: number) => {
     try {
@@ -747,11 +786,7 @@ export const TeamsManagementTable = ({
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
-                    onClick={() => {
-                      if (externalFilter === "all") return;
-                      setExternalFilter("all");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    onClick={() => handleFilterChange("all")}
                   >
                     Todos ({totalTeamsCount})
                   </DropdownMenuItem>
@@ -761,11 +796,7 @@ export const TeamsManagementTable = ({
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
-                    onClick={() => {
-                      if (externalFilter === "uninorte") return;
-                      setExternalFilter("uninorte");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    onClick={() => handleFilterChange("uninorte")}
                   >
                     Uninorte ({uninorteCount})
                   </DropdownMenuItem>
@@ -775,11 +806,7 @@ export const TeamsManagementTable = ({
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
-                    onClick={() => {
-                      if (externalFilter === "external") return;
-                      setExternalFilter("external");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    onClick={() => handleFilterChange("external")}
                   >
                     Externos ({externalCount})
                   </DropdownMenuItem>
@@ -789,13 +816,13 @@ export const TeamsManagementTable = ({
 
             {/* Filtro Botones (Desktop) */}
             <div className="hidden lg:flex items-center gap-1 rounded-md p-1 bg-muted/10">
-              <Button size="sm" variant={externalFilter === "all" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => { if (externalFilter === "all") return; setExternalFilter("all"); try { onPageChange(1); } catch { } }} disabled={showLoader}>
+              <Button size="sm" variant={externalFilter === "all" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("all")} disabled={showLoader}>
                 Todos ({totalTeamsCount})
               </Button>
-              <Button size="sm" variant={externalFilter === "uninorte" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => { if (externalFilter === "uninorte") return; setExternalFilter("uninorte"); try { onPageChange(1); } catch { } }} disabled={showLoader}>
+              <Button size="sm" variant={externalFilter === "uninorte" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("uninorte")} disabled={showLoader}>
                 Uninorte ({uninorteCount})
               </Button>
-              <Button size="sm" variant={externalFilter === "external" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => { if (externalFilter === "external") return; setExternalFilter("external"); try { onPageChange(1); } catch { } }} disabled={showLoader}>
+              <Button size="sm" variant={externalFilter === "external" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("external")} disabled={showLoader}>
                 Externos ({externalCount})
               </Button>
             </div>
@@ -882,7 +909,7 @@ export const TeamsManagementTable = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && totalFiltered === 0 ? (
+            ) : !showLoader && filteredTeamsGlobal.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -895,23 +922,8 @@ export const TeamsManagementTable = ({
               // filtro por tipo + búsqueda
               // apply client-side filter: only all / uninorte / external
               (() => {
-                const filteredByExternal = teams?.filter((team) => {
-                  if (!team) return false;
-                  if (externalFilter === "all") return true;
-                  const isExt = (team as any)?.isExternal === true;
-                  return externalFilter === "external" ? isExt : !isExt;
-                }) ?? [];
-
-                const term = searchTerm.trim().toLowerCase();
-                const filteredTeams = term
-                  ? filteredByExternal.filter((t) => {
-                    const teamName = (t.nombre_equipo ?? "").toLowerCase();
-                    const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-                    return teamName.includes(term) || gameName.includes(term);
-                  })
-                  : filteredByExternal;
-
                 // APPLY PAGINATION SLICE BASED ON currentPage/itemsPerPage
+                const filteredTeams = filteredTeamsGlobal;
                 const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
                 const currentPage = paginationMeta?.currentPage ?? 1;
 
@@ -981,20 +993,7 @@ export const TeamsManagementTable = ({
           const currentPage = paginationMeta?.currentPage ?? 1;
 
           // Recalcular totalPages según el filtro/búsqueda actual
-          const filteredByExternal = teams?.filter((team) => {
-            if (!team) return false;
-            if (externalFilter === "all") return true;
-            const isExt = (team as any)?.isExternal === true;
-            return externalFilter === "external" ? isExt : !isExt;
-          }) ?? [];
-          const term = searchTerm.trim().toLowerCase();
-          const filteredTeams = term
-            ? filteredByExternal.filter((t) => {
-              const teamName = (t.nombre_equipo ?? "").toLowerCase();
-              const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-              return teamName.includes(term) || gameName.includes(term);
-            })
-            : filteredByExternal;
+          const filteredTeams = filteredTeamsGlobal;
 
           const totalPages =
             itemsPerPage === 999999
