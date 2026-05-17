@@ -728,7 +728,7 @@ export const TeamsManagementTable = ({
 
         {/* Fila 2: Filtros, Buscador y Botones */}
         <div className="flex items-center justify-between gap-4 w-full">
-          
+
           <div className="flex items-center gap-2 shrink-0">
             {/* Filtro Dropdown (Móvil) */}
             <div className="block lg:hidden">
@@ -741,9 +741,48 @@ export const TeamsManagementTable = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuItem onClick={() => { if (externalFilter === "all") return; setExternalFilter("all"); try { onPageChange(1); } catch { } }}>Todos ({totalTeamsCount})</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (externalFilter === "uninorte") return; setExternalFilter("uninorte"); try { onPageChange(1); } catch { } }}>Uninorte ({uninorteCount})</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { if (externalFilter === "external") return; setExternalFilter("external"); try { onPageChange(1); } catch { } }}>Externos ({externalCount})</DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={
+                      externalFilter === "all"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => {
+                      if (externalFilter === "all") return;
+                      setExternalFilter("all");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Todos ({totalTeamsCount})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={
+                      externalFilter === "uninorte"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => {
+                      if (externalFilter === "uninorte") return;
+                      setExternalFilter("uninorte");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Uninorte ({uninorteCount})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={
+                      externalFilter === "external"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => {
+                      if (externalFilter === "external") return;
+                      setExternalFilter("external");
+                      try { onPageChange(1); } catch { }
+                    }}
+                  >
+                    Externos ({externalCount})
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
