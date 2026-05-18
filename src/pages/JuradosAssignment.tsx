@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Download,
   MoreVertical,
+  Award,
+  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
@@ -18,6 +20,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 type JurorType = "OFFICIAL" | "BACKUP";
@@ -520,6 +523,9 @@ export function JuradosAssignment() {
   const [showEditJurorModal, setShowEditJurorModal] = useState(false);
   const [editingJuror, setEditingJuror] = useState<Jurado | null>(null);
 
+  // ── Estado para el envío masivo de certificados ──
+  const [bulkCertLoading, setBulkCertLoading] = useState(false);
+
   const [createJurorForm, setCreateJurorForm] = useState({
     firstName: "",
     lastName: "",
@@ -545,7 +551,7 @@ export function JuradosAssignment() {
         apiRequest<any>("/juror?includeInactive=false&limit=100&page=1", {
           method: "GET",
         }),
-        apiRequest<any>("/juror/evaluation-tracking", {
+        apiRequest<any>("/juror/evaluators", {
           method: "GET",
         }),
         apiRequest<any>("/auth/me", { method: "GET" }).catch(() => null),
@@ -584,6 +590,32 @@ export function JuradosAssignment() {
   useEffect(() => {
     void loadData();
   }, []);
+
+  // ── Envío masivo de certificados a todos los jurados ──
+  const handleSendAllCertificates = async () => {
+    if (bulkCertLoading) return;
+    setBulkCertLoading(true);
+    const toastId = "cert-all";
+    toast.loading("Generando y enviando certificados a todos los jurados...", { id: toastId });
+
+    try {
+      const result = await apiRequest<{
+        message: string;
+        sent: number;
+        failed: number;
+        errors?: string[];
+      }>("/certificates/juror/all", { method: "POST" });
+
+      toast.success(
+        `${result.message}${result.failed ? ` (${result.failed} fallidos)` : ""}`,
+        { id: toastId }
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "Error al enviar los certificados.", { id: toastId });
+    } finally {
+      setBulkCertLoading(false);
+    }
+  };
 
   const getJuradosDisponibles = (tipo?: JurorType) => {
     return jurados.filter((jurado) => {
@@ -1266,7 +1298,6 @@ export function JuradosAssignment() {
                 detail="asignados como respaldo"
                 onClick={() => setDashboardFilter("remanentes-uso")}
               />
-
             </div>
 
             {dashboardFilter !== "todos" && (
@@ -1284,6 +1315,7 @@ export function JuradosAssignment() {
               </div>
             )}
 
+            {/* ── Barra de acciones ── */}
             <div className="max-w-7xl flex flex-wrap gap-3 md:gap-4 mb-8 md:mb-12">
               <button
                 onClick={() => setShowJuradosListModal(true)}
@@ -1317,6 +1349,20 @@ export function JuradosAssignment() {
               >
                 <UserX className="w-4 md:w-5 h-4 md:h-5" />
                 Limpiar Todo
+              </button>
+
+              {/* ── Botón enviar certificados a todos los jurados ── */}
+              <button
+                onClick={() => void handleSendAllCertificates()}
+                disabled={isLoading || isSubmitting || bulkCertLoading || jurados.length === 0}
+                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
+                title="Enviar certificado de participación a todos los jurados"
+              >
+                {bulkCertLoading
+                  ? <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin" />
+                  : <Award className="w-4 md:w-5 h-4 md:h-5" />
+                }
+                {bulkCertLoading ? "Enviando..." : "Enviar certificados"}
               </button>
             </div>
 
@@ -1575,6 +1621,8 @@ export function JuradosAssignment() {
               </div>
             </div>
           </div>
+
+          {/* ── Modales (sin cambios) ── */}
 
           {showJuradosListModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
@@ -1854,8 +1902,6 @@ export function JuradosAssignment() {
               </div>
             </div>
           )}
-
-
 
           {showAllTeamsModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon, Download, Award } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +36,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [searchTerm, setSearchTerm] = useState("");
   const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [certLoadingId, setCertLoadingId] = useState<string | null>(null); // ID del jurado cuyo cert está en proceso
+  const [bulkCertLoading, setBulkCertLoading] = useState(false); // para el botón "Enviar todos"
   
   useEffect(() => {
 
@@ -164,6 +166,55 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
 
   const showError = (errorMessage: string) => {
     toast.error(errorMessage);
+  };
+
+  // ─────────────────────────────────────────────
+  // Envío de certificado al jurado individual
+  // ─────────────────────────────────────────────
+  const handleSendCertificate = async (juror: JurorRowData) => {
+    if (certLoadingId) return;
+    setCertLoadingId(juror.id);
+    const toastId = `cert-${juror.id}`;
+    toast.loading(`Enviando certificado a ${juror.firstName}...`, { id: toastId });
+
+    try {
+      const result = await juryManagement.sendJurorCertificate(juror.id);
+      if (result.success) {
+        toast.success(result.message, { id: toastId });
+      } else {
+        toast.error(result.message, { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error al enviar el certificado.", { id: toastId });
+    } finally {
+      setCertLoadingId(null);
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // Envío masivo de certificados a todos los jurados
+  // ─────────────────────────────────────────────
+  const handleSendAllCertificates = async () => {
+    if (bulkCertLoading) return;
+    setBulkCertLoading(true);
+    const toastId = 'cert-all';
+    toast.loading('Generando y enviando certificados a todos los jurados...', { id: toastId });
+
+    try {
+      const result = await juryManagement.sendAllJurorCertificates();
+      if (result.success) {
+        toast.success(
+          `${result.message}${result.failed ? ` (${result.failed} fallidos)` : ''}`,
+          { id: toastId }
+        );
+      } else {
+        toast.error(result.message, { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al enviar los certificados.', { id: toastId });
+    } finally {
+      setBulkCertLoading(false);
+    }
   };
 
   const columnsToDisplay = [
@@ -658,6 +709,29 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
             </p>
           </Button>
 
+          {/* Botón Enviar certificados a todos */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex justify-center cursor-pointer"
+                  onClick={handleSendAllCertificates}
+                  disabled={showLoader || bulkCertLoading || !jurors || jurors.length === 0}
+                >
+                  {bulkCertLoading
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Award className="h-4 w-4" />
+                  }
+                  <p className="hidden lg:flex ml-1">
+                    {bulkCertLoading ? 'Enviando...' : 'Enviar certificados'}
+                  </p>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Enviar certificado a todos los jurados</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Botón Exportar con tooltip */}
           <TooltipProvider>
             <Tooltip>
@@ -867,6 +941,21 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                           >
                             Quitar equipos
                           </DropdownMenuItem>
+
+                        {/* ── Enviar certificado ── */}
+                        <DropdownMenuItem
+                          onClick={() => handleSendCertificate(juror)}
+                          disabled={internalIsLoading || certLoadingId === juror.id}
+                          className="cursor-pointer"
+                        >
+                          {certLoadingId === juror.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Award className="mr-2 h-4 w-4" />
+                          )}
+                          {certLoadingId === juror.id ? "Enviando..." : "Enviar certificado"}
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           onClick={() => {
                             setDeletingId(juror.id);
