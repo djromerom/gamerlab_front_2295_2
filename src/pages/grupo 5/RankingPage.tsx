@@ -9,6 +9,12 @@ type Team = {
   id: number;
   name: string;
   score: number;
+  finalScore: number;
+  rankingScore: number;
+  wasTied: boolean;
+  tieBreakerScore: number | null;
+  jurorTieBreakerScore: number | null;
+  professorTieBreakerScore: number | null;
   logo?: string;
   teamCode?: string;
 };
@@ -66,14 +72,13 @@ const glowStyles = `
 
   .gradient-border-gold::after, .gradient-border-gold::before {
     background-image: conic-gradient(
-  from var(--angle),
-  #FFD700,
-  #FFC700,
-  #FFB700,
-  #FFA700,
-  #FFD700
-);
-
+      from var(--angle),
+      #FFD700,
+      #FFC700,
+      #FFB700,
+      #FFA700,
+      #FFD700
+    );
   }
 
   .gradient-border-silver::after, .gradient-border-silver::before {
@@ -84,7 +89,7 @@ const glowStyles = `
     background-image: conic-gradient(from var(--angle), #cd7f32, #b87333, #a57164, #b87333, #cd7f32);
   }
 
-    .gradient-border-purple::after, .gradient-border-purple::before {
+  .gradient-border-purple::after, .gradient-border-purple::before {
     background-image: conic-gradient(
       from var(--angle),
       #6A0DAD,
@@ -98,8 +103,6 @@ const glowStyles = `
 `;
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
-const API_ENDPOINT = `${API_BASE_URL}/reports`;
-//const FAIR_ENDED = import.meta.env.VITE_FAIR_ENDED || true;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function PodioGamer() {
@@ -109,32 +112,61 @@ export default function PodioGamer() {
 
   const isRankingVisible = async () => {
     const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
-      method: 'GET',
+      method: "GET",
       headers: { "Content-Type": "application/json" },
-      credentials: 'include'
-    })
+      credentials: "include",
+    });
 
     if (!res.ok) {
-      throw new Error('Ocurrió un error.')
+      throw new Error("Ocurrió un error.");
     }
 
-    const isVisible = await res.json()
-    console.log('Esta es la respuesta: ', isVisible)
-    setFairEnded(isVisible.showRanking)
-  }
+    const isVisible = await res.json();
+    console.log("Esta es la respuesta: ", isVisible);
+    setFairEnded(isVisible.showRanking);
+  };
 
   const fetchData = async (n: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/teams/final-score/by-n/${n}`);
+
+      if (!res.ok) {
+        throw new Error("No se pudo cargar el ranking.");
+      }
+
       const data = await res.json();
 
-      const formattedTeams = data.map((team: any) => ({
-        id: team.id,
-        name: team.videogameName,
-        score: team.finalScore,
-        logo: team.videogameLogoUrl,
-        teamCode: team.teamCode,
-      }));
+      const formattedTeams: Team[] = data.map((team: any) => {
+        const finalScore = Number(team.finalScore ?? team.final_score ?? 0);
+
+        // Este es el cambio clave:
+        // se usa rankingScore porque el backend ya aplica ahí el desempate.
+        // Si no existe rankingScore, se usa finalScore como respaldo.
+        const rankingScore = Number(
+          team.rankingScore ?? team.ranking_score ?? finalScore,
+        );
+
+        return {
+          id: Number(team.teamId ?? team.id ?? team.videogameId),
+          name: team.videogameName ?? team.teamName ?? "Sin nombre",
+          score: rankingScore,
+          finalScore,
+          rankingScore,
+          wasTied: Boolean(team.wasTied ?? team.was_tied ?? false),
+          tieBreakerScore:
+            team.tieBreakerScore ?? team.tie_breaker_score ?? null,
+          jurorTieBreakerScore:
+            team.jurorTieBreakerScore ??
+            team.juror_tie_breaker_score ??
+            null,
+          professorTieBreakerScore:
+            team.professorTieBreakerScore ??
+            team.professor_tie_breaker_score ??
+            null,
+          logo: team.logoUrl ?? team.videogameLogoUrl ?? null,
+          teamCode: team.teamCode ?? team.team_code,
+        };
+      });
 
       console.log("Equipos formateados:", formattedTeams);
       console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
@@ -145,18 +177,22 @@ export default function PodioGamer() {
     }
   };
 
-  useEffect(() => { //
-    // setFairEnded(FAIR_ENDED);
-    isRankingVisible()
+  useEffect(() => {
+    isRankingVisible();
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
     fetchData("all");
+
     return () => {
       document.documentElement.classList.remove("dark");
     };
   }, []);
 
-  const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+  // El frontend sigue ordenando, pero ahora lo hace con rankingScore.
+  // Esto evita que ignore el desempate calculado por backend.
+  const sortedTeams = [...teams].sort(
+    (a, b) => (b.rankingScore ?? b.score ?? 0) - (a.rankingScore ?? a.score ?? 0),
+  );
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -167,6 +203,16 @@ export default function PodioGamer() {
       document.head.removeChild(styleElement);
     };
   }, []);
+
+  const renderTieBreakerBadge = (team: Team) => {
+    if (!team.wasTied) return null;
+
+    return (
+      <span className="mt-1 inline-block rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-1 text-xs text-purple-200">
+        Definido por desempate
+      </span>
+    );
+  };
 
   return (
     <>
@@ -179,6 +225,7 @@ export default function PodioGamer() {
         >
           <div className="absolute inset-0"></div>
         </div>
+
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
@@ -191,65 +238,99 @@ export default function PodioGamer() {
             <div className="w-full max-w-6xl mb-8 px-4">
               <div className="flex justify-center gap-2 md:gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
                 <button
-                  onClick={async () => { setActiveSemester("all"); await fetchData("all") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "all"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("all");
+                    await fetchData("all");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "all"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Todos
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("1"); await fetchData("n1") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "1"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("1");
+                    await fetchData("n1");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "1"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Primer Semestre
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("2"); await fetchData("n2") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "2"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("2");
+                    await fetchData("n2");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "2"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Segundo Semestre
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("3"); await fetchData("n3") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "3"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("3");
+                    await fetchData("n3");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "3"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Tercer Semestre
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("4"); await fetchData("n4") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "4"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("4");
+                    await fetchData("n4");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "4"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Cuarto Semestre
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("10"); await fetchData("n10") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "10"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("10");
+                    await fetchData("n10");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "10"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Décimo Semestre
                 </button>
+
                 <button
-                  onClick={async () => { setActiveSemester("colegio"); await fetchData("n0") }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "colegio"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
+                  onClick={async () => {
+                    setActiveSemester("colegio");
+                    await fetchData("n0");
+                  }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                    activeSemester === "colegio"
+                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                      : "text-gray-300 hover:bg-[#1A1428]"
+                  }`}
                 >
                   Colegios
                 </button>
@@ -263,7 +344,8 @@ export default function PodioGamer() {
                 <div className="gradient-border-inner"></div>
                 <div className="relative z-10 text-center p-6 md:p-8">
                   <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                    El ranking aún no está disponible debido a que la feria no ha finalizado
+                    El ranking aún no está disponible debido a que la feria no ha
+                    finalizado
                   </h2>
                   <p className="text-gray-300 mb-6">
                     Los datos aparecerán una vez finalice el evento
@@ -299,11 +381,15 @@ export default function PodioGamer() {
                         <p className="text-center text-xl font-bold text-[#c0c0c0]">
                           {sortedTeams[1].score.toFixed(3)}
                         </p>
+                        {renderTieBreakerBadge(sortedTeams[1])}
                       </div>
+
                       <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
                         <div className="gradient-border-inner"></div>
                         <div className="flex h-full items-center justify-center relative z-10">
-                          <span className="text-6xl font-bold text-white">2</span>
+                          <span className="text-6xl font-bold text-white">
+                            2
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -332,11 +418,15 @@ export default function PodioGamer() {
                         <p className="text-center text-2xl font-bold text-[#FFD700]">
                           {sortedTeams[0].score.toFixed(3)}
                         </p>
+                        {renderTieBreakerBadge(sortedTeams[0])}
                       </div>
+
                       <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
                         <div className="gradient-border-inner"></div>
                         <div className="flex h-full items-center justify-center relative z-10">
-                          <span className="text-7xl font-bold text-white">1</span>
+                          <span className="text-7xl font-bold text-white">
+                            1
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -365,11 +455,15 @@ export default function PodioGamer() {
                         <p className="text-center text-lg font-bold text-[#CD7F32]">
                           {sortedTeams[2].score.toFixed(3)}
                         </p>
+                        {renderTieBreakerBadge(sortedTeams[2])}
                       </div>
+
                       <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
                         <div className="gradient-border-inner"></div>
                         <div className="flex h-full items-center justify-center relative z-10">
-                          <span className="text-5xl font-bold text-white">3</span>
+                          <span className="text-5xl font-bold text-white">
+                            3
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -380,9 +474,13 @@ export default function PodioGamer() {
               {/* Lista de equipos en otras posiciones */}
               <div className="mt-8 w-full max-w-4xl">
                 <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
-                  {activeSemester === "all" ? "Ranking General" : "Otras Posiciones"}
+                  {activeSemester === "all"
+                    ? "Ranking General"
+                    : "Otras Posiciones"}
                 </h2>
+
                 <div className="w-16 h-1 bg-purple-500 mx-auto mb-4 rounded-full"></div>
+
                 <div className="bg-[#060312] border-1 border-gray-700 rounded-lg shadow-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-[#110D20]">
@@ -398,36 +496,53 @@ export default function PodioGamer() {
                         </th>
                       </tr>
                     </thead>
+
                     <tbody>
-                      {sortedTeams.slice(activeSemester === "all" ? 0 : 3).map((team, index) => (
-                        <tr key={index} className="border-t border-gray-700">
-                          <td className="px-4 py-3 text-sm text-gray-300">
-                            {activeSemester === "all" ? index + 1 : index + 4}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <div className="flex items-center">
-                              <div className="w-6 h-6 rounded-full mr-3 overflow-hidden bg-gray-700 flex items-center justify-center">
-                                {team.logo ? (
-                                  <img
-                                    src={team.logo}
-                                    alt={team.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-xs font-bold text-white">
-                                    {team.name.substring(0, 1)}
+                      {sortedTeams
+                        .slice(activeSemester === "all" ? 0 : 3)
+                        .map((team, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-300">
+                              {activeSemester === "all" ? index + 1 : index + 4}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex items-center">
+                                <div className="w-6 h-6 rounded-full mr-3 overflow-hidden bg-gray-700 flex items-center justify-center">
+                                  {team.logo ? (
+                                    <img
+                                      src={team.logo}
+                                      alt={team.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-bold text-white">
+                                      {team.name.substring(0, 1)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col">
+                                  <span className="text-gray-200">
+                                    {team.name}
                                   </span>
-                                )}
+                                  {team.wasTied && (
+                                    <span className="text-xs text-purple-300">
+                                      Definido por desempate
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <span className="text-gray-200">{team.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                            {Number(team.score.toFixed(2))}
-                          </td>
-                        </tr>
-                      ))}
-                      {sortedTeams.slice(activeSemester === "all" ? 0 : 3).length === 0 && (
+                            </td>
+
+                            <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
+                              {Number(team.score.toFixed(2))}
+                            </td>
+                          </tr>
+                        ))}
+
+                      {sortedTeams.slice(activeSemester === "all" ? 0 : 3)
+                        .length === 0 && (
                         <tr>
                           <td
                             colSpan={3}
@@ -443,6 +558,7 @@ export default function PodioGamer() {
               </div>
             </>
           )}
+
           <TextSizeControls />
           <DiscordButton discordUrl={discordSupportUrl} />
         </div>
