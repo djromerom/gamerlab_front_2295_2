@@ -10,6 +10,9 @@ import {
   ChevronRight,
   Download,
   MoreVertical,
+  History,
+  Eye,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
@@ -162,7 +165,7 @@ async function apiRequest<T>(
       typeof parsedBody === "string"
         ? parsedBody
         : (parsedBody as { message?: string })?.message ||
-          `Error ${response.status}`;
+        `Error ${response.status}`;
 
     throw new Error(errorMessage);
   }
@@ -443,11 +446,11 @@ function mapTeamAssignedJuror(
 function mapTeamFromApi(raw: any, allJurados: Jurado[], previousTeams: Team[]): Team {
   const rawAssigned = extractArray(
     raw.juradosAsignados ??
-      raw.jurados ??
-      raw.assignedJurors ??
-      raw.jurors ??
-      raw.assigned_jurors ??
-      []
+    raw.jurados ??
+    raw.assignedJurors ??
+    raw.jurors ??
+    raw.assigned_jurors ??
+    []
   );
 
   const leader =
@@ -470,11 +473,11 @@ function mapTeamFromApi(raw: any, allJurados: Jurado[], previousTeams: Team[]): 
     name: safeString(raw.nombre ?? raw.name ?? raw.teamName ?? raw.equipo, "Equipo sin nombre"),
     game: safeString(
       raw.videojuego ??
-        raw.game ??
-        raw.gameName ??
-        raw.videogameName ??
-        raw.videogame?.name ??
-        raw.projectName,
+      raw.game ??
+      raw.gameName ??
+      raw.videogameName ??
+      raw.videogame?.name ??
+      raw.projectName,
       "Sin videojuego"
     ),
     semester: safeString(
@@ -518,6 +521,8 @@ export function JuradosAssignment() {
 
   const [showCreateJurorModal, setShowCreateJurorModal] = useState(false);
   const [showEditJurorModal, setShowEditJurorModal] = useState(false);
+  const [showStatsMobile, setShowStatsMobile] = useState(false);
+  const [showUsoRapidoMobile, setShowUsoRapidoMobile] = useState(false);
   const [editingJuror, setEditingJuror] = useState<Jurado | null>(null);
 
   const [createJurorForm, setCreateJurorForm] = useState({
@@ -584,6 +589,34 @@ export function JuradosAssignment() {
   useEffect(() => {
     void loadData();
   }, []);
+
+  // Bloquear scroll de la página cuando algún modal esté abierto
+  useEffect(() => {
+    const isAnyModalOpen =
+      showJuradoModal ||
+      showJuradosListModal ||
+      showAuditModal ||
+      showAllTeamsModal ||
+      showCreateJurorModal ||
+      showEditJurorModal;
+
+    if (isAnyModalOpen) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [
+    showJuradoModal,
+    showJuradosListModal,
+    showAuditModal,
+    showAllTeamsModal,
+    showCreateJurorModal,
+    showEditJurorModal,
+  ]);
 
   const getJuradosDisponibles = (tipo?: JurorType) => {
     return jurados.filter((jurado) => {
@@ -1125,14 +1158,16 @@ export function JuradosAssignment() {
     <button
       type="button"
       onClick={onClick}
-      className="text-left bg-card border border-border rounded-xl p-3 md:p-4 hover:bg-accent transition-colors"
+      className="text-left bg-card border border-border rounded-xl p-3 md:p-4 hover:bg-accent transition-colors w-full h-full flex flex-col justify-between gap-1.5"
     >
-      <div className="text-xs mb-1 flex items-center gap-1 text-muted-foreground">
-        {icon}
-        <span>{label}</span>
+      <div className="w-full">
+        <div className="text-xs mb-1 flex items-center gap-1 text-muted-foreground whitespace-nowrap">
+          {icon && <span className="flex-shrink-0 flex items-center justify-center">{icon}</span>}
+          <span>{label}</span>
+        </div>
+        <div className="text-xl md:text-2xl font-semibold mt-0.5">{value}</div>
       </div>
-      <div className="text-xl md:text-2xl">{value}</div>
-      <div className="text-xs text-muted-foreground">{detail}</div>
+      <div className="text-xs text-muted-foreground mt-auto">{detail}</div>
     </button>
   );
 
@@ -1192,385 +1227,418 @@ export function JuradosAssignment() {
           </div>
         </header>
 
-        <div className="bg-background text-foreground min-h-screen p-4">
-          <div className="px-4 py-2">
-            <h1 className="text-xl font-medium mb-2">
-              Gestión Manual de Asignación de Jurados
-            </h1>
+        <div className="bg-background text-foreground min-h-screen w-full py-6 px-4 md:px-6">
+          <h1 className="text-xl font-medium mb-2">
+            Gestión Manual de Asignación de Jurados
+          </h1>
 
-            <p className="text-muted-foreground mb-8 text-sm md:text-base">
-              Administra la asignación manual durante la feria. Un jurado puede evaluar varios equipos, pero no puede repetirse dentro del mismo equipo.
-            </p>
+          <p className="text-muted-foreground mb-8 text-sm md:text-base">
+            Administra la asignación manual durante la feria. Un jurado puede evaluar varios equipos, pero no puede repetirse dentro del mismo equipo.
+          </p>
 
-            {isLoading && (
-              <div className="mb-6 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-                Cargando información...
-              </div>
-            )}
-
-            {loadError && (
-              <div className="mb-6 rounded-xl border border-red-500/30 bg-card p-4 text-sm text-red-500">
-                {loadError}
-              </div>
-            )}
-
-            <div className="max-w-7xl mb-6 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-              <div className="font-medium text-foreground mb-2">Uso rápido</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>1. Selecciona un equipo y pulsa <span className="text-foreground font-medium">Agregar Jurado</span>.</div>
-                <div>2. Elige un jurado disponible para ese equipo. Puede estar asignado a otros equipos.</div>
-                <div>3. Usa <span className="text-foreground font-medium">Reasignar</span> o <span className="text-foreground font-medium">Quitar</span> para ajustar en tiempo real.</div>
-              </div>
+          {isLoading && (
+            <div className="mb-6 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              Cargando información...
             </div>
+          )}
 
-            <div className="max-w-7xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
-              <DashboardCard
-                label="Oficiales"
-                value={juradosOficialesDisponibles.length}
-                detail="ver disponibles"
-                icon={<Shield className="w-3 h-3" />}
-                onClick={() => {
-                  setDashboardFilter("oficiales");
-                  setShowJuradosListModal(true);
-                }}
-              />
-
-              <DashboardCard
-                label="Remanentes"
-                value={juradosRemanentesDisponibles.length}
-                detail="ver disponibles"
-                icon={<AlertTriangle className="w-3 h-3" />}
-                onClick={() => {
-                  setDashboardFilter("remanentes");
-                  setShowJuradosListModal(true);
-                }}
-              />
-
-              <DashboardCard
-                label="Jurados asignados"
-                value={`${totalAsignados}/${totalRequeridos}`}
-                detail="cupos cubiertos"
-                onClick={() => setDashboardFilter("asignados")}
-              />
-
-              <DashboardCard
-                label="Equipos completos"
-                value={`${equiposCompletos}/${teams.length}`}
-                detail="con cupos cubiertos"
-                onClick={() => setDashboardFilter("equipos-ok")}
-              />
-
-              <DashboardCard
-                label="Remanentes en uso"
-                value={remanentesEnUso}
-                detail="asignados como respaldo"
-                onClick={() => setDashboardFilter("remanentes-uso")}
-              />
-
+          {loadError && (
+            <div className="mb-6 rounded-xl border border-red-500/30 bg-card p-4 text-sm text-red-500">
+              {loadError}
             </div>
+          )}
 
-            {dashboardFilter !== "todos" && (
-              <div className="max-w-7xl mb-4 flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
-                <span className="text-muted-foreground">
-                  Filtro activo: <span className="text-foreground font-medium">{getFilterLabel(dashboardFilter)}</span>
-                </span>
+          <div className="max-w-7xl mb-6 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            {/* Header del Uso Rápido (Alternancia en Móvil) */}
+            <button
+              type="button"
+              onClick={() => setShowUsoRapidoMobile(!showUsoRapidoMobile)}
+              className="w-full text-left font-medium text-foreground flex items-center justify-between outline-none focus:outline-none md:cursor-default"
+            >
+              <span>Uso rápido</span>
+              <ChevronRight
+                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 md:hidden ${
+                  showUsoRapidoMobile ? "rotate-90" : ""
+                }`}
+              />
+            </button>
 
-                <button
-                  onClick={() => setDashboardFilter("todos")}
-                  className="rounded-md border px-3 py-1.5 hover:bg-accent"
-                >
-                  Ver todos
-                </button>
-              </div>
-            )}
+            {/* Contenido (Desplegable en móvil, siempre visible en desktop) */}
+            <div className={`flex flex-col gap-2 mt-2 ${showUsoRapidoMobile ? "block" : "hidden"} md:block`}>
+              <div>1. Selecciona un equipo y pulsa <span className="text-foreground font-medium">Agregar Jurado</span>.</div>
+              <div>2. Elige un jurado disponible para ese equipo. Puede estar asignado a otros equipos.</div>
+              <div>3. Usa <span className="text-foreground font-medium">Reasignar</span> o <span className="text-foreground font-medium">Quitar</span> para ajustar en tiempo real.</div>
+            </div>
+          </div>
 
-            <div className="max-w-7xl flex flex-wrap gap-3 md:gap-4 mb-8 md:mb-12">
+          {/* Botón Desplegable de Métricas para Móviles */}
+          <button
+            type="button"
+            onClick={() => setShowStatsMobile(!showStatsMobile)}
+            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-accent text-foreground transition-all mb-4 md:hidden"
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-sm font-medium">Ver Estadísticas y Métricas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
+                {totalAsignados}/{totalRequeridos} asignados
+              </span>
+              <ChevronRight
+                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showStatsMobile ? "rotate-90" : ""
+                  }`}
+              />
+            </div>
+          </button>
+
+          <div className={`max-w-7xl ${showStatsMobile ? "grid" : "hidden"} md:grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8`}>
+            <DashboardCard
+              label="Oficiales"
+              value={juradosOficialesDisponibles.length}
+              detail="ver disponibles"
+              icon={<Shield className="w-3 h-3" />}
+              onClick={() => {
+                setDashboardFilter("oficiales");
+                setShowJuradosListModal(true);
+              }}
+            />
+
+            <DashboardCard
+              label="Remanentes"
+              value={juradosRemanentesDisponibles.length}
+              detail="ver disponibles"
+              icon={<AlertTriangle className="w-3 h-3 flex-shrink-0" />}
+              onClick={() => {
+                setDashboardFilter("remanentes");
+                setShowJuradosListModal(true);
+              }}
+            />
+
+            <DashboardCard
+              label="Jurados asignados"
+              value={`${totalAsignados}/${totalRequeridos}`}
+              detail="cupos cubiertos"
+              onClick={() => setDashboardFilter("asignados")}
+            />
+
+            <DashboardCard
+              label="Equipos completos"
+              value={`${equiposCompletos}/${teams.length}`}
+              detail="con cupos cubiertos"
+              onClick={() => setDashboardFilter("equipos-ok")}
+            />
+
+            <DashboardCard
+              label="Remanentes en uso"
+              value={remanentesEnUso}
+              detail="asignados como respaldo"
+              onClick={() => setDashboardFilter("remanentes-uso")}
+            />
+
+          </div>
+
+          {dashboardFilter !== "todos" && (
+            <div className="max-w-7xl mb-4 flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
+              <span className="text-muted-foreground">
+                Filtro activo: <span className="text-foreground font-medium">{getFilterLabel(dashboardFilter)}</span>
+              </span>
+
               <button
-                onClick={() => setShowJuradosListModal(true)}
-                disabled={isLoading || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
+                onClick={() => setDashboardFilter("todos")}
+                className="rounded-md border px-3 py-1.5 hover:bg-accent"
               >
-                <Users className="w-4 md:w-5 h-4 md:h-5" />
-                Lista de Jurados
-              </button>
-
-              <button
-                onClick={() => void loadAuditLog()}
-                disabled={isLoading || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
-              >
-                Historial de cambios
-              </button>
-
-              <button
-                onClick={() => setShowAllTeamsModal(true)}
-                disabled={isLoading || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
-              >
-                Ver todos los equipos
-              </button>
-
-              <button
-                onClick={resetAllAssignments}
-                disabled={isLoading || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 md:px-6 py-2 md:py-3 text-sm md:text-base disabled:opacity-50"
-              >
-                <UserX className="w-4 md:w-5 h-4 md:h-5" />
-                Limpiar Todo
+                Ver todos
               </button>
             </div>
+          )}
 
-            <div className="max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-              <div className="lg:col-span-3 order-2 lg:order-1">
-                <h2 className="text-xl md:text-2xl mb-4 md:mb-6 flex items-center gap-2">
-                  <Users className="w-6 md:w-7 h-6 md:h-7" />
-                  Equipos ({filteredTeams.length}/{teams.length})
-                </h2>
+          <div className="max-w-7xl grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+            <button
+              onClick={() => setShowJuradosListModal(true)}
+              disabled={isLoading || isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+            >
+              <Users className="w-4 h-4 flex-shrink-0" />
+              <span>Lista de jurados</span>
+            </button>
 
-                {filteredTeams.length === 0 ? (
-                  <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
-                    No hay equipos para este filtro.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {filteredTeams.map((team) => {
-                      const isComplete = team.jurados.length >= team.requiredJurados;
-                      const isEmpty = team.jurados.length === 0;
-                      const hasRemanentes = team.jurados.some(
-                        (jurado) => jurado.tipo === "BACKUP"
-                      );
+            <button
+              onClick={() => void loadAuditLog()}
+              disabled={isLoading || isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+            >
+              <History className="w-4 h-4 flex-shrink-0" />
+              <span>Historial de cambios</span>
+            </button>
 
-                      return (
-                        <div
-                          key={team.id}
-                          className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${
-                            isComplete
-                              ? hasRemanentes
-                                ? "border-amber-500/50"
-                                : "border-green-500/50"
-                              : isEmpty
-                                ? "border-red-500/30"
-                                : "border-yellow-500/30"
+            <button
+              onClick={() => setShowAllTeamsModal(true)}
+              disabled={isLoading || isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+            >
+              <Eye className="w-4 h-4 flex-shrink-0" />
+              <span>Ver todos los equipos</span>
+            </button>
+
+            <button
+              onClick={resetAllAssignments}
+              disabled={isLoading || isSubmitting}
+              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+            >
+              <UserX className="w-4 h-4 flex-shrink-0" />
+              <span>Limpiar todo</span>
+            </button>
+          </div>
+
+          <div className="max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+            <div className="lg:col-span-3 order-2 lg:order-1">
+              <h2 className="text-xl md:text-2xl mb-4 md:mb-6 flex items-center gap-2">
+                <Users className="w-6 md:w-7 h-6 md:h-7" />
+                Equipos ({filteredTeams.length}/{teams.length})
+              </h2>
+
+              {filteredTeams.length === 0 ? (
+                <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
+                  No hay equipos para este filtro.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  {filteredTeams.map((team) => {
+                    const isComplete = team.jurados.length >= team.requiredJurados;
+                    const isEmpty = team.jurados.length === 0;
+                    const hasRemanentes = team.jurados.some(
+                      (jurado) => jurado.tipo === "BACKUP"
+                    );
+
+                    return (
+                      <div
+                        key={team.id}
+                        className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${isComplete
+                          ? hasRemanentes
+                            ? "border-amber-500/50"
+                            : "border-green-500/50"
+                          : isEmpty
+                            ? "border-red-500/30"
+                            : "border-yellow-500/30"
                           }`}
-                        >
-                          <div className="mb-3 md:mb-4 pb-3 md:pb-4 border-b border-border">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-base md:text-lg font-medium truncate">
-                                  {team.game}
-                                </h3>
-                                <p className="text-muted-foreground text-sm truncate">
-                                  Equipo: {team.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {team.semester}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  Líder: {team.leaderName}
-                                </p>
-                              </div>
-
-                              <div className="flex flex-col gap-1 items-end flex-shrink-0">
-                                <div className="px-2 md:px-3 py-1 rounded-full text-xs border bg-muted">
-                                  {team.jurados.length}/{team.requiredJurados}
-                                </div>
-
-                                {isColegioTeam(team) && (
-                                  <div className="px-2 py-1 rounded-full text-xs border border-blue-500/30 text-blue-500">
-                                    Colegio
-                                  </div>
-                                )}
-
-                                {hasRemanentes && (
-                                  <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    <span className="hidden md:inline">
-                                      Con remanentes
-                                    </span>
-                                    <span className="md:hidden">Remanente</span>
-                                  </div>
-                                )}
-                              </div>
+                      >
+                        <div className="mb-3 md:mb-4 pb-3 md:pb-4 border-b border-border">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base md:text-lg font-medium truncate">
+                                {team.game}
+                              </h3>
+                              <p className="text-muted-foreground text-sm truncate">
+                                Equipo: {team.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {team.semester}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                Líder: {team.leaderName}
+                              </p>
                             </div>
-                          </div>
 
-                          <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
-                            {team.jurados.map((jurado) => (
-                              <div
-                                key={getAssignmentKey(team.id, jurado.id)}
-                                className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${
-                                  jurado.tipo === "OFFICIAL"
-                                    ? "bg-card border-blue-500/30"
-                                    : "bg-card border-amber-500/30"
-                                }`}
-                              >
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs md:text-sm font-medium flex-shrink-0">
-                                  {getInitials(jurado.name)}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs md:text-sm font-medium truncate">
-                                    {jurado.name}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    <span className="hidden md:inline">
-                                      {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
-                                      {getJurorTypeLabel(jurado.tipo)}
-                                    </span>
-                                    <span className="md:hidden">
-                                      {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
-                                      {getJurorTypeLabel(jurado.tipo)}
-                                    </span>
-                                  </div>
-                                  <div className="text-[10px] md:text-xs text-muted-foreground truncate">
-                                    {jurado.email}
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                  <button
-                                    onClick={() =>
-                                      openJuradoModal(team, false, {
-                                        currentJurorId: jurado.id,
-                                        currentJurorName: jurado.name,
-                                      })
-                                    }
-                                    disabled={isSubmitting}
-                                    className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
-                                    title="Reasignar jurado"
-                                  >
-                                    Reasignar
-                                  </button>
-
-                                  <button
-                                    onClick={() => void removeJuradoFromTeam(team.id, jurado.id)}
-                                    disabled={isSubmitting}
-                                    className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
-                                    title="Desasignar jurado"
-                                  >
-                                    Quitar
-                                  </button>
-                                </div>
+                            <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                              <div className="px-2 md:px-3 py-1 rounded-full text-xs border bg-muted">
+                                {team.jurados.length}/{team.requiredJurados}
                               </div>
-                            ))}
 
-                            {Array.from({
-                              length: Math.max(
-                                0,
-                                team.requiredJurados - team.jurados.length
-                              ),
-                            }).map((_, idx) => (
-                              <button
-                                key={`empty-${team.id}-${idx}`}
-                                onClick={() => openJuradoModal(team, false)}
-                                disabled={isSubmitting}
-                                className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                              >
-                                <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
-                                <span className="hidden md:inline">Agregar Jurado</span>
-                                <span className="md:hidden">Agregar</span>
-                              </button>
-                            ))}
+                              {isColegioTeam(team) && (
+                                <div className="px-2 py-1 rounded-full text-xs border border-blue-500/30 text-blue-500">
+                                  Colegio
+                                </div>
+                              )}
+
+                              {hasRemanentes && (
+                                <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                                  <span className="hidden md:inline">
+                                    Con remanentes
+                                  </span>
+                                  <span className="md:hidden">Remanente</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
-              <div className="lg:col-span-1 space-y-4 md:space-y-6 order-1 lg:order-2">
-                <div>
-                  <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    <span>Jurados Oficiales</span>
-                  </h3>
+                        <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
+                          {team.jurados.map((jurado) => (
+                            <div
+                              key={getAssignmentKey(team.id, jurado.id)}
+                              className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${jurado.tipo === "OFFICIAL"
+                                ? "bg-card border-blue-500/30"
+                                : "bg-card border-amber-500/30"
+                                }`}
+                            >
+                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs md:text-sm font-medium flex-shrink-0">
+                                {getInitials(jurado.name)}
+                              </div>
 
-                  <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                    <p className="text-xs text-muted-foreground">
-                      Disponibles:{" "}
-                      <span className="font-bold text-lg text-foreground">
-                        {juradosOficialesDisponibles.length}
-                      </span>
-                    </p>
-                  </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs md:text-sm font-medium truncate">
+                                  {jurado.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="hidden md:inline">
+                                    {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                    {getJurorTypeLabel(jurado.tipo)}
+                                  </span>
+                                  <span className="md:hidden">
+                                    {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                    {getJurorTypeLabel(jurado.tipo)}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] md:text-xs text-muted-foreground truncate">
+                                  {jurado.email}
+                                </div>
+                              </div>
 
-                  <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {juradosOficialesDisponibles.map((jurado) => (
-                      <div
-                        key={jurado.id}
-                        className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
-                      >
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                            {getInitials(jurado.name)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs md:text-sm font-medium truncate">
-                              {jurado.name}
+                              <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <button
+                                  onClick={() =>
+                                    openJuradoModal(team, false, {
+                                      currentJurorId: jurado.id,
+                                      currentJurorName: jurado.name,
+                                    })
+                                  }
+                                  disabled={isSubmitting}
+                                  className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                  title="Reasignar jurado"
+                                >
+                                  Reasignar
+                                </button>
+
+                                <button
+                                  onClick={() => void removeJuradoFromTeam(team.id, jurado.id)}
+                                  disabled={isSubmitting}
+                                  className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                  title="Desasignar jurado"
+                                >
+                                  Quitar
+                                </button>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                            </div>
-                          </div>
+                          ))}
+
+                          {Array.from({
+                            length: Math.max(
+                              0,
+                              team.requiredJurados - team.jurados.length
+                            ),
+                          }).map((_, idx) => (
+                            <button
+                              key={`empty-${team.id}-${idx}`}
+                              onClick={() => openJuradoModal(team, false)}
+                              disabled={isSubmitting}
+                              className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                            >
+                              <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
+                              <span className="hidden md:inline">Agregar Jurado</span>
+                              <span className="md:hidden">Agregar</span>
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-                    {juradosOficialesDisponibles.length === 0 && (
-                      <p className="text-muted-foreground text-center py-8 text-sm">
-                        No hay jurados oficiales disponibles
-                      </p>
-                    )}
-                  </div>
+            <div className="lg:col-span-1 space-y-4 md:space-y-6 order-1 lg:order-2">
+              <div>
+                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 flex-shrink-0" />
+                  <span>Jurados Oficiales</span>
+                </h3>
+
+                <div className="bg-card border border-border rounded-xl p-3 mb-3">
+                  <p className="text-xs text-muted-foreground">
+                    Disponibles:{" "}
+                    <span className="font-bold text-lg text-foreground">
+                      {juradosOficialesDisponibles.length}
+                    </span>
+                  </p>
                 </div>
 
-                <div>
-                  <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span>Jurados Remanentes</span>
-                  </h3>
-
-                  <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Disponibles:{" "}
-                      <span className="font-bold text-lg text-foreground">
-                        {juradosRemanentesDisponibles.length}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Úsalos solo si un oficial no llega
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {juradosRemanentesDisponibles.map((jurado) => (
-                      <div
-                        key={jurado.id}
-                        className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
-                      >
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                            {getInitials(jurado.name)}
+                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {juradosOficialesDisponibles.map((jurado) => (
+                    <div
+                      key={jurado.id}
+                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
+                    >
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
+                          {getInitials(jurado.name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs md:text-sm font-medium truncate">
+                            {jurado.name}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs md:text-sm font-medium truncate">
-                              {jurado.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                            </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
                           </div>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
 
-                    {juradosRemanentesDisponibles.length === 0 && (
-                      <p className="text-muted-foreground text-center py-8 text-sm">
-                        No hay jurados remanentes disponibles
-                      </p>
-                    )}
-                  </div>
+                  {juradosOficialesDisponibles.length === 0 && (
+                    <p className="text-muted-foreground text-center py-8 text-sm">
+                      No hay jurados oficiales disponibles
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                  <span>Jurados Remanentes</span>
+                </h3>
+
+                <div className="bg-card border border-border rounded-xl p-3 mb-3">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Disponibles:{" "}
+                    <span className="font-bold text-lg text-foreground">
+                      {juradosRemanentesDisponibles.length}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Úsalos solo si un oficial no llega
+                  </p>
+                </div>
+
+                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {juradosRemanentesDisponibles.map((jurado) => (
+                    <div
+                      key={jurado.id}
+                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
+                    >
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
+                          {getInitials(jurado.name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs md:text-sm font-medium truncate">
+                            {jurado.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {juradosRemanentesDisponibles.length === 0 && (
+                    <p className="text-muted-foreground text-center py-8 text-sm">
+                      No hay jurados remanentes disponibles
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1594,9 +1662,10 @@ export function JuradosAssignment() {
                       setShowJuradosListModal(false);
                       setOpenJurorMenuId(null);
                     }}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    Cerrar
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -1783,9 +1852,10 @@ export function JuradosAssignment() {
 
                   <button
                     onClick={closeJuradoModal}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    Cerrar
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -1829,10 +1899,10 @@ export function JuradosAssignment() {
                           onClick={() =>
                             reassignContext
                               ? void reassignJuradoOnTeam(
-                                  selectedTeam.id,
-                                  reassignContext.currentJurorId,
-                                  jurado
-                                )
+                                selectedTeam.id,
+                                reassignContext.currentJurorId,
+                                jurado
+                              )
                               : void addJuradoToTeam(selectedTeam.id, jurado)
                           }
                           disabled={isSubmitting}
@@ -1868,9 +1938,10 @@ export function JuradosAssignment() {
 
                   <button
                     onClick={() => setShowAllTeamsModal(false)}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    Cerrar
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -1925,9 +1996,10 @@ export function JuradosAssignment() {
 
                   <button
                     onClick={() => setShowAuditModal(false)}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    Cerrar
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -2002,9 +2074,10 @@ export function JuradosAssignment() {
 
                   <button
                     onClick={() => setShowCreateJurorModal(false)}
-                    className="text-muted-foreground hover:text-foreground text-3xl leading-none"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -2131,9 +2204,10 @@ export function JuradosAssignment() {
                       setShowEditJurorModal(false);
                       setEditingJuror(null);
                     }}
-                    className="text-muted-foreground hover:text-foreground text-3xl leading-none"
+                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                    aria-label="Cerrar modal"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
