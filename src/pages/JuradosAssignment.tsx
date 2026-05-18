@@ -1230,8 +1230,8 @@ export function JuradosAssignment() {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="bg-background text-foreground min-h-screen w-full py-6 px-4 md:px-6">
-        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8 w-full">
+      <div className="bg-background text-foreground min-h-screen p-4 w-full">
+        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8 w-full px-4">
           <h1 className="text-xl font-medium text-foreground">
             Gestión Manual de Asignación de Jurados
           </h1>
