@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -40,28 +40,6 @@ export const TeamsManagementTable = ({
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
-  const [isMobile, setIsMobile] = useState<boolean>(() =>
-    typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(max-width: 640px)");
-    const handler = (ev: MediaQueryListEvent | MediaQueryList) => setIsMobile((ev as any).matches === true);
-    setIsMobile(mq.matches);
-    if (typeof mq.addEventListener === "function") {
-      mq.addEventListener("change", handler as any);
-    } else if (typeof (mq as any).addListener === "function") {
-      (mq as any).addListener(handler as any);
-    }
-    return () => {
-      if (typeof mq.removeEventListener === "function") {
-        mq.removeEventListener("change", handler as any);
-      } else if (typeof (mq as any).removeListener === "function") {
-        (mq as any).removeListener(handler as any);
-      }
-    };
-  }, []);
 
   const [nrcOptions] = useState<NrcInfo[]>([]);
   const [materiasOptions, setMateriasOptions] = useState<MateriaInfo[]>([]);
@@ -77,10 +55,17 @@ export const TeamsManagementTable = ({
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [certType, setCertType] = useState<"PARTICIPATION_CERTIFICATE" | "1ST_PLACE_CERTIFICATE" | "2ND_PLACE_CERTIFICATE" | "3RD_PLACE_CERTIFICATE">("PARTICIPATION_CERTIFICATE");
   const [certSearchTerm, setCertSearchTerm] = useState<string>("");
+  const [debouncedCertSearchTerm, setDebouncedCertSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCertSearchTerm(certSearchTerm), 200);
+    return () => clearTimeout(timer);
+  }, [certSearchTerm]);
+
   const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<string[]>([]);
   const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
   const filteredCertTeams = (teams ?? []).filter((t) =>
-    (t.nombre_equipo ?? "").toLowerCase().includes(certSearchTerm.toLowerCase())
+    (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
 
   const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
@@ -101,12 +86,44 @@ export const TeamsManagementTable = ({
   //   }
   // };
 
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleFilterChange = useCallback((filter: "all" | "uninorte" | "external") => {
+    if (externalFilter === filter) return;
+    setTimeout(() => {
+      setExternalFilter(filter);
+      try { onPageChange(1); } catch { }
+    }, 300);
+  }, [externalFilter, onPageChange]);
+
+  const filteredTeamsGlobal = useMemo(() => {
+    const filteredByExternal = (teams ?? []).filter((team) => {
+      if (!team) return false;
+      if (externalFilter === "all") return true;
+      const isExt = (team as any)?.isExternal === true;
+      return externalFilter === "external" ? isExt : !isExt;
+    });
+
+    const term = debouncedSearchTerm.trim().toLowerCase();
+    return term
+      ? filteredByExternal.filter((t) => {
+        const teamName = (t.nombre_equipo ?? "").toLowerCase();
+        const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
+        return teamName.includes(term) || gameName.includes(term);
+      })
+      : filteredByExternal;
+  }, [teams, externalFilter, debouncedSearchTerm]);
+
   // Counters
   const totalTeamsCount = teams?.length ?? 0;
   const uninorteCount = teams?.filter(t => !(t as any)?.isExternal).length ?? 0;
   const externalCount = teams?.filter(t => (t as any)?.isExternal).length ?? 0;
-
-  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const setCliebtPage = useCallback((page: number) => {
     try {
@@ -742,33 +759,21 @@ export const TeamsManagementTable = ({
     <div
       className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}
     >
-      <div className="flex justify-between items-center mb-6 px-4">
-        {isMobile ? (
-          <div className="flex items-center gap-2 w-full">
-            <h1 className="text-lg font-medium">Equipos Inscritos</h1>
+      <div className="flex flex-col gap-4 mb-6 px-4">
+        {/* Fila 1: Título */}
+        <div>
+          <h1 className="text-lg md:text-xl font-medium">Equipos Inscritos</h1>
+        </div>
 
-            <div className="ml-auto flex items-center gap-2">
-              {/* buscador móvil responsive */}
-              <div className="flex items-center gap-2 border rounded px-2 h-8 w-full max-w-[70vw]">
-                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                <input
-                  className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
-                  placeholder="Buscar equipo o videojuego..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+        {/* Fila 2: Filtros, Buscador y Botones */}
+        <div className="flex items-center justify-between gap-4 w-full">
 
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Filtro Dropdown (Móvil) */}
+            <div className="block lg:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 flex items-center justify-center"
-                    disabled={showLoader}
-                    aria-label="Filtros"
-                  >
-                    {/* icono filtro */}
+                  <Button variant="outline" size="sm" className="h-10 w-10 flex items-center justify-center shrink-0" disabled={showLoader} aria-label="Filtros">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="2 0 20 20" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 block m-auto" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 5.5l5 6v4l1 1v-5.5l5-6H7z" opacity="0.99" />
                     </svg>
@@ -776,49 +781,80 @@ export const TeamsManagementTable = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
-                    onClick={() => {
-                      if (externalFilter === "all") return;
-                      setExternalFilter("all");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    className={
+                      externalFilter === "all"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => handleFilterChange("all")}
                   >
                     Todos ({totalTeamsCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => {
-                      if (externalFilter === "uninorte") return;
-                      setExternalFilter("uninorte");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    className={
+                      externalFilter === "uninorte"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => handleFilterChange("uninorte")}
                   >
                     Uninorte ({uninorteCount})
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => {
-                      if (externalFilter === "external") return;
-                      setExternalFilter("external");
-                      try { onPageChange(1); } catch { }
-                    }}
+                    className={
+                      externalFilter === "external"
+                        ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                        : ""
+                    }
+                    onClick={() => handleFilterChange("external")}
                   >
                     Externos ({externalCount})
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
 
+            {/* Filtro Botones (Desktop) */}
+            <div className="hidden lg:flex items-center gap-1 rounded-md p-1 bg-muted/10">
+              <Button size="sm" variant={externalFilter === "all" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("all")} disabled={showLoader}>
+                Todos ({totalTeamsCount})
+              </Button>
+              <Button size="sm" variant={externalFilter === "uninorte" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("uninorte")} disabled={showLoader}>
+                Uninorte ({uninorteCount})
+              </Button>
+              <Button size="sm" variant={externalFilter === "external" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("external")} disabled={showLoader}>
+                Externos ({externalCount})
+              </Button>
+            </div>
+          </div>
+          {/* Parte derecha: Buscador y Botones */}
+          <div className="flex-1 flex items-center gap-4 min-w-0">
+            <div className="flex-1 flex items-center gap-2 border rounded px-3 h-10 min-w-0">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <input
+                className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
+                placeholder="Buscar equipo o videojuego..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
               <Button
                 variant="outline"
-                className="bg-card hover:bg-accent text-foreground"
+                className="bg-card hover:bg-accent text-foreground whitespace-nowrap shrink-0 h-10 px-3 sm:px-4"
                 disabled={showLoader}
                 onClick={handleOpenAdd}
               >
-                <Plus className=" h-4 w-4" />
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Agregar</span>
               </Button>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
-                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
+                      className="bg-card hover:bg-accent text-foreground h-10 w-10 flex items-center justify-center shrink-0"
                       disabled={showLoader}
                       onClick={() => setCertDialogOpen(true)}
                       aria-label="Enviar certificados"
@@ -831,99 +867,7 @@ export const TeamsManagementTable = ({
               </TooltipProvider>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-4">
-
-              <div className="flex w-full">
-                <h1 className="text-xl font-medium">Equipos Inscritos</h1>
-              </div>
-
-
-              {/* Filtro externo / uninorte */}
-              <div className="flex items-center gap-1 rounded-md p-1 bg-muted/10">
-                <Button
-                  size="sm"
-                  variant={externalFilter === "all" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (externalFilter === "all") return;
-                    setExternalFilter("all");
-                    try { onPageChange(1); } catch { }
-                  }}
-                  disabled={showLoader}
-                >
-                  Todos ({totalTeamsCount})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={externalFilter === "uninorte" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (externalFilter === "uninorte") return;
-                    setExternalFilter("uninorte");
-                    try { onPageChange(1); } catch { }
-                  }}
-                  disabled={showLoader}
-                >
-                  Uninorte ({uninorteCount})
-                </Button>
-                <Button
-                  size="sm"
-                  variant={externalFilter === "external" ? "default" : "ghost"}
-                  className="h-8 px-3 text-sm"
-                  onClick={() => {
-                    if (externalFilter === "external") return;
-                    setExternalFilter("external");
-                    try { onPageChange(1); } catch { }
-                  }}
-                  disabled={showLoader}
-                >
-                  Externos ({externalCount})
-                </Button>
-              </div>
-            </div>
-
-            {/* buscador desktop */}
-
-            <div className="flex items-center gap-2 border rounded px-3 h-9 w-200 max-w-md ">
-              <Search className="h-4 text-muted-foreground shrink-0" />
-              <input
-                className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
-                placeholder="Buscar equipo o videojuego..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="bg-card hover:bg-accent text-foreground"
-                disabled={showLoader}
-                onClick={handleOpenAdd}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Agregar
-              </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="bg-card hover:bg-accent text-foreground h-8 w-8 flex items-center justify-center"
-                      disabled={showLoader}
-                      onClick={() => setCertDialogOpen(true)}
-                      aria-label="Enviar certificados"
-                    >
-                      <Award className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Enviar certificados</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </>
-        )}
+        </div>
       </div> {/* end header */}
 
       {/* TeamWizardDialog debe montarse siempre (móvil y desktop) */}
@@ -965,7 +909,7 @@ export const TeamsManagementTable = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && totalFiltered === 0 ? (
+            ) : !showLoader && filteredTeamsGlobal.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -978,23 +922,8 @@ export const TeamsManagementTable = ({
               // filtro por tipo + búsqueda
               // apply client-side filter: only all / uninorte / external
               (() => {
-                const filteredByExternal = teams?.filter((team) => {
-                  if (!team) return false;
-                  if (externalFilter === "all") return true;
-                  const isExt = (team as any)?.isExternal === true;
-                  return externalFilter === "external" ? isExt : !isExt;
-                }) ?? [];
-
-                const term = searchTerm.trim().toLowerCase();
-                const filteredTeams = term
-                  ? filteredByExternal.filter((t) => {
-                    const teamName = (t.nombre_equipo ?? "").toLowerCase();
-                    const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-                    return teamName.includes(term) || gameName.includes(term);
-                  })
-                  : filteredByExternal;
-
                 // APPLY PAGINATION SLICE BASED ON currentPage/itemsPerPage
+                const filteredTeams = filteredTeamsGlobal;
                 const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
                 const currentPage = paginationMeta?.currentPage ?? 1;
 
@@ -1064,20 +993,7 @@ export const TeamsManagementTable = ({
           const currentPage = paginationMeta?.currentPage ?? 1;
 
           // Recalcular totalPages según el filtro/búsqueda actual
-          const filteredByExternal = teams?.filter((team) => {
-            if (!team) return false;
-            if (externalFilter === "all") return true;
-            const isExt = (team as any)?.isExternal === true;
-            return externalFilter === "external" ? isExt : !isExt;
-          }) ?? [];
-          const term = searchTerm.trim().toLowerCase();
-          const filteredTeams = term
-            ? filteredByExternal.filter((t) => {
-                const teamName = (t.nombre_equipo ?? "").toLowerCase();
-                const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-                return teamName.includes(term) || gameName.includes(term);
-              })
-            : filteredByExternal;
+          const filteredTeams = filteredTeamsGlobal;
 
           const totalPages =
             itemsPerPage === 999999
@@ -1085,15 +1001,15 @@ export const TeamsManagementTable = ({
               : Math.ceil(filteredTeams.length / itemsPerPage);
 
           return (
-            <div className="flex justify-between items-center p-4 text-sm border-t border-border">
-              <div className="flex items-center gap-2">
-                <span>Filas</span>
+            <div className="flex justify-between items-center p-4 text-sm border-t border-border gap-2">
+              <div className="flex items-center gap-1 min-[450px]:gap-2">
+                <span className="w-12 min-[450px]:w-auto text-center min-[450px]:text-left leading-tight break-words">Filas</span>
                 <Select
                   value={String(itemsPerPage)}
                   onValueChange={(value) => {
                     if (value === "all") {
                       onLimitChange(999999);
-                      try { onPageChange(1); } catch {}
+                      try { onPageChange(1); } catch { }
                     } else {
                       onLimitChange(parseInt(value, 10));
                     }
@@ -1114,11 +1030,14 @@ export const TeamsManagementTable = ({
                 </Select>
               </div>
 
-              <div className="flex items-center gap-4">
-                <span>
-                  {totalPages === 0 ? 0 : currentPage} de {totalPages}
+              <div className="flex items-center gap-2 min-[450px]:gap-4 shrink-0">
+                <span className="text-center min-[450px]:text-left leading-tight">
+                  <span className="block min-[450px]:inline">Página </span>
+                  <span className="block min-[450px]:inline">
+                    {totalPages === 0 ? 0 : currentPage} de {totalPages}
+                  </span>
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage <= 1 || showLoader || totalPages === 0}
