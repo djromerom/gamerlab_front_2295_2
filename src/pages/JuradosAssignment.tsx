@@ -13,14 +13,10 @@ import {
   History,
   Eye,
   X,
+  HelpCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import LayoutAplication from "@/layouts/LayoutAplication";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 type JurorType = "OFFICIAL" | "BACKUP";
@@ -523,6 +519,7 @@ export function JuradosAssignment() {
   const [showEditJurorModal, setShowEditJurorModal] = useState(false);
   const [showStatsMobile, setShowStatsMobile] = useState(false);
   const [showUsoRapidoMobile, setShowUsoRapidoMobile] = useState(false);
+  const [showHelpTooltip, setShowHelpTooltip] = useState(false);
   const [editingJuror, setEditingJuror] = useState<Jurado | null>(null);
 
   const [createJurorForm, setCreateJurorForm] = useState({
@@ -617,6 +614,28 @@ export function JuradosAssignment() {
     showCreateJurorModal,
     showEditJurorModal,
   ]);
+
+  // Cerrar el tooltip de ayuda al hacer scroll o después de 20 segundos
+  useEffect(() => {
+    if (!showHelpTooltip) return;
+
+    // Temporizador de 20 segundos
+    const timer = setTimeout(() => {
+      setShowHelpTooltip(false);
+    }, 6500);
+
+    // Evento de scroll para cerrar el tooltip
+    const handleScroll = () => {
+      setShowHelpTooltip(false);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [showHelpTooltip]);
 
   const getJuradosDisponibles = (tipo?: JurorType) => {
     return jurados.filter((jurado) => {
@@ -1191,693 +1210,515 @@ export function JuradosAssignment() {
     return jurado?.name || id;
   };
 
+  const breadcrumbs = [
+    { label: "Asignación Manual de Jurados", href: "/jurados-assignment" },
+  ];
+
   return (
-    <SidebarProvider>
-      <AppSidebar />
-
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1 z-20" />
-
-            <nav aria-label="breadcrumb">
-              <ol className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
-                <li className="items-center gap-1.5 hidden md:block">
-                  <Link
-                    to="/inicio"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Inicio
-                  </Link>
-                </li>
-
-                <li
-                  role="presentation"
-                  aria-hidden="true"
-                  className="hidden md:inline"
-                >
-                  <ChevronRight className="size-3.5" />
-                </li>
-
-                <li className="inline-flex items-center gap-1.5">
-                  <span className="text-foreground">Asignación Manual de Jurados</span>
-                </li>
-              </ol>
-            </nav>
-          </div>
-        </header>
-
-        <div className="bg-background text-foreground min-h-screen w-full py-6 px-4 md:px-6">
-          <h1 className="text-xl font-medium mb-2">
+    <LayoutAplication breadcrumbs={breadcrumbs}>
+      <div className="bg-background text-foreground min-h-screen w-full py-6 px-4 md:px-6">
+        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8 w-full">
+          <h1 className="text-xl font-medium text-foreground">
             Gestión Manual de Asignación de Jurados
           </h1>
 
-          <p className="text-muted-foreground mb-8 text-sm md:text-base">
-            Administra la asignación manual durante la feria. Un jurado puede evaluar varios equipos, pero no puede repetirse dentro del mismo equipo.
-          </p>
+          {/* Ícono de Ayuda con Tooltip Flotante Reactivo */}
+          <div className="relative flex items-center">
+            <HelpCircle
+              onClick={() => setShowHelpTooltip(!showHelpTooltip)}
+              className="w-3.5 h-3.5 text-muted-foreground/50 hover:text-foreground cursor-pointer transition-colors"
+              aria-label="Información de ayuda"
+            />
 
-          {isLoading && (
-            <div className="mb-6 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-              Cargando información...
-            </div>
-          )}
+            {showHelpTooltip && (
+              <>
+                {/* Backdrop invisible para cerrar al hacer clic afuera en móvil y escritorio */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowHelpTooltip(false)}
+                />
 
-          {loadError && (
-            <div className="mb-6 rounded-xl border border-red-500/30 bg-card p-4 text-sm text-red-500">
-              {loadError}
-            </div>
-          )}
-
-          <div className="max-w-7xl mb-6 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-            {/* Header del Uso Rápido (Alternancia en Móvil) */}
-            <button
-              type="button"
-              onClick={() => setShowUsoRapidoMobile(!showUsoRapidoMobile)}
-              className="w-full text-left font-medium text-foreground flex items-center justify-between outline-none focus:outline-none md:cursor-default"
-            >
-              <span>Uso rápido</span>
-              <ChevronRight
-                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 md:hidden ${
-                  showUsoRapidoMobile ? "rotate-90" : ""
-                }`}
-              />
-            </button>
-
-            {/* Contenido (Desplegable en móvil, siempre visible en desktop) */}
-            <div className={`flex flex-col gap-2 mt-2 ${showUsoRapidoMobile ? "block" : "hidden"} md:block`}>
-              <div>1. Selecciona un equipo y pulsa <span className="text-foreground font-medium">Agregar Jurado</span>.</div>
-              <div>2. Elige un jurado disponible para ese equipo. Puede estar asignado a otros equipos.</div>
-              <div>3. Usa <span className="text-foreground font-medium">Reasignar</span> o <span className="text-foreground font-medium">Quitar</span> para ajustar en tiempo real.</div>
-            </div>
+                {/* Tooltip flotante premium discreto */}
+                <div className="absolute right-0 top-full mt-1.5 w-60 p-2.5 rounded-xl border border-border bg-popover text-popover-foreground text-[11px] shadow-lg z-50 animate-in fade-in duration-100">
+                  <p className="leading-normal text-muted-foreground">
+                    Administra la asignación manual durante la feria. Un jurado puede evaluar varios equipos, pero no puede repetirse dentro del mismo equipo.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
+        </div>
 
-          {/* Botón Desplegable de Métricas para Móviles */}
+        {isLoading && (
+          <div className="mb-6 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            Cargando información...
+          </div>
+        )}
+
+        {loadError && (
+          <div className="mb-6 rounded-xl border border-red-500/30 bg-card p-4 text-sm text-red-500">
+            {loadError}
+          </div>
+        )}
+
+        <div className="w-full mb-6 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+          {/* Header del Uso Rápido (Alternancia en Móvil) */}
           <button
             type="button"
-            onClick={() => setShowStatsMobile(!showStatsMobile)}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-accent text-foreground transition-all mb-4 md:hidden"
+            onClick={() => setShowUsoRapidoMobile(!showUsoRapidoMobile)}
+            className="w-full text-left font-medium text-foreground flex items-center justify-between outline-none focus:outline-none md:cursor-default"
           >
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="text-sm font-medium">Ver Estadísticas y Métricas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
-                {totalAsignados}/{totalRequeridos} asignados
-              </span>
-              <ChevronRight
-                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showStatsMobile ? "rotate-90" : ""
-                  }`}
-              />
-            </div>
+            <span>Uso rápido</span>
+            <ChevronRight
+              className={`w-4 h-4 text-muted-foreground transition-transform duration-200 md:hidden ${showUsoRapidoMobile ? "rotate-90" : ""
+                }`}
+            />
           </button>
 
-          <div className={`max-w-7xl ${showStatsMobile ? "grid" : "hidden"} md:grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8`}>
-            <DashboardCard
-              label="Oficiales"
-              value={juradosOficialesDisponibles.length}
-              detail="ver disponibles"
-              icon={<Shield className="w-3 h-3" />}
-              onClick={() => {
-                setDashboardFilter("oficiales");
-                setShowJuradosListModal(true);
-              }}
-            />
-
-            <DashboardCard
-              label="Remanentes"
-              value={juradosRemanentesDisponibles.length}
-              detail="ver disponibles"
-              icon={<AlertTriangle className="w-3 h-3 flex-shrink-0" />}
-              onClick={() => {
-                setDashboardFilter("remanentes");
-                setShowJuradosListModal(true);
-              }}
-            />
-
-            <DashboardCard
-              label="Jurados asignados"
-              value={`${totalAsignados}/${totalRequeridos}`}
-              detail="cupos cubiertos"
-              onClick={() => setDashboardFilter("asignados")}
-            />
-
-            <DashboardCard
-              label="Equipos completos"
-              value={`${equiposCompletos}/${teams.length}`}
-              detail="con cupos cubiertos"
-              onClick={() => setDashboardFilter("equipos-ok")}
-            />
-
-            <DashboardCard
-              label="Remanentes en uso"
-              value={remanentesEnUso}
-              detail="asignados como respaldo"
-              onClick={() => setDashboardFilter("remanentes-uso")}
-            />
-
+          {/* Contenido (Desplegable en móvil, siempre visible en desktop) */}
+          <div className={`flex flex-col gap-2 mt-2 ${showUsoRapidoMobile ? "block" : "hidden"} md:block`}>
+            <div>1. Selecciona un equipo y pulsa <span className="text-foreground font-medium">Agregar Jurado</span>.</div>
+            <div>2. Elige un jurado disponible para ese equipo. Puede estar asignado a otros equipos.</div>
+            <div>3. Usa <span className="text-foreground font-medium">Reasignar</span> o <span className="text-foreground font-medium">Quitar</span> para ajustar en tiempo real.</div>
           </div>
+        </div>
 
-          {dashboardFilter !== "todos" && (
-            <div className="max-w-7xl mb-4 flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
-              <span className="text-muted-foreground">
-                Filtro activo: <span className="text-foreground font-medium">{getFilterLabel(dashboardFilter)}</span>
-              </span>
+        {/* Botón Desplegable de Métricas para Móviles */}
+        <button
+          type="button"
+          onClick={() => setShowStatsMobile(!showStatsMobile)}
+          className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-accent text-foreground transition-all mb-4 md:hidden"
+        >
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-sm font-medium">Ver Estadísticas y Métricas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
+              {totalAsignados}/{totalRequeridos} asignados
+            </span>
+            <ChevronRight
+              className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showStatsMobile ? "rotate-90" : ""
+                }`}
+            />
+          </div>
+        </button>
 
-              <button
-                onClick={() => setDashboardFilter("todos")}
-                className="rounded-md border px-3 py-1.5 hover:bg-accent"
-              >
-                Ver todos
-              </button>
-            </div>
-          )}
+        <div className={`w-full ${showStatsMobile ? "grid" : "hidden"} md:grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8`}>
+          <DashboardCard
+            label="Oficiales"
+            value={juradosOficialesDisponibles.length}
+            detail="ver disponibles"
+            icon={<Shield className="w-3 h-3" />}
+            onClick={() => {
+              setDashboardFilter("oficiales");
+              setShowJuradosListModal(true);
+            }}
+          />
 
-          <div className="max-w-7xl grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+          <DashboardCard
+            label="Remanentes"
+            value={juradosRemanentesDisponibles.length}
+            detail="ver disponibles"
+            icon={<AlertTriangle className="w-3 h-3 flex-shrink-0" />}
+            onClick={() => {
+              setDashboardFilter("remanentes");
+              setShowJuradosListModal(true);
+            }}
+          />
+
+          <DashboardCard
+            label="Jurados asignados"
+            value={`${totalAsignados}/${totalRequeridos}`}
+            detail="cupos cubiertos"
+            onClick={() => setDashboardFilter("asignados")}
+          />
+
+          <DashboardCard
+            label="Equipos completos"
+            value={`${equiposCompletos}/${teams.length}`}
+            detail="con cupos cubiertos"
+            onClick={() => setDashboardFilter("equipos-ok")}
+          />
+
+          <DashboardCard
+            label="Remanentes en uso"
+            value={remanentesEnUso}
+            detail="asignados como respaldo"
+            onClick={() => setDashboardFilter("remanentes-uso")}
+          />
+
+        </div>
+
+        {dashboardFilter !== "todos" && (
+          <div className="w-full mb-4 flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
+            <span className="text-muted-foreground">
+              Filtro activo: <span className="text-foreground font-medium">{getFilterLabel(dashboardFilter)}</span>
+            </span>
+
             <button
-              onClick={() => setShowJuradosListModal(true)}
-              disabled={isLoading || isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+              onClick={() => setDashboardFilter("todos")}
+              className="rounded-md border px-3 py-1.5 hover:bg-accent"
             >
-              <Users className="w-4 h-4 flex-shrink-0" />
-              <span>Lista de jurados</span>
-            </button>
-
-            <button
-              onClick={() => void loadAuditLog()}
-              disabled={isLoading || isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
-            >
-              <History className="w-4 h-4 flex-shrink-0" />
-              <span>Historial de cambios</span>
-            </button>
-
-            <button
-              onClick={() => setShowAllTeamsModal(true)}
-              disabled={isLoading || isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
-            >
-              <Eye className="w-4 h-4 flex-shrink-0" />
-              <span>Ver todos los equipos</span>
-            </button>
-
-            <button
-              onClick={resetAllAssignments}
-              disabled={isLoading || isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
-            >
-              <UserX className="w-4 h-4 flex-shrink-0" />
-              <span>Limpiar todo</span>
+              Ver todos
             </button>
           </div>
+        )}
 
-          <div className="max-w-7xl grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-            <div className="lg:col-span-3 order-2 lg:order-1">
-              <h2 className="text-xl md:text-2xl mb-4 md:mb-6 flex items-center gap-2">
-                <Users className="w-6 md:w-7 h-6 md:h-7" />
-                Equipos ({filteredTeams.length}/{teams.length})
-              </h2>
+        <div className="w-full grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+          <button
+            onClick={() => setShowJuradosListModal(true)}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <Users className="w-4 h-4 flex-shrink-0" />
+            <span>Lista de jurados</span>
+          </button>
 
-              {filteredTeams.length === 0 ? (
-                <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
-                  No hay equipos para este filtro.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {filteredTeams.map((team) => {
-                    const isComplete = team.jurados.length >= team.requiredJurados;
-                    const isEmpty = team.jurados.length === 0;
-                    const hasRemanentes = team.jurados.some(
-                      (jurado) => jurado.tipo === "BACKUP"
-                    );
+          <button
+            onClick={() => void loadAuditLog()}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <History className="w-4 h-4 flex-shrink-0" />
+            <span>Historial de cambios</span>
+          </button>
 
-                    return (
-                      <div
-                        key={team.id}
-                        className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${isComplete
-                          ? hasRemanentes
-                            ? "border-amber-500/50"
-                            : "border-green-500/50"
-                          : isEmpty
-                            ? "border-red-500/30"
-                            : "border-yellow-500/30"
-                          }`}
-                      >
-                        <div className="mb-3 md:mb-4 pb-3 md:pb-4 border-b border-border">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base md:text-lg font-medium truncate">
-                                {team.game}
-                              </h3>
-                              <p className="text-muted-foreground text-sm truncate">
-                                Equipo: {team.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {team.semester}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                Líder: {team.leaderName}
-                              </p>
-                            </div>
+          <button
+            onClick={() => setShowAllTeamsModal(true)}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <Eye className="w-4 h-4 flex-shrink-0" />
+            <span>Ver todos los equipos</span>
+          </button>
 
-                            <div className="flex flex-col gap-1 items-end flex-shrink-0">
-                              <div className="px-2 md:px-3 py-1 rounded-full text-xs border bg-muted">
-                                {team.jurados.length}/{team.requiredJurados}
-                              </div>
+          <button
+            onClick={resetAllAssignments}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <UserX className="w-4 h-4 flex-shrink-0" />
+            <span>Limpiar todo</span>
+          </button>
+        </div>
 
-                              {isColegioTeam(team) && (
-                                <div className="px-2 py-1 rounded-full text-xs border border-blue-500/30 text-blue-500">
-                                  Colegio
-                                </div>
-                              )}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="lg:col-span-3 order-2 lg:order-1">
+            <h2 className="text-xl md:text-2xl mb-4 md:mb-6 flex items-center gap-2">
+              <Users className="w-6 md:w-7 h-6 md:h-7" />
+              Equipos ({filteredTeams.length}/{teams.length})
+            </h2>
 
-                              {hasRemanentes && (
-                                <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
-                                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                                  <span className="hidden md:inline">
-                                    Con remanentes
-                                  </span>
-                                  <span className="md:hidden">Remanente</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
-                          {team.jurados.map((jurado) => (
-                            <div
-                              key={getAssignmentKey(team.id, jurado.id)}
-                              className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${jurado.tipo === "OFFICIAL"
-                                ? "bg-card border-blue-500/30"
-                                : "bg-card border-amber-500/30"
-                                }`}
-                            >
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs md:text-sm font-medium flex-shrink-0">
-                                {getInitials(jurado.name)}
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs md:text-sm font-medium truncate">
-                                  {jurado.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  <span className="hidden md:inline">
-                                    {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
-                                    {getJurorTypeLabel(jurado.tipo)}
-                                  </span>
-                                  <span className="md:hidden">
-                                    {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
-                                    {getJurorTypeLabel(jurado.tipo)}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] md:text-xs text-muted-foreground truncate">
-                                  {jurado.email}
-                                </div>
-                              </div>
-
-                              <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <button
-                                  onClick={() =>
-                                    openJuradoModal(team, false, {
-                                      currentJurorId: jurado.id,
-                                      currentJurorName: jurado.name,
-                                    })
-                                  }
-                                  disabled={isSubmitting}
-                                  className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
-                                  title="Reasignar jurado"
-                                >
-                                  Reasignar
-                                </button>
-
-                                <button
-                                  onClick={() => void removeJuradoFromTeam(team.id, jurado.id)}
-                                  disabled={isSubmitting}
-                                  className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
-                                  title="Desasignar jurado"
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-
-                          {Array.from({
-                            length: Math.max(
-                              0,
-                              team.requiredJurados - team.jurados.length
-                            ),
-                          }).map((_, idx) => (
-                            <button
-                              key={`empty-${team.id}-${idx}`}
-                              onClick={() => openJuradoModal(team, false)}
-                              disabled={isSubmitting}
-                              className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                            >
-                              <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
-                              <span className="hidden md:inline">Agregar Jurado</span>
-                              <span className="md:hidden">Agregar</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="lg:col-span-1 space-y-4 md:space-y-6 order-1 lg:order-2">
-              <div>
-                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Oficiales</span>
-                </h3>
-
-                <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                  <p className="text-xs text-muted-foreground">
-                    Disponibles:{" "}
-                    <span className="font-bold text-lg text-foreground">
-                      {juradosOficialesDisponibles.length}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {juradosOficialesDisponibles.map((jurado) => (
-                    <div
-                      key={jurado.id}
-                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
-                    >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                          {getInitials(jurado.name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs md:text-sm font-medium truncate">
-                            {jurado.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {juradosOficialesDisponibles.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados oficiales disponibles
-                    </p>
-                  )}
-                </div>
+            {filteredTeams.length === 0 ? (
+              <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground">
+                No hay equipos para este filtro.
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {filteredTeams.map((team) => {
+                  const isComplete = team.jurados.length >= team.requiredJurados;
+                  const isEmpty = team.jurados.length === 0;
+                  const hasRemanentes = team.jurados.some(
+                    (jurado) => jurado.tipo === "BACKUP"
+                  );
 
-              <div>
-                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Remanentes</span>
-                </h3>
-
-                <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    Disponibles:{" "}
-                    <span className="font-bold text-lg text-foreground">
-                      {juradosRemanentesDisponibles.length}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Úsalos solo si un oficial no llega
-                  </p>
-                </div>
-
-                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {juradosRemanentesDisponibles.map((jurado) => (
+                  return (
                     <div
-                      key={jurado.id}
-                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
+                      key={team.id}
+                      className={`bg-card border rounded-2xl p-4 md:p-6 transition-all ${isComplete
+                        ? hasRemanentes
+                          ? "border-amber-500/50"
+                          : "border-green-500/50"
+                        : isEmpty
+                          ? "border-red-500/30"
+                          : "border-yellow-500/30"
+                        }`}
                     >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                          {getInitials(jurado.name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs md:text-sm font-medium truncate">
-                            {jurado.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {juradosRemanentesDisponibles.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados remanentes disponibles
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {showJuradosListModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
-                  <div>
-                    <h2 className="text-lg md:text-xl font-medium">
-                      Lista de Jurados
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Gestión completa de jurados registrados
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setShowJuradosListModal(false);
-                      setOpenJurorMenuId(null);
-                    }}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="p-4 md:p-6">
-                  <div className="mb-4">
-                    <input
-                      type="text"
-                      value={jurorSearch}
-                      onChange={(e) => setJurorSearch(e.target.value)}
-                      placeholder="Buscar jurado por nombre o correo"
-                      className="w-full rounded-2xl border border-border bg-card px-4 py-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-4 mb-6">
-                    <button
-                      onClick={exportJurorsToCsv}
-                      disabled={isSubmitting}
-                      className="h-16 w-20 rounded-2xl border border-border bg-card hover:bg-accent flex items-center justify-center disabled:opacity-50"
-                      title="Descargar"
-                    >
-                      <Download className="w-6 h-6" />
-                    </button>
-
-                    <button
-                      onClick={handleOpenCreateJuror}
-                      disabled={isSubmitting}
-                      className="h-16 px-6 rounded-2xl border border-border bg-card hover:bg-accent flex items-center justify-center gap-3 disabled:opacity-50"
-                      title="Agregar jurado"
-                    >
-                      <UserPlus className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  <div className="max-h-[58vh] overflow-y-auto space-y-3 pr-1">
-                    {juradosFiltrados.map((jurado) => (
-                      <div
-                        key={jurado.id}
-                        className="relative rounded-2xl border border-border bg-card p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-11 h-11 rounded-full border-2 border-border flex items-center justify-center bg-muted text-sm font-medium flex-shrink-0">
-                            {getInitials(jurado.name)}
-                          </div>
-
+                      <div className="mb-3 md:mb-4 pb-3 md:pb-4 border-b border-border">
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{jurado.name}</div>
-                            <div className="text-sm text-muted-foreground truncate">
-                              {jurado.email}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Último ingreso: {formatDate(jurado.lastSignInAt)}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
+                            <h3 className="text-base md:text-lg font-medium truncate">
+                              {team.game}
+                            </h3>
+                            <p className="text-muted-foreground text-sm truncate">
+                              Equipo: {team.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {team.semester}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              Líder: {team.leaderName}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                            <div className="px-2 md:px-3 py-1 rounded-full text-xs border bg-muted">
+                              {team.jurados.length}/{team.requiredJurados}
                             </div>
 
-                            {!jurado.jurorCategory && (
-                              <div className="mt-2 rounded-lg border border-yellow-500/30 px-3 py-2 text-xs text-yellow-600">
-                                Este jurado no puede asignarse hasta tener categoría JUNIOR/SENIOR.
+                            {isColegioTeam(team) && (
+                              <div className="px-2 py-1 rounded-full text-xs border border-blue-500/30 text-blue-500">
+                                Colegio
                               </div>
                             )}
 
-                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div className="rounded-xl border border-border p-3">
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  Evaluados
-                                </div>
-                                <div className="text-lg font-medium">
-                                  {jurado.evaluatedCount}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1 break-words">
-                                  {jurado.evaluatedGameNames.length > 0
-                                    ? jurado.evaluatedGameNames.join(", ")
-                                    : "Sin videojuegos evaluados"}
-                                </div>
-                              </div>
-
-                              <div className="rounded-xl border border-border p-3">
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  Pendientes
-                                </div>
-                                <div className="text-lg font-medium">
-                                  {jurado.unevaluatedCount}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1 break-words">
-                                  {jurado.unevaluatedGameNames.length > 0
-                                    ? jurado.unevaluatedGameNames.join(", ")
-                                    : "Sin pendientes"}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="relative">
-                            <button
-                              onClick={() =>
-                                setOpenJurorMenuId((prev) =>
-                                  prev === jurado.id ? null : jurado.id
-                                )
-                              }
-                              className="h-10 w-10 rounded-xl border border-border hover:bg-accent flex items-center justify-center"
-                            >
-                              <MoreVertical className="w-5 h-5" />
-                            </button>
-
-                            {openJurorMenuId === jurado.id && (
-                              <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-border bg-background shadow-xl p-2">
-                                <button
-                                  onClick={() => handleEditJuror(jurado)}
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
-                                >
-                                  Editar
-                                </button>
-
-                                <button
-                                  onClick={() => void handleResendConfirmation(jurado.email)}
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
-                                >
-                                  Reenviar correo
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    void handleRemoveTeamsFromJuror(jurado.id, jurado.name)
-                                  }
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
-                                >
-                                  Quitar equipos
-                                </button>
-
-                                <button
-                                  onClick={() => void toggleJurorType(jurado)}
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
-                                >
-                                  {jurado.tipo === "OFFICIAL"
-                                    ? "Marcar como remanente"
-                                    : "Marcar como oficial"}
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    void handleDeleteJuror(jurado.id, jurado.name)
-                                  }
-                                  className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm text-red-500"
-                                >
-                                  Eliminar
-                                </button>
+                            {hasRemanentes && (
+                              <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                                <span className="hidden md:inline">
+                                  Con remanentes
+                                </span>
+                                <span className="md:hidden">Remanente</span>
                               </div>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
 
-                    {juradosFiltrados.length === 0 && (
-                      <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-                        No se encontraron jurados con ese filtro.
+                      <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
+                        {team.jurados.map((jurado) => (
+                          <div
+                            key={getAssignmentKey(team.id, jurado.id)}
+                            className={`border rounded-xl p-2 md:p-3 flex items-center gap-2 md:gap-3 group hover:border-primary/50 transition-all ${jurado.tipo === "OFFICIAL"
+                              ? "bg-card border-blue-500/30"
+                              : "bg-card border-amber-500/30"
+                              }`}
+                          >
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs md:text-sm font-medium flex-shrink-0">
+                              {getInitials(jurado.name)}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs md:text-sm font-medium truncate">
+                                {jurado.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                <span className="hidden md:inline">
+                                  {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                  {getJurorTypeLabel(jurado.tipo)}
+                                </span>
+                                <span className="md:hidden">
+                                  {getJurorCategoryLabel(jurado.jurorCategory)} •{" "}
+                                  {getJurorTypeLabel(jurado.tipo)}
+                                </span>
+                              </div>
+                              <div className="text-[10px] md:text-xs text-muted-foreground truncate">
+                                {jurado.email}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                              <button
+                                onClick={() =>
+                                  openJuradoModal(team, false, {
+                                    currentJurorId: jurado.id,
+                                    currentJurorName: jurado.name,
+                                  })
+                                }
+                                disabled={isSubmitting}
+                                className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                title="Reasignar jurado"
+                              >
+                                Reasignar
+                              </button>
+
+                              <button
+                                onClick={() => void removeJuradoFromTeam(team.id, jurado.id)}
+                                disabled={isSubmitting}
+                                className="px-2 py-1.5 rounded-lg border hover:bg-accent transition-all disabled:opacity-50 text-[10px] md:text-xs"
+                                title="Desasignar jurado"
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {Array.from({
+                          length: Math.max(
+                            0,
+                            team.requiredJurados - team.jurados.length
+                          ),
+                        }).map((_, idx) => (
+                          <button
+                            key={`empty-${team.id}-${idx}`}
+                            onClick={() => openJuradoModal(team, false)}
+                            disabled={isSubmitting}
+                            className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                          >
+                            <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
+                            <span className="hidden md:inline">Agregar Jurado</span>
+                            <span className="md:hidden">Agregar</span>
+                          </button>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-1 space-y-4 md:space-y-6 order-1 lg:order-2">
+            <div>
+              <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 flex-shrink-0" />
+                <span>Jurados Oficiales</span>
+              </h3>
+
+              <div className="bg-card border border-border rounded-xl p-3 mb-3">
+                <p className="text-xs text-muted-foreground">
+                  Disponibles:{" "}
+                  <span className="font-bold text-lg text-foreground">
+                    {juradosOficialesDisponibles.length}
+                  </span>
+                </p>
+              </div>
+
+              <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                {juradosOficialesDisponibles.map((jurado) => (
+                  <div
+                    key={jurado.id}
+                    className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
+                  >
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
+                        {getInitials(jurado.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs md:text-sm font-medium truncate">
+                          {jurado.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
+
+                {juradosOficialesDisponibles.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8 text-sm">
+                    No hay jurados oficiales disponibles
+                  </p>
+                )}
               </div>
             </div>
-          )}
 
-          {showJuradoModal && selectedTeam && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
-                  <div>
-                    <h2 className="text-lg md:text-xl font-medium">
-                      {reassignContext ? "Reasignar Jurado" : "Asignar Jurado"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Equipo: {selectedTeam.name} · Videojuego: {selectedTeam.game}
-                    </p>
-                    {reassignContext && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Reemplazando a: {reassignContext.currentJurorName}
-                      </p>
-                    )}
+            <div>
+              <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <span>Jurados Remanentes</span>
+              </h3>
+
+              <div className="bg-card border border-border rounded-xl p-3 mb-3">
+                <p className="text-xs text-muted-foreground mb-1">
+                  Disponibles:{" "}
+                  <span className="font-bold text-lg text-foreground">
+                    {juradosRemanentesDisponibles.length}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Úsalos solo si un oficial no llega
+                </p>
+              </div>
+
+              <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                {juradosRemanentesDisponibles.map((jurado) => (
+                  <div
+                    key={jurado.id}
+                    className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
+                  >
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
+                        {getInitials(jurado.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs md:text-sm font-medium truncate">
+                          {jurado.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                ))}
+
+                {juradosRemanentesDisponibles.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8 text-sm">
+                    No hay jurados remanentes disponibles
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showJuradosListModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                <div>
+                  <h2 className="text-lg md:text-xl font-medium">
+                    Lista de Jurados
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Gestión completa de jurados registrados
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowJuradosListModal(false);
+                    setOpenJurorMenuId(null);
+                  }}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 md:p-6">
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={jurorSearch}
+                    onChange={(e) => setJurorSearch(e.target.value)}
+                    placeholder="Buscar jurado por nombre o correo"
+                    className="w-full rounded-2xl border border-border bg-card px-4 py-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 mb-6">
+                  <button
+                    onClick={exportJurorsToCsv}
+                    disabled={isSubmitting}
+                    className="h-16 w-20 rounded-2xl border border-border bg-card hover:bg-accent flex items-center justify-center disabled:opacity-50"
+                    title="Descargar"
+                  >
+                    <Download className="w-6 h-6" />
+                  </button>
 
                   <button
-                    onClick={closeJuradoModal}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
+                    onClick={handleOpenCreateJuror}
+                    disabled={isSubmitting}
+                    className="h-16 px-6 rounded-2xl border border-border bg-card hover:bg-accent flex items-center justify-center gap-3 disabled:opacity-50"
+                    title="Agregar jurado"
                   >
-                    <X className="w-4 h-4" />
+                    <UserPlus className="w-6 h-6" />
                   </button>
                 </div>
 
-                <div className="p-4 md:p-6">
-                  <div className="mb-4 rounded-xl border border-border bg-card p-4">
-                    <div className="text-sm font-medium">{selectedTeam.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedTeam.jurados.length}/{selectedTeam.requiredJurados} jurados asignados
-                    </div>
-                    {isColegioTeam(selectedTeam) && (
-                      <div className="mt-2 text-xs text-blue-500">
-                        Equipo de colegio: los jurados Junior no aparecerán como opción disponible.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
-                    {juradosDisponiblesParaModal.map((jurado) => (
-                      <div
-                        key={jurado.id}
-                        className="rounded-xl border border-border bg-card p-4 flex items-start gap-3"
-                      >
+                <div className="max-h-[58vh] overflow-y-auto space-y-3 pr-1">
+                  {juradosFiltrados.map((jurado) => (
+                    <div
+                      key={jurado.id}
+                      className="relative rounded-2xl border border-border bg-card p-4"
+                    >
+                      <div className="flex items-start gap-3">
                         <div className="w-11 h-11 rounded-full border-2 border-border flex items-center justify-center bg-muted text-sm font-medium flex-shrink-0">
                           {getInitials(jurado.name)}
                         </div>
@@ -1888,433 +1729,603 @@ export function JuradosAssignment() {
                             {jurado.email}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
                             Último ingreso: {formatDate(jurado.lastSignInAt)}
                           </div>
-                        </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
+                          </div>
 
-                        <button
-                          onClick={() =>
-                            reassignContext
-                              ? void reassignJuradoOnTeam(
-                                selectedTeam.id,
-                                reassignContext.currentJurorId,
-                                jurado
-                              )
-                              : void addJuradoToTeam(selectedTeam.id, jurado)
-                          }
-                          disabled={isSubmitting}
-                          className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 text-sm disabled:opacity-50"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          {reassignContext ? "Reasignar" : "Asignar"}
-                        </button>
-                      </div>
-                    ))}
+                          {!jurado.jurorCategory && (
+                            <div className="mt-2 rounded-lg border border-yellow-500/30 px-3 py-2 text-xs text-yellow-600">
+                              Este jurado no puede asignarse hasta tener categoría JUNIOR/SENIOR.
+                            </div>
+                          )}
 
-                    {juradosDisponiblesParaModal.length === 0 && (
-                      <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-                        No hay jurados disponibles para asignar. Recuerda que deben tener categoría JUNIOR/SENIOR.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-
-          {showAllTeamsModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
-                  <div>
-                    <h2 className="text-lg md:text-xl font-medium">Todos los equipos y jurados asignados</h2>
-                    <p className="text-sm text-muted-foreground">Vista completa de equipos cargados desde la base de datos.</p>
-                  </div>
-
-                  <button
-                    onClick={() => setShowAllTeamsModal(false)}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="p-4 md:p-6 max-h-[72vh] overflow-y-auto space-y-4">
-                  {teams.map((team) => (
-                    <div key={team.id} className="rounded-2xl border border-border bg-card p-4">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 border-b border-border pb-3 mb-3">
-                        <div>
-                          <div className="font-medium">{team.name}</div>
-                          <div className="text-sm text-muted-foreground">Videojuego: {team.game}</div>
-                          <div className="text-xs text-muted-foreground">Líder: {team.leaderName}</div>
-                        </div>
-                        <div className="rounded-full border px-3 py-1 text-xs w-fit">
-                          {team.jurados.length}/{team.requiredJurados} jurados
-                        </div>
-                      </div>
-
-                      {team.jurados.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Este equipo no tiene jurados asignados.</div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {team.jurados.map((jurado) => (
-                            <div key={getAssignmentKey(team.id, jurado.id)} className="rounded-xl border border-border p-3">
-                              <div className="font-medium text-sm">{jurado.name}</div>
-                              <div className="text-xs text-muted-foreground truncate">{jurado.email}</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {getJurorCategoryLabel(jurado.jurorCategory)} · {getJurorTypeLabel(jurado.tipo)}
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="rounded-xl border border-border p-3">
+                              <div className="text-xs text-muted-foreground mb-1">
+                                Evaluados
+                              </div>
+                              <div className="text-lg font-medium">
+                                {jurado.evaluatedCount}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1 break-words">
+                                {jurado.evaluatedGameNames.length > 0
+                                  ? jurado.evaluatedGameNames.join(", ")
+                                  : "Sin videojuegos evaluados"}
                               </div>
                             </div>
-                          ))}
+
+                            <div className="rounded-xl border border-border p-3">
+                              <div className="text-xs text-muted-foreground mb-1">
+                                Pendientes
+                              </div>
+                              <div className="text-lg font-medium">
+                                {jurado.unevaluatedCount}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1 break-words">
+                                {jurado.unevaluatedGameNames.length > 0
+                                  ? jurado.unevaluatedGameNames.join(", ")
+                                  : "Sin pendientes"}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      )}
+
+                        <div className="relative">
+                          <button
+                            onClick={() =>
+                              setOpenJurorMenuId((prev) =>
+                                prev === jurado.id ? null : jurado.id
+                              )
+                            }
+                            className="h-10 w-10 rounded-xl border border-border hover:bg-accent flex items-center justify-center"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+
+                          {openJurorMenuId === jurado.id && (
+                            <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-border bg-background shadow-xl p-2">
+                              <button
+                                onClick={() => handleEditJuror(jurado)}
+                                className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                              >
+                                Editar
+                              </button>
+
+                              <button
+                                onClick={() => void handleResendConfirmation(jurado.email)}
+                                className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                              >
+                                Reenviar correo
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  void handleRemoveTeamsFromJuror(jurado.id, jurado.name)
+                                }
+                                className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                              >
+                                Quitar equipos
+                              </button>
+
+                              <button
+                                onClick={() => void toggleJurorType(jurado)}
+                                className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                              >
+                                {jurado.tipo === "OFFICIAL"
+                                  ? "Marcar como remanente"
+                                  : "Marcar como oficial"}
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  void handleDeleteJuror(jurado.id, jurado.name)
+                                }
+                                className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm text-red-500"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {showAuditModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
-                  <div>
-                    <h2 className="text-lg md:text-xl font-medium">
-                      Historial de cambios manuales
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Registro de asignaciones, desasignaciones y reasignaciones.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setShowAuditModal(false)}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="p-4 md:p-6 max-h-[70vh] overflow-y-auto space-y-3">
-                  {auditLogs.length === 0 ? (
+                  {juradosFiltrados.length === 0 && (
                     <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-                      No hay registros de auditoría.
+                      No se encontraron jurados con ese filtro.
                     </div>
-                  ) : (
-                    auditLogs.map((log, index) => (
-                      <div
-                        key={log.id ?? index}
-                        className="rounded-xl border border-border bg-card p-4 text-sm"
-                      >
-                        <div className="font-medium">
-                          Acción: {normalizeAuditAction(String(log.action ?? ""))}
-                        </div>
-
-                        <div className="text-muted-foreground mt-1">
-                          Equipo: {getTeamNameById(log.teamId)}
-                        </div>
-
-                        <div className="text-muted-foreground">
-                          Jurado: {getJurorNameById(log.jurorId ?? log.newJurorId)}
-                        </div>
-
-                        {log.previousJurorId && (
-                          <div className="text-muted-foreground">
-                            Jurado anterior: {getJurorNameById(log.previousJurorId)}
-                          </div>
-                        )}
-
-                        {log.newJurorId && (
-                          <div className="text-muted-foreground">
-                            Jurado nuevo: {getJurorNameById(log.newJurorId)}
-                          </div>
-                        )}
-
-                        <div className="text-muted-foreground">
-                          Usuario que realizó el cambio: {getActorNameById(log.actorUserId)}
-                        </div>
-
-                        <div className="text-muted-foreground">
-                          Fecha: {formatDate(String(log.createdAt ?? log.creado_en ?? log.timestamp ?? ""))}
-                        </div>
-
-                        {log.notes && (
-                          <div className="text-muted-foreground mt-1">
-                            Nota: {String(log.notes)}
-                          </div>
-                        )}
-                      </div>
-                    ))
                   )}
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {showCreateJurorModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-2 md:px-8 md:pt-8">
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
-                      Agregar Nuevo Jurado
-                    </h2>
-                    <p className="text-muted-foreground text-sm md:text-base mt-2">
-                      Complete todos los datos del nuevo jurado. La categoría y el tipo son obligatorios.
+        {showJuradoModal && selectedTeam && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                <div>
+                  <h2 className="text-lg md:text-xl font-medium">
+                    {reassignContext ? "Reasignar Jurado" : "Asignar Jurado"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Equipo: {selectedTeam.name} · Videojuego: {selectedTeam.game}
+                  </p>
+                  {reassignContext && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Reemplazando a: {reassignContext.currentJurorName}
                     </p>
-                  </div>
-
-                  <button
-                    onClick={() => setShowCreateJurorModal(false)}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  )}
                 </div>
 
-                <div className="px-5 pb-6 md:px-8 md:pb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
-                    <label className="text-foreground text-sm md:text-base font-medium">
-                      Nombres *
-                    </label>
-                    <input
-                      type="text"
-                      value={createJurorForm.firstName}
-                      onChange={(e) =>
-                        setCreateJurorForm((prev) => ({
-                          ...prev,
-                          firstName: e.target.value,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
+                <button
+                  onClick={closeJuradoModal}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-                    <label className="text-foreground text-sm md:text-base font-medium">
-                      Apellidos *
-                    </label>
-                    <input
-                      type="text"
-                      value={createJurorForm.lastName}
-                      onChange={(e) =>
-                        setCreateJurorForm((prev) => ({
-                          ...prev,
-                          lastName: e.target.value,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Correo electrónico *
-                    </label>
-                    <input
-                      type="email"
-                      value={createJurorForm.email}
-                      onChange={(e) =>
-                        setCreateJurorForm((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Categoría *
-                    </label>
-                    <select
-                      value={createJurorForm.jurorCategory}
-                      onChange={(e) =>
-                        setCreateJurorForm((prev) => ({
-                          ...prev,
-                          jurorCategory: e.target.value as "" | JurorCategory,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value="">Selecciona una categoría</option>
-                      <option value="JUNIOR">Junior</option>
-                      <option value="SENIOR">Senior</option>
-                    </select>
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Tipo operativo *
-                    </label>
-                    <select
-                      value={createJurorForm.tipo}
-                      onChange={(e) =>
-                        setCreateJurorForm((prev) => ({
-                          ...prev,
-                          tipo: e.target.value as "" | JurorType,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value="">Selecciona un tipo</option>
-                      <option value="OFFICIAL">Oficial</option>
-                      <option value="BACKUP">Remanente</option>
-                    </select>
+              <div className="p-4 md:p-6">
+                <div className="mb-4 rounded-xl border border-border bg-card p-4">
+                  <div className="text-sm font-medium">{selectedTeam.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedTeam.jurados.length}/{selectedTeam.requiredJurados} jurados asignados
                   </div>
+                  {isColegioTeam(selectedTeam) && (
+                    <div className="mt-2 text-xs text-blue-500">
+                      Equipo de colegio: los jurados Junior no aparecerán como opción disponible.
+                    </div>
+                  )}
+                </div>
 
-                  <div className="flex justify-end gap-3 mt-8">
-                    <button
-                      onClick={() => setShowCreateJurorModal(false)}
-                      className="h-11 px-5 rounded-xl border border-border bg-card hover:bg-accent text-foreground text-sm md:text-base font-semibold"
+                <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
+                  {juradosDisponiblesParaModal.map((jurado) => (
+                    <div
+                      key={jurado.id}
+                      className="rounded-xl border border-border bg-card p-4 flex items-start gap-3"
                     >
-                      Cancelar
-                    </button>
+                      <div className="w-11 h-11 rounded-full border-2 border-border flex items-center justify-center bg-muted text-sm font-medium flex-shrink-0">
+                        {getInitials(jurado.name)}
+                      </div>
 
-                    <button
-                      onClick={() => void handleCreateJurorSubmit()}
-                      disabled={isSubmitting}
-                      className="h-11 px-5 rounded-xl bg-[#b7c6f7] hover:opacity-90 text-[#1b1b1b] text-sm md:text-base font-semibold disabled:opacity-50"
-                    >
-                      Guardar
-                    </button>
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{jurado.name}</div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {jurado.email}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Último ingreso: {formatDate(jurado.lastSignInAt)}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          reassignContext
+                            ? void reassignJuradoOnTeam(
+                              selectedTeam.id,
+                              reassignContext.currentJurorId,
+                              jurado
+                            )
+                            : void addJuradoToTeam(selectedTeam.id, jurado)
+                        }
+                        disabled={isSubmitting}
+                        className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 text-sm disabled:opacity-50"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        {reassignContext ? "Reasignar" : "Asignar"}
+                      </button>
+                    </div>
+                  ))}
+
+                  {juradosDisponiblesParaModal.length === 0 && (
+                    <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+                      No hay jurados disponibles para asignar. Recuerda que deben tener categoría JUNIOR/SENIOR.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {showEditJurorModal && editingJuror && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-              <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-xl">
-                <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-2 md:px-8 md:pt-8">
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
-                      Editar Jurado
-                    </h2>
-                    <p className="text-muted-foreground text-sm md:text-base mt-2 max-w-xl">
-                      Modifique los datos del jurado. El correo electrónico no se puede editar.
-                    </p>
+
+
+        {showAllTeamsModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                <div>
+                  <h2 className="text-lg md:text-xl font-medium">Todos los equipos y jurados asignados</h2>
+                  <p className="text-sm text-muted-foreground">Vista completa de equipos cargados desde la base de datos.</p>
+                </div>
+
+                <button
+                  onClick={() => setShowAllTeamsModal(false)}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 md:p-6 max-h-[72vh] overflow-y-auto space-y-4">
+                {teams.map((team) => (
+                  <div key={team.id} className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 border-b border-border pb-3 mb-3">
+                      <div>
+                        <div className="font-medium">{team.name}</div>
+                        <div className="text-sm text-muted-foreground">Videojuego: {team.game}</div>
+                        <div className="text-xs text-muted-foreground">Líder: {team.leaderName}</div>
+                      </div>
+                      <div className="rounded-full border px-3 py-1 text-xs w-fit">
+                        {team.jurados.length}/{team.requiredJurados} jurados
+                      </div>
+                    </div>
+
+                    {team.jurados.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">Este equipo no tiene jurados asignados.</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {team.jurados.map((jurado) => (
+                          <div key={getAssignmentKey(team.id, jurado.id)} className="rounded-xl border border-border p-3">
+                            <div className="font-medium text-sm">{jurado.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{jurado.email}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {getJurorCategoryLabel(jurado.jurorCategory)} · {getJurorTypeLabel(jurado.tipo)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
+        {showAuditModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+                <div>
+                  <h2 className="text-lg md:text-xl font-medium">
+                    Historial de cambios manuales
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Registro de asignaciones, desasignaciones y reasignaciones.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowAuditModal(false)}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 md:p-6 max-h-[70vh] overflow-y-auto space-y-3">
+                {auditLogs.length === 0 ? (
+                  <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+                    No hay registros de auditoría.
+                  </div>
+                ) : (
+                  auditLogs.map((log, index) => (
+                    <div
+                      key={log.id ?? index}
+                      className="rounded-xl border border-border bg-card p-4 text-sm"
+                    >
+                      <div className="font-medium">
+                        Acción: {normalizeAuditAction(String(log.action ?? ""))}
+                      </div>
+
+                      <div className="text-muted-foreground mt-1">
+                        Equipo: {getTeamNameById(log.teamId)}
+                      </div>
+
+                      <div className="text-muted-foreground">
+                        Jurado: {getJurorNameById(log.jurorId ?? log.newJurorId)}
+                      </div>
+
+                      {log.previousJurorId && (
+                        <div className="text-muted-foreground">
+                          Jurado anterior: {getJurorNameById(log.previousJurorId)}
+                        </div>
+                      )}
+
+                      {log.newJurorId && (
+                        <div className="text-muted-foreground">
+                          Jurado nuevo: {getJurorNameById(log.newJurorId)}
+                        </div>
+                      )}
+
+                      <div className="text-muted-foreground">
+                        Usuario que realizó el cambio: {getActorNameById(log.actorUserId)}
+                      </div>
+
+                      <div className="text-muted-foreground">
+                        Fecha: {formatDate(String(log.createdAt ?? log.creado_en ?? log.timestamp ?? ""))}
+                      </div>
+
+                      {log.notes && (
+                        <div className="text-muted-foreground mt-1">
+                          Nota: {String(log.notes)}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showCreateJurorModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-2 md:px-8 md:pt-8">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+                    Agregar Nuevo Jurado
+                  </h2>
+                  <p className="text-muted-foreground text-sm md:text-base mt-2">
+                    Complete todos los datos del nuevo jurado. La categoría y el tipo son obligatorios.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowCreateJurorModal(false)}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="px-5 pb-6 md:px-8 md:pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
+                  <label className="text-foreground text-sm md:text-base font-medium">
+                    Nombres *
+                  </label>
+                  <input
+                    type="text"
+                    value={createJurorForm.firstName}
+                    onChange={(e) =>
+                      setCreateJurorForm((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium">
+                    Apellidos *
+                  </label>
+                  <input
+                    type="text"
+                    value={createJurorForm.lastName}
+                    onChange={(e) =>
+                      setCreateJurorForm((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Correo electrónico *
+                  </label>
+                  <input
+                    type="email"
+                    value={createJurorForm.email}
+                    onChange={(e) =>
+                      setCreateJurorForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Categoría *
+                  </label>
+                  <select
+                    value={createJurorForm.jurorCategory}
+                    onChange={(e) =>
+                      setCreateJurorForm((prev) => ({
+                        ...prev,
+                        jurorCategory: e.target.value as "" | JurorCategory,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    <option value="JUNIOR">Junior</option>
+                    <option value="SENIOR">Senior</option>
+                  </select>
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Tipo operativo *
+                  </label>
+                  <select
+                    value={createJurorForm.tipo}
+                    onChange={(e) =>
+                      setCreateJurorForm((prev) => ({
+                        ...prev,
+                        tipo: e.target.value as "" | JurorType,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Selecciona un tipo</option>
+                    <option value="OFFICIAL">Oficial</option>
+                    <option value="BACKUP">Remanente</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-8">
+                  <button
+                    onClick={() => setShowCreateJurorModal(false)}
+                    className="h-11 px-5 rounded-xl border border-border bg-card hover:bg-accent text-foreground text-sm md:text-base font-semibold"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    onClick={() => void handleCreateJurorSubmit()}
+                    disabled={isSubmitting}
+                    className="h-11 px-5 rounded-xl bg-[#b7c6f7] hover:opacity-90 text-[#1b1b1b] text-sm md:text-base font-semibold disabled:opacity-50"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditJurorModal && editingJuror && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-xl">
+              <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-2 md:px-8 md:pt-8">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+                    Editar Jurado
+                  </h2>
+                  <p className="text-muted-foreground text-sm md:text-base mt-2 max-w-xl">
+                    Modifique los datos del jurado. El correo electrónico no se puede editar.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowEditJurorModal(false);
+                    setEditingJuror(null);
+                  }}
+                  className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="px-5 pb-6 md:px-8 md:pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
+                  <label className="text-foreground text-sm md:text-base font-medium">
+                    Nombres
+                  </label>
+                  <input
+                    type="text"
+                    value={editJurorForm.firstName}
+                    onChange={(e) =>
+                      setEditJurorForm((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium">
+                    Apellidos
+                  </label>
+                  <input
+                    type="text"
+                    value={editJurorForm.lastName}
+                    onChange={(e) =>
+                      setEditJurorForm((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={editJurorForm.email}
+                    disabled
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base text-muted-foreground outline-none opacity-80"
+                  />
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Categoría
+                  </label>
+                  <select
+                    value={editJurorForm.jurorCategory}
+                    onChange={(e) =>
+                      setEditJurorForm((prev) => ({
+                        ...prev,
+                        jurorCategory: e.target.value as "" | JurorCategory,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    <option value="JUNIOR">Junior</option>
+                    <option value="SENIOR">Senior</option>
+                  </select>
+
+                  <label className="text-foreground text-sm md:text-base font-medium leading-tight">
+                    Tipo operativo
+                  </label>
+                  <select
+                    value={editJurorForm.tipo}
+                    onChange={(e) =>
+                      setEditJurorForm((prev) => ({
+                        ...prev,
+                        tipo: e.target.value as "" | JurorType,
+                      }))
+                    }
+                    className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Selecciona un tipo</option>
+                    <option value="OFFICIAL">Oficial</option>
+                    <option value="BACKUP">Remanente</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-8">
                   <button
                     onClick={() => {
                       setShowEditJurorModal(false);
                       setEditingJuror(null);
                     }}
-                    className="rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-all p-2 flex items-center justify-center"
-                    aria-label="Cerrar modal"
+                    className="h-11 px-5 rounded-xl border border-border bg-card hover:bg-accent text-foreground text-sm md:text-base font-semibold"
                   >
-                    <X className="w-4 h-4" />
+                    Cancelar
                   </button>
-                </div>
 
-                <div className="px-5 pb-6 md:px-8 md:pb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-y-5 gap-x-5 mt-4 items-center">
-                    <label className="text-foreground text-sm md:text-base font-medium">
-                      Nombres
-                    </label>
-                    <input
-                      type="text"
-                      value={editJurorForm.firstName}
-                      onChange={(e) =>
-                        setEditJurorForm((prev) => ({
-                          ...prev,
-                          firstName: e.target.value,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-
-                    <label className="text-foreground text-sm md:text-base font-medium">
-                      Apellidos
-                    </label>
-                    <input
-                      type="text"
-                      value={editJurorForm.lastName}
-                      onChange={(e) =>
-                        setEditJurorForm((prev) => ({
-                          ...prev,
-                          lastName: e.target.value,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Correo electrónico
-                    </label>
-                    <input
-                      type="email"
-                      value={editJurorForm.email}
-                      disabled
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base text-muted-foreground outline-none opacity-80"
-                    />
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Categoría
-                    </label>
-                    <select
-                      value={editJurorForm.jurorCategory}
-                      onChange={(e) =>
-                        setEditJurorForm((prev) => ({
-                          ...prev,
-                          jurorCategory: e.target.value as "" | JurorCategory,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value="">Selecciona una categoría</option>
-                      <option value="JUNIOR">Junior</option>
-                      <option value="SENIOR">Senior</option>
-                    </select>
-
-                    <label className="text-foreground text-sm md:text-base font-medium leading-tight">
-                      Tipo operativo
-                    </label>
-                    <select
-                      value={editJurorForm.tipo}
-                      onChange={(e) =>
-                        setEditJurorForm((prev) => ({
-                          ...prev,
-                          tipo: e.target.value as "" | JurorType,
-                        }))
-                      }
-                      className="h-11 md:h-12 rounded-xl border border-border bg-card px-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option value="">Selecciona un tipo</option>
-                      <option value="OFFICIAL">Oficial</option>
-                      <option value="BACKUP">Remanente</option>
-                    </select>
-                  </div>
-
-                  <div className="flex justify-end gap-3 mt-8">
-                    <button
-                      onClick={() => {
-                        setShowEditJurorModal(false);
-                        setEditingJuror(null);
-                      }}
-                      className="h-11 px-5 rounded-xl border border-border bg-card hover:bg-accent text-foreground text-sm md:text-base font-semibold"
-                    >
-                      Cancelar
-                    </button>
-
-                    <button
-                      onClick={() => void handleEditJurorSubmit()}
-                      disabled={isSubmitting}
-                      className="h-11 px-5 rounded-xl bg-[#b7c6f7] hover:opacity-90 text-[#1b1b1b] text-sm md:text-base font-semibold disabled:opacity-50"
-                    >
-                      Guardar Cambios
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => void handleEditJurorSubmit()}
+                    disabled={isSubmitting}
+                    className="h-11 px-5 rounded-xl bg-[#b7c6f7] hover:opacity-90 text-[#1b1b1b] text-sm md:text-base font-semibold disabled:opacity-50"
+                  >
+                    Guardar Cambios
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+          </div>
+        )}
+      </div>
+    </LayoutAplication>
   );
 }
