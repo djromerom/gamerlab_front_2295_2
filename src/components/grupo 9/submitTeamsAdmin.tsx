@@ -203,6 +203,8 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
         logo_url: "",
         video_demo_url: "",
         additionalImages: [],
+        gameFileUrl: null,
+        entry: null,
         ...(initialData?.videojuego || {}),
       };
       const curVg = fullPayload.videogame || {};
@@ -212,6 +214,8 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       if (changed(curVg.logoUrl, origVg.logo_url)) vgPatch.logoUrl = curVg.logoUrl;
       if (changed(curVg.videoUrl, origVg.video_demo_url)) vgPatch.videoUrl = curVg.videoUrl;
       if (changed(curVg.additionalImages, origVg.additionalImages)) vgPatch.additionalImages = curVg.additionalImages;
+      if (changed(curVg.gameFileUrl, origVg.gameFileUrl ?? null)) vgPatch.gameFileUrl = curVg.gameFileUrl;
+      if (changed(curVg.entry, origVg.entry ?? null)) vgPatch.entry = curVg.entry;
       if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
 
       // Miembros (solo actualizar / remover; los nuevos ya fueron creados vía add-member)

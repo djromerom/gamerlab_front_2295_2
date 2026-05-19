@@ -4,19 +4,26 @@ import JSZip from 'jszip';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Map de archivos (básicamente un diccionario dentro de un diccionario)
+// en el Map externo, cada juego es una llave en 'gameFiles', y el valor detrás de esa llave es otro Map
+// en el Map interno, cada llave es un camino a un archivo, y cada valor es el archivo como tal (en bytes)
 const gameFiles = new Map<string, Map<string, ArrayBuffer>>();
 
+//NOTA: este es el service worker encargado de interfacear con los videojuegos que corren en Arkad.
+//si se va a modificar este archivo, es necesario que apagues el front si está en ejecución,
+//y corras el siguiente comando: npm exec vite build --config sw.config.ts
+//el archivo 'sw.config.ts' le dice a Vite con qué configuración compilar el sw.
+//para funcionar, el sw transpilado tiene que estar en /public
 
-// 1. lifecycle
+// magia para adueñarse de la pagina cuando sea necesario
 self.addEventListener('install', () => {
     self.skipWaiting();
 });
-
 self.addEventListener('activate', (event: ExtendableEvent) => {
     event.waitUntil(self.clients.claim());
 });
 
-// 2. messages
+// listeners para cuando sea hora de adueñarse de la pagina o cuando toque descomprimir el ZIP del juego
 self.addEventListener('message', async (event: ExtendableMessageEvent) => {
     if (event.data.type === 'CLAIM') {
         await self.clients.claim();
@@ -42,7 +49,10 @@ self.addEventListener('message', async (event: ExtendableMessageEvent) => {
     }
 });
 
-// 3. fetch interception
+// intercepcion de fetch: cada vez que en la página corra un fetch, este listener reacciona.
+// se filtran los fetches a aquellos que pasen por el path de la pagina en la cual se corren juegos.
+// si un fetch pasa por /play-game/, se dice que es un fetch de archivos internos del juego.
+// entonces el SW toma la tarea de responder al fetch con la informacion correspondiente, siendo los archivos del juego.
 self.addEventListener('fetch', (event: FetchEvent) => {
     //check if detected fetch is for a local game file
     const url = new URL(event.request.url);
@@ -67,12 +77,14 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     //just detect Unity's '/Build/' folder. if the folder exists then attach the Content-Encoding header
     //so that the file gets decompressed. its not a neat solution but...
     const decompress = filePath.includes('Build/') && filePath.endsWith('.gz');
-
     console.log("should decompress?: ", decompress);
+    //la solucion ideal sería que se declare con cual motor de videojuegos se hizo el juego al montarlo
+    //pero eso queda como ejercicio al lector lol
 
     event.respondWith(
         (async () => {
             let buffer = file;
+            //decidir si descomprimir o no dependiendo del engine
             if (decompress) {
                 try {
                     buffer = await decompressGzip(file);
@@ -82,6 +94,10 @@ self.addEventListener('fetch', (event: FetchEvent) => {
                 }
             }
 
+            //armar la respuesta, colocando los headers necesarios.
+            //el detalle aca es que Unity es quisquilloso y pide
+            //Content-Length además de un Content-Type correcto (mira getMimeType())
+            //ademas, cualquier engine va a necesitar un COEP definido para poder embedir sus juegos en un iframe
             console.log('responding with buffer size:', buffer.byteLength);
             const response = new Response(new Uint8Array(buffer), {
                 headers: {
