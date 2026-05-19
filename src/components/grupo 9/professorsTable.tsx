@@ -499,11 +499,9 @@ export const ProfessorsTable: React.FC<Props> = ({
 
         {/* Pagination Controls - Driven by paginationMeta from props */}
         {paginationMeta && paginationMeta.totalItems > 0 && (
-          <div className="flex justify-between items-center p-4 text-sm border-t border-border gap-2">
-            <div className="flex items-center gap-1 min-[450px]:gap-2">
-              <span className="w-12 min-[450px]:w-auto text-center min-[450px]:text-left leading-tight break-words">
-                Filas por página
-              </span>
+          <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+            <div className="flex items-center gap-2">
+              <span>Filas por página</span>
               <Select
                 value={paginationMeta.itemsPerPage.toString()}
                 onValueChange={(value) => {
@@ -527,14 +525,13 @@ export const ProfessorsTable: React.FC<Props> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2 min-[450px]:gap-4 shrink-0">
-              <span className="text-center min-[450px]:text-left leading-tight">
-                <span className="block min-[450px]:inline">Página </span>
-                <span className="block min-[450px]:inline">
-                  {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0} de {paginationMeta.totalPages}
-                </span>
+            <div className="flex items-center gap-4">
+              <span>
+                Página{" "}
+                {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0}{" "}
+                de {paginationMeta.totalPages}
               </span>
-              <div className="flex gap-1 shrink-0">
+              <div className="flex gap-1">
                 <Button
                   onClick={() => onPageChange(paginationMeta.currentPage - 1)}
                   disabled={paginationMeta.currentPage === 1 || showLoader}

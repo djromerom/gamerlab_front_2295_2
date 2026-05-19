@@ -202,11 +202,11 @@ export default function TiebreakerPage() {
     >
       <Toaster richColors />
       {loading ? (
-        <div className="flex items-center justify-center py-12 p-4">
+        <div className="flex items-center justify-center py-12 px-6">
           <p className="text-muted-foreground">Cargando equipos...</p>
         </div>
       ) : (
-        <div className="space-y-6 p-4">
+        <div className="space-y-6 px-6 py-4">
           {/* Header con botón de guardar */}
           <div className="flex items-center justify-between">
             <div>

@@ -461,11 +461,9 @@ export const SubjectsTable: React.FC<Props> = ({
           </TableBody>
         </Table>
 
-        <div className="flex justify-between items-center p-4 text-sm border-t border-border gap-2">
-          <div className="flex items-center gap-1 min-[450px]:gap-2">
-            <span className="w-12 min-[450px]:w-auto text-center min-[450px]:text-left leading-tight break-words">
-              Filas por página
-            </span>
+        <div className="flex justify-between items-center p-4 text-sm border-t border-border">
+          <div className="flex items-center gap-2">
+            <span>Filas por página</span>
             <Select
               value={pagination.itemsPerPage.toString()}
               onValueChange={(value) => {
@@ -489,14 +487,12 @@ export const SubjectsTable: React.FC<Props> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 min-[450px]:gap-4 shrink-0">
-            <span className="text-center min-[450px]:text-left leading-tight">
-              <span className="block min-[450px]:inline">Página </span>
-              <span className="block min-[450px]:inline">
-                {pagination.totalPages > 0 ? pagination.currentPage : 0} de {pagination.totalPages}
-              </span>
+          <div className="flex items-center gap-4">
+            <span>
+              Página {pagination.totalPages > 0 ? pagination.currentPage : 0} de{" "}
+              {pagination.totalPages}
             </span>
-            <div className="flex gap-1 shrink-0">
+            <div className="flex gap-1">
               <Button
                 onClick={() => onPageChange(pagination.currentPage - 1)}
                 disabled={

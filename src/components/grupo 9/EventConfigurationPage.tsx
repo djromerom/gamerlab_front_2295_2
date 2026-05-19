@@ -16,11 +16,11 @@ const EventConfigurationPage: React.FC = () => {
 	];
     return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-        <div className="bg-background text-foreground min-h-screen p-4 w-full">
+        <div className="w-[100%] max-w-full mx-auto p-6  sm:p-6 md:p-10 dark:font-white rounded-lg">
                 
-            <div className="flex justify-between items-center mb-6 px-4">
+            <div className="flex p-2 sm:p-2 sm:flex-row  sm:justify-between mb-6 gap-2 ">
                 
-                <h3 className="text-xl font-medium">Configuración del Evento</h3>
+                <h3 className="text-xl font-medium  ">Configuración del Evento</h3>
                 
             </div>
 
