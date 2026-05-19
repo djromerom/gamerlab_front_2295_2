@@ -6,12 +6,14 @@ export type SubmitCtx = {
   apiBaseUrl: string;
   initialData?: any;
   logoFile: File | null;
+  zipFile: File | null;
   galleryFiles: File[];
   nrcOptions: any[];
   primaryEmailLocked?: string | undefined;
   uploadFilesToAzure: (files: File[]) => Promise<any[]>;
+  uploadZipToAzure: (file: File) => Promise<any>;
   findUsedEmails: (apiBaseUrl: string, emails: string[], excludeEmails?: string[]) => Promise<string[]>;
-  buildPayload: (data: any, logoUpload: any | null, galleryUploads: any[], nrcOptions: any[], primaryEmailLocked?: string | undefined) => any;
+  buildPayload: (data: any, logoUpload: any | null, galleryUploads: any[], nrcOptions: any[], primaryEmailLocked?: string | undefined, zipUpload?: any | null) => any;
   toast: any;
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
@@ -24,10 +26,12 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     apiBaseUrl,
     initialData,
     logoFile,
+    zipFile,
     galleryFiles,
     nrcOptions,
     primaryEmailLocked,
     uploadFilesToAzure,
+    uploadZipToAzure,
     findUsedEmails,
     buildPayload,
     toast,
@@ -151,12 +155,18 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       galleryUploads = await uploadFilesToAzure(galleryFiles);
     }
 
+    let zipUpload: any = null;
+    if (zipFile) {
+      zipUpload = await uploadZipToAzure(zipFile);
+    }
+
     const fullPayload = buildPayload(
       data,
       logoUpload,
       galleryUploads,
       nrcOptions,
-      primaryEmailLocked
+      primaryEmailLocked,
+      zipUpload
     );
 
     const url =
@@ -307,7 +317,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
               methods.setError(normalized, { type: "server", message: msg });
               mapped = true;
               mappedMsgs.push(msg);
-            } catch {}
+            } catch { }
           });
         }
 
@@ -327,7 +337,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
                 methods.setError(path, { type: "server", message: msg });
                 mapped = true;
                 mappedMsgs.push(msg);
-              } catch {}
+              } catch { }
             } else {
               mappedMsgs.push(String(rawMsg));
             }
@@ -349,7 +359,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
     }
 
     toast.success(data.mode === "add" ? "Equipo registrado correctamente" : "Equipo actualizado correctamente");
-    
+
     onOpenChange(false);
     onSuccess();
   } catch (e: any) {

@@ -71,7 +71,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
   }, [team.videogameId, user]);
 
   const handleClose = () => {
-    onRefresh(); // Refresh the teams data to get updated like counts
+    //onRefresh(); // refresh not needed thanks to websocket likes implementation
     onClose(); // Close the modal
   };
 
@@ -265,12 +265,12 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                       </Button>
                     )}
 
-                    <Button
+                    {(team.gameFileUrl) && <Button
                       onClick={() => navigate(`/play-game/${team.videogameId}`)}
                       className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
                     >
                       Jugar
-                    </Button>
+                    </Button>}
 
                     {/* Botón Cerrar - Solo visible en móvil */}
                     <button
