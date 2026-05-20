@@ -10,7 +10,7 @@ services:
         VITE_SITE_KEY: ${VITE_SITE_KEY}
     image: gamerlab-frontend:latest
     ports:
-      - ${FRONTEND_HOST_PORT:-5173}:5173 # map host port (default 5173) to container port 80
+      - ${FRONTEND_HOST_PORT:-5173}:5173 # map host port (default 5173) to container port 5173
     environment:
-      - NODE_ENV=dev
+      - NODE_ENV=production
     restart: unless-stopped
