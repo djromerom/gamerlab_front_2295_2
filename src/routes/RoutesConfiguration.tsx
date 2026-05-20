@@ -41,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
 import { JuradosAssignment } from "@/pages/JuradosAssignment";
+import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
 
 type Role =
   | "Profesor"
@@ -68,6 +69,11 @@ const routes: RouteConfig[] = [
     element: <JuradosAssignment />,
     roles: ["Administrador"],
   },
+  {
+  path: "/realtime-tracking-panel",
+  element: <RealtimeTrackingPanel />,
+  roles: ["Administrador", "Profesor"],
+},
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
     path: "/consultor",
