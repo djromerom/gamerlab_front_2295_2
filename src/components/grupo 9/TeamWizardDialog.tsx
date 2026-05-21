@@ -553,9 +553,9 @@ export default function TeamWizardDialog({
       e.target.value = "";
       return;
     }
-    const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+    const MAX_BYTES = 500 * 1024 * 1024; // 50 MB
     if (f.size > MAX_BYTES) {
-      toast.error("El archivo ZIP debe pesar menos de 50 MB");
+      toast.error("El archivo ZIP debe pesar menos de 500 MB");
       e.target.value = "";
       return;
     }

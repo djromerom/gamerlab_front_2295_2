@@ -78,6 +78,9 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     //so that the file gets decompressed. its not a neat solution but...
     const decompress = filePath.includes('Build/') && filePath.endsWith('.gz');
     console.log("should decompress?: ", decompress);
+
+    const debrotli = filePath.includes('.br');
+    console.log("should debrotli?: ", debrotli);
     //la solucion ideal sería que se declare con cual motor de videojuegos se hizo el juego al montarlo
     //pero eso queda como ejercicio al lector lol
 
@@ -103,12 +106,14 @@ self.addEventListener('fetch', (event: FetchEvent) => {
                 headers: {
                     'Content-Type': getMimeType(filePath),
                     'Cross-Origin-Embedder-Policy': 'require-corp',
+                    'Cross-Origin-Opener-Policy': 'same-origin',
+                    'Cross-Origin-Resource-Policy': 'same-origin',
                     ...(decompress && {
                         'Content-Length': buffer.byteLength.toString(),
                     }),
                 },
             });
-            console.log('response constructed:', response, "\nheaders:", response.headers);
+            console.log('response constructed:', response, "\nheaders:", [...response.headers.entries()]);
             return response;
         })().catch(e => {
             console.error('respondWith failed:', e);

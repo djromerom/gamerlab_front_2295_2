@@ -11,6 +11,11 @@ export default defineConfig({
             fileName: 'sw',
             formats: ['es'],
         },
+        rollupOptions: {
+            output: {
+                inlineDynamicImports: true,  // 👈 bundle everything inline
+            }
+        },
         outDir: 'public',
         emptyOutDir: false,
     },

@@ -162,7 +162,6 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
             {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
             <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
               <MediaCarousel
-                video={team.video}
                 images={team.additionalImages || []}
               />
             </div>
@@ -262,6 +261,16 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                       >
                         <ExternalLink className="w-4 h-4" />
                         Ver repositorio en GitHub
+                      </Button>
+                    )}
+
+                    {team.video && (
+                      <Button
+                        onClick={() => window.open(team.video, "_blank")}
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Ver trailer del juego en Youtube
                       </Button>
                     )}
 
