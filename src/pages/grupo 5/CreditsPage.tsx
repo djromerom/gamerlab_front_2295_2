@@ -745,7 +745,7 @@ export default function DevelopersCredits() {
               equipo de Arkad
             </p>
             <p className="text-gray-400 text-sm">
-              © 2025 Arkad. Todos los derechos reservados.
+              © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
           <TextSizeControls />

@@ -777,7 +777,7 @@ export default function CompetitionInfo() {
               </p>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
+              © {new Date().getFullYear()} Feria Gamer Uninorte. Todos los derechos reservados.
             </p>
           </div>
         </div>
