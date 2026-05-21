@@ -818,27 +818,6 @@ export function JuradosAssignment() {
       setIsSubmitting(false);
     }
   }
-  
-  const sendAllJurorCerts = async () => {
-    try {
-      setIsSubmitting(true);
-      await apiRequest('/certificates/juror/all', {
-        method: "POST"
-      });
-
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "No se pudieron enviar los certificados a los jurados."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   const sendAllJurorCerts = async () => {
     try {
       setIsSubmitting(true);
