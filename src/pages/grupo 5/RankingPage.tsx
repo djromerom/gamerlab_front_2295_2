@@ -109,71 +109,119 @@ export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fairEnded, setFairEnded] = useState(false);
   const [activeSemester, setActiveSemester] = useState<string>("all");
+  const [isLoadingRanking, setIsLoadingRanking] = useState(false);
+  const [rankingError, setRankingError] = useState<string | null>(null);
 
-  const isRankingVisible = async () => {
-    const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
+  const normalizeNumber = (value: unknown, fallback = 0): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
 
-    if (!res.ok) {
-      throw new Error("Ocurrió un error.");
+  const normalizeNullableNumber = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
     }
 
-    const isVisible = await res.json();
-    console.log("Esta es la respuesta: ", isVisible);
-    setFairEnded(isVisible.showRanking);
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const isRankingVisible = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Ocurrió un error.");
+      }
+
+      const isVisible = await res.json();
+      setFairEnded(Boolean(isVisible.showRanking));
+    } catch (error) {
+      console.error("Error consultando visibilidad del ranking:", error);
+      setFairEnded(false);
+    }
   };
 
   const fetchData = async (n: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/teams/final-score/by-n/${n}`);
+      setIsLoadingRanking(true);
+      setRankingError(null);
 
-      if (!res.ok) {
-        throw new Error("No se pudo cargar el ranking.");
-      }
+      const prefixes =
+        n.toLowerCase() === "all"
+          ? ["n0", "n1", "n2", "n3", "n4", "n10"]
+          : [n];
 
-      const data = await res.json();
+      const responses = await Promise.all(
+        prefixes.map(async (prefix) => {
+          const res = await fetch(
+            `${API_BASE_URL}/teams/final-score/by-n/${encodeURIComponent(
+              prefix,
+            )}`,
+          );
+
+          if (!res.ok) {
+            throw new Error(`No se pudo cargar el ranking para ${prefix}.`);
+          }
+
+          return res.json();
+        }),
+      );
+
+      const data = responses.flat();
 
       const formattedTeams: Team[] = data.map((team: any) => {
-        const finalScore = Number(team.finalScore ?? team.final_score ?? 0);
+        const finalScore = normalizeNumber(
+          team.finalScore ?? team.final_score ?? team.finalscore,
+        );
 
-        // Este es el cambio clave:
-        // se usa rankingScore porque el backend ya aplica ahí el desempate.
-        // Si no existe rankingScore, se usa finalScore como respaldo.
-        const rankingScore = Number(
+        // El backend conserva el puntaje base como rankingScore y guarda
+        // el desempate en tieBreakerScore. En pantalla mostramos el puntaje base.
+        const rankingScore = normalizeNumber(
           team.rankingScore ?? team.ranking_score ?? finalScore,
+          finalScore,
         );
 
         return {
-          id: Number(team.teamId ?? team.id ?? team.videogameId),
-          name: team.videogameName ?? team.teamName ?? "Sin nombre",
-          score: rankingScore,
+          id: normalizeNumber(
+            team.teamId ?? team.team_id ?? team.id ?? team.videogameId,
+          ),
+          name:
+            team.videogameName ??
+            team.videogame_name ??
+            team.teamName ??
+            team.team_name ??
+            "Sin nombre",
+          score: finalScore,
           finalScore,
           rankingScore,
           wasTied: Boolean(team.wasTied ?? team.was_tied ?? false),
-          tieBreakerScore:
-            team.tieBreakerScore ?? team.tie_breaker_score ?? null,
-          jurorTieBreakerScore:
-            team.jurorTieBreakerScore ??
-            team.juror_tie_breaker_score ??
-            null,
-          professorTieBreakerScore:
+          tieBreakerScore: normalizeNullableNumber(
+            team.tieBreakerScore ?? team.tie_breaker_score,
+          ),
+          jurorTieBreakerScore: normalizeNullableNumber(
+            team.jurorTieBreakerScore ?? team.juror_tie_breaker_score,
+          ),
+          professorTieBreakerScore: normalizeNullableNumber(
             team.professorTieBreakerScore ??
-            team.professor_tie_breaker_score ??
-            null,
-          logo: team.logoUrl ?? team.videogameLogoUrl ?? null,
-          teamCode: team.teamCode ?? team.team_code,
+              team.professor_tie_breaker_score,
+          ),
+          logo: team.logoUrl ?? team.logo_url ?? team.videogameLogoUrl ?? undefined,
+          teamCode: team.teamCode ?? team.team_code ?? undefined,
         };
       });
-
-      console.log("Equipos formateados:", formattedTeams);
-      console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
 
       setTeams(formattedTeams);
     } catch (error) {
       console.error("Error cargando datos:", error);
+      setTeams([]);
+      setRankingError("No se pudo cargar el ranking. Intenta nuevamente.");
+    } finally {
+      setIsLoadingRanking(false);
     }
   };
 
@@ -188,11 +236,24 @@ export default function PodioGamer() {
     };
   }, []);
 
-  // El frontend sigue ordenando, pero ahora lo hace con rankingScore.
-  // Esto evita que ignore el desempate calculado por backend.
-  const sortedTeams = [...teams].sort(
-    (a, b) => (b.rankingScore ?? b.score ?? 0) - (a.rankingScore ?? a.score ?? 0),
-  );
+  // Orden correcto:
+  // 1. Puntaje base finalScore.
+  // 2. Solo si hay empate, puntaje de desempate.
+  // 3. Criterio estable por nombre para evitar cambios visuales aleatorios.
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (b.finalScore !== a.finalScore) {
+      return b.finalScore - a.finalScore;
+    }
+
+    const tieBreakerA = a.tieBreakerScore ?? a.finalScore;
+    const tieBreakerB = b.tieBreakerScore ?? b.finalScore;
+
+    if (tieBreakerB !== tieBreakerA) {
+      return tieBreakerB - tieBreakerA;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -210,6 +271,20 @@ export default function PodioGamer() {
     return (
       <span className="mt-1 inline-block rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-1 text-xs text-purple-200">
         Definido por desempate
+      </span>
+    );
+  };
+
+  const renderTieBreakerDetails = (team: Team) => {
+    if (!team.wasTied || team.tieBreakerScore === null) return null;
+
+    return (
+      <span className="mt-1 block text-center text-xs text-purple-200/80">
+        Desempate: {team.tieBreakerScore.toFixed(2)}
+        {team.jurorTieBreakerScore !== null &&
+          ` | Jurados: ${team.jurorTieBreakerScore.toFixed(2)}`}
+        {team.professorTieBreakerScore !== null &&
+          ` | Profesores: ${team.professorTieBreakerScore.toFixed(2)}`}
       </span>
     );
   };
@@ -338,6 +413,18 @@ export default function PodioGamer() {
             </div>
           )}
 
+          {fairEnded && isLoadingRanking && (
+            <div className="mb-8 rounded-lg border border-purple-400/30 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
+              Cargando ranking...
+            </div>
+          )}
+
+          {fairEnded && rankingError && (
+            <div className="mb-8 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              {rankingError}
+            </div>
+          )}
+
           {!fairEnded ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
@@ -382,6 +469,7 @@ export default function PodioGamer() {
                           {sortedTeams[1].score.toFixed(3)}
                         </p>
                         {renderTieBreakerBadge(sortedTeams[1])}
+                        {renderTieBreakerDetails(sortedTeams[1])}
                       </div>
 
                       <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
@@ -419,6 +507,7 @@ export default function PodioGamer() {
                           {sortedTeams[0].score.toFixed(3)}
                         </p>
                         {renderTieBreakerBadge(sortedTeams[0])}
+                        {renderTieBreakerDetails(sortedTeams[0])}
                       </div>
 
                       <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
@@ -456,6 +545,7 @@ export default function PodioGamer() {
                           {sortedTeams[2].score.toFixed(3)}
                         </p>
                         {renderTieBreakerBadge(sortedTeams[2])}
+                        {renderTieBreakerDetails(sortedTeams[2])}
                       </div>
 
                       <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
@@ -536,7 +626,12 @@ export default function PodioGamer() {
                             </td>
 
                             <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                              {Number(team.score.toFixed(2))}
+                              <span>{team.score.toFixed(2)}</span>
+                              {team.wasTied && team.tieBreakerScore !== null && (
+                                <span className="mt-1 block text-xs font-normal text-purple-300">
+                                  Desempate: {team.tieBreakerScore.toFixed(2)}
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}
