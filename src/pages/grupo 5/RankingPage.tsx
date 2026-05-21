@@ -105,7 +105,7 @@ const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fairEnded, setFairEnded] = useState(false);
-  const [activeSemester, setActiveSemester] = useState<string>("1");
+  const [activeSemester, setActiveSemester] = useState<string>("all");
 
   const isRankingVisible = async () => {
     const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
@@ -124,66 +124,39 @@ export default function PodioGamer() {
   }
 
   const fetchData = async (n: string) => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/teams/final-score/by-n/${n}`);
-        const data = await res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/teams/final-score/by-n/${n}`);
+      const data = await res.json();
 
-        console.log('DATAAAAA: ', data)
-        const formattedTeams = data.map((team: any) => ({
-          id: team.id,
-          name: team.videogameName,
-          score: team.finalScore,
-          logo: team.logoUrl,
-          teamCode: team.teamCode,
-        }));
+      const formattedTeams = data.map((team: any) => ({
+        id: team.id,
+        name: team.videogameName,
+        score: team.finalScore,
+        logo: team.videogameLogoUrl,
+        teamCode: team.teamCode,
+      }));
 
-        console.log("Equipos formateados:", formattedTeams);
-        console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
+      console.log("Equipos formateados:", formattedTeams);
+      console.log("Ejemplo de teamCode:", formattedTeams[0]?.teamCode);
 
-        setTeams(formattedTeams);
-      } catch (error) {
-        console.error("Error cargando datos:", error);
-      }
-    };
+      setTeams(formattedTeams);
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+    }
+  };
 
   useEffect(() => { //
     // setFairEnded(FAIR_ENDED);
     isRankingVisible()
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
-    fetchData("n1");
+    fetchData("all");
     return () => {
       document.documentElement.classList.remove("dark");
     };
   }, []);
 
-  // Función para extraer el semestre del código de equipo
-  const getSemesterFromTeamCode = (teamCode?: string): string | null => {
-    if (!teamCode) return null;
-    const match = teamCode.match(/^[Nn](\d+)/);
-    const result = match ? match[1] : null;
-    console.log(`TeamCode: ${teamCode} -> Semestre: ${result}`);
-    return result;
-  };
-
-  // Filtrar equipos según el semestre activo
-  const filteredTeams = teams.filter((team) => {
-    if (activeSemester === "all") return true;
-    
-    const semester = getSemesterFromTeamCode(team.teamCode);
-    
-    // Para colegios, verificamos si no tiene número de semestre o si es 0
-    if (activeSemester === "colegio") {
-      return !semester || semester === "0";
-    }
-    
-    return semester === activeSemester;
-  });
-
-  console.log("Semestre activo:", activeSemester);
-  console.log("Equipos filtrados:", filteredTeams.length);
-
-  const sortedTeams = [...filteredTeams].sort((a, b) => b.score - a.score);
+  const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -212,75 +185,78 @@ export default function PodioGamer() {
             <span className="hidden md:inline"> - </span>
             <span className="block md:inline">Ranking de Videojuegos</span>
           </h1>
-          
+
           {/* Filtro por semestre */}
           {fairEnded && (
-            <div className="w-full max-w-4xl mb-8">
-              <div className="flex justify-center gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
-                {/* <button
-                  onClick={() => setActiveSemester("all")}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "all"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+            <div className="w-full max-w-6xl mb-8 px-4">
+              <div className="flex justify-center gap-2 md:gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
+                <button
+                  onClick={async () => { setActiveSemester("all"); await fetchData("all") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "all"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Todos
-                </button> */}
+                </button>
                 <button
-                  onClick={async () => {setActiveSemester("1"); await fetchData("n1")}}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "1"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  onClick={async () => { setActiveSemester("1"); await fetchData("n1") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "1"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Primer Semestre
                 </button>
                 <button
-                  onClick={async () => {setActiveSemester("2"); await fetchData("n2")}}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "2"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  onClick={async () => { setActiveSemester("2"); await fetchData("n2") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "2"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Segundo Semestre
                 </button>
                 <button
-                  onClick={async () => {setActiveSemester("3"); await fetchData("n3")}}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "3"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  onClick={async () => { setActiveSemester("3"); await fetchData("n3") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "3"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Tercer Semestre
                 </button>
                 <button
-                  onClick={async () => {setActiveSemester("4"); await fetchData("n4")}}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "4"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  onClick={async () => { setActiveSemester("4"); await fetchData("n4") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "4"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Cuarto Semestre
                 </button>
                 <button
-                  onClick={async () => {setActiveSemester("colegio"); await fetchData("n0")}}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
-                    activeSemester === "colegio"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
+                  onClick={async () => { setActiveSemester("10"); await fetchData("n10") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "10"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
+                >
+                  Décimo Semestre
+                </button>
+                <button
+                  onClick={async () => { setActiveSemester("colegio"); await fetchData("n0") }}
+                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${activeSemester === "colegio"
+                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                    : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
                 >
                   Colegios
                 </button>
               </div>
             </div>
           )}
-          
+
           {!fairEnded ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
@@ -302,105 +278,105 @@ export default function PodioGamer() {
                 <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
                   {/* Segundo lugar */}
                   {sortedTeams[1] && (
-                  <div className="flex w-full flex-col items-center">
-                    <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center">
-                        {sortedTeams[1].logo ? (
-                          <img
-                            src={sortedTeams[1].logo}
-                            alt={sortedTeams[1].name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-2xl font-bold text-white">
-                            {sortedTeams[1].name.substring(0, 1)}
-                          </span>
-                        )}
+                    <div className="flex w-full flex-col items-center">
+                      <div className="mb-4 flex flex-col items-center">
+                        <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center">
+                          {sortedTeams[1].logo ? (
+                            <img
+                              src={sortedTeams[1].logo}
+                              alt={sortedTeams[1].name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-2xl font-bold text-white">
+                              {sortedTeams[1].name.substring(0, 1)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-center text-lg font-semibold">
+                          {sortedTeams[1].name}
+                        </p>
+                        <p className="text-center text-xl font-bold text-[#c0c0c0]">
+                          {sortedTeams[1].score.toFixed(3)}
+                        </p>
                       </div>
-                      <p className="text-center text-lg font-semibold">
-                        {sortedTeams[1].name}
-                      </p>
-                      <p className="text-center text-xl font-bold text-[#c0c0c0]">
-                        {sortedTeams[1].score.toFixed(3)}
-                      </p>
-                    </div>
-                    <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
-                      <div className="gradient-border-inner"></div>
-                      <div className="flex h-full items-center justify-center relative z-10">
-                        <span className="text-6xl font-bold text-white">2</span>
+                      <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-6xl font-bold text-white">2</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Primer lugar */}
-                {sortedTeams[0] && (
-                  <div className="flex w-full flex-col items-center">
-                    <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#FFD700] bg-gray-800 flex items-center justify-center">
-                        {sortedTeams[0].logo ? (
-                          <img
-                            src={sortedTeams[0].logo}
-                            alt={sortedTeams[0].name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-3xl font-bold text-white">
-                            {sortedTeams[0].name.substring(0, 1)}
-                          </span>
-                        )}
+                  {/* Primer lugar */}
+                  {sortedTeams[0] && (
+                    <div className="flex w-full flex-col items-center">
+                      <div className="mb-4 flex flex-col items-center">
+                        <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#FFD700] bg-gray-800 flex items-center justify-center">
+                          {sortedTeams[0].logo ? (
+                            <img
+                              src={sortedTeams[0].logo}
+                              alt={sortedTeams[0].name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-3xl font-bold text-white">
+                              {sortedTeams[0].name.substring(0, 1)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-center text-xl font-semibold">
+                          {sortedTeams[0].name}
+                        </p>
+                        <p className="text-center text-2xl font-bold text-[#FFD700]">
+                          {sortedTeams[0].score.toFixed(3)}
+                        </p>
                       </div>
-                      <p className="text-center text-xl font-semibold">
-                        {sortedTeams[0].name}
-                      </p>
-                      <p className="text-center text-2xl font-bold text-[#FFD700]">
-                        {sortedTeams[0].score.toFixed(3)}
-                      </p>
-                    </div>
-                    <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
-                      <div className="gradient-border-inner"></div>
-                      <div className="flex h-full items-center justify-center relative z-10">
-                        <span className="text-7xl font-bold text-white">1</span>
+                      <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-7xl font-bold text-white">1</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Tercer lugar */}
-                {sortedTeams[2] && (
-                  <div className="flex w-full flex-col items-center">
-                    <div className="mb-4 flex flex-col items-center">
-                      <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-gray-800 flex items-center justify-center"> 
-                        {sortedTeams[2].logo ? (
-                          <img
-                            src={sortedTeams[2].logo}
-                            alt={sortedTeams[2].name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xl font-bold text-white">
-                            {sortedTeams[2].name.substring(0, 1)}
-                          </span>
-                        )}
+                  {/* Tercer lugar */}
+                  {sortedTeams[2] && (
+                    <div className="flex w-full flex-col items-center">
+                      <div className="mb-4 flex flex-col items-center">
+                        <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-gray-800 flex items-center justify-center">
+                          {sortedTeams[2].logo ? (
+                            <img
+                              src={sortedTeams[2].logo}
+                              alt={sortedTeams[2].name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xl font-bold text-white">
+                              {sortedTeams[2].name.substring(0, 1)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-center text-base font-semibold">
+                          {sortedTeams[2].name}
+                        </p>
+                        <p className="text-center text-lg font-bold text-[#CD7F32]">
+                          {sortedTeams[2].score.toFixed(3)}
+                        </p>
                       </div>
-                      <p className="text-center text-base font-semibold">
-                        {sortedTeams[2].name}
-                      </p>
-                      <p className="text-center text-lg font-bold text-[#CD7F32]">
-                        {sortedTeams[2].score.toFixed(3)}
-                      </p>
-                    </div>
-                    <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
-                      <div className="gradient-border-inner"></div>
-                      <div className="flex h-full items-center justify-center relative z-10">
-                        <span className="text-5xl font-bold text-white">3</span>
+                      <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
+                        <div className="gradient-border-inner"></div>
+                        <div className="flex h-full items-center justify-center relative z-10">
+                          <span className="text-5xl font-bold text-white">3</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
               )}
-              
+
               {/* Lista de equipos en otras posiciones */}
               <div className="mt-8 w-full max-w-4xl">
                 <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
@@ -447,7 +423,7 @@ export default function PodioGamer() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                            {team.score}
+                            {Number(team.score.toFixed(2))}
                           </td>
                         </tr>
                       ))}
