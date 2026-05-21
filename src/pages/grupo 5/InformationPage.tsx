@@ -1,5 +1,5 @@
 "use client";
-import { useEffect} from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   Palette,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -236,6 +237,10 @@ const glowStyles = `
 `;
 
 export default function CompetitionInfo() {
+  const [activeEdition, setActiveEdition] = useState<Edition | null>(null);
+  const [highlightedGames, setHighlightedGames] = useState<HighlightedGame[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
@@ -244,6 +249,25 @@ export default function CompetitionInfo() {
     };
   }, []);
 
+  useEffect(() => {
+    const loadActiveEdition = async () => {
+      try {
+        setLoading(true);
+        const editions = await fetchEditions();
+        const active = editions.find((e) => e.isActive);
+        if (active) {
+          setActiveEdition(active);
+          const games = await fetchHighlightedGames(active.id);
+          setHighlightedGames(games);
+        }
+      } catch (error) {
+        console.error("Error loading active edition:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadActiveEdition();
+  }, []);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
@@ -256,7 +280,35 @@ export default function CompetitionInfo() {
     };
   }, []);
 
- 
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return "Por Definir";
+    try {
+      const date = new Date(isoString);
+      const formatted = new Intl.DateTimeFormat('es-ES', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long' 
+      }).format(date);
+      return formatted.replace(',', '').replace(/^\w/, c => c.toUpperCase());
+    } catch {
+      return "Fecha Inválida";
+    }
+  };
+
+  const formatTime = (isoString?: string) => {
+    if (!isoString) return "--:--";
+    try {
+      const date = new Date(isoString);
+      return new Intl.DateTimeFormat('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }).format(date).toLowerCase();
+    } catch {
+      return "--:--";
+    }
+  };
+
   return (
     <>
       <NavBar />
@@ -270,7 +322,7 @@ export default function CompetitionInfo() {
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            Edición 2025-30
+            {activeEdition ? ` Edición ${activeEdition.year}-${activeEdition.semester === 10 ? '1' : activeEdition.semester === 30 ? '2' : activeEdition.semester}` : " Edición Actual"}
           </h1>
 
           {/* Hero Section */}
@@ -279,10 +331,11 @@ export default function CompetitionInfo() {
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                  ¡Bienvenidos a la Feria Gamer Uninorte 2025-30!
+                  {activeEdition?.title || "¡Bienvenidos a la Feria Gamer Uninorte!"}
                 </h2>
                 <p className="text-gray-300 mb-6">
-                  Este es un evento académico y experiencial donde los
+                  {activeEdition?.description ||
+                    `Este es un evento académico y experiencial donde los
                   estudiantes del programa de Ingeniería de Sistemas de la
                   Universidad del Norte, desde primer hasta cuarto semestre,
                   presentan al público general los videojuegos que han
@@ -291,12 +344,12 @@ export default function CompetitionInfo() {
                   universitarios, sino que también invita a estudiantes de
                   colegio a participar, interactuar y conocer de cerca el
                   proceso de creación de videojuegos, fomentando así el interés
-                  por la tecnología, la programación y el diseño interactivo.
+                  por la tecnología, la programación y el diseño interactivo.`}
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>Por Definir</span>
+                    <span>{formatDate(activeEdition?.startsAt)}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
@@ -321,13 +374,8 @@ export default function CompetitionInfo() {
                 </div>
                 <h3 className="text-xl font-bold">Temática</h3>
               </div>
-              <p className="text-gray-300 mb-4">
-                Este año, la feria gamer se enfoca en el poder de los
-                videojuegos para promover la ciberseguridad y la protección digital.
-                Bajo el lema “Juega Seguro, Navega Seguro”, los videojuegos estarán 
-                inspirados en la concientización sobre la seguridad en línea, el uso 
-                responsable de la tecnología y la importancia de proteger la información
-                 en el mundo digital.
+              <p className="text-gray-300 mb-4 whitespace-pre-line">
+                {activeEdition?.description2 || "Nuevas temáticas e innovadores videojuegos te esperan en esta edición."}
               </p>
             </div>
 
@@ -342,9 +390,11 @@ export default function CompetitionInfo() {
               <div className="space-y-3 text-gray-300">
                 <div>
                   <h4 className="font-semibold text-white">
-                    Jornada AM - Jueves 27 de Noviembre
+                    {formatDate(activeEdition?.startsAt)}
                   </h4>
-                  <p>08:30 a.m. - 12:30 p.m.</p>
+                  <p>
+                    {formatTime(activeEdition?.startsAt)} - {formatTime(activeEdition?.endsAt)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -358,8 +408,7 @@ export default function CompetitionInfo() {
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
               <p className="text-gray-300 mb-4">
-                Disfruta de múltiples actividades durante el día del
-                evento:
+                Disfruta de múltiples actividades durante el día del evento:
               </p>
               <ul className="space-y-2 text-gray-300">
                 <li className="flex items-center gap-2">
@@ -378,32 +427,29 @@ export default function CompetitionInfo() {
             </div>
           </div>
 
+          {/* Highlighted Games Section */}
+          <div className="w-full max-w-4xl mt-12 mb-4">
+            <h3 className="text-2xl font-bold mb-6 text-[#AC7CFF] text-center">
+              Juegos Destacados de esta Edición
+            </h3>
 
-
-          {/* Registration Section */}
-          {/* <div className="w-full max-w-4xl mt-16">
-            <div className="relative gradient-border gradient-border-purple p-0">
-              <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2 text-[#AC7CFF]">
-                    ¿Quieres participar?
-                  </h2>
-                  <p className="text-gray-300 max-w-md">
-                    Regístrate ahora para asegurar el lugar de tu equipo en la
-                    feria.
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/registro-equipo">
-                    <button className="px-6 py-3 bg-[#AC7CFF] hover:bg-[#ba93fe] text-[#060312] font-medium rounded-lg transition-colors cursor-pointer">
-                      Registrarse
-                    </button>
-                  </Link>
-                </div>
+            {!loading && highlightedGames.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {highlightedGames.map((game) => (
+                  <div key={game.videogameId} className="game-card flex items-center justify-center gap-3 py-6">
+                    <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
+                    <h4 className="font-bold text-lg text-center">{game.videogame?.name || "Juego Desconocido"}</h4>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div> */}
+            ) : (
+              <div className="text-center p-8 border border-dashed border-gray-800 rounded-lg">
+                <p className="text-gray-400">
+                  {loading ? "Cargando juegos destacados..." : "Los juegos destacados serán anunciados próximamente."}
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">
@@ -417,11 +463,11 @@ export default function CompetitionInfo() {
               </p>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2025 Arkad. Todos los derechos reservados.
+              © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
           <TextSizeControls />
-          
+
         </div>
       </div>
     </>

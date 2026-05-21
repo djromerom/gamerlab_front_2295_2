@@ -41,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
 import { JuradosAssignment } from "@/pages/JuradosAssignment";
+import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 
 type Role =
   | "Profesor"
@@ -127,6 +128,11 @@ const routes: RouteConfig[] = [
   {
     path: "/jurados",
     element: <JuryManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/gestionar-ediciones",
+    element: <EditionsManagementPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
