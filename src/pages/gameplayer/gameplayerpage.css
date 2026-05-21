@@ -1,0 +1,8 @@
+.gameFrame {
+    width: 80vw;
+    height: 90vh;
+    max-width: 1600px;
+    background-color: black;
+    display: block;
+    margin: 4rem auto 0;
+}

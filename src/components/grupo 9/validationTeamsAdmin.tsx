@@ -32,6 +32,8 @@ export const WizardSchema = z.object({
     video_demo_url: z.string().trim().refine(isYouTubeUrl, "Enlace de YouTube inválido"),
     repo_url: z.string().trim().optional(),
     additionalImages: z.array(z.string().url("URL inválida")).optional(),
+    zip_url: z.string().optional().nullable(),
+    entry: z.string().optional().nullable(),
   }),
   integrantes: z.array(MemberSchemaAllRequired).min(1, "Agrega al menos un miembro"),
 }).superRefine((data, ctx) => {
