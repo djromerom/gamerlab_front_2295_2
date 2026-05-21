@@ -800,6 +800,27 @@ export function JuradosAssignment() {
     }
   };
 
+  const sendAllJurorCerts = async () => {
+    try {
+      setIsSubmitting(true);
+
+      await apiRequest('/certificates/juror/all', {
+        method: "POST"
+      });
+
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron enviar los certificados a los jurados."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const loadAuditLog = async () => {
     try {
       setIsSubmitting(true);
@@ -1361,6 +1382,15 @@ export function JuradosAssignment() {
           >
             <Users className="w-4 h-4 flex-shrink-0" />
             <span>Lista de jurados</span>
+          </button>
+
+          <button
+            onClick={() => sendAllJurorCerts()}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <Users className="w-4 h-4 flex-shrink-0" />
+            <span>Enviar certificados a todos los jurados</span>
           </button>
 
           <button
