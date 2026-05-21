@@ -818,15 +818,20 @@ export function JuradosAssignment() {
       setIsSubmitting(false);
     }
   }
-  
+
   const sendAllJurorCerts = async () => {
     try {
       setIsSubmitting(true);
-      await apiRequest('/certificates/juror/all', {
-        method: "POST"
+      jurados.forEach(async (j) => {
+        await apiRequest('/certificates/juror', {
+          method: "POST",
+          body: JSON.stringify({
+            userId: j.id
+          })
+        })
+        console.log("Certificado enviado exitosamente a: ", j.email);
       });
 
-      await loadData();
     } catch (error) {
       console.error(error);
       window.alert(
