@@ -31,7 +31,7 @@ export default function GamePlayerPage() {
   }, []);
 
   if (error) return <p>Error loading game: {error}</p>;
-  if (!ready) return <p>Loading...</p>;
+  //if (!ready) return <p>Loading...</p>;
 
 
   return (
@@ -54,10 +54,10 @@ export default function GamePlayerPage() {
           padding: "1rem",
         }}
       >
-        {<iframe
+        {ready ? <iframe
           src={`/play-game/${videogameID}/${gEntry}`}
           className="gameFrame"
-        />}
+        /> : <p>Cargando archivos del juego...</p>}
       </div>
     </div>
 
