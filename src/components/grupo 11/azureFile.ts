@@ -37,6 +37,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
 }
 
 export async function getImageUrl(uploadId: string): Promise<UrlResult> {
+  console.log("tryna get url for ", uploadId);
   if (!uploadId) throw new Error('getImageUrl: uploadId is required');
 
   const res = await fetch(
@@ -54,5 +55,20 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   }
 
   const urlResult = (await res.json()) as UrlResult;
+
+  //Si se está en ambiente de desarrollo, el backend mandará las SAS a las imagenes en
+  //formato de URL entre contenedores (hostnames = docker service names)
+  //en cuyo caso, toca reemplazar el hostname por el real (el real siendo el mismo del BACKEND_BASE_URL)
+  const parsed = new URL(urlResult.url);
+  if (parsed.hostname === 'azurite') {
+    const parsed = new URL(urlResult.url);
+    const base = new URL(BACKEND_BASE);
+    parsed.hostname = base.hostname;
+    urlResult.url = parsed.toString();
+  }
+
+  console.log("urlResult: ", urlResult.url);
+
+
   return urlResult;
 }
