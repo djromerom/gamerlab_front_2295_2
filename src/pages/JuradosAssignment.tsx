@@ -800,6 +800,25 @@ export function JuradosAssignment() {
     }
   };
 
+  const assignAutomatically = async () => {
+    try {
+      setIsSubmitting(true);
+      await apiRequest("/juror/evaluations-assignment", {
+        method: "GET",
+      });
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "No se pudo asignar automaticamente a los jurados."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const loadAuditLog = async () => {
     try {
       setIsSubmitting(true);
@@ -1388,6 +1407,15 @@ export function JuradosAssignment() {
           >
             <UserX className="w-4 h-4 flex-shrink-0" />
             <span>Limpiar todo</span>
+          </button>
+
+          <button
+            onClick={assignAutomatically}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <Users className="w-4 h-4 flex-shrink-0" />
+            <span>Asignar todos</span>
           </button>
         </div>
 
