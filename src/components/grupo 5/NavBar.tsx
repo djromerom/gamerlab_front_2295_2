@@ -28,7 +28,7 @@ export default function navBar(): React.ReactElement {
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">
-      <div className="container mx-auto px-8">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
@@ -42,7 +42,7 @@ export default function navBar(): React.ReactElement {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden space-x-8 md:flex">
+          <nav className="hidden space-x-8 min-[880px]:flex">
             <Link
               to="/equipos"
               className="text-sm text-gray-300 hover:text-white transition-colors"
@@ -129,7 +129,7 @@ export default function navBar(): React.ReactElement {
 
             {/* Mobile toggle */}
             <button
-              className="ml-4 text-white md:hidden cursor-pointer"
+              className="ml-4 text-white min-[880px]:hidden cursor-pointer"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
