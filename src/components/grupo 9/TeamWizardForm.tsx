@@ -55,6 +55,10 @@ export default function TeamWizardForm(props: any) {
     isPageLoading,
     isExternal,
     toast,
+    zipFile,
+    setZipFile,
+    zipInputRef,
+    handleZipChange,
   } = props;
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
@@ -532,6 +536,44 @@ export default function TeamWizardForm(props: any) {
               <Input placeholder="https://github.com/usuario/proyecto" {...methods.register("videojuego.repo_url")} />
             </div>
 
+            {/* ZIP del proyecto */}
+            <div className="flex flex-col gap-1">
+              <Label>Archivo ZIP del proyecto (opcional)</Label>
+              <div
+                className="flex items-center justify-center rounded-md border border-dashed p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => zipInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") zipInputRef.current?.click(); }}
+              >
+                <CloudUpload className="h-6 w-6 text-gray-400" />
+                <p className="ml-2 text-sm text-muted-foreground">
+                  {zipFile ? zipFile.name : "Haz clic para seleccionar un .zip"}
+                </p>
+                <Input
+                  ref={zipInputRef}
+                  type="file"
+                  accept=".zip,application/zip"
+                  onChange={handleZipChange}
+                  className="hidden"
+                />
+              </div>
+              {zipFile && (
+                <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2 text-sm mt-1">
+                  <span className="truncate text-muted-foreground">{zipFile.name} · {(zipFile.size / (1024 * 1024)).toFixed(1)} MB</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 ml-2 shrink-0"
+                    onClick={() => setZipFile(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-1">
               <Label>Fotos del Proyecto (opcional)</Label>
               <div className="space-y-3">
@@ -605,6 +647,7 @@ export default function TeamWizardForm(props: any) {
                 })()}
               </div>
             </div>
+
           </div>
         </div>
       )}
