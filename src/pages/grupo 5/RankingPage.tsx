@@ -9,17 +9,11 @@ type Team = {
   id: number;
   name: string;
   score: number;
-  finalScore: number;
-  rankingScore: number;
-  wasTied: boolean;
-  tieBreakerScore: number | null;
-  jurorTieBreakerScore: number | null;
-  professorTieBreakerScore: number | null;
   logo?: string;
   teamCode?: string;
+  tieBreakerScore?: number | null;
 };
 
-// Estilos para el borde luminoso mejorado
 const glowStyles = `
   @property --angle{
     syntax: "<angle>";
@@ -109,8 +103,6 @@ export default function PodioGamer() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fairEnded, setFairEnded] = useState(false);
   const [activeSemester, setActiveSemester] = useState<string>("all");
-  const [isLoadingRanking, setIsLoadingRanking] = useState(false);
-  const [rankingError, setRankingError] = useState<string | null>(null);
 
   const normalizeNumber = (value: unknown, fallback = 0): number => {
     const parsed = Number(value);
@@ -118,9 +110,7 @@ export default function PodioGamer() {
   };
 
   const normalizeNullableNumber = (value: unknown): number | null => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
+    if (value === null || value === undefined || value === "") return null;
 
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
@@ -148,42 +138,19 @@ export default function PodioGamer() {
 
   const fetchData = async (n: string) => {
     try {
-      setIsLoadingRanking(true);
-      setRankingError(null);
-
-      const prefixes =
-        n.toLowerCase() === "all"
-          ? ["n0", "n1", "n2", "n3", "n4", "n10"]
-          : [n];
-
-      const responses = await Promise.all(
-        prefixes.map(async (prefix) => {
-          const res = await fetch(
-            `${API_BASE_URL}/teams/final-score/by-n/${encodeURIComponent(
-              prefix,
-            )}`,
-          );
-
-          if (!res.ok) {
-            throw new Error(`No se pudo cargar el ranking para ${prefix}.`);
-          }
-
-          return res.json();
-        }),
+      const res = await fetch(
+        `${API_BASE_URL}/teams/final-score/by-n/${encodeURIComponent(n)}`,
       );
 
-      const data = responses.flat();
+      if (!res.ok) {
+        throw new Error("No se pudo cargar el ranking.");
+      }
+
+      const data = await res.json();
 
       const formattedTeams: Team[] = data.map((team: any) => {
         const finalScore = normalizeNumber(
           team.finalScore ?? team.final_score ?? team.finalscore,
-        );
-
-        // El backend conserva el puntaje base como rankingScore y guarda
-        // el desempate en tieBreakerScore. En pantalla mostramos el puntaje base.
-        const rankingScore = normalizeNumber(
-          team.rankingScore ?? team.ranking_score ?? finalScore,
-          finalScore,
         );
 
         return {
@@ -197,21 +164,16 @@ export default function PodioGamer() {
             team.team_name ??
             "Sin nombre",
           score: finalScore,
-          finalScore,
-          rankingScore,
-          wasTied: Boolean(team.wasTied ?? team.was_tied ?? false),
+          logo:
+            team.logoUrl ??
+            team.logo_url ??
+            team.videogameLogoUrl ??
+            team.videogame_logo_url ??
+            undefined,
+          teamCode: team.teamCode ?? team.team_code ?? undefined,
           tieBreakerScore: normalizeNullableNumber(
             team.tieBreakerScore ?? team.tie_breaker_score,
           ),
-          jurorTieBreakerScore: normalizeNullableNumber(
-            team.jurorTieBreakerScore ?? team.juror_tie_breaker_score,
-          ),
-          professorTieBreakerScore: normalizeNullableNumber(
-            team.professorTieBreakerScore ??
-              team.professor_tie_breaker_score,
-          ),
-          logo: team.logoUrl ?? team.logo_url ?? team.videogameLogoUrl ?? undefined,
-          teamCode: team.teamCode ?? team.team_code ?? undefined,
         };
       });
 
@@ -219,9 +181,6 @@ export default function PodioGamer() {
     } catch (error) {
       console.error("Error cargando datos:", error);
       setTeams([]);
-      setRankingError("No se pudo cargar el ranking. Intenta nuevamente.");
-    } finally {
-      setIsLoadingRanking(false);
     }
   };
 
@@ -236,17 +195,13 @@ export default function PodioGamer() {
     };
   }, []);
 
-  // Orden correcto:
-  // 1. Puntaje base finalScore.
-  // 2. Solo si hay empate, puntaje de desempate.
-  // 3. Criterio estable por nombre para evitar cambios visuales aleatorios.
   const sortedTeams = [...teams].sort((a, b) => {
-    if (b.finalScore !== a.finalScore) {
-      return b.finalScore - a.finalScore;
+    if (b.score !== a.score) {
+      return b.score - a.score;
     }
 
-    const tieBreakerA = a.tieBreakerScore ?? a.finalScore;
-    const tieBreakerB = b.tieBreakerScore ?? b.finalScore;
+    const tieBreakerA = a.tieBreakerScore ?? a.score;
+    const tieBreakerB = b.tieBreakerScore ?? b.score;
 
     if (tieBreakerB !== tieBreakerA) {
       return tieBreakerB - tieBreakerA;
@@ -264,30 +219,6 @@ export default function PodioGamer() {
       document.head.removeChild(styleElement);
     };
   }, []);
-
-  const renderTieBreakerBadge = (team: Team) => {
-    if (!team.wasTied) return null;
-
-    return (
-      <span className="mt-1 inline-block rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-1 text-xs text-purple-200">
-        Definido por desempate
-      </span>
-    );
-  };
-
-  const renderTieBreakerDetails = (team: Team) => {
-    if (!team.wasTied || team.tieBreakerScore === null) return null;
-
-    return (
-      <span className="mt-1 block text-center text-xs text-purple-200/80">
-        Desempate: {team.tieBreakerScore.toFixed(2)}
-        {team.jurorTieBreakerScore !== null &&
-          ` | Jurados: ${team.jurorTieBreakerScore.toFixed(2)}`}
-        {team.professorTieBreakerScore !== null &&
-          ` | Profesores: ${team.professorTieBreakerScore.toFixed(2)}`}
-      </span>
-    );
-  };
 
   return (
     <>
@@ -308,7 +239,6 @@ export default function PodioGamer() {
             <span className="block md:inline">Ranking de Videojuegos</span>
           </h1>
 
-          {/* Filtro por semestre */}
           {fairEnded && (
             <div className="w-full max-w-6xl mb-8 px-4">
               <div className="flex justify-center gap-2 md:gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
@@ -413,18 +343,6 @@ export default function PodioGamer() {
             </div>
           )}
 
-          {fairEnded && isLoadingRanking && (
-            <div className="mb-8 rounded-lg border border-purple-400/30 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
-              Cargando ranking...
-            </div>
-          )}
-
-          {fairEnded && rankingError && (
-            <div className="mb-8 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-              {rankingError}
-            </div>
-          )}
-
           {!fairEnded ? (
             <div className="w-full max-w-4xl mb-12">
               <div className="relative gradient-border gradient-border-purple p-0">
@@ -442,10 +360,8 @@ export default function PodioGamer() {
             </div>
           ) : (
             <>
-              {/* Podio - solo se muestra cuando NO está en "Todos" */}
               {activeSemester !== "all" && (
                 <div className="flex w-full max-w-4xl items-end justify-center space-x-8">
-                  {/* Segundo lugar */}
                   {sortedTeams[1] && (
                     <div className="flex w-full flex-col items-center">
                       <div className="mb-4 flex flex-col items-center">
@@ -468,8 +384,6 @@ export default function PodioGamer() {
                         <p className="text-center text-xl font-bold text-[#c0c0c0]">
                           {sortedTeams[1].score.toFixed(3)}
                         </p>
-                        {renderTieBreakerBadge(sortedTeams[1])}
-                        {renderTieBreakerDetails(sortedTeams[1])}
                       </div>
 
                       <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
@@ -483,7 +397,6 @@ export default function PodioGamer() {
                     </div>
                   )}
 
-                  {/* Primer lugar */}
                   {sortedTeams[0] && (
                     <div className="flex w-full flex-col items-center">
                       <div className="mb-4 flex flex-col items-center">
@@ -506,8 +419,6 @@ export default function PodioGamer() {
                         <p className="text-center text-2xl font-bold text-[#FFD700]">
                           {sortedTeams[0].score.toFixed(3)}
                         </p>
-                        {renderTieBreakerBadge(sortedTeams[0])}
-                        {renderTieBreakerDetails(sortedTeams[0])}
                       </div>
 
                       <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
@@ -521,7 +432,6 @@ export default function PodioGamer() {
                     </div>
                   )}
 
-                  {/* Tercer lugar */}
                   {sortedTeams[2] && (
                     <div className="flex w-full flex-col items-center">
                       <div className="mb-4 flex flex-col items-center">
@@ -544,8 +454,6 @@ export default function PodioGamer() {
                         <p className="text-center text-lg font-bold text-[#CD7F32]">
                           {sortedTeams[2].score.toFixed(3)}
                         </p>
-                        {renderTieBreakerBadge(sortedTeams[2])}
-                        {renderTieBreakerDetails(sortedTeams[2])}
                       </div>
 
                       <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
@@ -561,7 +469,6 @@ export default function PodioGamer() {
                 </div>
               )}
 
-              {/* Lista de equipos en otras posiciones */}
               <div className="mt-8 w-full max-w-4xl">
                 <h2 className="mb-4 text-2xl font-bold text-center text-purple-400">
                   {activeSemester === "all"
@@ -591,7 +498,10 @@ export default function PodioGamer() {
                       {sortedTeams
                         .slice(activeSemester === "all" ? 0 : 3)
                         .map((team, index) => (
-                          <tr key={index} className="border-t border-gray-700">
+                          <tr
+                            key={`${team.id}-${team.teamCode ?? team.name}`}
+                            className="border-t border-gray-700"
+                          >
                             <td className="px-4 py-3 text-sm text-gray-300">
                               {activeSemester === "all" ? index + 1 : index + 4}
                             </td>
@@ -612,26 +522,14 @@ export default function PodioGamer() {
                                   )}
                                 </div>
 
-                                <div className="flex flex-col">
-                                  <span className="text-gray-200">
-                                    {team.name}
-                                  </span>
-                                  {team.wasTied && (
-                                    <span className="text-xs text-purple-300">
-                                      Definido por desempate
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-gray-200">
+                                  {team.name}
+                                </span>
                               </div>
                             </td>
 
                             <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                              <span>{team.score.toFixed(2)}</span>
-                              {team.wasTied && team.tieBreakerScore !== null && (
-                                <span className="mt-1 block text-xs font-normal text-purple-300">
-                                  Desempate: {team.tieBreakerScore.toFixed(2)}
-                                </span>
-                              )}
+                              {Number(team.score.toFixed(2))}
                             </td>
                           </tr>
                         ))}
