@@ -342,7 +342,7 @@ export const developers = [
   },
   {
     id: 30,
-    name: "María Gutierrez",
+    name: "María IsabelGutierrez",
     role: "UX/UI & Frontend Developer",
     department: ["design", "frontend"],
     version: [3],
