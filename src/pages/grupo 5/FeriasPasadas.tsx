@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useInfiniteCarousel } from "@/hooks/useInfiniteCarousel";
 import {
   fetchEditions,
   fetchTestimonials,
@@ -299,39 +300,23 @@ export default function CompetitionInfo() {
   const [enfoques, setEnfoques] = useState<EducationalFocus[]>([]);
   const [highlightedGames, setHighlightedGames] = useState<HighlightedGame[]>([]);
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  // Build image paths from photosUrls
+  // Build image list
   const imagePaths = edicionSeleccionada?.photosUrls?.map((p) => p.url) || [];
   const mainPhotoUrl = edicionSeleccionada?.mainPhotoUrl;
   const allImages = [mainPhotoUrl, ...imagePaths].filter(Boolean) as string[];
 
-  // Total number of slides
-  const totalSlides = allImages.length > 0 ? allImages.length : 1;
+  // ── Carousels ─────────────────────────────────────────────────────────────
+  const imgCarousel = useInfiniteCarousel(allImages, 5000);
+  const tstCarousel = useInfiniteCarousel(testimonios, 8000);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  };
-
-
-
-
-  // Load Editions on Mount
+  // ── Load Editions on Mount ────────────────────────────────────────────────
   useEffect(() => {
     const loadEditions = async () => {
       try {
         const editions = await fetchEditions();
         const pastEditions = editions.filter(e => !e.isActive);
         setEditionsList(pastEditions);
-        if (pastEditions.length > 0) {
-          setEdicionSeleccionada(pastEditions[0]);
-        }
+        if (pastEditions.length > 0) setEdicionSeleccionada(pastEditions[0]);
       } catch (error) {
         console.error("Error loading editions:", error);
       }
@@ -339,7 +324,7 @@ export default function CompetitionInfo() {
     loadEditions();
   }, []);
 
-  // Load relations when edition changes
+  // ── Load relations when edition changes ──────────────────────────────────
   useEffect(() => {
     if (!edicionSeleccionada) return;
     const loadEditionData = async () => {
@@ -357,51 +342,7 @@ export default function CompetitionInfo() {
       }
     };
     loadEditionData();
-    setCurrentSlide(0);
-    setCurrentTestimonialSlide(0);
   }, [edicionSeleccionada]);
-
-  const nextTestimonialSlide = () => {
-    setCurrentTestimonialSlide((prev) =>
-      testimonios.length > 0 && prev === testimonios.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevTestimonialSlide = () => {
-    setCurrentTestimonialSlide((prev) =>
-      testimonios.length > 0 && prev === 0 ? testimonios.length - 1 : prev - 1
-    );
-  };
-
-  const goToTestimonialSlide = (index: number) => {
-    setCurrentTestimonialSlide(index);
-  };
-
-  /* imagePaths already computed above */
-
-  // Update carousel position when currentSlide changes
-  useEffect(() => {
-    if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${currentSlide * 100
-        }%)`;
-    }
-  }, [currentSlide]);
-
-  // Auto-advance carousel every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Auto-advance testimonial carousel every 8 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      nextTestimonialSlide();
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [testimonios.length]);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
@@ -648,15 +589,19 @@ export default function CompetitionInfo() {
             {/* Photo Carousel */}
             {allImages.length > 0 ? (
               <div className="carousel w-full h-[360px] md:h-[480px] mb-8">
-                <div className="carousel-inner h-full" ref={carouselRef}>
-                  {allImages.map((src, index) => (
+                <div
+                  className="carousel-inner h-full"
+                  ref={imgCarousel.trackRef}
+                  onTransitionEnd={imgCarousel.onTransitionEnd}
+                >
+                  {imgCarousel.extended.map((src, index) => (
                     <div key={index} className="carousel-item h-full relative">
                       <img
                         src={src}
-                        alt={`Imagen ${index + 1}`}
+                        alt={`Imagen ${index}`}
                         className="w-full h-full object-cover"
                       />
-                      {index === 0 && (
+                      {index === 1 && (
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                           <h3 className="text-white font-bold">
                             Feria Gamer {edicionSeleccionada.year}-{edicionSeleccionada.semester === 10 ? '1' : edicionSeleccionada.semester === 30 ? '2' : edicionSeleccionada.semester}
@@ -667,19 +612,16 @@ export default function CompetitionInfo() {
                   ))}
                 </div>
 
-
-                <div
-                  className="carousel-control carousel-control-prev"
-                  onClick={prevSlide}
-                >
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </div>
-                <div
-                  className="carousel-control carousel-control-next"
-                  onClick={nextSlide}
-                >
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </div>
+                {allImages.length > 1 && (
+                  <>
+                    <div className="carousel-control carousel-control-prev" onClick={imgCarousel.prev}>
+                      <ChevronLeft className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="carousel-control carousel-control-next" onClick={imgCarousel.next}>
+                      <ChevronRight className="w-6 h-6 text-white" />
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="w-full h-[360px] md:h-[480px] mb-8 bg-[#110D20] flex items-center justify-center rounded-lg">
@@ -702,15 +644,14 @@ export default function CompetitionInfo() {
               <div className="relative gradient-border gradient-border-purple p-0 mb-8">
                 <div className="gradient-border-inner"></div>
                 <div className="relative z-10 p-6 md:p-8">
-                  <div className="carousel h-auto testimonial-fade-in">
+                  <div className="carousel h-auto">
                     <div
                       className="carousel-inner h-full"
-                      style={{
-                        transform: `translateX(-${currentTestimonialSlide * 100}%)`,
-                      }}
+                      ref={tstCarousel.trackRef}
+                      onTransitionEnd={tstCarousel.onTransitionEnd}
                     >
-                      {testimonios.map((t) => (
-                        <div key={t.id} className="carousel-item h-full">
+                      {tstCarousel.extended.map((t, index) => (
+                        <div key={`${t.id}-${index}`} className="carousel-item h-full">
                           <div className="testimonial-card border-none bg-transparent">
                             <div className="flex flex-col h-full">
                               <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
@@ -731,29 +672,26 @@ export default function CompetitionInfo() {
                       ))}
                     </div>
 
-                    <div
-                      className="carousel-control carousel-control-prev"
-                      onClick={prevTestimonialSlide}
-                    >
-                      <ChevronLeft className="w-6 h-6 text-white" />
-                    </div>
-                    <div
-                      className="carousel-control carousel-control-next"
-                      onClick={nextTestimonialSlide}
-                    >
-                      <ChevronRight className="w-6 h-6 text-white" />
-                    </div>
+                    {testimonios.length > 1 && (
+                      <>
+                        <div className="carousel-control carousel-control-prev" onClick={tstCarousel.prev}>
+                          <ChevronLeft className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="carousel-control carousel-control-next" onClick={tstCarousel.next}>
+                          <ChevronRight className="w-6 h-6 text-white" />
+                        </div>
 
-                    <div className="carousel-indicators">
-                      {testimonios.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
-                            }`}
-                          onClick={() => goToTestimonialSlide(index)}
-                        ></div>
-                      ))}
-                    </div>
+                        <div className="carousel-indicators">
+                          {testimonios.map((_, index) => (
+                            <div
+                              key={index}
+                              className={`carousel-indicator ${tstCarousel.activeDot === index ? 'active' : ''}`}
+                              onClick={() => tstCarousel.goTo(index)}
+                            ></div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
