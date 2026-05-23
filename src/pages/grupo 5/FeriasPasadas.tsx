@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import ediciones from "@/assets/Ediciones.json";
-import testimonials from "@/assets/Testimonials.json";
-
+import {
+  fetchEditions,
+  fetchTestimonials,
+  fetchEducationalFocuses,
+  fetchHighlightedGames,
+  Edition,
+  Testimonial,
+  EducationalFocus,
+  HighlightedGame
+} from "@/fetchs/editions";
 
 import {
   Calendar,
@@ -277,42 +284,32 @@ const glowStyles = `
     background-color: rgba(26, 20, 48, 0.7);
   }
 `;
-const testimonios = testimonials;
 export default function CompetitionInfo() {
+  const getSemesterText = (sem?: number) => {
+    if (sem === 10) return "Primer Semestre";
+    if (sem === 20) return "Periodo Intersemestral";
+    if (sem === 30) return "Segundo Semestre";
+    return `Semestre ${sem}`;
+  };
 
-  const [edicionSeleccionada, setEdicionSeleccionada] = useState(ediciones[0]);
-  const testimonioss =
-    testimonios.find((t) => t.edicion === edicionSeleccionada.id)
-      ?.testimonios || [];
+  const [editionsList, setEditionsList] = useState<Edition[]>([]);
+  const [edicionSeleccionada, setEdicionSeleccionada] = useState<Edition | null>(null);
 
-  // Separar testimonios por tipo (participantes vs asistentes/otros)
-  const participantTestimonials = testimonioss.filter((t) =>
-    t.role.toLowerCase().includes("participante")
-  );
-
-  const attendeeTestimonials = testimonioss.filter(
-    (t) => !t.role.toLowerCase().includes("participante")
-  );
-
-
+  const [testimonios, setTestimonios] = useState<Testimonial[]>([]);
+  const [enfoques, setEnfoques] = useState<EducationalFocus[]>([]);
+  const [highlightedGames, setHighlightedGames] = useState<HighlightedGame[]>([]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
-  const [isTestimonialChanging, setIsTestimonialChanging] = useState(false);
-  const [isTitleChanging, setIsTitleChanging] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const [testimonialType, setTestimonialType] = useState<
-    "participants" | "attendees"
-  >("participants");
 
-  // Build image paths for the selected edition (images named 2.JPG .. 30.JPG)
-  const imagePaths = Array.from(
-    { length: 29 },
-    (_, i) => `/assets/carousel/${edicionSeleccionada.id}/${i + 2}.JPG`
-  );
+  // Build image paths from photosUrls
+  const imagePaths = edicionSeleccionada?.photosUrls?.map((p) => p.url) || [];
+  const mainPhotoUrl = edicionSeleccionada?.mainPhotoUrl;
+  const allImages = [mainPhotoUrl, ...imagePaths].filter(Boolean) as string[];
 
-  // Total number of slides is derived from the built paths so it stays in sync
-  const totalSlides = imagePaths.length;
+  // Total number of slides
+  const totalSlides = allImages.length > 0 ? allImages.length : 1;
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
@@ -322,32 +319,57 @@ export default function CompetitionInfo() {
     setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
   };
 
-  
 
 
-  // Reset carousel and testimonial position when selected edition changes
+
+  // Load Editions on Mount
   useEffect(() => {
+    const loadEditions = async () => {
+      try {
+        const editions = await fetchEditions();
+        const pastEditions = editions.filter(e => !e.isActive);
+        setEditionsList(pastEditions);
+        if (pastEditions.length > 0) {
+          setEdicionSeleccionada(pastEditions[0]);
+        }
+      } catch (error) {
+        console.error("Error loading editions:", error);
+      }
+    };
+    loadEditions();
+  }, []);
+
+  // Load relations when edition changes
+  useEffect(() => {
+    if (!edicionSeleccionada) return;
+    const loadEditionData = async () => {
+      try {
+        const [tests, focusData, games] = await Promise.all([
+          fetchTestimonials(edicionSeleccionada.id),
+          fetchEducationalFocuses(edicionSeleccionada.id),
+          fetchHighlightedGames(edicionSeleccionada.id)
+        ]);
+        setTestimonios(tests);
+        setEnfoques(focusData);
+        setHighlightedGames(games);
+      } catch (error) {
+        console.error("Error loading edition data:", error);
+      }
+    };
+    loadEditionData();
     setCurrentSlide(0);
     setCurrentTestimonialSlide(0);
   }, [edicionSeleccionada]);
 
   const nextTestimonialSlide = () => {
-    const testimonialCount =
-      testimonialType === "participants"
-        ? participantTestimonials.length
-        : attendeeTestimonials.length;
     setCurrentTestimonialSlide((prev) =>
-      prev === testimonialCount - 1 ? 0 : prev + 1
+      testimonios.length > 0 && prev === testimonios.length - 1 ? 0 : prev + 1
     );
   };
 
   const prevTestimonialSlide = () => {
-    const testimonialCount =
-      testimonialType === "participants"
-        ? participantTestimonials.length
-        : attendeeTestimonials.length;
     setCurrentTestimonialSlide((prev) =>
-      prev === 0 ? testimonialCount - 1 : prev - 1
+      testimonios.length > 0 && prev === 0 ? testimonios.length - 1 : prev - 1
     );
   };
 
@@ -373,18 +395,13 @@ export default function CompetitionInfo() {
     return () => clearInterval(interval);
   }, []);
 
-  // Reset testimonial slide when testimonial type changes
-  useEffect(() => {
-    setCurrentTestimonialSlide(0);
-  }, [testimonialType]);
-
   // Auto-advance testimonial carousel every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       nextTestimonialSlide();
     }, 8000);
     return () => clearInterval(interval);
-  }, [testimonialType]);
+  }, [testimonios.length]);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
@@ -396,8 +413,8 @@ export default function CompetitionInfo() {
       document.head.removeChild(styleElement);
     };
   }, []);
-//podio , top 1 top 2 y top 3 separados por;
-// const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
+  //podio , top 1 top 2 y top 3 separados por;
+  // const podio = edicionSeleccionada.podio ? edicionSeleccionada.podio: [];
 
 
   return (
@@ -423,17 +440,17 @@ export default function CompetitionInfo() {
               <div className="relative gradient-border gradient-border-purple w-full md:w-fit" style={{ padding: '8px', marginBottom: 0 }}>
                 <div className="gradient-border-inner"></div>
                 <select
-                  value={edicionSeleccionada.id}
+                  value={edicionSeleccionada?.id?.toString() || ''}
                   onChange={(e) => {
-                    const ed = ediciones.find((ed) => ed.id === e.target.value);
+                    const ed = editionsList.find((ed) => ed.id.toString() === e.target.value);
                     if (ed) setEdicionSeleccionada(ed);
                   }}
                   className="relative z-10 bg-[#110D20] text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#AC7CFF] w-full"
                   style={{ border: 'none', boxShadow: 'none' }}
                 >
-                  {ediciones.map((ed) => (
+                  {editionsList.map((ed) => (
                     <option key={ed.id} value={ed.id}>
-                      {ed.id} ({ed.semestre})
+                      {ed.year}-{ed.semester} ({getSemesterText(ed.semester)})
                     </option>
                   ))}
                 </select>
@@ -441,118 +458,137 @@ export default function CompetitionInfo() {
               <div className="flex items-center gap-2">
                 <History className="w-6 h-6 text-[#AC7CFF]" />
                 <h2 className="text-2xl font-bold text-center">
-                  Edicion {edicionSeleccionada.id}, {edicionSeleccionada.semestre}
+                  Edición {edicionSeleccionada?.year}, {getSemesterText(edicionSeleccionada?.semester)}
                 </h2>
               </div>
             </div>
 
             {/* Main info about previous edition (CHECK BRITO)*/}
-            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-              <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8">
-                <div className="flex flex-col md:flex-row gap-8 items-center">
-                  <div className="md:w-1/2">
-                    <img
+            {edicionSeleccionada && (
+              <>
+                <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+                  <div className="gradient-border-inner"></div>
+                  <div className="relative z-10 p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row gap-8 items-center">
+                      <div className="md:w-1/2">
+                        <img
 
-                      src={`/assets/carousel/${edicionSeleccionada.id}/MainPhoto.JPG`}
-                      alt={edicionSeleccionada.alt}
-                      className="rounded-lg shadow-lg object-cover w-full"
-                    />
-                  </div>
-                  <div className="md:w-1/2">
-                    <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
-                      {edicionSeleccionada.titulo}
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      {edicionSeleccionada.descripcion}
-                    </p>
-                    <p className="text-gray-300 mb-4">
-                      {edicionSeleccionada.descripcion2}
-                    </p>
-                    <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                      <Calendar className="w-4 h-4 text-[#AC7CFF]" />
+                          src={edicionSeleccionada.mainPhotoUrl || "/assets/placeholder.jpg"}
+                          alt={edicionSeleccionada.alt}
+                          className="rounded-lg shadow-lg object-cover w-full"
+                        />
+                      </div>
+                      <div className="md:w-1/2">
+                        <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
+                          {edicionSeleccionada.title}
+                        </h3>
+                        <p className="text-gray-300 mb-4">
+                          {edicionSeleccionada.description}
+                        </p>
+                        <p className="text-gray-300 mb-4">
+                          {edicionSeleccionada.description2}
+                        </p>
+                        <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                          <Calendar className="w-4 h-4 text-[#AC7CFF]" />
 
-                      <span className="text-sm">{edicionSeleccionada.fecha}</span>
+                          <span className="text-sm">
+                            {edicionSeleccionada.startsAt ?
+                              (() => {
+                                try {
+                                  const date = new Date(edicionSeleccionada.startsAt);
+                                  const formatted = new Intl.DateTimeFormat('es-ES', {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                  }).format(date);
+                                  return formatted.replace(',', '').replace(/^\w/, c => c.toUpperCase());
+                                } catch {
+                                  return "Fecha Inválida";
+                                }
+                              })()
+                              : "Por Definir"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Features of previous edition (CHECK BRITO)*/}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <Users className="w-6 h-6 text-[#AC7CFF]" />
-                </div>
-                <h3 className="text-lg font-bold mb-2">Participación</h3>
-                <p className="text-gray-300">
-                  Más de 400 estudiantes del programa de Ingeniería de sistemas
-                  y computación participaron del evento.
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <Trophy className="w-6 h-6 text-[#AC7CFF]" />
-                </div>
-                <h3 className="text-lg font-bold mb-2">Premios</h3>
-                <p className="text-gray-300">
-                  Máxima calificación posible a los videojuegos más destacados.
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">
-                  <Monitor className="w-6 h-6 text-[#AC7CFF]" />
-                </div>
-                <h3 className="text-lg font-bold mb-2">Exhibición</h3>
-                <p className="text-gray-300">
-                  +30 stands con muestras de videouegos a jurados y asistentes.
-                </p>
-              </div>
-            </div>
-
-
-            {/* Educational focus (CHECK BRITO)*/}
-            <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-              <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8">
-                <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
-                  Enfoque Educativo
-                </h3>
-
-                {edicionSeleccionada?.enfoquesEducativos?.length ? (
-                  <div
-                    className={`grid gap-6 ${edicionSeleccionada.enfoquesEducativos.length === 1
-                      ? "grid-cols-1 justify-items-center"
-                      : edicionSeleccionada.enfoquesEducativos.length === 2
-                        ? "grid-cols-1 md:grid-cols-2 justify-items-center"
-                        : "grid-cols-1 md:grid-cols-3"
-                      }`}
-                  >
-
-                    {edicionSeleccionada.enfoquesEducativos.map((enfoque, index) => (
-                      <div
-                        key={index}
-                        className="bg-[#110D20] p-4 rounded-lg max-w-sm w-full"
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                          <h4 className="font-semibold">{enfoque.titulo}</h4>
-                        </div>
-                        <p className="text-gray-300 text-sm">{enfoque.descripcion}</p>
-                      </div>
-                    ))}
+                {/* Features of previous edition (CHECK BRITO)*/}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="feature-card">
+                    <div className="feature-icon">
+                      <Users className="w-6 h-6 text-[#AC7CFF]" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Participación</h3>
+                    <p className="text-gray-300">
+                      Más de 400 estudiantes del programa de Ingeniería de sistemas
+                      y computación participaron del evento.
+                    </p>
                   </div>
-                ) : (
-                  <p className="text-gray-400 text-center">
-                    No hay enfoques educativos disponibles.
-                  </p>
-                )}
-              </div>
-            </div>
-            {/* Establecer colores estáticos para los avatares del podio mediante CSS que sobrescribe el inline style */}
-            <style>
-              {`
+                  <div className="feature-card">
+                    <div className="feature-icon">
+                      <Trophy className="w-6 h-6 text-[#AC7CFF]" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Premios</h3>
+                    <p className="text-gray-300">
+                      Máxima calificación posible a los videojuegos más destacados.
+                    </p>
+                  </div>
+                  <div className="feature-card">
+                    <div className="feature-icon">
+                      <Monitor className="w-6 h-6 text-[#AC7CFF]" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Exhibición</h3>
+                    <p className="text-gray-300">
+                      +30 stands con muestras de videouegos a jurados y asistentes.
+                    </p>
+                  </div>
+                </div>
+
+
+                {/* Educational focus (CHECK BRITO)*/}
+                <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+                  <div className="gradient-border-inner"></div>
+                  <div className="relative z-10 p-6 md:p-8">
+                    <h3 className="text-xl font-bold mb-4 text-[#AC7CFF]">
+                      Enfoque Educativo
+                    </h3>
+
+                    {enfoques?.length ? (
+                      <div
+                        className={`grid gap-6 ${enfoques.length === 1
+                          ? "grid-cols-1 justify-items-center"
+                          : enfoques.length === 2
+                            ? "grid-cols-1 md:grid-cols-2 justify-items-center"
+                            : "grid-cols-1 md:grid-cols-3"
+                          }`}
+                      >
+
+                        {enfoques.map((enfoque, index) => (
+                          <div
+                            key={index}
+                            className="bg-[#110D20] p-4 rounded-lg max-w-sm w-full"
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <Shield className="w-5 h-5 text-[#AC7CFF]" />
+                              <h4 className="font-semibold">{enfoque.title}</h4>
+                            </div>
+                            <p className="text-gray-300 text-sm">{enfoque.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-center">
+                        No hay enfoques educativos disponibles.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {/* Establecer colores estáticos para los avatares del podio mediante CSS que sobrescribe el inline style */}
+                <style>
+                  {`
               /* Podio: left = segundo, center = primero, right = tercero */
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(1) .relative.mb-3,
               .grid.grid-cols-3.gap-6.items-end > div:nth-child(1) .rounded-full {
@@ -576,252 +612,176 @@ export default function CompetitionInfo() {
                 color: #ffffff !important;
               }
               `}
-            </style>
+                </style>
 
 
-          {/* Featured Games (CHECK BRITO)*/}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
-              Mencion Honorífica
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">{
-                      edicionSeleccionada?.["Juegos Destacados"]?.split(";")[0]}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">
-                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[1]}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">
-                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[2]}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-              <div className="game-card">
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                  <div>
-                    <h4 className="font-semibold">
-                      {edicionSeleccionada?.["Juegos Destacados"]?.split(";")[3]}
-                    </h4>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Photo Carousel (CHECK BRITO)*/}
-          {/* Hacemos el cuadro un poco más alto y aseguramos que mantenga su anchura */}
-          <div className="carousel w-full h-[360px] md:h-[480px] mb-8">
-            <div className="carousel-inner h-full" ref={carouselRef}>
-              {imagePaths.map((src, index) => (
-                <div key={index} className="carousel-item h-full relative">
-                  <img
-                    src={src}
-                    alt={`Imagen ${index + 2}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {index === 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                      <h3 className="text-white font-bold">
-                        Feria Gamer {edicionSeleccionada.id}
-                      </h3>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="carousel-control carousel-control-prev"
-              onClick={prevSlide}
-            >
-              <ChevronLeft className="w-6 h-6 text-white" />
-            </div>
-            <div
-              className="carousel-control carousel-control-next"
-              onClick={nextSlide}
-            >
-              <ChevronRight className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-
-        {/* Testimonials Section - Carousel */}
-        <div className="w-full max-w-4xl mt-16">
-          <div className="flex items-center gap-3 mb-6 justify-center">
-            <Quote className="w-6 h-6 text-[#AC7CFF]" />
-            <h2
-              className={`text-2xl font-bold text-center ${isTitleChanging ? "title-fade-out" : "title-fade-in"
-                }`}
-            >
-              Lo Que Dicen Nuestros{" "}
-              {testimonialType === "participants"
-                ? "Participantes"
-                : "Asistentes"}
-            </h2>
-          </div>
-
-          <div className="flex justify-center mb-8">
-            <div className="bg-[#110D20] p-1 rounded-full flex">
-              <button
-                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "participants"
-                  ? "bg-[#AC7CFF] text-[#060312]"
-                  : "text-gray-300"
-                  }`}
-                onClick={() => {
-                  if (testimonialType !== "participants") {
-                    setIsTestimonialChanging(true);
-                    setIsTitleChanging(true);
-                    setTimeout(() => {
-                      setTestimonialType("participants");
-                      setTimeout(() => {
-                        setIsTestimonialChanging(false);
-                      }, 50);
-                      setTimeout(() => {
-                        setIsTitleChanging(false);
-                      }, 100);
-                    }, 500);
-                  }
-                }}
-              >
-                Participantes
-              </button>
-              <button
-                className={`cursor-pointer px-4 py-2 rounded-full transition-all ${testimonialType === "attendees"
-                  ? "bg-[#AC7CFF] text-[#060312]"
-                  : "text-gray-300"
-                  }`}
-                onClick={() => {
-                  if (testimonialType !== "attendees") {
-                    setIsTestimonialChanging(true);
-                    setIsTitleChanging(true);
-                    setTimeout(() => {
-                      setTestimonialType("attendees");
-                      setTimeout(() => {
-                        setIsTestimonialChanging(false);
-                      }, 50);
-                      setTimeout(() => {
-                        setIsTitleChanging(false);
-                      }, 100);
-                    }, 500);
-                  }
-                }}
-              >
-                Asistentes
-              </button>
-            </div>
-          </div>
-
-          {/* Testimonial Carousel */}
-          <div className="relative gradient-border gradient-border-purple p-0 mb-8">
-            <div className="gradient-border-inner"></div>
-            <div className="relative z-10 p-6 md:p-8">
-              <div
-                className={`carousel h-auto ${isTestimonialChanging
-                  ? "testimonial-fade-out"
-                  : "testimonial-fade-in"
-                  }`}
-              >
-                <div
-                  className="carousel-inner h-full"
-                  style={{
-                    transform: `translateX(-${currentTestimonialSlide * 100
-                      }%)`,
-                  }}
-                >
-                  {(testimonialType === "participants"
-                    ? participantTestimonials
-                    : attendeeTestimonials
-                  ).map((t) => (
-                    <div key={t.id} className="carousel-item h-full">
-                      <div className="testimonial-card border-none bg-transparent">
-                        <div className="flex flex-col h-full">
-                          <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
-                            "{t.quote}"
-                          </p>
-                          <div className="flex items-center justify-center gap-4 mt-auto">
-                            <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
-                              <User className="w-6 h-6 text-[#AC7CFF]" />
-                            </div>
+                {/* Featured Games */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
+                    Mención Honorífica
+                  </h3>
+                  {highlightedGames.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {highlightedGames.map((hg) => (
+                        <div key={hg.videogameId} className="game-card">
+                          <div className="flex items-center gap-3">
+                            <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
                             <div>
-                              <h4 className="font-semibold">{t.name}</h4>
-                              <p className="text-sm text-[#AC7CFF]">{t.role}</p>
+                              <h4 className="font-semibold">{hg.videogame?.name || "Juego"}</h4>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 border border-dashed border-gray-800 rounded-lg">
+                      <p className="text-gray-400">
+                        No hay menciones honoríficas registradas para esta edición.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+
+            {/* Photo Carousel */}
+            {allImages.length > 0 ? (
+              <div className="carousel w-full h-[360px] md:h-[480px] mb-8">
+                <div className="carousel-inner h-full" ref={carouselRef}>
+                  {allImages.map((src, index) => (
+                    <div key={index} className="carousel-item h-full relative">
+                      <img
+                        src={src}
+                        alt={`Imagen ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {index === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                          <h3 className="text-white font-bold">
+                            Feria Gamer {edicionSeleccionada.year}-{edicionSeleccionada.semester === 10 ? '1' : edicionSeleccionada.semester === 30 ? '2' : edicionSeleccionada.semester}
+                          </h3>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
 
+
                 <div
                   className="carousel-control carousel-control-prev"
-                  onClick={prevTestimonialSlide}
+                  onClick={prevSlide}
                 >
                   <ChevronLeft className="w-6 h-6 text-white" />
                 </div>
                 <div
                   className="carousel-control carousel-control-next"
-                  onClick={nextTestimonialSlide}
+                  onClick={nextSlide}
                 >
                   <ChevronRight className="w-6 h-6 text-white" />
                 </div>
+              </div>
+            ) : (
+              <div className="w-full h-[360px] md:h-[480px] mb-8 bg-[#110D20] flex items-center justify-center rounded-lg">
+                <p className="text-gray-400">No hay fotos disponibles para esta edición.</p>
+              </div>
+            )}
+          </div>
 
-                <div className="carousel-indicators">
-                  {(testimonialType === "participants"
-                    ? participantTestimonials
-                    : attendeeTestimonials
-                  ).map((_, index) => (
+          {/* Testimonials Section - Carousel */}
+          <div className="w-full max-w-4xl mt-16">
+            <div className="flex items-center gap-3 mb-6 justify-center">
+              <Quote className="w-6 h-6 text-[#AC7CFF]" />
+              <h2 className="text-2xl font-bold text-center">
+                Lo Que Dicen de Nosotros
+              </h2>
+            </div>
+
+            {/* Testimonial Carousel */}
+            {testimonios.length > 0 ? (
+              <div className="relative gradient-border gradient-border-purple p-0 mb-8">
+                <div className="gradient-border-inner"></div>
+                <div className="relative z-10 p-6 md:p-8">
+                  <div className="carousel h-auto testimonial-fade-in">
                     <div
-                      key={index}
-                      className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
-                        }`}
-                      onClick={() => goToTestimonialSlide(index)}
-                    ></div>
-                  ))}
+                      className="carousel-inner h-full"
+                      style={{
+                        transform: `translateX(-${currentTestimonialSlide * 100}%)`,
+                      }}
+                    >
+                      {testimonios.map((t) => (
+                        <div key={t.id} className="carousel-item h-full">
+                          <div className="testimonial-card border-none bg-transparent">
+                            <div className="flex flex-col h-full">
+                              <p className="text-gray-300 mb-6 flex-grow text-center text-lg italic">
+                                "{t.quote}"
+                              </p>
+                              <div className="flex items-center justify-center gap-4 mt-auto">
+                                <div className="w-[50px] h-[50px] rounded-full bg-[#1A1428] flex items-center justify-center border-2 border-[#AC7CFF]">
+                                  <User className="w-6 h-6 text-[#AC7CFF]" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold">{t.name}</h4>
+                                  <p className="text-sm text-[#AC7CFF]">{t.role}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div
+                      className="carousel-control carousel-control-prev"
+                      onClick={prevTestimonialSlide}
+                    >
+                      <ChevronLeft className="w-6 h-6 text-white" />
+                    </div>
+                    <div
+                      className="carousel-control carousel-control-next"
+                      onClick={nextTestimonialSlide}
+                    >
+                      <ChevronRight className="w-6 h-6 text-white" />
+                    </div>
+
+                    <div className="carousel-indicators">
+                      {testimonios.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`carousel-indicator ${currentTestimonialSlide === index ? "active" : ""
+                            }`}
+                          onClick={() => goToTestimonialSlide(index)}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center p-8 border border-dashed border-gray-800 rounded-lg">
+                <p className="text-gray-400">No hay testimonios registrados para esta edición.</p>
+              </div>
+            )}
           </div>
-        </div>
 
 
-        {/* Footer (CHECK BRITO)*/}
-        <div className="w-full max-w-4xl mt-12 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Info className="w-5 h-5 text-[#AC7CFF]" />
-            <p className="text-gray-300">
-              Para más información contacta a:{" "}
-              <span className="text-[#AC7CFF]">
-                info-openlab@uninorte.edu.co
-              </span>
+          {/* Footer (CHECK BRITO)*/}
+          <div className="w-full max-w-4xl mt-12 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Info className="w-5 h-5 text-[#AC7CFF]" />
+              <p className="text-gray-300">
+                Para más información contacta a:{" "}
+                <span className="text-[#AC7CFF]">
+                  info-openlab@uninorte.edu.co
+                </span>
+              </p>
+            </div>
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} Feria Gamer Uninorte. Todos los derechos reservados.
             </p>
           </div>
-          <p className="text-gray-400 text-sm">
-            © 2025 Feria Gamer Uninorte. Todos los derechos reservados.
-          </p>
         </div>
       </div>
-    </div>
     </>
   );
 }
