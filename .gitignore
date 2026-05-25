@@ -138,3 +138,6 @@ dist
 
 # do not push mock-up games to the repo
 /public/games/*
+
+# PWA export directory
+/dev-dist

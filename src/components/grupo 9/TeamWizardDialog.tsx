@@ -5,7 +5,7 @@ import { WizardSchema, WizardValues } from "./validationTeamsAdmin";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import type { NrcInfo, MateriaInfo, TeamRowData, NrcOption, SafeNrc, UploadInfo } from "./teams-utils";
-import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
+import { uploadImage, getImageUrl, uploadZip } from "@/components/grupo 11/azureFile";
 import { submitTeam, SubmitCtx } from "./submitTeamsAdmin";
 import TeamWizardForm from "./TeamWizardForm";
 
@@ -79,7 +79,7 @@ async function uploadFilesToAzure(filesList: File[]) {
       filesList.map(async (file) => {
         const up = await uploadImage(file);
         const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" }));
-        const url = urlObj?.url ?? "";
+        const url = (urlObj?.url ?? "");
         return {
           blobName: url,
           filename: file.name,
@@ -98,12 +98,36 @@ async function uploadFilesToAzure(filesList: File[]) {
   }
 }
 
+async function uploadZipToAzure(file: File): Promise<UploadInfo> {
+  const toastId = toast.loading("Subiendo archivo ZIP...");
+  try {
+    const up = await uploadZip(file);                                    // 1. upload
+    const urlObj = await getImageUrl(up.id).catch(() => ({ url: "" })); // 2. get SAS URL using same endpoint
+    const url = urlObj?.url ?? "";
+    const entry = up.entry ?? "";
+    toast.success("ZIP subido correctamente", { id: toastId });
+    return {
+      blobName: url,
+      filename: up.filename,
+      mimetype: up.mimetype,
+      size: up.size,
+      isPublic: false,
+      url,
+      entry: entry ?? null
+    } as UploadInfo;
+  } catch (e: any) {
+    toast.dismiss(toastId);
+    throw new Error(e?.message || "Fallo al subir ZIP");
+  }
+}
+
 function buildPayload(
   data: WizardValues,
   logoUpload: UploadInfo | null,
   galleryUploads: UploadInfo[],
   nrcOptions: NrcInfo[],
-  primaryEmailLocked?: string
+  primaryEmailLocked?: string,
+  zipUpload?: UploadInfo | null
 ) {
   const makeRandomStudentCode = (() => {
     const used = new Set<string>();
@@ -203,8 +227,10 @@ function buildPayload(
     logoUrl: logoUpload?.url ?? data.videojuego?.logo_url,
     additionalImages: finalUrls, // string[]
     videoUrl: data.videojuego?.video_demo_url ?? data.videojuego?.video_demo_url ?? null,
+    gameFileUrl: zipUpload?.url ?? data.videojuego?.zip_url ?? null,
+    entry: zipUpload?.entry ?? data.videojuego?.entry ?? null
   };
-  
+
   delete videogamePayload._remove_gallery;
   delete videogamePayload._remove_logo;
 
@@ -248,6 +274,8 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       logo_url: team.videojuego.logo_url,
       video_demo_url: (team as any).videojuego?.video_demo_url || "",
       additionalImages: team.videojuego.additionalImages || [],
+      zip_url: (team as any).videojuego?.gameFileUrl ?? null,
+      entry: (team as any).videojuego?.entry ?? null,
     },
     integrantes,
   };
@@ -278,6 +306,8 @@ export default function TeamWizardDialog({
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [zipFile, setZipFile] = useState<File | null>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(0);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -368,7 +398,7 @@ export default function TeamWizardDialog({
     isExternal: false,
     team_nrc_global_id: undefined,
     nombre_equipo: "",
-    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "", additionalImages: [] },
+    videojuego: { nombre: "", descripcion: "", logo_url: "", video_demo_url: "", additionalImages: [], zip_url: null, entry: null },
     integrantes: [{
       id_integrante: undefined,
       nombre: "",
@@ -515,6 +545,24 @@ export default function TeamWizardDialog({
     e.target.value = "";
   };
 
+  const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.name.endsWith(".zip")) {
+      toast.error("Solo se permiten archivos .zip");
+      e.target.value = "";
+      return;
+    }
+    const MAX_BYTES = 500 * 1024 * 1024; // 50 MB
+    if (f.size > MAX_BYTES) {
+      toast.error("El archivo ZIP debe pesar menos de 500 MB");
+      e.target.value = "";
+      return;
+    }
+    setZipFile(f);
+    e.target.value = "";
+  };
+
   const handleDeleteGallery = (index: number) => {
     setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
   };
@@ -548,6 +596,7 @@ export default function TeamWizardDialog({
       }
       setStep(1);
       setGalleryFiles([]);
+      setZipFile(null);
       setLogoFile(null);
       setEditingIndex(0);
     }
@@ -638,11 +687,13 @@ export default function TeamWizardDialog({
       nrcOptions,
       primaryEmailLocked,
       uploadFilesToAzure,
+      uploadZipToAzure,
       findUsedEmails,
       buildPayload,
       toast,
       onOpenChange,
       onSuccess,
+      zipFile
     } as SubmitCtx);
   });
 
@@ -669,6 +720,10 @@ export default function TeamWizardDialog({
             logoPreview={logoPreview}
             setLogoFile={setLogoFile}
             selectedLogoFile={selectedLogoFile}
+            zipFile={zipFile}
+            setZipFile={setZipFile}
+            zipInputRef={zipInputRef}
+            handleZipChange={handleZipChange}
             cropperOpen={cropperOpen}
             setCropperOpen={setCropperOpen}
             handleCroppedLogo={handleCroppedLogo}
