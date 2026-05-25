@@ -1,358 +1,273 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast, Toaster } from "sonner";
-import { ArrowUpDown, Save, X } from "lucide-react";
+import { ArrowUpDown, RefreshCcw } from "lucide-react";
 
-interface Team {
-  id: number;
-  teamName: string;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface TeamFinalScore {
+  teamId: number;
   teamCode: string;
-  gameName: string;
-  averageScore: number;
-  position: number;
-  semester: string;
-  tiebreakerScore?: number;
+  teamName: string;
+  videogameId: number;
+  videogameName: string;
+  editionId: number;
+  finalScore: number;
+  rankingScore: number;
+  wasTied: boolean;
+  tieBreakerScore: number | null;
+  jurorTieBreakerScore: number | null;
+  professorTieBreakerScore: number | null;
 }
 
+type TiedGroup = [string, TeamFinalScore[]];
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SEMESTER_FILTERS = [
+  { label: "Todos", value: "all" },
+  { label: "Semestre 1", value: "n1" },
+  { label: "Semestre 2", value: "n2" },
+  { label: "Semestre 3", value: "n3" },
+  { label: "Semestre 4", value: "n4" },
+  { label: "Décimo semestre", value: "n10" },
+  { label: "Colegios", value: "n0" },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatScore = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return "—";
+  return value.toFixed(2);
+};
+
+const normalizeTeam = (item: Record<string, unknown>): TeamFinalScore => {
+  const finalScore = toNumber(item.finalScore ?? item.final_score ?? item.finalscore);
+
+  return {
+    teamId: toNumber(item.teamId ?? item.team_id),
+    teamCode: String(item.teamCode ?? item.team_code ?? ""),
+    teamName: String(item.teamName ?? item.team_name ?? item.teamCode ?? item.team_code ?? "Sin equipo"),
+    videogameId: toNumber(item.videogameId ?? item.videogame_id),
+    videogameName: String(item.videogameName ?? item.videogame_name ?? "Sin videojuego"),
+    editionId: toNumber(item.editionId ?? item.edition_id),
+    finalScore,
+    rankingScore: toNumber(item.rankingScore ?? item.ranking_score ?? finalScore, finalScore),
+    wasTied: Boolean(item.wasTied ?? item.was_tied ?? false),
+    tieBreakerScore: toNullableNumber(item.tieBreakerScore ?? item.tie_breaker_score),
+    jurorTieBreakerScore: toNullableNumber(item.jurorTieBreakerScore ?? item.juror_tie_breaker_score),
+    professorTieBreakerScore: toNullableNumber(item.professorTieBreakerScore ?? item.professor_tie_breaker_score),
+  };
+};
+
+const groupTiedTeams = (teams: TeamFinalScore[]): TiedGroup[] => {
+  const tied = teams.filter((t) => t.wasTied);
+
+  const grouped = tied.reduce<Record<string, TeamFinalScore[]>>((acc, team) => {
+    const key = `${team.editionId}-${team.finalScore.toFixed(2)}`;
+    (acc[key] ??= []).push(team);
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).filter(([, group]) => group.length > 1);
+};
+
+const sortByTieBreaker = (teams: TeamFinalScore[]): TeamFinalScore[] =>
+  [...teams].sort((a, b) => (b.tieBreakerScore ?? -Infinity) - (a.tieBreakerScore ?? -Infinity));
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function FormulaCard() {
+  return (
+    <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+      <p className="text-muted-foreground">Fórmula de desempate (calculada automáticamente):</p>
+      <p className="mt-1 font-medium">70% promedio de jurados + 30% promedio de profesores</p>
+    </div>
+  );
+}
+
+function SemesterFilters({
+  active,
+  onChange,
+}: {
+  active: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {SEMESTER_FILTERS.map(({ label, value }) => (
+        <Button
+          key={value}
+          size="sm"
+          variant={active === value ? "default" : "outline"}
+          onClick={() => onChange(value)}
+        >
+          {label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function TiedGroupTable({ group }: { group: TeamFinalScore[] }) {
+  const sorted = sortByTieBreaker(group);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/20">
+        <span className="text-sm font-medium">
+          Puntaje base: {formatScore(sorted[0]?.finalScore)}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {sorted.length} equipos empatados
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th className="px-4 py-2 font-medium">Equipo</th>
+              <th className="px-4 py-2 font-medium">Videojuego</th>
+              <th className="px-4 py-2 font-medium">Puntaje base</th>
+              <th className="px-4 py-2 font-medium">Jurados (70%)</th>
+              <th className="px-4 py-2 font-medium">Profesores (30%)</th>
+              <th className="px-4 py-2 font-medium">Desempate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((team, index) => (
+              <tr
+                key={`${team.teamId}-${team.videogameId}`}
+                className="border-b last:border-b-0 hover:bg-muted/20 transition-colors"
+              >
+                <td className="px-4 py-3">
+                  <p className="font-medium">{team.teamName}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{team.teamCode}</p>
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">{team.videogameName}</td>
+                <td className="px-4 py-3 tabular-nums">{formatScore(team.finalScore)}</td>
+                <td className="px-4 py-3 tabular-nums text-muted-foreground">{formatScore(team.jurorTieBreakerScore)}</td>
+                <td className="px-4 py-3 tabular-nums text-muted-foreground">{formatScore(team.professorTieBreakerScore)}</td>
+                <td className="px-4 py-3 tabular-nums font-semibold">
+                  {index === 0 && (
+                    <span className="mr-1 text-xs text-emerald-600 font-medium">#1 </span>
+                  )}
+                  {formatScore(team.tieBreakerScore)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-lg border px-6 py-10 text-center">
+      <p className="font-medium">No hay empates activos</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Los grupos aparecerán aquí cuando el sistema detecte equipos con el mismo puntaje base.
+      </p>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function TiebreakerPage() {
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<TeamFinalScore[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [activeSemester, setActiveSemester] = useState<string>("all");
+  const [activeSemester, setActiveSemester] = useState("all");
   const customFetch = useFetch();
 
-  const getSemesterFromTeamCode = (teamCode?: string): string | null => {
-    if (!teamCode) return null;
-    const match = teamCode.match(/^[Nn](\d+)/);
-    return match ? match[1] : null;
-  };
-
-  const fetchTeams = async () => {
+  const fetchTeams = async (prefix = activeSemester) => {
     setLoading(true);
     try {
-      const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/videojuegoData`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
+      const res = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/final-score/by-n/${encodeURIComponent(prefix)}`,
+        { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } },
       );
 
-      if (response.ok) {
-        const data = await response.json();
+      if (!res.ok) throw new Error();
 
-        const formattedTeams: Team[] = data.map((item: any) => ({
-          id: item.id,
-          teamName: item.nombre,
-          teamCode: item.codigoEquipo || "",
-          gameName: item.nombre,
-          averageScore: parseFloat(item.promedio) || 0,
-          position: 0, // Se asignará por semestre
-          semester: getSemesterFromTeamCode(item.codigoEquipo) || "0",
-          tiebreakerScore: item.tiebreakerScore || 999,
-        }));
-
-        setTeams(formattedTeams);
-      }
-    } catch (error) {
-      console.error("Error fetching teams:", error);
-      toast.error("Error al cargar los equipos");
+      const data = await res.json();
+      setTeams(data.map(normalizeTeam));
+    } catch {
+      toast.error("Error al cargar los desempates");
+      setTeams([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchTeams();
-  }, []);
+  useEffect(() => { fetchTeams("all"); }, []);
 
-  const filteredTeams = teams.filter((team) => {
-    if (activeSemester === "all") return true;
-    if (activeSemester === "colegio") {
-      return !team.semester || team.semester === "0";
-    }
-    return team.semester === activeSemester;
-  });
-
-  // Ordenar y asignar posiciones por semestre
-  const teamsWithPositions = filteredTeams
-    .sort((a, b) => {
-      // Ordenar por promedio descendente
-      if (b.averageScore !== a.averageScore) {
-        return b.averageScore - a.averageScore;
-      }
-      // Si tienen el mismo promedio, ordenar por tiebreaker ascendente (menor es mejor)
-      return (a.tiebreakerScore || 0) - (b.tiebreakerScore || 0);
-    })
-    .map((team, index) => ({
-      ...team,
-      position: index + 1,
-    }));
-
-  const handleTiebreakerChange = (teamId: number, value: string) => {
-    const numValue = parseInt(value) || 999;
-    setTeams((prev) =>
-      prev.map((team) =>
-        team.id === teamId ? { ...team, tiebreakerScore: numValue } : team
-      )
-    );
+  const handleFilterChange = (prefix: string) => {
+    setActiveSemester(prefix);
+    fetchTeams(prefix);
   };
 
-  const ignoreEntireTie = async (tiedTeamIds: number[]) => {
-    try {
-      // Primero actualizar el estado local
-      setTeams((prev) =>
-        prev.map((team) =>
-          tiedTeamIds.includes(team.id) ? { ...team, tiebreakerScore: 999 } : team
-        )
-      );
-
-      // Actualizar cada equipo individualmente
-      const updatePromises = tiedTeamIds.map(id =>
-        customFetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${id}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tiebreakerScore: 999 }),
-          }
-        )
-      );
-
-      const responses = await Promise.all(updatePromises);
-      const allSuccessful = responses.every(r => r.ok);
-
-      if (allSuccessful) {
-        toast.success("Empate ignorado");
-        await fetchTeams();
-      } else {
-        toast.error("Error al ignorar el empate");
-        fetchTeams();
-      }
-    } catch (error) {
-      console.error("Error ignoring entire tie:", error);
-      toast.error("Error de conexión");
-      fetchTeams();
-    }
-  };
-
-  const saveTiebreakers = async () => {
-    setSaving(true);
-    try {
-      // Actualizar cada equipo individualmente
-      const updatePromises = teams.map((team) =>
-        customFetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${team.id}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tiebreakerScore: team.tiebreakerScore || 999 }),
-          }
-        )
-      );
-
-      const responses = await Promise.all(updatePromises);
-      const allSuccessful = responses.every(r => r.ok);
-
-      if (allSuccessful) {
-        toast.success("Puntuaciones de desempate guardadas exitosamente");
-        fetchTeams();
-      } else {
-        toast.error("Error al guardar las puntuaciones");
-      }
-    } catch (error) {
-      console.error("Error saving tiebreakers:", error);
-      toast.error("Error de conexión al guardar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Agrupar equipos con el mismo promedio
-  const groupedByScore = teamsWithPositions.reduce((acc, team) => {
-    const score = team.averageScore.toFixed(2);
-    if (!acc[score]) {
-      acc[score] = [];
-    }
-    acc[score].push(team);
-    return acc;
-  }, {} as Record<string, Team[]>);
-
-  const tiedGroups = Object.entries(groupedByScore).filter(
-    ([_, teams]) => teams.length > 1
-  );
-
-  // Si el filtro es "all", solo mostrar grupos empatados
-  const displayTeams = activeSemester === "all" ? [] : teamsWithPositions;
+  const tiedGroups = groupTiedTeams(teams);
 
   return (
-    <LayoutAplication
-      breadcrumbs={[
-        //{ label: "Inicio", href: "/inicio" },
-        { label: "Tiebreaker", href: "/tiebreaker" },
-      ]}
-    >
+    <LayoutAplication breadcrumbs={[{ label: "Desempates", href: "/tiebreaker" }]}>
       <Toaster richColors />
+
       {loading ? (
-        <div className="flex items-center justify-center py-12 p-4">
-          <p className="text-muted-foreground">Cargando equipos...</p>
+        <div className="flex justify-center py-16">
+          <p className="text-muted-foreground text-sm">Cargando desempates...</p>
         </div>
       ) : (
-        <div className="space-y-6 p-4">
-          {/* Header con botón de guardar */}
-          <div className="flex items-center justify-between">
+        <div className="space-y-5 p-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold">Gestión de Desempates</h2>
+              <h2 className="text-xl font-semibold">Gestión de desempates</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Asigna puntuaciones de desempate para equipos con el mismo promedio
+                Equipos cuyo ranking fue definido por la fórmula automática de desempate.
               </p>
             </div>
-            <Button onClick={saveTiebreakers} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? "Guardando..." : "Guardar Cambios"}
+            <Button variant="outline" size="sm" onClick={() => fetchTeams()}>
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Actualizar
             </Button>
           </div>
 
-          {/* Filtros de semestre */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={activeSemester === "all" ? "default" : "outline"}
-              onClick={() => setActiveSemester("all")}
-              size="sm"
-            >
-              Todos
-            </Button>
-            {[1, 2, 3, 4].map((sem) => (
-              <Button
-                key={sem}
-                variant={activeSemester === sem.toString() ? "default" : "outline"}
-                onClick={() => setActiveSemester(sem.toString())}
-                size="sm"
-              >
-                Semestre {sem}
-              </Button>
-            ))}
-            <Button
-              variant={activeSemester === "colegio" ? "default" : "outline"}
-              onClick={() => setActiveSemester("colegio")}
-              size="sm"
-            >
-              Colegios
-            </Button>
-          </div>
+          <FormulaCard />
 
-          {/* Equipos Empatados */}
-          {tiedGroups.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-5 h-5" />
-                <h3 className="text-lg font-semibold">
-                  Equipos Empatados ({tiedGroups.length} {tiedGroups.length === 1 ? 'grupo' : 'grupos'})
-                </h3>
+          <SemesterFilters active={activeSemester} onChange={handleFilterChange} />
+
+          {tiedGroups.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ArrowUpDown className="w-4 h-4" />
+                <span>
+                  {tiedGroups.length} {tiedGroups.length === 1 ? "grupo" : "grupos"} con empate detectado
+                </span>
               </div>
-
-              {tiedGroups.map(([score, tiedTeams]) => (
-                <div key={score} className="border rounded-lg p-4 bg-muted/30 relative">
-                  <div className="flex items-center justify-between mb-3 pb-3 border-b">
-                    <h4 className="font-semibold">Promedio: {score}</h4>
-                    <span className="text-sm text-muted-foreground">
-                      {tiedTeams.length} {tiedTeams.length === 1 ? 'equipo' : 'equipos'}
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {tiedTeams.map((team) => (
-                      <div
-                        key={team.id}
-                        className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 p-3 rounded bg-background border"
-                      >
-                        <div>
-                          <p className="font-medium">{team.gameName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs mr-1">
-                              {team.teamCode}
-                            </span>
-                            {team.teamName}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`tiebreaker-${team.id}`} className="text-sm">
-                            Puntuación de desempate
-                          </Label>
-                          <Input
-                            id={`tiebreaker-${team.id}`}
-                            type="text"
-                            value={team.tiebreakerScore || 999}
-                            onChange={(e) =>
-                              handleTiebreakerChange(team.id, e.target.value)
-                            }
-                            className="h-9"
-                            placeholder="999"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => ignoreEntireTie(tiedTeams.map(t => t.id))}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Ignorar empate
-                    </Button>
-                  </div>
-                </div>
+              {tiedGroups.map(([key, group]) => (
+                <TiedGroupTable key={key} group={group} />
               ))}
             </div>
-          )}
-
-          {/* Todos los Equipos */}
-          {displayTeams.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">
-                Todos los Equipos ({displayTeams.length})
-              </h3>
-              <div className="space-y-2">
-                {displayTeams.map((team) => (
-                  <div
-                    key={team.id}
-                    className="flex items-center gap-4 p-3 rounded border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex-shrink-0">
-                      #{team.position}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{team.gameName}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs mr-1">
-                          {team.teamCode}
-                        </span>
-                        {team.teamName}
-                      </p>
-                    </div>
-                    <div className="text-right text-sm flex-shrink-0">
-                      <p>
-                        <span className="text-muted-foreground">Promedio:</span>{" "}
-                        <span className="font-semibold">{team.averageScore.toFixed(2)}</span>
-                      </p>
-                      <p className="text-muted-foreground">
-                        Desempate: {team.tiebreakerScore || 999}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          ) : (
+            <EmptyState />
           )}
         </div>
       )}

@@ -190,6 +190,8 @@ export default function VideogamesPage() {
           additionalImages: videogame.additionalImages || fallbackImages,
           isExternal: isExternal,
           likes: likeCount || 0,
+          entry: videogame.entry || null,
+          gameFileUrl: videogame.gameFileUrl || null
         };
       });
 

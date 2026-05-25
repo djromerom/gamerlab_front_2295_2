@@ -296,7 +296,7 @@ export function VerifyEmailPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error de Verificación</AlertTitle>
               <AlertDescription>{message}</AlertDescription>
-              <div className="mt-4">
+              <div className="mt-4 space-y-1">
                 <Button
                   onClick={() => navigate("/login")}
                   variant="outline"
@@ -304,6 +304,14 @@ export function VerifyEmailPage() {
                   className="cursor-pointer"
                 >
                   Ir a Iniciar Sesión
+                </Button>
+                <Button
+                  onClick={() => setStatus("resend_email")}
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  Reenviar Enlace de Verificación
                 </Button>
               </div>
             </Alert>

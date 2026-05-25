@@ -10,7 +10,7 @@ export interface TeamRowData {
   team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
   videojuego: VideojuegoData;
-  nrc_info?: NrcInfo; 
+  nrc_info?: NrcInfo;
   materia_info?: MateriaInfo;
 }
 
@@ -18,7 +18,7 @@ export interface ConfirmationStatus {
   id: number;
   status: string;
   createdAt: string;
-  updatedAt: string; 
+  updatedAt: string;
   isActive: boolean;
 }
 
@@ -45,7 +45,7 @@ export interface VideojuegoData {
   descripcion: string;
   logo_url: string;
   fecha_registro: string;
-  id_estado_videojuego: number; 
+  id_estado_videojuego: number;
   additionalImages?: any[];
 }
 
@@ -156,4 +156,5 @@ export type UploadInfo = {
   size?: number;
   isPublic?: boolean;
   url: string;
+  entry?: string;
 };
