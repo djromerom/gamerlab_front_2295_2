@@ -42,6 +42,7 @@ import { AllTeamsModal } from "@/components/jurados-modals/AllTeamsModal";
 import { AuditModal } from "@/components/jurados-modals/AuditModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
+import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -819,18 +820,22 @@ export function JuradosAssignment() {
     }
   }
   const sendAllJurorCerts = async () => {
+    toast.message("Enviando correos, porfavor espere...")
     try {
       setIsSubmitting(true);
       jurados.forEach(async (j) => {
-        await apiRequest('/certificates/juror', {
-          method: "POST",
-          body: JSON.stringify({
-            userId: j.id
+        try {
+          await apiRequest('/certificates/juror', {
+            method: "POST",
+            body: JSON.stringify({
+              userId: j.id
+            })
           })
-        })
-        console.log("Certificado enviado exitosamente a: ", j.email);
+          toast.success(`Correo enviado a: ${j.email}`)
+        } catch (error) {
+          toast.error(`No se pudo enviar el correo a: ${j.email}`);
+        }
       });
-
     } catch (error) {
       console.error(error);
       window.alert(
