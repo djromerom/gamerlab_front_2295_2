@@ -71,20 +71,22 @@ const routes: RouteConfig[] = [
     roles: ["Administrador"],
   },
   {
-  path: "/realtime-tracking-panel",
-  element: <RealtimeTrackingPanel />,
-  roles: ["Administrador", "Profesor"],
-},
+    path: "/realtime-tracking-panel",
+    element: <RealtimeTrackingPanel />,
+    roles: ["Administrador", "Profesor"],
+  },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
     path: "/consultor",
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
+  /* temporarily disabled inscriptions through the web
   {
     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-  },
+  }, 
+  */
   {
     path: "/equipos",
     element: <VideogamesPage />,
