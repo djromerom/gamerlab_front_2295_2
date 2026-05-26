@@ -1,12 +1,12 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
+import GameModal from "@/components/grupo 8/GameModal";
 import { Input } from "@/components/grupo 8/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import GameModal from "@/components/grupo 8/GameModal";
 import { Loader2 } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Iconos simples usando SVG en lugar de Lucide
 const SearchIcon = () => (
@@ -68,9 +68,13 @@ interface PendingGamesGridProps {
   isSearching?: boolean;
   searchQuery?: string;
   page?: string;
+  selectedGameIds?: Set<number>;
+  onToggleSelection?: (gameId: number) => void;
 }
 
-export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: string }> = ({
+export const PendingGamesGrid: React.FC<
+  PendingGamesGridProps & { jurorId?: string }
+> = ({
   games = [],
   jurorId,
   showTotalScore,
@@ -79,6 +83,8 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
   isSearching,
   searchQuery = "",
   page = "",
+  selectedGameIds,
+  onToggleSelection,
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const navigate = useNavigate();
@@ -131,7 +137,11 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
             onClick={handleSearch}
             disabled={isSearching}
           >
-            {isSearching ? <Loader2 className="animate-spin w-4 h-4" /> : <SearchIcon />}
+            {isSearching ? (
+              <Loader2 className="animate-spin w-4 h-4" />
+            ) : (
+              <SearchIcon />
+            )}
             <span>Buscar</span>
           </Button>
         </div>
@@ -139,16 +149,48 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
       {/* Grid de juegos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5">
         {games.map((game, index) => (
-          <div key={`${game.nombre}-${index}`} className="bg-card border shadow-sm rounded-2xl p-5 flex flex-col">
+          <div
+            key={`${game.nombre}-${index}`}
+            className="bg-card border shadow-sm rounded-2xl p-5 flex flex-col"
+          >
             <div className="flex justify-between mb-4">
-              <div className="flex justify-between ">
+              <div className="flex items-start gap-3">
+                {/* [MODIFICACIÓN]: Checkbox para selección múltiple de juegos */}
+                <input
+                  type="checkbox"
+                  checked={selectedGameIds?.has(game.id) ?? false}
+                  onChange={() => onToggleSelection?.(game.id)}
+                  className="mt-1 w-5 h-5 cursor-pointer accent-[var(--selected)] flex-shrink-0"
+                  title="Seleccionar este juego para calificación en lote"
+                />
                 <div className="flex flex-col gap-1">
                   <h3 className="text-lg font-semibold">{game.nombre}</h3>
-                  <p className="text-sm"><span className="text-muted-foreground">Equipo:</span> {game.equipo}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Materia:</span> {game.materia}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Nrc:</span> {game.nrc}</p>
-                  <p className="text-sm"><span className="text-muted-foreground">Participantes:</span> {game.participantes.join(", ")}</p>
-                  {showTotalScore && <p className="text-sm"><span className="text-muted-foreground">Puntaje Total:</span> {game.totalScore}</p>}
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Equipo:</span>{" "}
+                    {game.equipo}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Materia:</span>{" "}
+                    {game.materia}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Nrc:</span>{" "}
+                    {game.nrc}
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">
+                      Participantes:
+                    </span>{" "}
+                    {game.participantes.join(", ")}
+                  </p>
+                  {showTotalScore && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">
+                        Puntaje Total:
+                      </span>{" "}
+                      {game.totalScore}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="w-32 h-32 bg-gray-300 rounded-full flex-shrink-0 mr-6 mt-4">
@@ -172,11 +214,14 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
               <div className="flex justify-end mt-auto pt-2 px-8">
                 <Button
                   size="sm"
-                  className={`px-7 py-2 text-sm rounded-md ${game.isEvaluated
-                    ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
-                    : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] cursor-pointer shadow-md"
-                    }`}
-                  onClick={() => !game.isEvaluated && handleCalificarClick(game)}
+                  className={`px-7 py-2 text-sm rounded-md ${
+                    game.isEvaluated
+                      ? "disabled:bg-[var(--graded)] hover:bg-gray-700 text-foreground cursor-not-allowed"
+                      : "bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] cursor-pointer shadow-md"
+                  }`}
+                  onClick={() =>
+                    !game.isEvaluated && handleCalificarClick(game)
+                  }
                   disabled={game.isEvaluated}
                 >
                   {game.isEvaluated ? "Calificado" : "Calificar"}
@@ -195,7 +240,6 @@ export const PendingGamesGrid: React.FC<PendingGamesGridProps & { jurorId?: stri
           showComments={showComments}
         />
       )}
-    
     </div>
   );
 };
