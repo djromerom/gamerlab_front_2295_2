@@ -1,31 +1,8 @@
 "use client";
 
-
-import Criteriabutton from "@/components/grupo 8/criteriabutton";
-import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
-import { RefreshCw, Loader2 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { Textarea } from "@/components/grupo 8/textarea";
-import LayoutAplication from "@/layouts/LayoutAplication";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,9 +13,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useCriteria } from "@/hooks/use-criteria";
+import LayoutAplication from "@/layouts/LayoutAplication";
 import { UiCriterion } from "@/types/criterion";
-import { useCriteria } from "@/hooks/use-criteria"; 
-
+import { Loader2, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Game {
   id: number;
@@ -51,16 +49,15 @@ interface Game {
   descripcion?: string;
 }
 
-
 export default function SchoolRate() {
   const navigate = useNavigate();
   const location = useLocation();
   const game = location.state?.game as Game | undefined;
 
-  const { 
-    criteria: apiCriteria, 
-    isLoading: isLoadingCriteria, 
-    error: criteriaError 
+  const {
+    criteria: apiCriteria,
+    isLoading: isLoadingCriteria,
+    error: criteriaError,
   } = useCriteria();
 
   const [uiCriteria, setUiCriteria] = useState<UiCriterion[]>([]);
@@ -77,7 +74,7 @@ export default function SchoolRate() {
           ...criterion,
           score: "",
           maxScore: 5,
-        }))
+        })),
       );
     }
   }, [apiCriteria]);
@@ -89,14 +86,34 @@ export default function SchoolRate() {
     }
   }, [game, navigate]);
 
+  // Recuperar borrador del localStorage al montar el componente
+  useEffect(() => {
+    if (!game) return;
+
+    try {
+      const saved = localStorage.getItem(`school-rate-draft-${game.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.criteria && Array.isArray(parsed.criteria)) {
+          setUiCriteria(parsed.criteria);
+        }
+        if (typeof parsed.comments === "string") {
+          setComments(parsed.comments);
+        }
+      }
+    } catch (e) {
+      console.warn("Error recuperando borrador de localStorage:", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id]);
+
   if (isLoadingCriteria) {
     return (
       <LayoutAplication breadcrumbs={[]}>
-        <LoadingScreen text="Cargando criterios de evaluación..." /> 
+        <LoadingScreen text="Cargando criterios de evaluación..." />
       </LayoutAplication>
     );
   }
-
 
   const showErrorToast = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -109,34 +126,31 @@ export default function SchoolRate() {
       setShowSuccessLoading(true);
       setTimeout(() => {
         navigate("/colegios-calificar");
-        
       }, 1000);
     }, 2500);
   };
 
-    const sanitizeScoreInputValue = (rawValue: string) => {
-      const normalized = rawValue.replace(/,/g, ".");
-      const digitsOnly = normalized.replace(/[^0-9.]/g, "");
-      const parts = digitsOnly.split(".");
-      if (parts.length <= 2) {
-        return digitsOnly;
-      }
-      return `${parts[0]}.${parts.slice(1).join("")}`;
-    };
+  const sanitizeScoreInputValue = (rawValue: string) => {
+    const normalized = rawValue.replace(/,/g, ".");
+    const digitsOnly = normalized.replace(/[^0-9.]/g, "");
+    const parts = digitsOnly.split(".");
+    if (parts.length <= 2) {
+      return digitsOnly;
+    }
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  };
 
-    const handleScoreInputFocus = (criterionId: number) => {
-      setUiCriteria((prev) =>
-        prev.map((c) =>
-          c.id === criterionId && c.score
-            ? { ...c, score: "" }
-            : c
-        )
-      );
-    };
+  const handleScoreInputFocus = (criterionId: number) => {
+    setUiCriteria((prev) =>
+      prev.map((c) =>
+        c.id === criterionId && c.score ? { ...c, score: "" } : c,
+      ),
+    );
+  };
 
   const handleScoreInputChange = (criterionId: number, rawValue: string) => {
-    setUiCriteria((prev) =>
-      prev.map((c) => {
+    setUiCriteria((prev) => {
+      const updated = prev.map((c) => {
         if (c.id !== criterionId) {
           return c;
         }
@@ -153,8 +167,22 @@ export default function SchoolRate() {
         }
 
         return { ...c, score: sanitized };
-      })
-    );
+      });
+
+      // Auto-guardar en localStorage cada vez que cambia un criterio
+      if (game) {
+        try {
+          localStorage.setItem(
+            `school-rate-draft-${game.id}`,
+            JSON.stringify({ criteria: updated, comments }),
+          );
+        } catch (e) {
+          // Ignorar errores de almacenamiento
+        }
+      }
+
+      return updated;
+    });
   };
 
   const parseScoreValue = (value: string, maxScore: number): number | null => {
@@ -179,7 +207,8 @@ export default function SchoolRate() {
 
     // return parsed;
 
-    const raw = typeof value === "number" ? String(value) : (value || "").toString();
+    const raw =
+      typeof value === "number" ? String(value) : (value || "").toString();
     if (!raw.trim()) return null;
     const normalized = raw.replace(/,/g, ".");
     const parsed = Number.parseFloat(normalized);
@@ -190,7 +219,10 @@ export default function SchoolRate() {
   };
 
   const totalScore = uiCriteria.reduce((acc, criterion) => {
-    const parsed = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+    const parsed = parseScoreValue(
+      criterion.score.toString(),
+      criterion.maxScore,
+    );
     if (parsed === null) {
       return acc;
     }
@@ -199,7 +231,7 @@ export default function SchoolRate() {
 
   const totalMaxScore = uiCriteria.reduce(
     (acc, criterion) => acc + criterion.maxScore * criterion.weight,
-    0
+    0,
   );
 
   const handleSubmit = async () => {
@@ -221,35 +253,39 @@ export default function SchoolRate() {
     const currentDate = new Date().toISOString();
 
     for (const criterion of uiCriteria) {
-    //   const parsedScore = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-    //   
+      //   const parsedScore = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+      //
 
-    //   if (parsedScore === null) {
-    //     setIsSubmitting(false);
-    //     showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
-    //     return;
-    //   }
-    //   const parsedScoreRaw = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-    //   
+      //   if (parsedScore === null) {
+      //     setIsSubmitting(false);
+      //     showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+      //     return;
+      //   }
+      //   const parsedScoreRaw = parseScoreValue(criterion.score.toString(), criterion.maxScore);
+      //
 
-    //   parsedDetails.push({
-    //     criterionId: criterion.id,
-    //     score: parsedScore,
-    //     createdAt: currentDate,
-    //     updatedAt: currentDate,
-    //     isActive: true,
-    //   });
-    // }
+      //   parsedDetails.push({
+      //     criterionId: criterion.id,
+      //     score: parsedScore,
+      //     createdAt: currentDate,
+      //     updatedAt: currentDate,
+      //     isActive: true,
+      //   });
+      // }
 
-//  debug: inspeccionar el valor real que viene del UI
-    
+      //  debug: inspeccionar el valor real que viene del UI
 
       // parsear una sola vez (acepta number o string)
-      const parsedRaw = parseScoreValue(criterion.score.toString() ?? "", criterion.maxScore);
+      const parsedRaw = parseScoreValue(
+        criterion.score.toString() ?? "",
+        criterion.maxScore,
+      );
       // Opción A (estricto): descomentar para exigir que ingresen un valor
       if (parsedRaw === null) {
         setIsSubmitting(false);
-        showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
+        showErrorToast(
+          `Ingrese una puntuación válida para "${criterion.name}".`,
+        );
         return;
       }
       const parsedScore = parsedRaw === null ? 0 : parsedRaw;
@@ -278,19 +314,20 @@ export default function SchoolRate() {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(evaluationPayload),
-        }
+        },
       );
 
       // if (!res.ok) {
       //   const errorData = await res.json();
       //   throw new Error(errorData.message || "Error al guardar la evaluación");
       // }
-      
+
       if (!res.ok) {
         let errorText = `${res.status} ${res.statusText}`;
         try {
           const errorData = await res.json();
-          errorText = errorData.message || JSON.stringify(errorData) || errorText;
+          errorText =
+            errorData.message || JSON.stringify(errorData) || errorText;
         } catch (e) {
           // no-op: no JSON body
         }
@@ -298,7 +335,15 @@ export default function SchoolRate() {
       }
 
       setConfirmDialogOpen(false);
-      showSuccessToast(`Evaluación del juego "${game.nombre}" enviada exitosamente`);
+      // Limpiar borrador de localStorage al enviar exitosamente
+      try {
+        localStorage.removeItem(`school-rate-draft-${game.id}`);
+      } catch (e) {
+        // Ignorar
+      }
+      showSuccessToast(
+        `Evaluación del juego "${game.nombre}" enviada exitosamente`,
+      );
     } catch (err: any) {
       showErrorToast(err.message || "Error guardando la evaluación");
     } finally {
@@ -307,10 +352,9 @@ export default function SchoolRate() {
   };
 
   const getCriterionDescription = (criterionName: string): string => {
-    const foundCriterion = uiCriteria.find(c => c.name === criterionName);
+    const foundCriterion = uiCriteria.find((c) => c.name === criterionName);
     return foundCriterion?.description || "Sin descripción detallada.";
   };
-
 
   if (showSuccessLoading) {
     return (
@@ -325,8 +369,14 @@ export default function SchoolRate() {
       <LayoutAplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-screen">
           {isLoadingCriteria && <p>Cargando criterios de evaluación...</p>}
-          {!game && !isLoadingCriteria && <p>Cargando información del juego...</p>}
-          {criteriaError && <p className="text-red-500">Error cargando criterios: {criteriaError}</p>}
+          {!game && !isLoadingCriteria && (
+            <p>Cargando información del juego...</p>
+          )}
+          {criteriaError && (
+            <p className="text-red-500">
+              Error cargando criterios: {criteriaError}
+            </p>
+          )}
         </div>
       </LayoutAplication>
     );
@@ -336,32 +386,42 @@ export default function SchoolRate() {
     return (
       <LayoutAplication breadcrumbs={[]}>
         <div className="container mx-auto py-6 p-10 text-center">
-          <h2 className="text-2xl font-bold text-red-500 mb-4">Error al Cargar Criterios</h2>
+          <h2 className="text-2xl font-bold text-red-500 mb-4">
+            Error al Cargar Criterios
+          </h2>
           <p className="text-muted-foreground mb-4">{criteriaError}</p>
-          <p className="text-muted-foreground mb-4">Por favor, intente recargar la página o contacte a soporte.</p>
-          <Button onClick={() => window.location.reload()}>Recargar Página</Button>
+          <p className="text-muted-foreground mb-4">
+            Por favor, intente recargar la página o contacte a soporte.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Recargar Página
+          </Button>
         </div>
       </LayoutAplication>
     );
   }
 
   if (uiCriteria.length === 0 && !isLoadingCriteria) {
-     return (
+    return (
       <LayoutAplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-screen">
-          <p>No se encontraron criterios de evaluación. Por favor, contacte a un administrador.</p>
+          <p>
+            No se encontraron criterios de evaluación. Por favor, contacte a un
+            administrador.
+          </p>
         </div>
       </LayoutAplication>
     );
   }
 
-
-  const breadcrumbs = game ? [
-    {
-      label: `Pendientes por calificar >  ${game.nombre}`,
-      href: "/colegios-calificar",
-    },
-  ] : [];
+  const breadcrumbs = game
+    ? [
+        {
+          label: `Pendientes por calificar >  ${game.nombre}`,
+          href: "/colegios-calificar",
+        },
+      ]
+    : [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -410,11 +470,36 @@ export default function SchoolRate() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div><p className="text-sm font-medium text-muted-foreground">Equipo</p><p>{game?.equipo || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">Materia</p><p>{game?.materia || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">NRC</p><p>{game?.nrc || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">Participantes</p><p>{game?.participantes?.join(", ") || 'N/A'}</p></div>
-                  <div><p className="text-sm font-medium text-muted-foreground">Descripción</p><p className="text-lg">{game?.descripcion || 'N/A'}</p></div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Equipo
+                    </p>
+                    <p>{game?.equipo || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Materia
+                    </p>
+                    <p>{game?.materia || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      NRC
+                    </p>
+                    <p>{game?.nrc || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Participantes
+                    </p>
+                    <p>{game?.participantes?.join(", ") || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Descripción
+                    </p>
+                    <p className="text-lg">{game?.descripcion || "N/A"}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -433,57 +518,70 @@ export default function SchoolRate() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table className="w-full table-auto">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-lg font-bold px-0">
-                        Criterio
-                      </TableHead>
-                      <TableHead className="text-right"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-
-                  
-                  
-                  <TableBody>
-                    {uiCriteria.map((criterion) => (
-                      <TableRow key={criterion.id}>
-                        <TableCell colSpan={2} className="font-medium text-base px-0 whitespace-normal break-words ">
-                          {criterion.name} ({ (criterion.weight * 100).toFixed(0) }%)
-                          <div className="mt-2 flex items-center gap-10">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Puntuación:
-                            </p>
-
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              value={criterion.score ?? ""}
-                              onFocus={() => handleScoreInputFocus(criterion.id)}
-                              onChange={(e) =>
-                                handleScoreInputChange(criterion.id, e.target.value)
-                              }
-                              placeholder={`0 - ${criterion.maxScore}`}
-                              className="border rounded px-2 py-1 w-24 sm:w-28 bg-transparent text-sm"
-                            />
-                            
-                            <span className="text-sm font-medium">
-                              {Number(criterion.score).toFixed(2) || "—"}
-                            </span>
-                            <div className="sm:ml-auto">
-                              <Criteriabutton description={getCriterionDescription(criterion.name)} />
-                            </div>
-                          </div>
-                        </TableCell>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-lg font-bold px-0">
+                          Criterio
+                        </TableHead>
+                        <TableHead className="text-right"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
+                    </TableHeader>
+
+                    <TableBody>
+                      {uiCriteria.map((criterion) => (
+                        <TableRow key={criterion.id}>
+                          <TableCell
+                            colSpan={2}
+                            className="font-medium text-base px-0 whitespace-normal break-words "
+                          >
+                            {criterion.name} (
+                            {(criterion.weight * 100).toFixed(0)}%)
+                            <div className="mt-2 flex items-center gap-10">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Puntuación:
+                              </p>
+
+                              <Input
+                                type="text"
+                                inputMode="decimal"
+                                value={criterion.score ?? ""}
+                                onFocus={() =>
+                                  handleScoreInputFocus(criterion.id)
+                                }
+                                onChange={(e) =>
+                                  handleScoreInputChange(
+                                    criterion.id,
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder={`0 - ${criterion.maxScore}`}
+                                className="border rounded px-2 py-1 w-24 sm:w-28 bg-transparent text-sm"
+                              />
+
+                              <span className="text-sm font-medium">
+                                {Number(criterion.score).toFixed(2) || "—"}
+                              </span>
+                              <div className="sm:ml-auto">
+                                <Criteriabutton
+                                  description={getCriterionDescription(
+                                    criterion.name,
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
                   </Table>
                 </div>
 
                 <div className="flex justify-end">
                   <div className="w-80px md:w-auto mt-6 rounded-lg border bg-muted-foreground/10 px-4 py-3 flex flex-row md:flex-row gap-3 md:gap-10 items-center md:items-center md:justify-end">
                     <div className="flex flex-auto gap-2">
-                      <p className="tracking-tighter text-lg font-bold">Nota Final</p>
+                      <p className="tracking-tighter text-lg font-bold">
+                        Nota Final
+                      </p>
                       <p className="text-lg font-medium text-foreground">|</p>
                     </div>
 
@@ -501,7 +599,23 @@ export default function SchoolRate() {
                   <h3 className="font-medium mb-2">Comentarios Adicionales</h3>
                   <Textarea
                     value={comments}
-                    onChange={(e) => setComments(e.target.value)}
+                    onChange={(e) => {
+                      setComments(e.target.value);
+                      // Auto-guardar comentarios en localStorage
+                      if (game) {
+                        try {
+                          localStorage.setItem(
+                            `school-rate-draft-${game.id}`,
+                            JSON.stringify({
+                              criteria: uiCriteria,
+                              comments: e.target.value,
+                            }),
+                          );
+                        } catch (err) {
+                          // Ignorar
+                        }
+                      }
+                    }}
                     className="w-full h-32 bg-sidebar text-foreground border rounded-md"
                     placeholder="Escribe tus comentarios sobre el juego..."
                   />
