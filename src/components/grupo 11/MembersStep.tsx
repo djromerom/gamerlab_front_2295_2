@@ -364,6 +364,7 @@ export default function MembersStep() {
 
       {fields.length < 5 && (
         <Button
+          type="button"
           className="cursor-pointer"
           variant="outline"
           onClick={() =>
@@ -381,10 +382,11 @@ export default function MembersStep() {
       )}
 
       <div className="flex justify-between space-x-4 pt-6">
-        <Button className="cursor-pointer" variant="outline" onClick={back}>
+        <Button type="button" className="cursor-pointer" variant="outline" onClick={back}>
           Atrás
         </Button>
         <Button 
+          type="button"
           variant="home" 
           onClick={handleNext}
           disabled={isValidatingEmails}

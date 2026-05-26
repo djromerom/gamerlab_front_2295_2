@@ -19,6 +19,10 @@ function Landing(): React.ReactElement {
   const startDate = new Date("2026-05-28T08:00:00")
   const endDate = new Date("2026-05-28T12:00:00")
 
+  // temporary workaround to disable inscriptions (2026-1). It should become an admin setting
+  // To restore registrations, also uncomment route in RoutesConfiguration.tsx
+  const showRegisterButton = false;
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
     document.documentElement.classList.add("dark")
@@ -141,12 +145,14 @@ function Landing(): React.ReactElement {
             <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4 max-h-[500px]:!text-xl">Feria Gamer Uninorte</h2>
             <p className="text-md md:text-2xl mt-6 max-w-4xl max-h-[500px]:!text-base">{getDescriptionText()}</p>
             <div className="mt-8">
-              <button
-                onClick={() => navigate(getButtonRoute())}
-                className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
-              >
-                {getButtonText()}
-              </button>
+              {showRegisterButton && (
+                <button
+                  onClick={() => navigate(getButtonRoute())}
+                  className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
+                >
+                  {getButtonText()}
+                </button>
+              )}
             </div>
           </div>
           <TextSizeControls />
