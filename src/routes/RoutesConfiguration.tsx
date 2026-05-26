@@ -74,10 +74,12 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
+  /* temporarily disabled inscriptions through the web
   {
     path: "/registro-equipo",
     element: <TeamRegisterPage />,
-  },
+  }, 
+  */
   {
     path: "/equipos",
     element: <VideogamesPage />,
