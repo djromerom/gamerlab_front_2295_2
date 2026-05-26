@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Plus } from "lucide-react";
 import PurpleButton from "./PurpleButton";
 import { useAuth } from "@/contexts/AuthContext";
 export default function navBar(): React.ReactElement {
@@ -91,11 +91,11 @@ export default function navBar(): React.ReactElement {
             {/* "Más" Dropdown */}
             <div className="relative min-[880px]:hidden" ref={moreDropdownRef}>
               <button
-                className={`text-2xl font-light transition-all duration-300 cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/5 ${moreDropdownOpen ? 'text-[#8c45ff] rotate-45' : 'text-gray-300 hover:text-white'}`}
+                className={`transition-all duration-300 cursor-pointer flex items-center justify-center p-1 -m-1 rounded-full hover:bg-white/5 ${moreDropdownOpen ? 'text-[#8c45ff] rotate-45' : 'text-gray-300 hover:text-white'}`}
                 onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
                 aria-label="Más opciones"
               >
-                +
+                <Plus size={16} />
               </button>
 
               <div
