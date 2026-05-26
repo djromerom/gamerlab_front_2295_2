@@ -10,6 +10,8 @@ export default function navBar(): React.ReactElement {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
   const shortName = user?.firstName + " " + user?.lastName.charAt(0) + ".";
 
 
@@ -18,13 +20,25 @@ export default function navBar(): React.ReactElement {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(e.target as Node)) {
+        setMoreDropdownOpen(false);
+      }
+    }
+
+    function handleResize() {
+      if (window.innerWidth >= 640 && isMenuOpen) {
+        setIsMenuOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", handleResize);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [isMenuOpen]);
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-black/10 backdrop-blur-md py-4 border-b border-white/10">
@@ -42,7 +56,7 @@ export default function navBar(): React.ReactElement {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden space-x-8 min-[880px]:flex">
+          <nav className="hidden space-x-8 sm:flex items-center">
             <Link
               to="/equipos"
               className="text-sm text-gray-300 hover:text-white transition-colors"
@@ -61,18 +75,51 @@ export default function navBar(): React.ReactElement {
             >
               Información
             </Link>
-             <Link
+            <Link
               to="/ediciones-pasadas"
-              className="text-sm text-gray-300 hover:text-white transition-colors"
+              className="text-sm text-gray-300 hover:text-white transition-colors hidden md:block"
             >
               Ediciones Pasadas
             </Link>
             <Link
               to="/contribuidores"
-              className="text-sm text-gray-300 hover:text-white transition-colors"
+              className="text-sm text-gray-300 hover:text-white transition-colors hidden min-[880px]:block"
             >
               Contribuidores
             </Link>
+
+            {/* "Más" Dropdown */}
+            <div className="relative min-[880px]:hidden" ref={moreDropdownRef}>
+              <button
+                className={`text-2xl font-light transition-all duration-300 cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/5 ${moreDropdownOpen ? 'text-[#8c45ff] rotate-45' : 'text-gray-300 hover:text-white'}`}
+                onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                aria-label="Más opciones"
+              >
+                +
+              </button>
+
+              <div
+                className={`absolute top-full right-0 mt-4 w-48 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out bg-[#0d0f14]/80 backdrop-blur-xl border border-white/10 ${moreDropdownOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 -translate-y-2 invisible"
+                  }`}
+              >
+                <div className="flex flex-col space-y-4 p-4">
+                  <Link
+                    to="/ediciones-pasadas"
+                    className="text-sm text-gray-300 hover:text-white transition-colors md:hidden block"
+                    onClick={() => setMoreDropdownOpen(false)}
+                  >
+                    Ediciones Pasadas
+                  </Link>
+                  <Link
+                    to="/contribuidores"
+                    className="text-sm text-gray-300 hover:text-white transition-colors block"
+                    onClick={() => setMoreDropdownOpen(false)}
+                  >
+                    Contribuidores
+                  </Link>
+                </div>
+              </div>
+            </div>
           </nav>
 
           {/* CTA Button / User Menu + Mobile Toggle */}
@@ -129,7 +176,7 @@ export default function navBar(): React.ReactElement {
 
             {/* Mobile toggle */}
             <button
-              className="ml-4 text-white min-[880px]:hidden cursor-pointer"
+              className="ml-4 text-white sm:hidden cursor-pointer"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -139,9 +186,8 @@ export default function navBar(): React.ReactElement {
 
         {/* Mobile Menu */}
         <div
-          className={`overflow-hidden transition-all duration-500 ease-in-out ${
-            isMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-          }`}
+          className={`sm:hidden overflow-hidden transition-all duration-500 ease-in-out ${isMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            }`}
         >
           <nav className="flex flex-col space-y-4 pb-4 pt-6">
             <Link
