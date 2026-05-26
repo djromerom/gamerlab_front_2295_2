@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useInfiniteCarousel } from "@/hooks/useInfiniteCarousel";
 import {
   fetchEditions,
@@ -295,6 +295,8 @@ export default function CompetitionInfo() {
 
   const [editionsList, setEditionsList] = useState<Edition[]>([]);
   const [edicionSeleccionada, setEdicionSeleccionada] = useState<Edition | null>(null);
+  const [isEditionOpen, setIsEditionOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [testimonios, setTestimonios] = useState<Testimonial[]>([]);
   const [enfoques, setEnfoques] = useState<EducationalFocus[]>([]);
@@ -308,6 +310,17 @@ export default function CompetitionInfo() {
   // ── Carousels ─────────────────────────────────────────────────────────────
   const imgCarousel = useInfiniteCarousel(allImages, 5000);
   const tstCarousel = useInfiniteCarousel(testimonios, 8000);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsEditionOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // ── Load Editions on Mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -374,33 +387,39 @@ export default function CompetitionInfo() {
 
 
 
-          {/* Previous Edition Section (CHECK BRITO)*/}
+          {/* Previous Edition Section */}
           <div className="w-full max-w-4xl mt-0">
-            <div className="flex flex-col md:flex-row items-center gap-4 mb-6 justify-center">
-              {/* ComboBox alineado con el título */}
-              <div className="relative gradient-border gradient-border-purple w-full md:w-fit" style={{ padding: '8px', marginBottom: 0 }}>
-                <div className="gradient-border-inner"></div>
-                <select
-                  value={edicionSeleccionada?.id?.toString() || ''}
-                  onChange={(e) => {
-                    const ed = editionsList.find((ed) => ed.id.toString() === e.target.value);
-                    if (ed) setEdicionSeleccionada(ed);
-                  }}
-                  className="relative z-10 bg-[#110D20] text-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#AC7CFF] w-full"
-                  style={{ border: 'none', boxShadow: 'none' }}
-                >
-                  {editionsList.map((ed) => (
-                    <option key={ed.id} value={ed.id}>
-                      {ed.year}-{ed.semester} ({getSemesterText(ed.semester)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <History className="w-6 h-6 text-[#AC7CFF]" />
-                <h2 className="text-2xl font-bold text-center">
-                  Edición {edicionSeleccionada?.year}, {getSemesterText(edicionSeleccionada?.semester)}
+            <div className="flex flex-nowrap items-center justify-between gap-2 mb-4 md:mb-5">
+              <div className="flex items-center gap-2 min-w-0">
+                <History className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF] shrink-0" />
+                <h2 className="text-lg md:text-2xl font-bold text-left truncate">
+                  Edición {edicionSeleccionada?.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada?.semester}</span>
                 </h2>
+              </div>
+              <div className="relative shrink-0" ref={dropdownRef}>
+                <div className="relative gradient-border gradient-border-purple flex items-center" style={{ padding: '3px' }}>
+                  <div className="gradient-border-inner" style={{ borderRadius: '6px' }}></div>
+                  <button
+                    onClick={() => setIsEditionOpen(!isEditionOpen)}
+                    className="relative z-10 p-2 md:py-2 md:px-4 bg-[#110D20] hover:bg-[#AC7CFF]/20 rounded transition-colors flex items-center gap-2"
+                  >
+                    <Calendar className="w-5 h-5 text-[#AC7CFF]" />
+                    <span className="hidden md:inline text-sm font-medium">Cambiar Edición</span>
+                  </button>
+                </div>
+                {isEditionOpen && (
+                  <div className="absolute right-0 top-full mt-2 p-3 bg-[#0d0f14]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 flex flex-col gap-2 min-w-[200px] transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                    {editionsList.map((ed) => (
+                      <button
+                        key={ed.id}
+                        onClick={() => { setEdicionSeleccionada(ed); setIsEditionOpen(false); }}
+                        className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium w-full text-left ${edicionSeleccionada?.id === ed.id ? "bg-[#AC7CFF] text-white shadow-md shadow-[#AC7CFF]/20" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+                      >
+                        {ed.year}-{ed.semester} ({getSemesterText(ed.semester)})
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -564,13 +583,9 @@ export default function CompetitionInfo() {
                   {highlightedGames.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {highlightedGames.map((hg) => (
-                        <div key={hg.videogameId} className="game-card">
-                          <div className="flex items-center gap-3">
-                            <Gamepad2 className="w-5 h-5 text-[#AC7CFF]" />
-                            <div>
-                              <h4 className="font-semibold">{hg.videogame?.name || "Juego"}</h4>
-                            </div>
-                          </div>
+                        <div key={hg.videogameId} className="game-card !py-3 !px-4 flex items-center justify-start gap-3">
+                          <Gamepad2 className="w-5 h-5 text-[#AC7CFF] shrink-0" />
+                          <h4 className="font-semibold text-sm md:text-base truncate">{hg.videogame?.name || "Juego"}</h4>
                         </div>
                       ))}
                     </div>
