@@ -28,12 +28,13 @@ interface GameScores {
   };
 }
 
-// [MODIFICACIÓN]: Página para calificar múltiples videojuegos en lote
-// [APRENDIZAJE]: Manejo de estado complejo con objetos anidados y tabs
 export default function BatchRatePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const games = (location.state?.games || []) as BatchGame[];
+  const fromPage = (location.state?.from || "jurado") as string;
+  const backRoute =
+    fromPage === "colegios" ? "/colegios-calificar" : "/pendientes-calificar";
 
   const { criteria: apiCriteria, isLoading: isLoadingCriteria } = useCriteria();
 
@@ -45,34 +46,94 @@ export default function BatchRatePage() {
     failed: { videogameId: number; error: string }[];
   } | null>(null);
 
+  // Guardar borrador en localStorage
+  const saveDraft = (
+    gameId: number,
+    scores: {
+      comments: string;
+      details: { criterionId: number; score: number }[];
+    },
+  ) => {
+    try {
+      localStorage.setItem(
+        `batch-rate-draft-${gameId}`,
+        JSON.stringify({ scores }),
+      );
+    } catch (e) {
+      // Ignorar errores de almacenamiento
+    }
+  };
+
+  // Limpiar borradores de todos los juegos
+  const clearAllDrafts = () => {
+    games.forEach((game) => {
+      try {
+        localStorage.removeItem(`batch-rate-draft-${game.id}`);
+      } catch (e) {
+        // Ignorar
+      }
+    });
+  };
+
   // Redirigir si no hay juegos
   useEffect(() => {
     if (!games || games.length === 0) {
       toast.error("No hay juegos seleccionados");
-      navigate("/pendientes-calificar");
+      navigate(backRoute);
     }
-  }, [games, navigate]);
+  }, [games, navigate, backRoute]);
 
-  // Inicializar scores cuando cargan los criterios
+  // Recuperar borradores de localStorage al montar el componente
+  useEffect(() => {
+    if (games.length === 0) return;
+    const loadedScores: GameScores = {};
+    let hasSavedData = false;
+    games.forEach((game) => {
+      try {
+        const saved = localStorage.getItem(`batch-rate-draft-${game.id}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (
+            parsed.scores &&
+            parsed.scores.comments !== undefined &&
+            Array.isArray(parsed.scores.details)
+          ) {
+            loadedScores[game.id] = parsed.scores;
+            hasSavedData = true;
+          }
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    });
+    if (hasSavedData) {
+      setGameScores(loadedScores);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Inicializar scores cuando cargan los criterios (solo si no se cargaron borradores)
   useEffect(() => {
     if (apiCriteria.length > 0 && games.length > 0) {
-      const initial: GameScores = {};
-      // [MODIFICADO]: Inicializar scores en 0 (mínimo permitido 0, máximo 5)
-      games.forEach((game) => {
-        initial[game.id] = {
-          comments: "",
-          details: apiCriteria.map((c) => ({
-            criterionId: c.id,
-            score: 0,
-          })),
-        };
-      });
+      setGameScores((prev) => {
+        // Si ya hay datos cargados (de localStorage), no sobrescribir
+        if (Object.keys(prev).length > 0) return prev;
 
-      setGameScores(initial);
+        const initial: GameScores = {};
+        games.forEach((game) => {
+          initial[game.id] = {
+            comments: "",
+            details: apiCriteria.map((c) => ({
+              criterionId: c.id,
+              score: 0,
+            })),
+          };
+        });
+        return initial;
+      });
     }
   }, [apiCriteria, games]);
 
-  // [MODIFICADO]: Evitar notas menores a 0 en el cambio de valor
   const handleScoreChange = (
     gameId: number,
     criterionId: number,
@@ -88,18 +149,23 @@ export default function BatchRatePage() {
             }
           : d,
       );
-      return { ...prev, [gameId]: { ...game, details } };
+      const updated = { ...prev, [gameId]: { ...game, details } };
+      saveDraft(gameId, updated[gameId]);
+      return updated;
     });
   };
 
   const handleCommentsChange = (gameId: number, value: string) => {
-    setGameScores((prev) => ({
-      ...prev,
-      [gameId]: { ...prev[gameId], comments: value },
-    }));
+    setGameScores((prev) => {
+      const updated = {
+        ...prev,
+        [gameId]: { ...prev[gameId], comments: value },
+      };
+      saveDraft(gameId, updated[gameId]);
+      return updated;
+    });
   };
 
-  // [APRENDIZAJE]: Envío al endpoint /evaluation/batch con manejo de resultados parciales
   const handleSubmitAll = async () => {
     setIsSubmitting(true);
     const currentDate = new Date().toISOString();
@@ -142,6 +208,7 @@ export default function BatchRatePage() {
       }
 
       setResult(data.results);
+      clearAllDrafts();
 
       toast.success(
         `${data.results.successful.length} evaluaciones guardadas correctamente`,
@@ -169,13 +236,22 @@ export default function BatchRatePage() {
     );
   }
 
+  const breadcrumbs =
+    fromPage === "colegios"
+      ? [
+          {
+            label: "Pendientes por calificar (Colegios)",
+            href: "/colegios-calificar",
+          },
+          { label: "Calificación en lote", href: "/calificar-lote" },
+        ]
+      : [
+          { label: "Pendientes por calificar", href: "/pendientes-calificar" },
+          { label: "Calificación en lote", href: "/calificar-lote" },
+        ];
+
   return (
-    <LayoutAplication
-      breadcrumbs={[
-        { label: "Pendientes por calificar", href: "/pendientes-calificar" },
-        { label: "Calificación en lote", href: "/calificar-lote" },
-      ]}
-    >
+    <LayoutAplication breadcrumbs={breadcrumbs}>
       <div className="container mx-auto py-6 p-5">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
           Calificación en Lote
@@ -185,7 +261,6 @@ export default function BatchRatePage() {
           navegar entre ellos.
         </p>
 
-        {/* Resultado después del envío */}
         {result ? (
           <Card className="mb-6">
             <CardHeader>
@@ -223,7 +298,7 @@ export default function BatchRatePage() {
                   </div>
                 )}
                 <Button
-                  onClick={() => navigate("/pendientes-calificar")}
+                  onClick={() => navigate(backRoute)}
                   className="cursor-pointer"
                 >
                   Volver a pendientes
@@ -323,7 +398,7 @@ export default function BatchRatePage() {
             <div className="flex justify-end gap-4 mt-6">
               <Button
                 variant="outline"
-                onClick={() => navigate("/pendientes-calificar")}
+                onClick={() => navigate(backRoute)}
                 className="cursor-pointer"
               >
                 Cancelar

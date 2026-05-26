@@ -136,7 +136,9 @@ const PendingSchoolGradesPage: React.FC = () => {
     const selectedGames = gamesToShow.filter((game) =>
       selectedGameIds.has(game.id),
     );
-    navigate("/calificar-lote", { state: { games: selectedGames } });
+    navigate("/calificar-lote", {
+      state: { games: selectedGames, from: "colegios" },
+    });
   };
 
   // Búsqueda remota - URL CORREGIDA
