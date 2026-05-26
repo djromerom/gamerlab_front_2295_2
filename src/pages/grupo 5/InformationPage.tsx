@@ -320,9 +320,9 @@ export default function CompetitionInfo() {
           <div className="absolute inset-0"></div>
         </div>
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
-          <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
-            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            {activeEdition ? ` Edición ${activeEdition.year}-${activeEdition.semester === 10 ? '1' : activeEdition.semester === 30 ? '2' : activeEdition.semester}` : " Edición Actual"}
+          <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
+            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
+            <span className="block sm:inline"> - {activeEdition ? `Edición ${activeEdition.year}-${activeEdition.semester === 10 ? '1' : activeEdition.semester === 30 ? '2' : activeEdition.semester}` : "Edición Actual"}</span>
           </h1>
 
           {/* Hero Section */}
@@ -333,7 +333,7 @@ export default function CompetitionInfo() {
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
                   {activeEdition?.title || "¡Bienvenidos a la Feria Gamer Uninorte!"}
                 </h2>
-                <p className="text-gray-300 mb-6">
+                <p className="text-gray-300 mb-8 text-sm md:text-base leading-relaxed">
                   {activeEdition?.description ||
                     `Este es un evento académico y experiencial donde los
                   estudiantes del programa de Ingeniería de Sistemas de la
@@ -346,18 +346,18 @@ export default function CompetitionInfo() {
                   proceso de creación de videojuegos, fomentando así el interés
                   por la tecnología, la programación y el diseño interactivo.`}
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                <div className="flex flex-col sm:flex-row flex-wrap items-start gap-4 sm:gap-6 text-gray-300">
+                  <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>{formatDate(activeEdition?.startsAt)}</span>
+                    <span className="text-sm md:text-base font-medium">{formatDate(activeEdition?.startsAt)}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                  <div className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>Campus Uninorte</span>
+                    <span className="text-sm md:text-base font-medium">Campus Uninorte</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                  <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>+400 Participantes</span>
+                    <span className="text-sm md:text-base font-medium">+400 Participantes</span>
                   </div>
                 </div>
               </div>
@@ -365,52 +365,32 @@ export default function CompetitionInfo() {
           </div>
 
           {/* Information Cards */}
-          <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="w-full max-w-4xl flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-5">
             {/* Card 1 - Tematica */}
-            <div className="info-card">
+            <div className="info-card md:col-span-2 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-full bg-[#110D20]">
                   <Palette className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
                 <h3 className="text-xl font-bold">Temática</h3>
               </div>
-              <p className="text-gray-300 mb-4 whitespace-pre-line">
+              <p className="text-gray-300 mb-2 whitespace-pre-line text-sm md:text-base leading-relaxed">
                 {activeEdition?.description2 || "Nuevas temáticas e innovadores videojuegos te esperan en esta edición."}
               </p>
             </div>
 
-            {/* Card 2 - Horarios */}
-            <div className="info-card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-full bg-[#110D20]">
-                  <Clock className="w-6 h-6 text-[#AC7CFF]" />
-                </div>
-                <h3 className="text-xl font-bold">Horarios</h3>
-              </div>
-              <div className="space-y-3 text-gray-300">
-                <div>
-                  <h4 className="font-semibold text-white">
-                    {formatDate(activeEdition?.startsAt)}
-                  </h4>
-                  <p>
-                    {formatTime(activeEdition?.startsAt)} - {formatTime(activeEdition?.endsAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3 - Actividades */}
-            <div className="info-card">
+            {/* Card 2 - Actividades */}
+            <div className="info-card md:col-span-1 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-full bg-[#110D20]">
                   <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-300 mb-3 text-sm">
                 Disfruta de múltiples actividades durante el día del evento:
               </p>
-              <ul className="space-y-2 text-gray-300">
+              <ul className="space-y-2 text-gray-300 text-sm">
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
                   <span>Zona de realidad virtual</span>
@@ -424,6 +404,30 @@ export default function CompetitionInfo() {
                   <span>Y mucho más...</span>
                 </li>
               </ul>
+            </div>
+
+            {/* Card 3 - Horarios */}
+            <div className="info-card md:col-span-3 !h-auto !p-4 md:!p-5 flex flex-col md:flex-row items-start md:items-center justify-between">
+              <div className="flex items-center gap-3 mb-3 md:mb-0">
+                <div className="p-2 rounded-full bg-[#110D20]">
+                  <Clock className="w-6 h-6 text-[#AC7CFF]" />
+                </div>
+                <h3 className="text-xl font-bold">Horarios</h3>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 w-full md:w-auto pl-11 md:pl-0">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="font-semibold text-white text-sm md:text-base">
+                      {formatDate(activeEdition?.startsAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-[#AC7CFF] text-sm md:text-base font-medium">
+                      {formatTime(activeEdition?.startsAt)} - {formatTime(activeEdition?.endsAt)}
+                    </span>
+                  </div>
+              </div>
             </div>
           </div>
 
