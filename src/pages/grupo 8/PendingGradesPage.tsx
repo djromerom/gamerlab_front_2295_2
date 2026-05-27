@@ -304,8 +304,7 @@ const PendingGradesPage: React.FC = () => {
 
           {/* Solo muestra paginación si NO estás en búsqueda */}
           {!searchResults &&
-            gamesData?.metadata?.totalPages &&
-            gamesData.metadata.totalPages > 1 && (
+            (gamesData?.metadata?.totalPages ?? 0) > 1 && (
               <div className="flex justify-center items-center gap-4 mt-6 py-6">
                 <button
                   className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
