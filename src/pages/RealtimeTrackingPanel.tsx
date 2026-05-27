@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Search, RefreshCw, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { ChevronRight, RefreshCw, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -82,7 +82,7 @@ function mapTeamFromApi(raw: any): Team {
       raw.assignedJurors ??
       raw.jurors ??
       raw.assigned_jurors ??
-      []
+      [],
   );
 
   const jurados: Jurado[] = rawJurados.map((jurado: any) => {
@@ -90,7 +90,7 @@ function mapTeamFromApi(raw: any): Team {
     const lastName = safeString(jurado.lastName);
     const email = safeString(jurado.email ?? jurado.correo);
     const fallbackName = safeString(
-      jurado.nombre ?? jurado.name ?? jurado.fullName
+      jurado.nombre ?? jurado.name ?? jurado.fullName,
     );
 
     const fullName =
@@ -98,12 +98,12 @@ function mapTeamFromApi(raw: any): Team {
 
     return {
       id: String(
-        jurado.id ?? jurado.jurorId ?? jurado.userId ?? email ?? fullName
+        jurado.id ?? jurado.jurorId ?? jurado.userId ?? email ?? fullName,
       ),
       name: fullName,
       email,
       avatar: safeString(
-        jurado.avatar ?? jurado.photoUrl ?? jurado.profilePicture
+        jurado.avatar ?? jurado.photoUrl ?? jurado.profilePicture,
       ),
       tipo: jurado.jurorType ?? jurado.tipo_jurado ?? jurado.tipo ?? null,
       jurorType: jurado.jurorType ?? null,
@@ -115,7 +115,7 @@ function mapTeamFromApi(raw: any): Team {
     id: raw.id ?? raw.teamId ?? raw.id_equipo ?? 0,
     name: safeString(
       raw.nombre ?? raw.name ?? raw.teamName ?? raw.equipo,
-      "Equipo sin nombre"
+      "Equipo sin nombre",
     ),
     game: safeString(
       raw.videojuego ??
@@ -124,23 +124,26 @@ function mapTeamFromApi(raw: any): Team {
         raw.videogameName ??
         raw.videogame?.name ??
         raw.projectName,
-      "Sin videojuego"
+      "Sin videojuego",
     ),
     semester: safeString(
       raw.semester ?? raw.level ?? raw.nivel ?? raw.course,
-      "Sin semestre"
+      "Sin semestre",
     ),
     jurados,
     requiredJurados: safeNumber(
       raw.requiredJurados ?? raw.requiredJurors ?? raw.jurorSlots,
-      3
+      3,
     ),
     evaluacionesRecibidas: safeNumber(
+      // [MODIFICADO]: Se agregó raw.juradosQueEvaluaron para leer correctamente la cantidad de evaluaciones desde el backend.
+      // [ANTES]: El frontend ignoraba la propiedad juradosQueEvaluaron que envía el backend.
       raw.evaluacionesRecibidas ??
         raw.evaluationsReceived ??
         raw.completedEvaluations ??
-        raw.evaluatedCount,
-      0
+        raw.evaluatedCount ??
+        raw.juradosQueEvaluaron,
+      0,
     ),
     evaluacionesRequeridas: safeNumber(
       raw.evaluacionesRequeridas ??
@@ -148,7 +151,7 @@ function mapTeamFromApi(raw: any): Team {
         raw.requiredEvaluations ??
         raw.requiredJurados ??
         raw.requiredJurors,
-      3
+      3,
     ),
   };
 }
@@ -213,7 +216,7 @@ export function RealtimeTrackingPanel() {
 
   const filteredBySemester = useMemo(() => {
     return teams.filter(
-      (team) => semestreFiltro === "todos" || team.semester === semestreFiltro
+      (team) => semestreFiltro === "todos" || team.semester === semestreFiltro,
     );
   }, [teams, semestreFiltro]);
 
@@ -229,7 +232,7 @@ export function RealtimeTrackingPanel() {
         team.semester.toLowerCase().includes(search);
 
       const jurorMatch = team.jurados.some((jurado) =>
-        jurado.name.toLowerCase().includes(search)
+        jurado.name.toLowerCase().includes(search),
       );
 
       return teamMatch || jurorMatch;
@@ -237,33 +240,33 @@ export function RealtimeTrackingPanel() {
   }, [filteredBySemester, searchSeguimiento]);
 
   const completedTeams = filteredTeams.filter(
-    (team) => getTeamEvaluationStatus(team) === "completed"
+    (team) => getTeamEvaluationStatus(team) === "completed",
   );
 
   const progressTeams = filteredTeams.filter(
-    (team) => getTeamEvaluationStatus(team) === "progress"
+    (team) => getTeamEvaluationStatus(team) === "progress",
   );
 
   const pendingTeams = filteredTeams.filter(
-    (team) => getTeamEvaluationStatus(team) === "pending"
+    (team) => getTeamEvaluationStatus(team) === "pending",
   );
 
   const teamsWithoutJurors = filteredBySemester.filter(
-    (team) => team.jurados.length === 0
+    (team) => team.jurados.length === 0,
   );
 
   const incompleteAssignments = filteredBySemester.filter(
     (team) =>
-      team.jurados.length > 0 && team.jurados.length < team.requiredJurados
+      team.jurados.length > 0 && team.jurados.length < team.requiredJurados,
   );
 
   const semesters = Array.from(
-    new Set(teams.map((team) => team.semester))
+    new Set(teams.map((team) => team.semester)),
   ).sort();
 
   const renderTeamCard = (
     team: Team,
-    status: "completed" | "progress" | "pending"
+    status: "completed" | "progress" | "pending",
   ) => {
     const received = team.evaluacionesRecibidas ?? 0;
     const required = team.evaluacionesRequeridas ?? team.requiredJurados;
@@ -472,9 +475,7 @@ export function RealtimeTrackingPanel() {
 
                   <select
                     value={semestreFiltro}
-                    onChange={(event) =>
-                      setSemestreFiltro(event.target.value)
-                    }
+                    onChange={(event) => setSemestreFiltro(event.target.value)}
                     className="px-4 py-2 md:py-3 rounded-lg border border-border bg-card text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer min-w-[200px]"
                   >
                     <option value="todos">Todos los semestres</option>
@@ -500,9 +501,7 @@ export function RealtimeTrackingPanel() {
                 </div>
 
                 <div className="bg-card border border-green-500/30 rounded-xl p-3 md:p-4">
-                  <div className="text-green-500 text-xs mb-1">
-                    Completados
-                  </div>
+                  <div className="text-green-500 text-xs mb-1">Completados</div>
 
                   <div className="text-xl md:text-2xl">
                     {completedTeams.length}
@@ -560,7 +559,7 @@ export function RealtimeTrackingPanel() {
 
                       <div className="space-y-3 md:space-y-4">
                         {completedTeams.map((team) =>
-                          renderTeamCard(team, "completed")
+                          renderTeamCard(team, "completed"),
                         )}
                       </div>
                     </div>
@@ -575,7 +574,7 @@ export function RealtimeTrackingPanel() {
 
                       <div className="space-y-3 md:space-y-4">
                         {progressTeams.map((team) =>
-                          renderTeamCard(team, "progress")
+                          renderTeamCard(team, "progress"),
                         )}
                       </div>
                     </div>
@@ -590,7 +589,7 @@ export function RealtimeTrackingPanel() {
 
                       <div className="space-y-3 md:space-y-4">
                         {pendingTeams.map((team) =>
-                          renderTeamCard(team, "pending")
+                          renderTeamCard(team, "pending"),
                         )}
                       </div>
                     </div>
