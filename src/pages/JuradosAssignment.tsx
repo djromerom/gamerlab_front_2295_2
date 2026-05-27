@@ -1022,6 +1022,23 @@ export function JuradosAssignment() {
     }
   };
 
+  const handleSendJurorCert = async (jurado: Jurado) => {
+    const lid = toast.loading(`Enviando correo a: ${jurado.email}`);
+    try {
+      await apiRequest('/certificates/juror', {
+        method: "POST",
+        body: JSON.stringify({
+          userId: jurado.id
+        })
+      });
+      toast.success(`Correo enviado a: ${jurado.email}`);
+    } catch (error) {
+      toast.error(`No se pudo enviar el correo a: ${jurado.email}`);
+    } finally {
+      toast.dismiss(lid);
+    }
+  }
+
   const handleResendConfirmation = async (email: string) => {
     try {
       setIsSubmitting(true);
@@ -1811,6 +1828,7 @@ export function JuradosAssignment() {
             onOpenCreateJuror={handleOpenCreateJuror}
             onEditJuror={handleEditJuror}
             onResendConfirmation={handleResendConfirmation}
+            onSendJuradoCert={handleSendJurorCert}
             onRemoveTeamsFromJuror={handleRemoveTeamsFromJuror}
             onToggleJurorType={toggleJurorType}
             onDeleteJuror={handleDeleteJuror}

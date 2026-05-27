@@ -29,6 +29,7 @@ interface JuradosListModalProps {
   onOpenCreateJuror: () => void;
   onEditJuror: (jurado: Jurado) => void;
   onResendConfirmation: (email: string) => void;
+  onSendJuradoCert: (jurado: Jurado) => void;
   onRemoveTeamsFromJuror: (jurorId: string, jurorName: string) => void;
   onToggleJurorType: (jurado: Jurado) => void;
   onDeleteJuror: (jurorId: string, jurorName: string) => void;
@@ -46,6 +47,7 @@ export function JuradosListModal({
   onOpenCreateJuror,
   onEditJuror,
   onResendConfirmation,
+  onSendJuradoCert,
   onRemoveTeamsFromJuror,
   onToggleJurorType,
   onDeleteJuror,
@@ -195,7 +197,14 @@ export function JuradosListModal({
                           onClick={() => void onResendConfirmation(jurado.email)}
                           className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                         >
-                          Reenviar correo
+                          Reenviar correo de confirmación
+                        </button>
+
+                        <button
+                          onClick={() => void onSendJuradoCert(jurado)}
+                          className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                        >
+                          Enviar certificado de jurado
                         </button>
 
                         <button
