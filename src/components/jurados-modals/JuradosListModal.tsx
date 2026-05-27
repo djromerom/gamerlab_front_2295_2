@@ -127,6 +127,9 @@ export function JuradosListModal({
                       Último ingreso: {formatDate(jurado.lastSignInAt)}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
+                      Estado confirmación: {(jurado.confirmationStatusId === 1) ? "CONFIRMADO" : "PENDIENTE"}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
                       Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
                     </div>
 
