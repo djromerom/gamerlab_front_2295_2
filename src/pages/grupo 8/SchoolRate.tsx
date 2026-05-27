@@ -536,32 +536,32 @@ export default function SchoolRate() {
                           >
                             {criterion.name} (
                             {(criterion.weight * 100).toFixed(0)}%)
-                            <div className="mt-2 flex items-center gap-10">
+                            <div className="mt-2 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                               <p className="text-xs font-medium text-muted-foreground">
                                 Puntuación:
                               </p>
 
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                value={criterion.score ?? ""}
-                                onFocus={() =>
-                                  handleScoreInputFocus(criterion.id)
-                                }
-                                onChange={(e) =>
-                                  handleScoreInputChange(
-                                    criterion.id,
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder={`0 - ${criterion.maxScore}`}
-                                className="border rounded px-2 py-1 w-24 sm:w-28 bg-transparent text-sm"
-                              />
+                              <div className="flex items-center gap-2 w-full md:w-auto">
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={criterion.score ?? ""}
+                                  onFocus={() =>
+                                    handleScoreInputFocus(criterion.id)
+                                  }
+                                  onChange={(e) =>
+                                    handleScoreInputChange(
+                                      criterion.id,
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder={`0 - ${criterion.maxScore}`}
+                                  className="border rounded px-2 py-1 w-full md:w-24 bg-transparent text-sm"
+                                />
 
-                              <span className="text-sm font-medium">
-                                {Number(criterion.score).toFixed(2) || "—"}
-                              </span>
-                              <div className="sm:ml-auto">
+                                <span className="text-sm font-medium whitespace-nowrap">
+                                  {Number(criterion.score).toFixed(2) || "—"}
+                                </span>
                                 <Criteriabutton
                                   description={getCriterionDescription(
                                     criterion.name,

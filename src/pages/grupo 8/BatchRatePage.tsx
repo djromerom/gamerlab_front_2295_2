@@ -1,7 +1,7 @@
-import { Input } from "@/components/grupo 8/input";
 import { Textarea } from "@/components/grupo 8/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useCriteria } from "@/hooks/use-criteria";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
@@ -24,7 +24,7 @@ interface BatchGame {
 interface GameScores {
   [gameId: number]: {
     comments: string;
-    details: { criterionId: number; score: number }[];
+    details: { criterionId: number; score: string }[];
   };
 }
 
@@ -46,12 +46,21 @@ export default function BatchRatePage() {
     failed: { videogameId: number; error: string }[];
   } | null>(null);
 
-  // Guardar borrador en localStorage
+  const sanitizeScoreInputValue = (rawValue: string) => {
+    const normalized = rawValue.replace(/,/g, ".");
+    const digitsOnly = normalized.replace(/[^0-9.]/g, "");
+    const parts = digitsOnly.split(".");
+    if (parts.length <= 2) {
+      return digitsOnly;
+    }
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  };
+
   const saveDraft = (
     gameId: number,
     scores: {
       comments: string;
-      details: { criterionId: number; score: number }[];
+      details: { criterionId: number; score: string }[];
     },
   ) => {
     try {
@@ -60,22 +69,20 @@ export default function BatchRatePage() {
         JSON.stringify({ scores }),
       );
     } catch (e) {
-      // Ignorar errores de almacenamiento
+      // Ignorar
     }
   };
 
-  // Limpiar borradores de todos los juegos
   const clearAllDrafts = () => {
     games.forEach((game) => {
       try {
         localStorage.removeItem(`batch-rate-draft-${game.id}`);
       } catch (e) {
-        // Ignorar
+        /* Ignorar */
       }
     });
   };
 
-  // Redirigir si no hay juegos
   useEffect(() => {
     if (!games || games.length === 0) {
       toast.error("No hay juegos seleccionados");
@@ -83,73 +90,86 @@ export default function BatchRatePage() {
     }
   }, [games, navigate, backRoute]);
 
-  // Recuperar borradores de localStorage al montar el componente
+  // Inicializar scores: merge entre localStorage y defaults
   useEffect(() => {
-    if (games.length === 0) return;
-    const loadedScores: GameScores = {};
-    let hasSavedData = false;
+    if (apiCriteria.length === 0 || games.length === 0) return;
+
+    const initial: GameScores = {};
+    let hasDraft = false;
+
     games.forEach((game) => {
+      let savedData: {
+        comments: string;
+        details: { criterionId: number; score: string }[];
+      } | null = null;
       try {
         const saved = localStorage.getItem(`batch-rate-draft-${game.id}`);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (
-            parsed.scores &&
-            parsed.scores.comments !== undefined &&
-            Array.isArray(parsed.scores.details)
+            parsed.scores?.comments !== undefined &&
+            Array.isArray(parsed.scores?.details)
           ) {
-            loadedScores[game.id] = parsed.scores;
-            hasSavedData = true;
+            savedData = parsed.scores;
+            hasDraft = true;
           }
         }
       } catch (e) {
-        // Ignorar
+        /* Ignorar */
+      }
+
+      if (savedData) {
+        initial[game.id] = savedData;
+      } else {
+        initial[game.id] = {
+          comments: "",
+          details: apiCriteria.map((c) => ({
+            criterionId: c.id,
+            score: "",
+          })),
+        };
       }
     });
-    if (hasSavedData) {
-      setGameScores(loadedScores);
+
+    setGameScores(initial);
+    if (hasDraft) {
+      toast.info("Borradores recuperados", { duration: 2000 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [apiCriteria, games.length]);
 
-  // Inicializar scores cuando cargan los criterios (solo si no se cargaron borradores)
-  useEffect(() => {
-    if (apiCriteria.length > 0 && games.length > 0) {
-      setGameScores((prev) => {
-        // Si ya hay datos cargados (de localStorage), no sobrescribir
-        if (Object.keys(prev).length > 0) return prev;
-
-        const initial: GameScores = {};
-        games.forEach((game) => {
-          initial[game.id] = {
-            comments: "",
-            details: apiCriteria.map((c) => ({
-              criterionId: c.id,
-              score: 0,
-            })),
-          };
-        });
-        return initial;
-      });
-    }
-  }, [apiCriteria, games]);
+  const parseScoreValue = (value: string, maxScore: number): number | null => {
+    const raw = (value || "").toString().trim();
+    if (!raw) return null;
+    const normalized = raw.replace(/,/g, ".");
+    const parsed = Number.parseFloat(normalized);
+    if (Number.isNaN(parsed)) return null;
+    if (parsed < 0) return 0;
+    if (parsed > maxScore) return maxScore;
+    return parsed;
+  };
 
   const handleScoreChange = (
     gameId: number,
     criterionId: number,
-    value: string,
+    rawValue: string,
   ) => {
     setGameScores((prev) => {
-      const game = { ...prev[gameId] };
-      const details = game.details.map((d) =>
-        d.criterionId === criterionId
-          ? {
-              ...d,
-              score: value === "" ? 0 : Math.min(5, Math.max(0, Number(value))),
-            }
-          : d,
-      );
-      const updated = { ...prev, [gameId]: { ...game, details } };
+      const currentGame = prev[gameId] || {
+        comments: "",
+        details: apiCriteria.map((c) => ({ criterionId: c.id, score: "" })),
+      };
+      const sanitized = sanitizeScoreInputValue(rawValue);
+
+      const details = currentGame.details.map((d) => {
+        if (d.criterionId !== criterionId) return d;
+        if (!sanitized) return { ...d, score: "" };
+        const parsed = Number.parseFloat(sanitized);
+        if (!Number.isNaN(parsed) && parsed > 5) return { ...d, score: "5" };
+        return { ...d, score: sanitized };
+      });
+
+      const updated = { ...prev, [gameId]: { ...currentGame, details } };
       saveDraft(gameId, updated[gameId]);
       return updated;
     });
@@ -157,9 +177,13 @@ export default function BatchRatePage() {
 
   const handleCommentsChange = (gameId: number, value: string) => {
     setGameScores((prev) => {
+      const currentGame = prev[gameId] || {
+        comments: "",
+        details: apiCriteria.map((c) => ({ criterionId: c.id, score: "" })),
+      };
       const updated = {
         ...prev,
-        [gameId]: { ...prev[gameId], comments: value },
+        [gameId]: { ...currentGame, comments: value },
       };
       saveDraft(gameId, updated[gameId]);
       return updated;
@@ -170,6 +194,24 @@ export default function BatchRatePage() {
     setIsSubmitting(true);
     const currentDate = new Date().toISOString();
 
+    // Validar que todos los criterios tengan puntuación
+    for (const game of games) {
+      const scoreData = gameScores[game.id];
+      for (const criterion of apiCriteria) {
+        const detail = scoreData?.details?.find(
+          (d) => d.criterionId === criterion.id,
+        );
+        const parsed = parseScoreValue(detail?.score ?? "", 5);
+        if (parsed === null) {
+          toast.error(
+            `"${game.nombre}": Ingrese puntuación para "${criterion.name}"`,
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+
     const evaluations = games.map((game) => {
       const scoreData = gameScores[game.id];
       return {
@@ -177,12 +219,13 @@ export default function BatchRatePage() {
         videogameId: game.id,
         comments: scoreData?.comments || "",
         details: apiCriteria.map((criterion) => {
-          const detail = scoreData?.details.find(
+          const detail = scoreData?.details?.find(
             (d) => d.criterionId === criterion.id,
           );
+          const parsed = parseScoreValue(detail?.score ?? "", 5);
           return {
             criterionId: criterion.id,
-            score: detail?.score ?? 0,
+            score: parsed ?? 0,
             createdAt: currentDate,
             updatedAt: currentDate,
             isActive: true,
@@ -202,10 +245,8 @@ export default function BatchRatePage() {
       );
 
       const data = await res.json();
-
-      if (!res.ok) {
+      if (!res.ok)
         throw new Error(data.message || "Error al guardar evaluaciones");
-      }
 
       setResult(data.results);
       clearAllDrafts();
@@ -239,10 +280,7 @@ export default function BatchRatePage() {
   const breadcrumbs =
     fromPage === "colegios"
       ? [
-          {
-            label: "Pendientes por calificar (Colegios)",
-            href: "/colegios-calificar",
-          },
+          { label: "Pendientes (Colegios)", href: "/colegios-calificar" },
           { label: "Calificación en lote", href: "/calificar-lote" },
         ]
       : [
@@ -252,13 +290,13 @@ export default function BatchRatePage() {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="container mx-auto py-6 p-5">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
+      <div className="container mx-auto py-4 md:py-6 px-3 md:px-5">
+        <h1 className="text-xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">
           Calificación en Lote
         </h1>
-        <p className="text-muted-foreground mb-6">
-          Asigna puntajes a cada videojuego seleccionado. Usa las pestañas para
-          navegar entre ellos.
+        <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6">
+          Asigna puntajes a cada videojuego. Usa las pestañas para navegar entre
+          ellos.
         </p>
 
         {result ? (
@@ -277,8 +315,7 @@ export default function BatchRatePage() {
                       key={s.videogameId}
                       className="text-sm text-green-600 dark:text-green-300"
                     >
-                      Videojuego ID {s.videogameId} → Evaluación #
-                      {s.evaluationId}
+                      ID {s.videogameId} → Evaluación #{s.evaluationId}
                     </p>
                   ))}
                 </div>
@@ -292,7 +329,7 @@ export default function BatchRatePage() {
                         key={f.videogameId}
                         className="text-sm text-red-600 dark:text-red-300"
                       >
-                        Videojuego ID {f.videogameId}: {f.error}
+                        ID {f.videogameId}: {f.error}
                       </p>
                     ))}
                   </div>
@@ -308,58 +345,60 @@ export default function BatchRatePage() {
           </Card>
         ) : (
           <>
-            {/* Tabs de navegación entre juegos */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {games.map((game, index) => (
-                <button
-                  key={game.id}
-                  onClick={() => setActiveTab(index)}
-                  className={`px-4 py-2 rounded-t-lg text-sm font-medium cursor-pointer transition-colors ${
-                    activeTab === index
-                      ? "bg-[var(--selected)] text-[var(--selected-foreground)]"
-                      : "bg-muted hover:bg-muted/80"
-                  }`}
-                >
-                  {game.nombre}
-                </button>
-              ))}
+            {/* Tabs navegación con scroll */}
+            <div className="overflow-x-auto mb-4 md:mb-6 -mx-3 md:mx-0 px-3 md:px-0">
+              <div className="flex gap-1 md:gap-2 min-w-max">
+                {games.map((game, index) => (
+                  <button
+                    key={game.id}
+                    onClick={() => setActiveTab(index)}
+                    className={`px-3 md:px-4 py-2 rounded-t-lg text-xs md:text-sm font-medium whitespace-nowrap cursor-pointer transition-colors ${
+                      activeTab === index
+                        ? "bg-[var(--selected)] text-[var(--selected-foreground)]"
+                        : "bg-muted hover:bg-muted/80"
+                    }`}
+                  >
+                    {game.nombre}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Tarjeta del juego activo */}
             <Card key={currentGame.id} className="mb-6">
-              <CardHeader>
-                <CardTitle>{currentGame.nombre}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+              <CardHeader className="px-4 md:px-6 py-4 md:py-6">
+                <CardTitle className="text-lg md:text-xl">
+                  {currentGame.nombre}
+                </CardTitle>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   Equipo: {currentGame.equipo} | Materia: {currentGame.materia}
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 md:px-6">
                 {/* Criterios de evaluación */}
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {apiCriteria.map((criterion) => (
                     <div
                       key={criterion.id}
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                      className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-muted/30 rounded-lg gap-2 md:gap-4"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm md:text-base">
                           {criterion.name} (
                           {(criterion.weight * 100).toFixed(0)}%)
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs md:text-sm text-muted-foreground">
                           {criterion.description || "Sin descripción"}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                         <Input
-                          type="number"
-                          min={0}
-                          max={5}
-                          step={0.5}
+                          type="text"
+                          inputMode="decimal"
                           value={
-                            gameScores[currentGame.id]?.details.find(
+                            gameScores[currentGame.id]?.details?.find(
                               (d) => d.criterionId === criterion.id,
-                            )?.score ?? 0
+                            )?.score ?? ""
                           }
                           onChange={(e) =>
                             handleScoreChange(
@@ -368,10 +407,10 @@ export default function BatchRatePage() {
                               e.target.value,
                             )
                           }
-                          className="w-20 text-center"
                           placeholder="0-5"
+                          className="w-full md:w-20 text-center text-sm"
                         />
-                        <span className="text-sm text-muted-foreground w-8">
+                        <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
                           / 5
                         </span>
                       </div>
@@ -380,37 +419,39 @@ export default function BatchRatePage() {
                 </div>
 
                 {/* Comentarios */}
-                <div className="mt-6">
-                  <h3 className="font-medium mb-2">Comentarios</h3>
+                <div className="mt-4 md:mt-6">
+                  <h3 className="font-medium text-sm md:text-base mb-2">
+                    Comentarios
+                  </h3>
                   <Textarea
                     value={gameScores[currentGame.id]?.comments || ""}
                     onChange={(e) =>
                       handleCommentsChange(currentGame.id, e.target.value)
                     }
-                    className="w-full h-24"
+                    className="w-full h-20 md:h-24 text-sm"
                     placeholder="Comentarios para este videojuego..."
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Botón de envío masivo */}
-            <div className="flex justify-end gap-4 mt-6">
+            {/* Botones */}
+            <div className="flex flex-col-reverse md:flex-row justify-end gap-3 md:gap-4 mt-4 md:mt-6">
               <Button
                 variant="outline"
                 onClick={() => navigate(backRoute)}
-                className="cursor-pointer"
+                className="cursor-pointer w-full md:w-auto"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSubmitAll}
                 disabled={isSubmitting}
-                className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] cursor-pointer"
+                className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] cursor-pointer w-full md:w-auto"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />{" "}
                     Guardando...
                   </>
                 ) : (
