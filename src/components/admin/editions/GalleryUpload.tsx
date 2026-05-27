@@ -45,6 +45,15 @@ export const GalleryUpload: React.FC<GalleryUploadProps> = ({
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
+      
+      // Revisar límite 20 fotos por chunk
+      if (newImages.length + validImages.length > 20) {
+        toast.error("Límite por carga", { description: `Solo puedes subir hasta 20 fotos a la vez. Actualmente tienes ${newImages.length} en cola y estás intentando agregar ${validImages.length} más.` });
+        validImages.forEach(img => URL.revokeObjectURL(img.preview));
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
       setNewImages(prev => [...prev, ...validImages]);
     }
 
@@ -146,7 +155,7 @@ export const GalleryUpload: React.FC<GalleryUploadProps> = ({
       {newImages.length > 0 && (
         <div>
           <h4 className="text-sm font-medium text-gray-300 mb-3">
-            Listas para subir ({newImages.length})
+            Listas para subir ({newImages.length} / 20) — {(newImages.reduce((acc, curr) => acc + curr.file.size, 0) / (1024 * 1024)).toFixed(2)} MB
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {newImages.map((img, idx) => (

@@ -15,7 +15,8 @@ export interface Team {
     isExternal?: boolean;
     likes?: number;
     gameFileUrl?: string,
-    entry?: string
+    entry?: string,
+    finalScore?: number | null
 }
 
 export type TeamStatus = "PENDIENTE" | "CONFIRMADO" | "RECHAZADO";

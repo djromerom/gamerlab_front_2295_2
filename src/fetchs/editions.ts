@@ -4,6 +4,8 @@ const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000'
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
+export type EditionStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+
 export interface Videogame {
   id: number;
   name: string;
@@ -43,7 +45,7 @@ export interface Edition {
   description?: string;
   description2?: string;
   alt?: string;
-  isActive: boolean;
+  status: EditionStatus;
   mainPhoto?: string;    // upload UUID interno
   mainPhotoUrl?: string; // SAS URL temporal (generada por el backend)
   photos: string[];      // array de upload UUIDs
@@ -191,6 +193,14 @@ export const updateEdition = async (
 export const activateEdition = async (id: number): Promise<Edition> => {
   const res = await apiFetch(`${API_URL}/editions/${id}/activate`, {
     method: 'PATCH',
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res));
+  return res.json();
+};
+
+export const archiveEdition = async (id: number): Promise<Edition> => {
+  const res = await apiFetch(`${API_URL}/editions/${id}/archive`, {
+    method: 'POST',
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res));
   return res.json();
@@ -367,4 +377,22 @@ export const deleteEducationalFocus = async (editionId: number, id: number): Pro
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res));
+};
+
+export const fetchHistoricalTeams = async (editionId: number): Promise<any[]> => {
+  const res = await apiFetch(`${API_URL}/historicals/historical-teams/${editionId}`);
+  if (!res.ok) {
+    if (res.status === 404) return [];
+    throw new Error(await extractErrorMessage(res));
+  }
+  return res.json();
+};
+
+export const fetchHistoricalTeamsWithScores = async (editionId: number): Promise<any[]> => {
+  const res = await apiFetch(`${API_URL}/historicals/historical-teams-with-scores/${editionId}`);
+  if (!res.ok) {
+    if (res.status === 404) return [];
+    throw new Error(await extractErrorMessage(res));
+  }
+  return res.json();
 };

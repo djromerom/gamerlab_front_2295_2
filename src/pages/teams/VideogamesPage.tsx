@@ -10,7 +10,13 @@ import { Team, TeamStatus } from "@/types/Team";
 import { TeamCard } from "@/components/videogamePage/TeamCard";
 import { Filters } from "@/components/videogamePage/Filters";
 
+import { useLocation } from "react-router-dom";
+
 export default function VideogamesPage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialSearch = searchParams.get("search") || "";
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
@@ -20,7 +26,7 @@ export default function VideogamesPage() {
   }, []);
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [loading, setLoading] = useState(true);
   const [activeTeamType, setActiveTeamType] = useState<string>("all");
   const customFetch = useFetch();

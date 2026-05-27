@@ -10,6 +10,8 @@ import {
   Gamepad2,
   GraduationCap,
   CheckCircle,
+  Circle,
+  Archive,
   Power,
   Pencil,
   Loader2,
@@ -21,7 +23,7 @@ import { TestimonialsModal } from "@/components/admin/editions/modals/Testimonia
 import { HighlightedGamesModal } from "@/components/admin/editions/modals/HighlightedGamesModal";
 import { EducationalFocusesModal } from "@/components/admin/editions/modals/EducationalFocusesModal";
 import { toast } from "sonner";
-import { activateEdition, type Edition } from "@/fetchs/editions";
+import { activateEdition, archiveEdition, type Edition } from "@/fetchs/editions";
 
 interface EditionDetailViewProps {
   edition: Edition;
@@ -95,8 +97,9 @@ export const EditionDetailView: React.FC<EditionDetailViewProps> = ({
   onBack,
   onActivated,
 }) => {
-    const [openModal, setOpenModal] = useState<ModalKey>(null);
+  const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [activating, setActivating] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   const handleActivate = async () => {
     try {
@@ -108,6 +111,21 @@ export const EditionDetailView: React.FC<EditionDetailViewProps> = ({
       toast.error("Error al activar edición", { description: err?.message ?? "Ocurrió un error inesperado." });
     } finally {
       setActivating(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!confirm("¿Estás seguro de que quieres archivar esta edición? Esta acción creará un snapshot histórico de sus equipos y juegos, y no podrás volver a activarla.")) return;
+
+    try {
+      setArchiving(true);
+      await archiveEdition(edition.id);
+      toast.success("Edición archivada", { description: "Se creó el snapshot histórico. Ya no podrás activar esta edición." });
+      onActivated?.(); // refresca la lista en la página padre
+    } catch (err: any) {
+      toast.error("Error al archivar edición", { description: err?.message ?? "Ocurrió un error inesperado." });
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -130,14 +148,22 @@ export const EditionDetailView: React.FC<EditionDetailViewProps> = ({
             <h2 className="text-2xl font-bold text-foreground truncate">
               {edition.title}
             </h2>
-            {edition.isActive ? (
+            {edition.status === 'ACTIVE' && (
               <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 flex items-center gap-1 shrink-0">
                 <CheckCircle className="w-3 h-3" />
                 Activa
               </Badge>
-            ) : (
-              <Badge variant="outline" className="text-muted-foreground border-border shrink-0">
-                Histórico
+            )}
+            {edition.status === 'INACTIVE' && (
+              <Badge variant="outline" className="text-muted-foreground border-border flex items-center gap-1 shrink-0">
+                <Circle className="w-3 h-3" />
+                Inactiva
+              </Badge>
+            )}
+            {edition.status === 'ARCHIVED' && (
+              <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 flex items-center gap-1 shrink-0">
+                <Archive className="w-3 h-3" />
+                Archivada
               </Badge>
             )}
           </div>
@@ -146,47 +172,92 @@ export const EditionDetailView: React.FC<EditionDetailViewProps> = ({
           </p>
         </div>
 
-        {!edition.isActive && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleActivate}
-            disabled={activating}
-            className="shrink-0 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500/60 disabled:opacity-60"
-          >
-            {activating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Activando...
-              </>
-            ) : (
-              <>
-                <Power className="w-4 h-4 mr-2" />
-                Activar edición
-              </>
-            )}
-          </Button>
+        {edition.status === 'ACTIVE' && (
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleArchive}
+              disabled={archiving}
+            >
+              {archiving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Archivando...
+                </>
+              ) : (
+                <>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archivar
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {edition.status === 'INACTIVE' && (
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleArchive}
+              disabled={activating || archiving}
+            >
+              {archiving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Archivando...
+                </>
+              ) : (
+                <>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archivar
+                </>
+              )}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleActivate}
+              disabled={activating || archiving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {activating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Activando...
+                </>
+              ) : (
+                <>
+                  <Power className="w-4 h-4 mr-2" />
+                  Activar
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
       {/* Action Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ACTION_CARDS.map(({ key, icon: Icon, title, description, accent }) => (
-          <button
-            key={key}
-            onClick={() => setOpenModal(key)}
-            className={`group relative text-left rounded-xl border bg-gradient-to-br p-5 transition-all duration-200 ${accent} hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AC7CFF]`}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg bg-background/60 border border-border/50">
-                <Icon className="w-5 h-5 text-[#AC7CFF]" />
+        {ACTION_CARDS.map(({ key, icon: Icon, title, description, accent }) => {
+          return (
+            <button
+              key={key}
+              onClick={() => setOpenModal(key)}
+              className={`group relative text-left rounded-xl border bg-gradient-to-br p-5 transition-all duration-200 ${accent} hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AC7CFF] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-background/60 border border-border/50">
+                  <Icon className="w-5 h-5 text-[#AC7CFF]" />
+                </div>
+                <Pencil className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
               </div>
-              <Pencil className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">{title}</h3>
-            <p className="text-sm text-muted-foreground leading-snug">{description}</p>
-          </button>
-        ))}
+              <h3 className="font-semibold text-foreground mb-1">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-snug">{description}</p>
+            </button>
+          )
+        })}
       </div>
 
       {/* Modales */}
