@@ -14,6 +14,7 @@ import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
+import HistoricalVideogamesPage from "@/pages/grupo 5/HistoricalVideogamesPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import InformationPage from "@/pages/grupo 5/InformationPage";
@@ -107,6 +108,10 @@ const routes: RouteConfig[] = [
   {
     path: "/ediciones-pasadas",
     element: <FeriasPasadas />,
+  },
+  {
+    path: "/ediciones-pasadas/:editionId/juegos",
+    element: <HistoricalVideogamesPage />,
   },
   {
     path: "/contribuidores",

@@ -64,19 +64,7 @@ const EditionsManagementPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
-        {/* Page title — solo visible en la vista de lista */}
-        {view === "list" && (
-          <div className="flex items-center gap-3">
-            <CalendarRange className="w-7 h-7 text-[#AC7CFF]" />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Gestión de Ediciones
-              </h1>
-            </div>
-          </div>
-        )}
-
+      <div className="p-6 w-full space-y-6">
         {/* Vistas */}
         {view === "list" ? (
           <>

@@ -1,16 +1,18 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { CheckCircle, Power, Pencil, Calendar, Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-interface Edition {
-  id: number;
-  year: number;
-  semester: number;
-  title: string;
-  isActive: boolean;
-}
+import { type Edition } from "@/fetchs/editions";
 
 interface EditionsListProps {
   editions: Edition[];
@@ -29,68 +31,92 @@ export const EditionsTable: React.FC<EditionsListProps> = ({
   onSelectEdition,
   onCreateNew,
 }) => {
-
   return (
-    <div className="space-y-4">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {editions.length} edición{editions.length !== 1 ? "es" : ""} registrada{editions.length !== 1 ? "s" : ""}
-        </p>
-        <Button
-          onClick={onCreateNew}
-          className="bg-[#AC7CFF] hover:bg-[#8A5CD6] text-black font-semibold min-h-[44px]"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Edición
-        </Button>
+    <div className="bg-background text-foreground min-h-[calc(100vh-10rem)] -mx-6 px-6 -mt-6 pt-6">
+      <div className="flex flex-col gap-4 mb-6">
+        {/* Fila 1: Título */}
+        <div>
+          <h1 className="text-lg md:text-xl font-medium">Gestión de Ediciones</h1>
+        </div>
+
+        {/* Fila 2: Botón y contador */}
+        <div className="flex items-center justify-between gap-4 w-full">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {editions.length} edición{editions.length !== 1 ? "es" : ""} registrada{editions.length !== 1 ? "s" : ""}
+          </div>
+          
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              variant="outline"
+              className="bg-card hover:bg-accent text-foreground whitespace-nowrap shrink-0 h-10 px-3 sm:px-4"
+              onClick={onCreateNew}
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Agregar</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Cards list */}
-      <div className="flex flex-col gap-3">
-        {editions.map((edition) => (
-          <div
-            key={edition.id}
-            className="group flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 transition-all duration-200 hover:border-[#AC7CFF]/40 hover:bg-card/80"
-          >
-            {/* Active indicator dot */}
-            <div
-              className={`shrink-0 w-2.5 h-2.5 rounded-full ${edition.isActive ? "bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.4)]" : "bg-muted-foreground/30"
-                }`}
-            />
-
-            {/* Main info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                <span className="font-semibold text-foreground truncate">{edition.title}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{edition.year} · {semesterLabel[edition.semester] ?? `Semestre ${edition.semester}`}</span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onSelectEdition(edition.id)}
-                className="text-[#AC7CFF] hover:text-[#8A5CD6] hover:bg-[#AC7CFF]/10 min-h-[44px] min-w-[44px]"
-                title="Editar edición"
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
-
-        {editions.length === 0 && (
-          <div className="text-center text-muted-foreground py-12 border border-dashed border-border rounded-xl">
-            No hay ediciones registradas aún.
-          </div>
-        )}
-      </div>
+      {/* Tabla */}
+      <Card className="rounded-lg overflow-hidden bg-card border-border shadow-none">
+        <Table>
+          <TableHeader className="bg-card border-b border-border">
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Título</TableHead>
+              <TableHead>Año y Semestre</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="w-[50px] text-right"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {editions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                  No hay ediciones registradas aún.
+                </TableCell>
+              </TableRow>
+            ) : (
+              editions.map((edition) => (
+                <TableRow key={edition.id}>
+                  <TableCell className="font-medium">
+                    {edition.title}
+                  </TableCell>
+                  <TableCell>
+                    <div>{edition.year}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {semesterLabel[edition.semester] ?? `Semestre ${edition.semester}`}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {edition.status === 'ACTIVE' && (
+                      <Badge variant="default">Activa</Badge>
+                    )}
+                    {edition.status === 'INACTIVE' && (
+                      <Badge variant="secondary">Inactiva</Badge>
+                    )}
+                    {edition.status === 'ARCHIVED' && (
+                      <Badge variant="destructive">Archivada</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onSelectEdition(edition.id)}
+                      title="Editar edición"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      <span className="sr-only">Editar</span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
+import { Link } from "react-router-dom";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -254,7 +255,7 @@ export default function CompetitionInfo() {
       try {
         setLoading(true);
         const editions = await fetchEditions();
-        const active = editions.find((e) => e.isActive);
+        const active = editions.find((e) => e.status === 'ACTIVE');
         if (active) {
           setActiveEdition(active);
           const games = await fetchHighlightedGames(active.id);
@@ -440,10 +441,14 @@ export default function CompetitionInfo() {
             {!loading && highlightedGames.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {highlightedGames.map((game) => (
-                  <div key={game.videogameId} className="game-card flex items-center justify-center gap-3 py-6">
-                    <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
+                  <Link to={`/equipos?search=${encodeURIComponent(game.videogame?.name || "")}`} key={game.videogameId} className="game-card flex items-center justify-center gap-3 py-6 hover:scale-105 transition-transform cursor-pointer">
+                    {game.videogame?.logoUrl ? (
+                      <img src={game.videogame.logoUrl} alt={game.videogame.name} className="w-8 h-8 object-contain rounded" />
+                    ) : (
+                      <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
+                    )}
                     <h4 className="font-bold text-lg text-center">{game.videogame?.name || "Juego Desconocido"}</h4>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

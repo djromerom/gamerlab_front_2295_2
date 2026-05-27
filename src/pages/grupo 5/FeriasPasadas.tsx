@@ -4,14 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { useInfiniteCarousel } from "@/hooks/useInfiniteCarousel";
 import {
   fetchEditions,
+  fetchHighlightedGames,
   fetchTestimonials,
   fetchEducationalFocuses,
-  fetchHighlightedGames,
   Edition,
   Testimonial,
   EducationalFocus,
   HighlightedGame
 } from "@/fetchs/editions";
+import { Link } from "react-router-dom";
 
 import {
   Calendar,
@@ -327,7 +328,7 @@ export default function CompetitionInfo() {
     const loadEditions = async () => {
       try {
         const editions = await fetchEditions();
-        const pastEditions = editions.filter(e => !e.isActive);
+        const pastEditions = editions.filter(e => e.status !== 'ACTIVE');
         setEditionsList(pastEditions);
         if (pastEditions.length > 0) setEdicionSeleccionada(pastEditions[0]);
       } catch (error) {
@@ -532,10 +533,10 @@ export default function CompetitionInfo() {
                             className="bg-[#110D20] p-4 rounded-lg max-w-sm w-full"
                           >
                             <div className="flex items-center gap-2 mb-3">
-                              <Shield className="w-5 h-5 text-[#AC7CFF]" />
-                              <h4 className="font-semibold">{enfoque.title}</h4>
+                              <Shield className="w-6 h-6 text-[#AC7CFF]" />
+                              <h4 className="font-bold text-lg">{enfoque.title}</h4>
                             </div>
-                            <p className="text-gray-300 text-sm">{enfoque.description}</p>
+                            <p className="text-gray-300 text-base">{enfoque.description}</p>
                           </div>
                         ))}
                       </div>
@@ -574,28 +575,17 @@ export default function CompetitionInfo() {
               `}
                 </style>
 
-
-                {/* Featured Games */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-[#AC7CFF] text-center">
-                    Mención Honorífica
-                  </h3>
-                  {highlightedGames.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {highlightedGames.map((hg) => (
-                        <div key={hg.videogameId} className="game-card !py-3 !px-4 flex items-center justify-start gap-3">
-                          <Gamepad2 className="w-5 h-5 text-[#AC7CFF] shrink-0" />
-                          <h4 className="font-semibold text-sm md:text-base truncate">{hg.videogame?.name || "Juego"}</h4>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center p-8 border border-dashed border-gray-800 rounded-lg">
-                      <p className="text-gray-400">
-                        No hay menciones honoríficas registradas para esta edición.
-                      </p>
-                    </div>
-                  )}
+                <div className="flex justify-center mt-12 mb-8">
+                  <div className="relative gradient-border gradient-border-purple inline-block p-[2px]">
+                    <div className="gradient-border-inner" style={{ borderRadius: '6px' }}></div>
+                    <Link
+                      to={`/ediciones-pasadas/${edicionSeleccionada.id}/juegos`}
+                      className="group relative z-10 flex items-center gap-2 px-10 py-4 text-lg bg-[#0d0f14] hover:bg-[#110D20] hover:shadow-[0_0_20px_rgba(172,124,255,0.3)] text-white font-bold rounded-md transition-all duration-300"
+                    >
+                      Ver Proyectos de la Edición
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-[#AC7CFF]" />
+                    </Link>
+                  </div>
                 </div>
               </>
             )}
