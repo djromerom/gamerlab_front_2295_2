@@ -19,12 +19,14 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+import EditionsManagementPage from "@/pages/grupo 9/EditionsManagementPage";
 
 import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 
 import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+import RealtimeTrackingPanel from "@/pages/grupo 12/RealtimeTrackingPanel";
 
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
@@ -35,6 +37,7 @@ import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import HistoricalVideogamesPage from "@/pages/grupo 5/HistoricalVideogamesPage";
 
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
@@ -42,6 +45,7 @@ import GradedPage from "@/pages/grupo 8/GradedPage";
 import SchoolRate from "@/pages/grupo 8/SchoolRate";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
+import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
 
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
