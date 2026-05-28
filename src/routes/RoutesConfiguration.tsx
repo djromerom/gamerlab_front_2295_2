@@ -1,56 +1,57 @@
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
+import React, { JSX } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { JuradosAssignment } from "@/pages/JuradosAssignment";
-import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
-import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
-import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
-import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
-import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
-import JuryPage from "@/pages/grupo 11/JuryPage";
-import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
-import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
-import CreditsPage from "@/pages/grupo 5/CreditsPage";
-import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
-import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
-import HistoricalVideogamesPage from "@/pages/grupo 5/HistoricalVideogamesPage";
-import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
-import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
-import InformationPage from "@/pages/grupo 5/InformationPage";
-import LandingPage from "@/pages/grupo 5/LandingPage";
-import RankingPage from "@/pages/grupo 5/RankingPage";
-import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
-import GradedPage from "@/pages/grupo 8/GradedPage";
-import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
-import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
-import RatePage from "@/pages/grupo 8/RatePage";
-import GradedPage from "@/pages/grupo 8/GradedPage";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+
+import LoginPage from "@/pages/grupo 9/LoginPage";
+import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
+import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
+import HomePage from "@/pages/grupo 9/HomePage";
+import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
+import CriteriaPage from "@/pages/grupo 9/CriterionPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
+import ResetPassword from "@/pages/grupo 9/ResetPassword";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
+import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+
+import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
+import JuryPage from "@/pages/grupo 11/JuryPage";
+import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
+
+import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+
+import LandingPage from "@/pages/grupo 5/LandingPage";
+import RankingPage from "@/pages/grupo 5/RankingPage";
+import InformationPage from "@/pages/grupo 5/InformationPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
-import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
-import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
-import HomePage from "@/pages/grupo 9/HomePage";
-import LoginPage from "@/pages/grupo 9/LoginPage";
-import NrcsPage from "@/pages/grupo 9/NrcsPage";
-import ResetPassword from "@/pages/grupo 9/ResetPassword";
-import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
-import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
-import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
-import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+
+import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
+import RatePage from "@/pages/grupo 8/RatePage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
+import SchoolRate from "@/pages/grupo 8/SchoolRate";
+import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
+import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
+
+import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+
 import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
 import VideogamesPage from "@/pages/teams/VideogamesPage";
-import React, { JSX } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+
+import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
+
+import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
+import { JuradosAssignment } from "@/pages/JuradosAssignment";
 
 type Role =
   | "Profesor"
