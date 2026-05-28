@@ -83,7 +83,7 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: UniversityIcon
         },
         {
-          name: "Colegios por Evaluar",
+          name: "Equipos por Evaluar",
           url: "/colegios-calificar",
           icon: Book
         },

@@ -236,17 +236,19 @@ function mapJurorFromApi(raw: any, previousJurados: Jurado[]): Jurado {
     avatar:
       existing?.avatar ??
       safeString(raw.avatar ?? raw.photoUrl ?? raw.profilePicture, ""),
+    // [MODIFICADO]: Si el evaluador (ej. profesor) no tiene tipo ni categoría, se le asigna OFFICIAL y SENIOR por defecto.
+    // [ANTES]: Terminaba siendo null, lo que impedía que se mostrara en el pool y fuera asignable.
     tipo:
       normalizeJurorType(raw.jurorType) ??
       normalizeJurorType(raw.tipo_jurado) ??
       normalizeJurorType(raw.tipo) ??
       existing?.tipo ??
-      null,
+      "OFFICIAL",
     jurorCategory:
       normalizeJurorCategory(raw.jurorCategory) ??
       normalizeJurorCategory(raw.categoria_jurado) ??
       existing?.jurorCategory ??
-      null,
+      "SENIOR",
     lastSignInAt:
       safeString(raw.lastSignInAt ?? raw.lastLogin ?? raw.lastSeen, "") ||
       undefined,
@@ -307,15 +309,18 @@ function mapTeamAssignedJuror(
     name: assignedName || assignedEmail || "Jurado",
     email: assignedEmail,
     avatar: "",
+    // [MODIFICADO]: Si el evaluador asignado (ej. profesor) no tiene tipo ni categoría, se le asigna OFFICIAL y SENIOR.
+    // [ANTES]: Eran null.
     tipo:
       normalizeJurorType(rawAssignedJuror.jurorType) ??
       normalizeJurorType(rawAssignedJuror.tipo_jurado) ??
       normalizeJurorType(rawAssignedJuror.tipo) ??
-      null,
+      "OFFICIAL",
     jurorCategory:
       normalizeJurorCategory(rawAssignedJuror.jurorCategory) ??
       normalizeJurorCategory(rawAssignedJuror.categoria_jurado) ??
-      normalizeJurorCategory(rawAssignedJuror.categoria),
+      normalizeJurorCategory(rawAssignedJuror.categoria) ??
+      "SENIOR",
     evaluatedCount: 0,
     evaluatedGameNames: [],
     unevaluatedCount: 0,
