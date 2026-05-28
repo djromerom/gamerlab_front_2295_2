@@ -80,9 +80,9 @@ const SchoolGradesPage: React.FC = () => {
         throw new Error(errorMsg);
       }
 
-      let dataRespond: PaginatedGames = await res.json();
-      const dataExternal = dataRespond.data.filter(item => item.nrc === "9999");
-      dataRespond.data = dataExternal
+      // [MODIFICADO]: Se eliminó el filtro nrc === "9999" que excluía los equipos universitarios.
+      // Ahora se muestran todos los equipos evaluados, incluyendo universitarios.
+      const dataRespond: PaginatedGames = await res.json();
 
       // Si la página actual está vacía pero no es la primera, retroceder
       if (dataRespond.data.length === 0 && page > 1) {
