@@ -50,6 +50,7 @@ interface Game {
   id: number;
   nombre: string;
   equipo: string;
+  teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   materia: string;
   nrc: string;
   participantes: string[];
@@ -169,6 +170,13 @@ export const PendingGamesGrid: React.FC<
                     <span className="text-muted-foreground">Equipo:</span>{" "}
                     {game.equipo}
                   </p>
+                  {/* [MODIFICACIÓN]: Se extrae y visualiza el último fragmento del código del equipo */}
+                  {game.teamCode && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Código:</span>{" "}
+                      {game.teamCode.split("-").pop() || game.teamCode}
+                    </p>
+                  )}
                   <p className="text-sm">
                     <span className="text-muted-foreground">Materia:</span>{" "}
                     {game.materia}

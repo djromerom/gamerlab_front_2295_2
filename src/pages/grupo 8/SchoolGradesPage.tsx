@@ -9,6 +9,7 @@ interface VideogameDetails {
   videogameName: string;
   logoUrl: string;
   teamName: string;
+  teamCode?: string;
   members: { fullName: string }[];
   nrc: string | null;
   subject: string | null;
@@ -147,6 +148,7 @@ const SchoolGradesPage: React.FC = () => {
       id: game.videogameId,
       nombre: game.videogameName,
       equipo: game.teamName,
+      teamCode: game.teamCode,
       materia: game.subject || "Sin materia",
       nrc: game.nrc || "Sin NRC",
       participantes: game.members.map((member) => member.fullName),
@@ -160,6 +162,7 @@ const SchoolGradesPage: React.FC = () => {
       id: game.videogameId,
       nombre: game.videogameName,
       equipo: game.teamName,
+      teamCode: game.teamCode,
       materia: game.subject || "Sin materia",
       nrc: game.nrc || "Sin NRC",
       participantes: game.members.map((member) => member.fullName),

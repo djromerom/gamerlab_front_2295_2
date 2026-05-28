@@ -45,6 +45,7 @@ interface Game {
   imagen?: string;
   equipo?: string;
   materia?: string;
+  teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   nrc?: string;
   participantes?: string[];
   descripcion?: string;
@@ -435,6 +436,12 @@ export default function RatePage() {
                       Equipo
                     </p>
                     <p>{game?.equipo || "N/A"}</p>
+                    {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
+                    {game?.teamCode && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Código: {game.teamCode.split('-').pop() || game.teamCode}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
