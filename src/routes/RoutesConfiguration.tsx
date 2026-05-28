@@ -24,6 +24,7 @@ import NrcsPage from "@/pages/grupo 9/NrcsPage";
 import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
 import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
 import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
@@ -196,6 +197,11 @@ const routes: RouteConfig[] = [
   {
     path: "/editar-equipo",
     element: <EditTeamPage />,
+    roles: ["Estudiante"],
+  },
+  {
+    path: "/mis-jurados",
+    element: <MisJuradosPage />,
     roles: ["Estudiante"],
   },
   {
