@@ -19,14 +19,14 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
-import EditionsManagementPage from "@/pages/grupo 9/EditionsManagementPage";
+import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 
 import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
 
 import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
-import RealtimeTrackingPanel from "@/pages/grupo 12/RealtimeTrackingPanel";
+import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
 
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
