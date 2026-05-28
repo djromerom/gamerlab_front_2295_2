@@ -281,7 +281,9 @@ export default function BatchRatePage() {
   const breadcrumbs =
     fromPage === "colegios"
       ? [
-          { label: "Pendientes (Colegios)", href: "/colegios-calificar" },
+          // [MODIFICADO]: Renombrado para ser consistente con el menú lateral "Equipos por Evaluar".
+          // [ANTES]: "Pendientes (Colegios)"
+          { label: "Equipos por Evaluar", href: "/colegios-calificar" },
           { label: "Calificación en lote", href: "/calificar-lote" },
         ]
       : [
@@ -374,7 +376,8 @@ export default function BatchRatePage() {
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   Equipo: {currentGame.equipo} | Materia: {currentGame.materia}
                   {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
-                  {currentGame.teamCode && ` | Código: ${currentGame.teamCode.split('-').pop() || currentGame.teamCode}`}
+                  {currentGame.teamCode &&
+                    ` | Código: ${currentGame.teamCode.split("-").pop() || currentGame.teamCode}`}
                 </p>
               </CardHeader>
               <CardContent className="px-4 md:px-6">

@@ -83,12 +83,14 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: UniversityIcon
         },
         {
-          name: "Colegios por Evaluar",
+          name: "Equipos por Evaluar",
           url: "/colegios-calificar",
           icon: Book
         },
         {
-          name: "Colegios Evaluados",
+          // [MODIFICADO]: Renombrado para reflejar que ahora se evalúan también equipos universitarios.
+          // [ANTES]: "Colegios Evaluados"
+          name: "Equipos Evaluados",
           url: "/colegios-evaluados",
           icon: BookCheck
         },
