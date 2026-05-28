@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CloudUpload, X } from "lucide-react";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFormContext } from "react-hook-form";
@@ -240,6 +241,34 @@ export default function LinksStep() {
                 />
               </div>
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="dataConsent"
+        render={({ field }) => (
+          <FormItem className="flex flex-col space-y-2 rounded-lg border-2 border-violet-500/50 bg-violet-500/10 p-5 shadow-sm mt-8 transition-colors hover:border-violet-500">
+            <div className="flex flex-row items-start space-x-3">
+              <label htmlFor="dataConsent-box" className="cursor-pointer mt-1 flex items-center justify-center">
+                <Checkbox
+                  id="dataConsent-box"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="cursor-pointer"
+                />
+              </label>
+              <div className="space-y-1 leading-none">
+                <FormLabel htmlFor="dataConsent-box" className="text-base cursor-pointer">
+                  Tratamiento de datos personales
+                </FormLabel>
+                <FormDescription className="text-sm text-gray-300">
+                  Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y la política de privacidad de la Universidad.
+                </FormDescription>
+              </div>
+            </div>
             <FormMessage />
           </FormItem>
         )}

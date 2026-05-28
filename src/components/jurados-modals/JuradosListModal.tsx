@@ -25,10 +25,11 @@ interface JuradosListModalProps {
   onOpenJurorMenuIdChange: (id: string | null) => void;
   isSubmitting: boolean;
   onClose: () => void;
-  onExportCsv: () => void;
+  onExport: () => void;
   onOpenCreateJuror: () => void;
   onEditJuror: (jurado: Jurado) => void;
   onResendConfirmation: (email: string) => void;
+  onSendJuradoCert: (jurado: Jurado) => void;
   onRemoveTeamsFromJuror: (jurorId: string, jurorName: string) => void;
   onToggleJurorType: (jurado: Jurado) => void;
   onDeleteJuror: (jurorId: string, jurorName: string) => void;
@@ -42,10 +43,11 @@ export function JuradosListModal({
   onOpenJurorMenuIdChange,
   isSubmitting,
   onClose,
-  onExportCsv,
+  onExport,
   onOpenCreateJuror,
   onEditJuror,
   onResendConfirmation,
+  onSendJuradoCert,
   onRemoveTeamsFromJuror,
   onToggleJurorType,
   onDeleteJuror,
@@ -88,7 +90,7 @@ export function JuradosListModal({
             </div>
 
             <button
-              onClick={onExportCsv}
+              onClick={onExport}
               disabled={isSubmitting}
               className="h-11 md:h-12 w-11 md:w-12 flex-shrink-0 rounded-xl border border-border bg-card hover:bg-accent flex items-center justify-center disabled:opacity-50"
               title="Descargar"
@@ -125,6 +127,9 @@ export function JuradosListModal({
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Último ingreso: {formatDate(jurado.lastSignInAt)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Estado confirmación: {(jurado.confirmationStatusId === 1) ? "CONFIRMADO" : "PENDIENTE"}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Tipo: {getJurorTypeLabel(jurado.tipo)} · Categoría: {getJurorCategoryLabel(jurado.jurorCategory)}
@@ -192,7 +197,14 @@ export function JuradosListModal({
                           onClick={() => void onResendConfirmation(jurado.email)}
                           className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                         >
-                          Reenviar correo
+                          Reenviar correo de confirmación
+                        </button>
+
+                        <button
+                          onClick={() => void onSendJuradoCert(jurado)}
+                          className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                        >
+                          Enviar certificado de jurado
                         </button>
 
                         <button

@@ -1,30 +1,8 @@
 "use client";
 
-import Criteriabutton from "@/components/grupo 8/criteriabutton";
-import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
-import { RefreshCw, Loader2 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { Textarea } from "@/components/grupo 8/textarea";
-import LayoutAplication from "@/layouts/LayoutAplication";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +13,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UiCriterion } from "@/types/criterion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCriteria } from "@/hooks/use-criteria";
+import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
+import { UiCriterion } from "@/types/criterion";
+import { Loader2, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Game {
   id: number;
@@ -45,6 +45,7 @@ interface Game {
   imagen?: string;
   equipo?: string;
   materia?: string;
+  teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   nrc?: string;
   participantes?: string[];
   descripcion?: string;
@@ -435,6 +436,12 @@ export default function RatePage() {
                       Equipo
                     </p>
                     <p>{game?.equipo || "N/A"}</p>
+                    {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
+                    {game?.teamCode && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Código: {game.teamCode.split('-').pop() || game.teamCode}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -496,32 +503,32 @@ export default function RatePage() {
                           >
                             {criterion.name} (
                             {(criterion.weight * 100).toFixed(0)}%)
-                            <div className="mt-2 flex items-center gap-10">
+                            <div className="mt-2 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                               <p className="text-xs font-medium text-muted-foreground">
                                 Puntuación:
                               </p>
 
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                value={criterion.score ?? ""}
-                                onFocus={() =>
-                                  handleScoreInputFocus(criterion.id)
-                                }
-                                onChange={(e) =>
-                                  handleScoreInputChange(
-                                    criterion.id,
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder={`0 - ${criterion.maxScore}`}
-                                className="border rounded px-2 py-1 w-24 sm:w-28 bg-transparent text-sm"
-                              />
+                              <div className="flex items-center gap-2 w-full md:w-auto">
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={criterion.score ?? ""}
+                                  onFocus={() =>
+                                    handleScoreInputFocus(criterion.id)
+                                  }
+                                  onChange={(e) =>
+                                    handleScoreInputChange(
+                                      criterion.id,
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder={`0 - ${criterion.maxScore}`}
+                                  className="border rounded px-2 py-1 w-full md:w-24 bg-transparent text-sm"
+                                />
 
-                              <span className="text-sm font-medium">
-                                {Number(criterion.score).toFixed(2) || "—"}
-                              </span>
-                              <div className="sm:ml-auto">
+                                <span className="text-sm font-medium whitespace-nowrap">
+                                  {Number(criterion.score).toFixed(2) || "—"}
+                                </span>
                                 <Criteriabutton
                                   description={getCriterionDescription(
                                     criterion.name,

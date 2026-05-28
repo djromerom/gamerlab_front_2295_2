@@ -35,6 +35,11 @@ export const CombinedSchema = z.object({
   recaptcha: z
     .string()
     .min(1, { message: "La verificación de reCAPTCHA es obligatoria" }),
+  dataConsent: z
+    .boolean()
+    .refine((val) => val === true, {
+      message: "Debe aceptar el tratamiento de datos personales",
+    }),
 });
 
 // Define CombinedFormValues with explicit types to match form expectations
@@ -54,4 +59,5 @@ export type CombinedFormValues = {
   files: File[];
   additionalFiles: File[];
   recaptcha: string;
+  dataConsent: boolean;
 };

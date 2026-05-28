@@ -1,23 +1,29 @@
-import React, { JSX } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
 import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
-import LoginPage from "@/pages/grupo 9/LoginPage";
-import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
-import JuryPage from "@/pages/grupo 11/JuryPage";
+import { useAuth } from "@/contexts/AuthContext";
+import { JuradosAssignment } from "@/pages/JuradosAssignment";
+import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
+import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
+import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
+import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
-import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
-import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
-import VideogamesPage from "@/pages/teams/VideogamesPage";
+import JuryPage from "@/pages/grupo 11/JuryPage";
+import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
+import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
+import HistoricalVideogamesPage from "@/pages/grupo 5/HistoricalVideogamesPage";
+import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import InformationPage from "@/pages/grupo 5/InformationPage";
 import LandingPage from "@/pages/grupo 5/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
-import InformationPage from "@/pages/grupo 5/InformationPage";
-import HomePage from "@/pages/grupo 9/HomePage";
-import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
-import CriteriaPage from "@/pages/grupo 9/CriterionPage";
-import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
-import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
+import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
 import GradedPage from "@/pages/grupo 8/GradedPage";
 import NrcsPage from "@/pages/grupo 9/NrcsPage";
@@ -30,18 +36,21 @@ import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
 import CreditsPage from "@/pages/grupo 5/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
-import ResetPassword from "@/pages/grupo 9/ResetPassword";
-import SchoolRate from "@/pages/grupo 8/SchoolRate";
-import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
-import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
-import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
-import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage.tsx";
+import HomePage from "@/pages/grupo 9/HomePage";
+import LoginPage from "@/pages/grupo 9/LoginPage";
+import NrcsPage from "@/pages/grupo 9/NrcsPage";
+import ResetPassword from "@/pages/grupo 9/ResetPassword";
+import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
+import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
-import { useAuth } from "@/contexts/AuthContext";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
-import { JuradosAssignment } from "@/pages/JuradosAssignment";
+import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
+import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
+import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
+import VideogamesPage from "@/pages/teams/VideogamesPage";
+import React, { JSX } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 type Role =
   | "Profesor"
@@ -68,6 +77,11 @@ const routes: RouteConfig[] = [
     path: "/jurados-assignment",
     element: <JuradosAssignment />,
     roles: ["Administrador"],
+  },
+  {
+    path: "/realtime-tracking-panel",
+    element: <RealtimeTrackingPanel />,
+    roles: ["Administrador", "Profesor"],
   },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
@@ -102,6 +116,10 @@ const routes: RouteConfig[] = [
     element: <FeriasPasadas />,
   },
   {
+    path: "/ediciones-pasadas/:editionId/juegos",
+    element: <HistoricalVideogamesPage />,
+  },
+  {
     path: "/contribuidores",
     element: <CreditsPage />,
   },
@@ -111,7 +129,7 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/OlvidastePassword",
-    element: <ForgetPassword />
+    element: <ForgetPassword />,
   },
   {
     path: "/establecer-contrasena",
@@ -132,6 +150,11 @@ const routes: RouteConfig[] = [
     element: <JuryManagementPage />,
     roles: ["Administrador"],
   },
+  {
+    path: "/gestionar-ediciones",
+    element: <EditionsManagementPage />,
+    roles: ["Administrador"],
+  },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   {
     path: "/equipos-inscritos",
@@ -149,7 +172,11 @@ const routes: RouteConfig[] = [
     element: <RatePage />,
     roles: ["Jurado"],
   },
-
+  {
+    path: "/calificar-lote",
+    element: <BatchRatePage />,
+    roles: ["Jurado", "Profesor"],
+  },
 
   {
     path: "/colegios-calificar",
@@ -163,18 +190,20 @@ const routes: RouteConfig[] = [
   },
   {
     path: "/colegios-evaluados",
-    element: < SchoolGradesPage />,
+    element: <SchoolGradesPage />,
     roles: ["Profesor"],
   },
 
-
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
-
 
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
-  { path: "/tiebreaker", element: <TiebreakerPage />, roles: ["Administrador"] },
+  {
+    path: "/tiebreaker",
+    element: <TiebreakerPage />,
+    roles: ["Administrador"],
+  },
   {
     path: "/profesores",
     element: <ProfessorsPage />,
@@ -217,14 +246,14 @@ const routes: RouteConfig[] = [
   {
     path: "/play-game/:videogameID",
     element: <GamePlayerPage />,
-  }
+  },
 ];
 
 const RoutesConfiguration: React.FC = () => {
   const { loading } = useAuth();
 
   // 5. Evitar "pantallazos" blancos o componentes a medio cargar:
-  // Si el AuthContext aún está verificando la sesión (loading=true), 
+  // Si el AuthContext aún está verificando la sesión (loading=true),
   // mostramos una pantalla de carga elegante antes de procesar las rutas.
   if (loading) {
     return <LoadingScreen text="Cargando experiencia..." />;

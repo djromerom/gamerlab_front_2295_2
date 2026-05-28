@@ -10,7 +10,13 @@ import { Team, TeamStatus } from "@/types/Team";
 import { TeamCard } from "@/components/videogamePage/TeamCard";
 import { Filters } from "@/components/videogamePage/Filters";
 
+import { useLocation } from "react-router-dom";
+
 export default function VideogamesPage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialSearch = searchParams.get("search") || "";
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
@@ -20,7 +26,7 @@ export default function VideogamesPage() {
   }, []);
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [loading, setLoading] = useState(true);
   const [activeTeamType, setActiveTeamType] = useState<string>("all");
   const customFetch = useFetch();
@@ -236,50 +242,27 @@ export default function VideogamesPage() {
       </div>
       <NavBar />
       <div className=" max-w-7xl mx-auto relative z-10 items-center p-4 pb-12 pt-30 text-white">
-        <h1 className="text-4xl font-bold text-center mb-10 text-[#AC7CFF]">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-6 md:mb-10 text-[#AC7CFF]">
           ¡Echa un vistazo a los videojuegos participantes!
         </h1>
 
-        {/* Filtros de tipo de equipo */}
-        <div className="flex justify-center mb-6">
-          <div className="flex gap-3 p-2 bg-black/20 backdrop-blur-sm rounded-xl border border-white/10">
-            <button
-              onClick={() => setActiveTeamType("all")}
-              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "all"
-                ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF] shadow-lg"
-                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-                }`}
-            >
-              Todos ({teams.length})
-            </button>
-            <button
-              onClick={() => setActiveTeamType("uninorte")}
-              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "uninorte"
-                ? "bg-blue-500/20 text-blue-300 border border-blue-400 shadow-lg"
-                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-                }`}
-            >
-              Uninorte ({teams.filter(t => !t.isExternal).length})
-            </button>
-            <button
-              onClick={() => setActiveTeamType("externo")}
-              className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium ${activeTeamType === "externo"
-                ? "bg-green-500/20 text-green-300 border border-green-400 shadow-lg"
-                : "text-gray-300 hover:bg-white/10 hover:text-white border border-transparent"
-                }`}
-            >
-              Externos ({teams.filter(t => t.isExternal).length})
-            </button>
-          </div>
-        </div>
-
-        <Filters onFilter={handleFilter} initialFilter={searchQuery} />
+        <Filters
+          onFilter={handleFilter}
+          initialFilter={searchQuery}
+          activeTeamType={activeTeamType}
+          setActiveTeamType={setActiveTeamType}
+          teamCounts={{
+            total: teams.length,
+            uninorte: teams.filter(t => !t.isExternal).length,
+            externo: teams.filter(t => t.isExternal).length
+          }}
+        />
 
         <div className="relative">
           {loading ? (
             <TeamSkeletonGrid />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 min-[780px]:grid-cols-2 min-[1230px]:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (
                 <TeamCard
                   key={team.id}
