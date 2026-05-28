@@ -11,6 +11,7 @@ interface VideogameDetails {
   videogameName: string;
   logoUrl: string;
   teamName: string;
+  teamCode?: string;
   members: { fullName: string }[];
   nrc: string | null;
   subject: string | null;
@@ -34,6 +35,7 @@ interface SearchResultItem {
   id: number;
   nombre: string;
   equipo: string;
+  teamCode?: string;
   materia: string;
   nrc: string;
   participantes: string[];
@@ -204,6 +206,7 @@ const PendingSchoolGradesPage: React.FC = () => {
           id: game.id,
           nombre: game.nombre,
           equipo: game.equipo,
+          teamCode: game.teamCode,
           materia: game.materia,
           nrc: game.nrc,
           participantes: game.participantes,
@@ -215,6 +218,7 @@ const PendingSchoolGradesPage: React.FC = () => {
           id: videogame.videogameId,
           nombre: videogame.videogameName,
           equipo: videogame.teamName,
+          teamCode: videogame.teamCode,
           materia: videogame.subject || "Sin materia",
           nrc: videogame.nrc || "Sin NRC",
           participantes: videogame.members.map((member) => member.fullName),

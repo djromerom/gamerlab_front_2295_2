@@ -14,6 +14,7 @@ interface BatchGame {
   id: number;
   nombre: string;
   equipo: string;
+  teamCode?: string; // [MODIFICACIÓN]: Agregado código del equipo
   materia: string;
   nrc: string;
   participantes: string[];
@@ -372,6 +373,8 @@ export default function BatchRatePage() {
                 </CardTitle>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   Equipo: {currentGame.equipo} | Materia: {currentGame.materia}
+                  {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
+                  {currentGame.teamCode && ` | Código: ${currentGame.teamCode.split('-').pop() || currentGame.teamCode}`}
                 </p>
               </CardHeader>
               <CardContent className="px-4 md:px-6">
