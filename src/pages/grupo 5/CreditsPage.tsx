@@ -17,310 +17,14 @@ import {
   Calendar,
   PcCase,
   Container,
-
+  Filter,
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { developers, departments, technologies, projectStats } from "@/data/contributorsData";
 
-// Estilos para el borde luminoso mejorado
-const glowStyles = `
-  @property --angle{
-    syntax: "<angle>";
-    initial-value: 0deg;
-    inherits: false;
-  }
-
-  @keyframes spin{
-    from{
-      --angle: 0deg;
-    }
-    to{
-      --angle: 360deg;
-    }
-  }
-
-  .gradient-border {
-    position: relative;
-    z-index: 0;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .gradient-border::after, .gradient-border::before{
-    content: '';
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    background-image: conic-gradient(from var(--angle), #ff4545, #00ff99, #006aff, #ff0095, #ff4545);
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%;
-    z-index: -1;
-    border-radius: 8px;
-    animation: 3s spin linear infinite;
-  }
-  
-  .gradient-border::before{
-    filter: blur(1.5rem);
-    opacity: 0.5;
-  }
-
-  .gradient-border-inner {
-    position: absolute;
-    inset: 3px;
-    background: #060312;
-    border-radius: 6px;
-    z-index: 1;
-  }
-
-  .gradient-border-purple::after, .gradient-border-purple::before {
-    background-image: conic-gradient(
-      from var(--angle),
-      #6A0DAD,
-      #8E2DE2,
-      #A55EEA,
-      #C084FC,
-      #3C1361,
-      #6A0DAD
-    );
-  }
-
-  .info-card {
-    backdrop-filter: blur(8px);
-    background-color: rgba(6, 3, 18, 0.7);
-    border-radius: 8px;
-    padding: 1.5rem;
-    height: 100%;
-  }
-
-  .dev-card {
-    background-color: rgba(17, 13, 32, 0.7);
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    height: 100%;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .dev-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(172, 124, 255, 0.2);
-  }
-
-  .dev-card-content {
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .dev-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, #AC7CFF, #8E2DE2);
-  }
-
-  .dev-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background-color: rgba(172, 124, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    border: 2px solid #AC7CFF;
-    overflow: hidden;
-  }
-
-  .social-link {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    background-color: rgba(172, 124, 255, 0.1);
-    color: #AC7CFF;
-    transition: all 0.3s ease;
-    font-size: 0.875rem;
-  }
-
-  .social-link:hover {
-    background-color: rgba(172, 124, 255, 0.2);
-  }
-
-  .skill-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    background-color: rgba(172, 124, 255, 0.1);
-    color: #AC7CFF;
-    font-size: 0.75rem;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .team-carousel {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-  }
-
-  .team-carousel-inner {
-    display: flex;
-    transition: transform 0.5s ease;
-  }
-
-  .team-carousel-item {
-    min-width: 100%;
-    position: relative;
-  }
-
-  .team-carousel-control {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    background: rgba(6, 3, 18, 0.7);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    border: 1px solid rgba(172, 124, 255, 0.3);
-    transition: all 0.3s ease;
-  }
-
-  .team-carousel-control:hover {
-    background: rgba(172, 124, 255, 0.2);
-  }
-
-  .team-carousel-control-prev {
-    left: 10px;
-  }
-
-  .team-carousel-control-next {
-    right: 10px;
-  }
-
-  .team-carousel-indicators {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    z-index: 10;
-  }
-
-  .team-carousel-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .team-carousel-indicator.active {
-    background: #AC7CFF;
-    transform: scale(1.2);
-  }
-
-  .feature-card {
-    background-color: rgba(17, 13, 32, 0.7);
-    border-radius: 8px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(172, 124, 255, 0.2);
-  }
-
-  .feature-icon {
-    background-color: rgba(172, 124, 255, 0.1);
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-
-  .tech-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    background-color: rgba(172, 124, 255, 0.1);
-    color: white;
-    transition: all 0.3s ease;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .tech-pill:hover {
-    background-color: rgba(172, 124, 255, 0.2);
-  }
-
-  .stats-card {
-    background-color: rgba(17, 13, 32, 0.7);
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-
-  .stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(172, 124, 255, 0.2);
-  }
-
-  .stats-number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: #AC7CFF;
-    margin-bottom: 0.5rem;
-  }
-
-  .department-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    background-color: rgba(172, 124, 255, 0.1);
-    color: white;
-    transition: all 0.3s ease;
-    cursor: pointer;
-  }
-
-  .department-badge:hover {
-    background-color: rgba(172, 124, 255, 0.2);
-  }
-
-  .department-badge.active {
-    background-color: #AC7CFF;
-    color: #060312;
-  }
-`;
+import "./CreditsPage.css";
 
 export default function DevelopersCredits() {
   const [currentTeamSlide, setCurrentTeamSlide] = useState(0);
@@ -358,23 +62,26 @@ export default function DevelopersCredits() {
     return () => clearInterval(interval);
   }, []);
 
-  // Inyectar los estilos CSS en el documento
-  useEffect(() => {
-    const styleElement = document.createElement("style");
-    styleElement.innerHTML = glowStyles;
-    document.head.appendChild(styleElement);
-
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
-
 
 
 
 
   const [activeDepartment, setActiveDepartment] = useState<string>("all");
   const [activeVersion, setActiveVersion] = useState<number | "all">("all");
+  
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Función para filtrar desarrolladores por departamento
   const filteredDevelopers =
@@ -417,35 +124,35 @@ export default function DevelopersCredits() {
           <div className="absolute inset-0"></div>
         </div>
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
-          <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
+          <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Arkad</span> - Equipo de Desarrollo
           </h1>
 
           {/* Hero Section */}
-          <div className="w-full max-w-4xl mb-12">
+          <div className="w-full max-w-4xl mb-8 md:mb-12">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8">
-                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
+              <div className="relative z-10 p-5 md:p-8">
+                <h2 className="text-xl md:text-3xl font-bold mb-3 md:mb-4 text-[#AC7CFF]">
                   Conoce a Nuestro Equipo
                 </h2>
-                <p className="text-gray-300 mb-6">
+                <p className="text-sm md:text-base text-gray-300 mb-5 md:mb-6">
                   Detrás de Arkad hay un equipo apasionado de desarrolladores y
                   diseñadores que han trabajado incansablemente para crear esta
                   experiencia digital. Cada miembro ha aportado su experiencia y
                   creatividad para hacer posible este proyecto.
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                    <Users className="w-5 h-5 text-[#AC7CFF]" />
+                <div className="flex flex-wrap gap-2 md:gap-4">
+                  <div className="flex items-center gap-1.5 md:gap-2 bg-[#110D20] px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm">
+                    <Users className="w-4 h-4 md:w-5 md:h-5 text-[#AC7CFF]" />
                     <span>{developers.length} Desarrolladores</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                    <Heart className="w-5 h-5 text-[#AC7CFF]" />
+                  <div className="flex items-center gap-1.5 md:gap-2 bg-[#110D20] px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm">
+                    <Heart className="w-4 h-4 md:w-5 md:h-5 text-[#AC7CFF]" />
                     <span>100% Pasión</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
-                    <Coffee className="w-5 h-5 text-[#AC7CFF]" />
+                  <div className="flex items-center gap-1.5 md:gap-2 bg-[#110D20] px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm">
+                    <Coffee className="w-4 h-4 md:w-5 md:h-5 text-[#AC7CFF]" />
                     <span>Infinitas tazas de café</span>
                   </div>
                 </div>
@@ -454,93 +161,112 @@ export default function DevelopersCredits() {
           </div>
 
           {/* Project Stats */}
-          <div className="w-full max-w-4xl mb-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="w-full max-w-4xl mb-6 md:mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
               {projectStats.map((stat, index) => (
-                <div key={index} className="stats-card">
-                  <div className="flex justify-center mb-3">{stat.icon}</div>
-                  <div className="stats-number">{stat.value}</div>
-                  <div className="text-gray-300">{stat.label}</div>
+                <div key={index} className="stats-card p-2 md:p-6 flex flex-col justify-center">
+                  <div className="flex justify-center mb-1 md:mb-3 transform scale-75 md:scale-100">{stat.icon}</div>
+                  <div className="stats-number text-2xl md:text-4xl mb-0.5 md:mb-2 leading-none">{stat.value}</div>
+                  <div className="text-gray-300 text-[10px] md:text-sm leading-tight">{stat.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Team Section */}
-          <div className="w-full max-w-4xl mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <Users className="w-6 h-6 text-[#AC7CFF]" />
-              <h2 className="text-2xl font-bold">Nuestro Equipo</h2>
-            </div>
-
-            {/* Version selector (prominent) */}
-            <div className="w-full max-w-4xl mb-4">
-              <div className="bg-[#110D20] p-3 rounded-lg flex flex-col md:flex-row md:items-center gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-gray-300 font-medium mr-1">Versión:</span>
-                  <button
-                    onClick={() => setActiveVersion("all")}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border-2 border-[#AC7CFF]" : "text-gray-300 hover:bg-[#1A1428]"}`}
-                  >
-                    Todas
-                  </button>
-                  <button
-                    onClick={() => setActiveVersion(1)}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 1 ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
-                  >
-                    v1
-                  </button>
-                  <button
-                    onClick={() => setActiveVersion(2)}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 2 ? "bg-green-500/20 text-green-300 border border-green-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
-                  >
-                    v2
-                  </button>
-                  <button
-                    onClick={() => setActiveVersion(3)}
-                    className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm ${activeVersion === 3 ? "bg-yellow-500/20 text-yellow-300 border border-yellow-400" : "text-gray-300 hover:bg-[#1A1428]"}`}
-                  >
-                    v3
-                  </button>
-                </div>
-                <div className="md:ml-auto text-sm text-gray-400 whitespace-nowrap mt-1 md:mt-0">
-                  Total: {developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length} desarrolladores
-                </div>
+          <div className="w-full max-w-4xl mb-6 md:mb-12">
+            <div className="flex flex-nowrap items-center justify-between gap-2 mb-6">
+              <div className="flex items-center gap-2 min-w-0">
+                <Users className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF] shrink-0" />
+                <h2 className="text-xl md:text-2xl font-bold truncate">Nuestro Equipo</h2>
               </div>
-            </div>
-
-            {/* Department Navigation */}
-            <div className="mb-8">
-              <div className="bg-[#110D20] p-2 rounded-lg flex flex-wrap gap-2">
-                <button
-                  onClick={() => setActiveDepartment("all")}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${activeDepartment === "all"
-                    ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                    : "text-gray-300 hover:bg-[#1A1428]"
-                    }`}
-                >
-                  <Globe className="w-5 h-5" />
-                  Todos ({developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length})
-                </button>
-                {departments.filter(dept => getDepartmentCount(dept.id) > 0).map((dept) => (
-                  <button
-                    key={dept.id}
-                    onClick={() => setActiveDepartment(dept.id)}
-                    className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 ${activeDepartment === dept.id
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                      }`}
+              
+              <div className="relative shrink-0" ref={filterDropdownRef}>
+                <div className="relative gradient-border gradient-border-purple flex items-center" style={{ padding: '3px' }}>
+                  <div className="gradient-border-inner" style={{ borderRadius: '6px' }}></div>
+                  <button 
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className="relative z-10 p-2 md:py-2 md:px-4 bg-[#110D20] hover:bg-[#AC7CFF]/20 rounded transition-colors flex items-center gap-2"
                   >
-                    <span
-                      className={`transition-colors ${activeDepartment === dept.id
-                        ? "text-[#060312]"
-                        : "text-[#AC7CFF]"
-                        }`}
-                    ></span>
-                    {dept.icon}
-                    {dept.name} ({getDepartmentCount(dept.id)})
+                    <Filter className="w-5 h-5 text-[#AC7CFF]" />
+                    <span className="hidden md:inline text-sm font-medium">Filtrar</span>
                   </button>
-                ))}
+                </div>
+                
+                {isFilterOpen && (
+                   <div className="absolute right-0 top-full mt-2 p-4 bg-[#0d0f14]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 flex flex-col gap-6 min-w-[300px] transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                      
+                      {/* Version Section */}
+                      <div>
+                        <h4 className="text-[#AC7CFF] text-sm font-bold mb-3 flex justify-between items-center">
+                          <span>Versión</span>
+                          <span className="text-xs text-gray-400 font-normal">
+                            Total: {developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length}
+                          </span>
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setActiveVersion("all")}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${activeVersion === "all" ? "bg-[#AC7CFF] text-[#060312] border border-[#AC7CFF]" : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"}`}
+                          >
+                            Todas
+                          </button>
+                          <button
+                            onClick={() => setActiveVersion(1)}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${activeVersion === 1 ? "bg-blue-500/20 text-blue-300 border border-blue-400" : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"}`}
+                          >
+                            v1
+                          </button>
+                          <button
+                            onClick={() => setActiveVersion(2)}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${activeVersion === 2 ? "bg-green-500/20 text-green-300 border border-green-400" : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"}`}
+                          >
+                            v2
+                          </button>
+                          <button
+                            onClick={() => setActiveVersion(3)}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${activeVersion === 3 ? "bg-yellow-500/20 text-yellow-300 border border-yellow-400" : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"}`}
+                          >
+                            v3
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Department Section */}
+                      <div>
+                        <h4 className="text-[#AC7CFF] text-sm font-bold mb-3">Roles</h4>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => setActiveDepartment("all")}
+                            className={`w-full text-left px-3 py-2 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm ${activeDepartment === "all"
+                              ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                              : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"
+                              }`}
+                          >
+                            <Globe className="w-4 h-4" />
+                            Todos ({developers.filter(d => activeVersion === 'all' ? true : d.version.includes(activeVersion)).length})
+                          </button>
+                          {departments.filter(dept => getDepartmentCount(dept.id) > 0).map((dept) => (
+                            <button
+                              key={dept.id}
+                              onClick={() => setActiveDepartment(dept.id)}
+                              className={`w-full text-left px-3 py-2 cursor-pointer rounded-lg transition-all flex items-center justify-between text-sm ${activeDepartment === dept.id
+                                ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                                : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"
+                                }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={activeDepartment === dept.id ? "text-[#060312]" : "text-[#AC7CFF]"}>{dept.icon}</span>
+                                {dept.name}
+                              </div>
+                              <span className="text-xs opacity-70">({getDepartmentCount(dept.id)})</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                   </div>
+                )}
               </div>
             </div>
 
@@ -560,15 +286,15 @@ export default function DevelopersCredits() {
             )}
 
             {/* Developers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredDevelopers.map((dev) => (
                 <div key={dev.id} className="dev-card">
-                  <div className="dev-card-content">
+                  <div className="dev-card-content p-5 md:p-6">
                     <div className="flex flex-col items-center mb-4">
-                      <h3 className="text-xl font-bold text-center">
+                      <h3 className="text-lg md:text-xl font-bold text-center">
                         {dev.name}
                       </h3>
-                      <p className="text-[#AC7CFF] text-sm mb-2">{dev.role}</p>
+                      <p className="text-[#AC7CFF] text-xs md:text-sm mb-2">{dev.role}</p>
                       {dev.version && dev.version.length > 0 && (
                         <div className="flex gap-2">
                           {dev.version.map((v) => (
@@ -601,7 +327,7 @@ export default function DevelopersCredits() {
           </div>
 
           {/* Technologies Section */}
-          <div className="w-full max-w-4xl mb-12">
+          <div className="w-full max-w-4xl mb-6 md:mb-12">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
@@ -616,42 +342,42 @@ export default function DevelopersCredits() {
                   rápida, interactiva y visualmente atractiva.
                 </p>
 
-                <div className="flex flex-wrap">
+                <div className="flex flex-wrap gap-2 md:gap-3">
                   {technologies.map((tech, index) => (
-                    <div key={index} className="tech-pill">
+                    <div key={index} className="tech-pill text-xs md:text-sm !py-1.5 md:!py-2 !px-3 md:!px-4">
                       {tech.icon}
                       {tech.name}
                     </div>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                  <div className="feature-card">
-                    <div className="feature-icon">
-                      <Rocket className="w-6 h-6 text-[#AC7CFF]" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mt-6 md:mt-8">
+                  <div className="feature-card p-4 md:p-6">
+                    <div className="feature-icon w-10 h-10 md:w-12 md:h-12 mb-3 md:mb-4">
+                      <Rocket className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF]" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Rendimiento</h3>
-                    <p className="text-gray-300">
+                    <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2">Rendimiento</h3>
+                    <p className="text-gray-300 text-xs md:text-sm">
                       Optimizado para cargar rápidamente y ofrecer una
                       experiencia fluida en todos los dispositivos.
                     </p>
                   </div>
-                  <div className="feature-card">
-                    <div className="feature-icon">
-                      <Palette className="w-6 h-6 text-[#AC7CFF]" />
+                  <div className="feature-card p-4 md:p-6">
+                    <div className="feature-icon w-10 h-10 md:w-12 md:h-12 mb-3 md:mb-4">
+                      <Palette className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF]" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Diseño</h3>
-                    <p className="text-gray-300">
+                    <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2">Diseño</h3>
+                    <p className="text-gray-300 text-xs md:text-sm">
                       Interfaz moderna con animaciones sutiles y una estética
                       futurista que refleja el espíritu gamer.
                     </p>
                   </div>
-                  <div className="feature-card">
-                    <div className="feature-icon">
-                      <Sparkles className="w-6 h-6 text-[#AC7CFF]" />
+                  <div className="feature-card p-4 md:p-6">
+                    <div className="feature-icon w-10 h-10 md:w-12 md:h-12 mb-3 md:mb-4">
+                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF]" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Experiencia</h3>
-                    <p className="text-gray-300">
+                    <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2">Experiencia</h3>
+                    <p className="text-gray-300 text-xs md:text-sm">
                       Navegación intuitiva y contenido interactivo para mantener
                       a los usuarios comprometidos.
                     </p>
@@ -662,7 +388,7 @@ export default function DevelopersCredits() {
           </div>
 
           {/* Acknowledgments Section */}
-          <div className="w-full max-w-4xl mb-12">
+          <div className="w-full max-w-4xl mb-6 md:mb-12">
             <div className="relative gradient-border gradient-border-purple p-0">
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
@@ -745,7 +471,7 @@ export default function DevelopersCredits() {
               equipo de Arkad
             </p>
             <p className="text-gray-400 text-sm">
-              © 2025 Arkad. Todos los derechos reservados.
+              © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
           <TextSizeControls />

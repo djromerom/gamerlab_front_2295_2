@@ -1,5 +1,5 @@
 "use client";
-import { useEffect} from "react";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   Palette,
@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
+import { Link } from "react-router-dom";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -236,6 +238,10 @@ const glowStyles = `
 `;
 
 export default function CompetitionInfo() {
+  const [activeEdition, setActiveEdition] = useState<Edition | null>(null);
+  const [highlightedGames, setHighlightedGames] = useState<HighlightedGame[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast");
     document.documentElement.classList.add("dark");
@@ -244,6 +250,25 @@ export default function CompetitionInfo() {
     };
   }, []);
 
+  useEffect(() => {
+    const loadActiveEdition = async () => {
+      try {
+        setLoading(true);
+        const editions = await fetchEditions();
+        const active = editions.find((e) => e.status === 'ACTIVE');
+        if (active) {
+          setActiveEdition(active);
+          const games = await fetchHighlightedGames(active.id);
+          setHighlightedGames(games);
+        }
+      } catch (error) {
+        console.error("Error loading active edition:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadActiveEdition();
+  }, []);
 
   // Inyectar los estilos CSS en el documento
   useEffect(() => {
@@ -256,7 +281,35 @@ export default function CompetitionInfo() {
     };
   }, []);
 
- 
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return "Por Definir";
+    try {
+      const date = new Date(isoString);
+      const formatted = new Intl.DateTimeFormat('es-ES', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long' 
+      }).format(date);
+      return formatted.replace(',', '').replace(/^\w/, c => c.toUpperCase());
+    } catch {
+      return "Fecha Inválida";
+    }
+  };
+
+  const formatTime = (isoString?: string) => {
+    if (!isoString) return "--:--";
+    try {
+      const date = new Date(isoString);
+      return new Intl.DateTimeFormat('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }).format(date).toLowerCase();
+    } catch {
+      return "--:--";
+    }
+  };
+
   return (
     <>
       <NavBar />
@@ -268,9 +321,9 @@ export default function CompetitionInfo() {
           <div className="absolute inset-0"></div>
         </div>
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
-          <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
-            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span> -
-            Edición 2025-30
+          <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
+            <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
+            <span className="block sm:inline"> - {activeEdition ? `Edición ${activeEdition.year}-${activeEdition.semester === 10 ? '1' : activeEdition.semester === 30 ? '2' : activeEdition.semester}` : "Edición Actual"}</span>
           </h1>
 
           {/* Hero Section */}
@@ -279,10 +332,11 @@ export default function CompetitionInfo() {
               <div className="gradient-border-inner"></div>
               <div className="relative z-10 p-6 md:p-8">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#AC7CFF]">
-                  ¡Bienvenidos a la Feria Gamer Uninorte 2025-30!
+                  {activeEdition?.title || "¡Bienvenidos a la Feria Gamer Uninorte!"}
                 </h2>
-                <p className="text-gray-300 mb-6">
-                  Este es un evento académico y experiencial donde los
+                <p className="text-gray-300 mb-8 text-sm md:text-base leading-relaxed">
+                  {activeEdition?.description ||
+                    `Este es un evento académico y experiencial donde los
                   estudiantes del programa de Ingeniería de Sistemas de la
                   Universidad del Norte, desde primer hasta cuarto semestre,
                   presentan al público general los videojuegos que han
@@ -291,20 +345,20 @@ export default function CompetitionInfo() {
                   universitarios, sino que también invita a estudiantes de
                   colegio a participar, interactuar y conocer de cerca el
                   proceso de creación de videojuegos, fomentando así el interés
-                  por la tecnología, la programación y el diseño interactivo.
+                  por la tecnología, la programación y el diseño interactivo.`}
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                <div className="flex flex-col sm:flex-row flex-wrap items-start gap-4 sm:gap-6 text-gray-300">
+                  <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>Por Definir</span>
+                    <span className="text-sm md:text-base font-medium">{formatDate(activeEdition?.startsAt)}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                  <div className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>Campus Uninorte</span>
+                    <span className="text-sm md:text-base font-medium">Campus Uninorte</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-[#110D20] px-4 py-2 rounded-full">
+                  <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#AC7CFF]" />
-                    <span>+400 Participantes</span>
+                    <span className="text-sm md:text-base font-medium">+400 Participantes</span>
                   </div>
                 </div>
               </div>
@@ -312,56 +366,32 @@ export default function CompetitionInfo() {
           </div>
 
           {/* Information Cards */}
-          <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="w-full max-w-4xl flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-5">
             {/* Card 1 - Tematica */}
-            <div className="info-card">
+            <div className="info-card md:col-span-2 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-full bg-[#110D20]">
                   <Palette className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
                 <h3 className="text-xl font-bold">Temática</h3>
               </div>
-              <p className="text-gray-300 mb-4">
-                Este año, la feria gamer se enfoca en el poder de los
-                videojuegos para promover la ciberseguridad y la protección digital.
-                Bajo el lema “Juega Seguro, Navega Seguro”, los videojuegos estarán 
-                inspirados en la concientización sobre la seguridad en línea, el uso 
-                responsable de la tecnología y la importancia de proteger la información
-                 en el mundo digital.
+              <p className="text-gray-300 mb-2 whitespace-pre-line text-sm md:text-base leading-relaxed">
+                {activeEdition?.description2 || "Nuevas temáticas e innovadores videojuegos te esperan en esta edición."}
               </p>
             </div>
 
-            {/* Card 2 - Horarios */}
-            <div className="info-card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-full bg-[#110D20]">
-                  <Clock className="w-6 h-6 text-[#AC7CFF]" />
-                </div>
-                <h3 className="text-xl font-bold">Horarios</h3>
-              </div>
-              <div className="space-y-3 text-gray-300">
-                <div>
-                  <h4 className="font-semibold text-white">
-                    Jornada AM - Jueves 27 de Noviembre
-                  </h4>
-                  <p>08:30 a.m. - 12:30 p.m.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3 - Actividades */}
-            <div className="info-card">
+            {/* Card 2 - Actividades */}
+            <div className="info-card md:col-span-1 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-full bg-[#110D20]">
                   <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
                 <h3 className="text-xl font-bold">Actividades</h3>
               </div>
-              <p className="text-gray-300 mb-4">
-                Disfruta de múltiples actividades durante el día del
-                evento:
+              <p className="text-gray-300 mb-3 text-sm">
+                Disfruta de múltiples actividades durante el día del evento:
               </p>
-              <ul className="space-y-2 text-gray-300">
+              <ul className="space-y-2 text-gray-300 text-sm">
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#AC7CFF]"></div>
                   <span>Zona de realidad virtual</span>
@@ -376,34 +406,59 @@ export default function CompetitionInfo() {
                 </li>
               </ul>
             </div>
-          </div>
 
-
-
-          {/* Registration Section */}
-          {/* <div className="w-full max-w-4xl mt-16">
-            <div className="relative gradient-border gradient-border-purple p-0">
-              <div className="gradient-border-inner"></div>
-              <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2 text-[#AC7CFF]">
-                    ¿Quieres participar?
-                  </h2>
-                  <p className="text-gray-300 max-w-md">
-                    Regístrate ahora para asegurar el lugar de tu equipo en la
-                    feria.
-                  </p>
+            {/* Card 3 - Horarios */}
+            <div className="info-card md:col-span-3 !h-auto !p-4 md:!p-5 flex flex-col md:flex-row items-start md:items-center justify-between">
+              <div className="flex items-center gap-3 mb-3 md:mb-0">
+                <div className="p-2 rounded-full bg-[#110D20]">
+                  <Clock className="w-6 h-6 text-[#AC7CFF]" />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/registro-equipo">
-                    <button className="px-6 py-3 bg-[#AC7CFF] hover:bg-[#ba93fe] text-[#060312] font-medium rounded-lg transition-colors cursor-pointer">
-                      Registrarse
-                    </button>
-                  </Link>
-                </div>
+                <h3 className="text-xl font-bold">Horarios</h3>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 w-full md:w-auto pl-11 md:pl-0">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="font-semibold text-white text-sm md:text-base">
+                      {formatDate(activeEdition?.startsAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-[#AC7CFF] text-sm md:text-base font-medium">
+                      {formatTime(activeEdition?.startsAt)} - {formatTime(activeEdition?.endsAt)}
+                    </span>
+                  </div>
               </div>
             </div>
-          </div> */}
+          </div>
+
+          {/* Highlighted Games Section */}
+          <div className="w-full max-w-4xl mt-12 mb-4">
+            <h3 className="text-2xl font-bold mb-6 text-[#AC7CFF] text-center">
+              Juegos Destacados de esta Edición
+            </h3>
+
+            {!loading && highlightedGames.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {highlightedGames.map((game) => (
+                  <Link to={`/equipos?search=${encodeURIComponent(game.videogame?.name || "")}`} key={game.videogameId} className="game-card flex items-center justify-center gap-3 py-6 hover:scale-105 transition-transform cursor-pointer">
+                    {game.videogame?.logoUrl ? (
+                      <img src={game.videogame.logoUrl} alt={game.videogame.name} className="w-8 h-8 object-contain rounded" />
+                    ) : (
+                      <Gamepad2 className="w-6 h-6 text-[#AC7CFF]" />
+                    )}
+                    <h4 className="font-bold text-lg text-center">{game.videogame?.name || "Juego Desconocido"}</h4>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-8 border border-dashed border-gray-800 rounded-lg">
+                <p className="text-gray-400">
+                  {loading ? "Cargando juegos destacados..." : "Los juegos destacados serán anunciados próximamente."}
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">
@@ -417,11 +472,11 @@ export default function CompetitionInfo() {
               </p>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2025 Arkad. Todos los derechos reservados.
+              © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
           <TextSizeControls />
-          
+
         </div>
       </div>
     </>

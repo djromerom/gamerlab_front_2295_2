@@ -42,6 +42,7 @@ import { AllTeamsModal } from "@/components/jurados-modals/AllTeamsModal";
 import { AuditModal } from "@/components/jurados-modals/AuditModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
+import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -235,17 +236,19 @@ function mapJurorFromApi(raw: any, previousJurados: Jurado[]): Jurado {
     avatar:
       existing?.avatar ??
       safeString(raw.avatar ?? raw.photoUrl ?? raw.profilePicture, ""),
+    // [MODIFICADO]: Si el evaluador (ej. profesor) no tiene tipo ni categoría, se le asigna OFFICIAL y SENIOR por defecto.
+    // [ANTES]: Terminaba siendo null, lo que impedía que se mostrara en el pool y fuera asignable.
     tipo:
       normalizeJurorType(raw.jurorType) ??
       normalizeJurorType(raw.tipo_jurado) ??
       normalizeJurorType(raw.tipo) ??
       existing?.tipo ??
-      null,
+      "OFFICIAL",
     jurorCategory:
       normalizeJurorCategory(raw.jurorCategory) ??
       normalizeJurorCategory(raw.categoria_jurado) ??
       existing?.jurorCategory ??
-      null,
+      "SENIOR",
     lastSignInAt:
       safeString(raw.lastSignInAt ?? raw.lastLogin ?? raw.lastSeen, "") ||
       undefined,
@@ -306,15 +309,18 @@ function mapTeamAssignedJuror(
     name: assignedName || assignedEmail || "Jurado",
     email: assignedEmail,
     avatar: "",
+    // [MODIFICADO]: Si el evaluador asignado (ej. profesor) no tiene tipo ni categoría, se le asigna OFFICIAL y SENIOR.
+    // [ANTES]: Eran null.
     tipo:
       normalizeJurorType(rawAssignedJuror.jurorType) ??
       normalizeJurorType(rawAssignedJuror.tipo_jurado) ??
       normalizeJurorType(rawAssignedJuror.tipo) ??
-      null,
+      "OFFICIAL",
     jurorCategory:
       normalizeJurorCategory(rawAssignedJuror.jurorCategory) ??
       normalizeJurorCategory(rawAssignedJuror.categoria_jurado) ??
-      normalizeJurorCategory(rawAssignedJuror.categoria),
+      normalizeJurorCategory(rawAssignedJuror.categoria) ??
+      "SENIOR",
     evaluatedCount: 0,
     evaluatedGameNames: [],
     unevaluatedCount: 0,
@@ -819,18 +825,22 @@ export function JuradosAssignment() {
     }
   }
   const sendAllJurorCerts = async () => {
+    toast.message("Enviando correos, porfavor espere...")
     try {
       setIsSubmitting(true);
       jurados.forEach(async (j) => {
-        await apiRequest('/certificates/juror', {
-          method: "POST",
-          body: JSON.stringify({
-            userId: j.id
+        try {
+          await apiRequest('/certificates/juror', {
+            method: "POST",
+            body: JSON.stringify({
+              userId: j.id
+            })
           })
-        })
-        console.log("Certificado enviado exitosamente a: ", j.email);
+          toast.success(`Correo enviado a: ${j.email}`)
+        } catch (error) {
+          toast.error(`No se pudo enviar el correo a: ${j.email}`);
+        }
       });
-
     } catch (error) {
       console.error(error);
       window.alert(
@@ -866,49 +876,45 @@ export function JuradosAssignment() {
     }
   };
 
-  const exportJurorsToCsv = () => {
-    const headers = [
-      "Nombres",
-      "Apellidos",
-      "Nombre completo",
-      "Correo",
-      "Tipo operativo",
-      "Categoría",
-      "Último ingreso",
-      "Evaluados",
-      "Pendientes",
-    ];
+  const exportJurors = async () => {
+    try {
+      setIsSubmitting(true);
+      const res = await apiRequest("/reports/exportJurados", {
+        method: "GET",
+      });
 
-    const rows = jurados.map((jurado) => [
-      jurado.firstName,
-      jurado.lastName,
-      jurado.name,
-      jurado.email,
-      getJurorTypeLabel(jurado.tipo),
-      getJurorCategoryLabel(jurado.jurorCategory),
-      formatDate(jurado.lastSignInAt),
-      jurado.evaluatedGameNames.join(" | "),
-      jurado.unevaluatedGameNames.join(" | "),
-    ]);
+      // apiRequest returns the parsed JSON by default or response based on implementation. 
+      // Let's verify how apiRequest works.
+      // Usually, if apiRequest returns the response or we can fetch directly:
+      // Let's fetch using direct fetch to get a Blob.
+      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
+      const response = await fetch(endpoint, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
 
-    const csvContent = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-          .join(",")
-      )
-      .join("\n");
+      if (!response.ok) {
+        throw new Error("Error al exportar reporte de jurados");
+      }
 
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "jurados.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `reporte_jurados_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error ? error.message : "No se pudo exportar la lista de jurados."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenCreateJuror = () => {
@@ -1016,6 +1022,23 @@ export function JuradosAssignment() {
       setIsSubmitting(false);
     }
   };
+
+  const handleSendJurorCert = async (jurado: Jurado) => {
+    const lid = toast.loading(`Enviando correo a: ${jurado.email}`);
+    try {
+      await apiRequest('/certificates/juror', {
+        method: "POST",
+        body: JSON.stringify({
+          userId: jurado.id
+        })
+      });
+      toast.success(`Correo enviado a: ${jurado.email}`);
+    } catch (error) {
+      toast.error(`No se pudo enviar el correo a: ${jurado.email}`);
+    } finally {
+      toast.dismiss(lid);
+    }
+  }
 
   const handleResendConfirmation = async (email: string) => {
     try {
@@ -1802,10 +1825,11 @@ export function JuradosAssignment() {
             onOpenJurorMenuIdChange={setOpenJurorMenuId}
             isSubmitting={isSubmitting}
             onClose={() => setShowJuradosListModal(false)}
-            onExportCsv={exportJurorsToCsv}
+            onExport={exportJurors}
             onOpenCreateJuror={handleOpenCreateJuror}
             onEditJuror={handleEditJuror}
             onResendConfirmation={handleResendConfirmation}
+            onSendJuradoCert={handleSendJurorCert}
             onRemoveTeamsFromJuror={handleRemoveTeamsFromJuror}
             onToggleJurorType={toggleJurorType}
             onDeleteJuror={handleDeleteJuror}

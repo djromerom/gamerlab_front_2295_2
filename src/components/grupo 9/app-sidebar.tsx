@@ -14,6 +14,7 @@ import {
   Settings,
   UniversityIcon,
   Trophy,
+  CalendarRange
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -45,6 +46,7 @@ const MENU: Record<Role, MenuItem[]> = {
         // { name: "Ponderado Calificaciones", url: "/ponderado-calificaciones", icon: Sliders  },
         { name: "Criterios de Calificación", url: "/criterios", icon: BookCheck, },
         { name: "Configuración de Evento", url: "/configuracion-evento", icon: Settings },
+        { name: "Ediciones", url: "/gestionar-ediciones", icon: CalendarRange },
         { name: "Tiebreaker", url: "/tiebreaker", icon: Trophy },
       ],
     },
@@ -52,8 +54,9 @@ const MENU: Record<Role, MenuItem[]> = {
       title: "Personal",
       items: [
         { name: "Profesores", url: "/profesores", icon: FileUser },
-        { name: "Jurados", url: "/jurados", icon: Gavel },
+        { name: "Jurados", url: "/jurados", icon: Users },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
+        { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },
   ],
@@ -80,12 +83,14 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: UniversityIcon
         },
         {
-          name: "Colegios por Evaluar",
+          name: "Equipos por Evaluar",
           url: "/colegios-calificar",
           icon: Book
         },
         {
-          name: "Colegios Evaluados",
+          // [MODIFICADO]: Renombrado para reflejar que ahora se evalúan también equipos universitarios.
+          // [ANTES]: "Colegios Evaluados"
+          name: "Equipos Evaluados",
           url: "/colegios-evaluados",
           icon: BookCheck
         },
@@ -101,6 +106,11 @@ const MENU: Record<Role, MenuItem[]> = {
           name: "Mis Calificaciones",
           url: "/mi-equipo",
           icon: LibraryBig,
+        },
+        {
+          name: "Mis Jurados",
+          url: "/mis-jurados",
+          icon: Gavel,
         },
         {
           name: "Editar equipo",

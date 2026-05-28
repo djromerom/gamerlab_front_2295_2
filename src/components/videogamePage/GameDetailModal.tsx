@@ -45,6 +45,14 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
     };
   }, [socket, user, team.videogameId]);
 
+  // Bloquear scroll mientras el modal esté abierto
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
   // Keep the counter in sync with the parent's WebSocket map
   useEffect(() => {
     if (liveCount !== undefined) {
@@ -139,24 +147,24 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
         }} />
       <AnimatePresence>
         <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4 pb-1 md:p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 flex justify-center items-center px-4 pb-4 pt-[80px] md:pt-[96px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-[95%] max-w-5xl h-[85vh] md:h-[600px] max-h-[85vh] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl h-[calc(100dvh-110px)] md:h-[550px] max-h-[calc(100dvh-110px)] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", stiffness: 120, damping: 12 }}
           >
-            {/* Botón X de cerrar - Oculto en móvil */}
+            {/* Botón X de cerrar */}
             <button
               onClick={handleClose}
-              className="cursor-pointer hidden md:block absolute top-4 right-4 text-gray-400 hover:text-white transition z-10"
+              className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-white transition z-50"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
             {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
@@ -194,8 +202,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                       )}
                     </div>
                   </div>
-                  <div className="flex row justify-between gap-3.5">
-                    <h2 className="text-3xl font-bold text-[#AC7CFF] mb-4">
+                  <div className="flex justify-between items-start gap-3.5">
+                    <h2 className="text-2xl md:text-3xl font-bold text-[#AC7CFF] mb-3 md:mb-4">
                       {team.gameName}
                     </h2>
                     {/* Like Button */}
@@ -231,8 +239,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                   </p>
 
                   <div className="mt-2">
-                    <h3 className="text-lg font-semibold text-[#AC7CFF] mb-2">Descripción</h3>
-                    <p className="text-gray-300 text-sm leading-relaxed mb-3">
+                    <h3 className="text-base md:text-lg font-semibold text-[#AC7CFF] mb-1.5 md:mb-2">Descripción</h3>
+                    <p className="text-gray-300 text-xs md:text-sm leading-relaxed mb-3">
                       {team.description || "Sin descripción disponible."}
                     </p>
                   </div>

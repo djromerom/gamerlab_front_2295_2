@@ -37,6 +37,7 @@ export default function MultiStepWizard() {
       files: [] as File[],
       additionalFiles: [] as File[],
       recaptcha: "",
+      dataConsent: false,
     },
   });
 
@@ -60,6 +61,7 @@ export default function MultiStepWizard() {
       files: [] as File[],
       additionalFiles: [] as File[],
       recaptcha: "",
+      dataConsent: false,
     });
   }, []); // Empty dependency array = runs only once on mount
 

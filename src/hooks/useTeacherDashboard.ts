@@ -50,6 +50,8 @@ export function useTeacherDashboard({
     Record<string, any[]>
   >({});
 
+
+
   // Estados de carga (¡Estos se quedan en el asistente!)
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -78,6 +80,14 @@ export function useTeacherDashboard({
         }
 
         const data = await response.json();
+        
+        // Agregar materia virtual para equipos evaluados como jurado
+        data.push({
+          id: "juror_virtual",
+          name: "Evaluaciones como Jurado (Universitarios)",
+          nrcs: []
+        });
+
         setAvailableSubjects(data);
 
         // Extraer todos los NRCs incluidos en cada materia y anexar info de la materia
@@ -318,14 +328,26 @@ export function useTeacherDashboard({
       setNoStudents(false);
 
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
+        let response;
+        if (subject === "Evaluaciones como Jurado (Universitarios)") {
+          response = await fetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/juror-evaluations?page=${page}&limit=${itemsPerPage}`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        } else {
+          response = await fetch(
+            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
 
         toast.dismiss();
 
@@ -435,6 +457,8 @@ export function useTeacherDashboard({
     fetchStudentsBySubject,
   ]);
 
+
+
   // Get current students data
   const getCurrentStudents = () => {
     const cacheKey = selectedNRC
@@ -452,31 +476,29 @@ export function useTeacherDashboard({
   // Agrupar por equipo usando los campos del backend (teamCode, nrc, team, integrantes, etc.)
   const teams = useMemo(() => {
     const map = new Map<string, any>();
+
     students.forEach((s: any) => {
-      // Usar teamCode como clave principal, si no existe usar team o un identificador único
       const teamCode =
-        s.teamCode ??
-        s.team ??
-        s.videogameId ??
-        s.videogame ??
-        `TEAM_${s.nrc ?? ""}_${s.team ?? ""}`;
+        s.teamCode ||
+        s.team ||
+        s.videogameId ||
+        s.videogame ||
+        `TEAM_${s.nrc || ""}_${s.team || ""}`;
       if (!map.has(teamCode)) {
         map.set(teamCode, {
-          teamCode: s.teamCode ?? s.team ?? "-",
-          nrc: s.nrc ?? "-",
-          teamName: s.team ?? "-",
+          teamCode: s.teamCode || s.team || "-",
+          nrc: s.nrc || "-",
+          teamName: s.team || s.teamName || "-",
           integrantes: s.integrantes
             ? s.integrantes.split(",").map((x: any) => x.trim())
             : [],
-          videogame: s.videogame ?? "-",
+          videogame: s.videogame || "-",
           calificacionFeria: s.calificacionFeria ?? null,
           calificacionDocente: s.calificacionDocente ?? null,
           videogameId: s.videogameId ?? null,
-          // Para edición inline, guardar todos los objetos originales
           _rows: [s],
         });
       } else {
-        // Si ya existe el equipo, solo agregamos integrantes adicionales si vienen separados
         const t = map.get(teamCode);
         if (s.integrantes) {
           const nuevos = s.integrantes.split(",").map((x: any) => x.trim());

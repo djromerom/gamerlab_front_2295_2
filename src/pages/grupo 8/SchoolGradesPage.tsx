@@ -9,6 +9,7 @@ interface VideogameDetails {
   videogameName: string;
   logoUrl: string;
   teamName: string;
+  teamCode?: string;
   members: { fullName: string }[];
   nrc: string | null;
   subject: string | null;
@@ -79,9 +80,9 @@ const SchoolGradesPage: React.FC = () => {
         throw new Error(errorMsg);
       }
 
-      let dataRespond: PaginatedGames = await res.json();
-      const dataExternal = dataRespond.data.filter(item => item.nrc === "9999");
-      dataRespond.data = dataExternal
+      // [MODIFICADO]: Se eliminó el filtro nrc === "9999" que excluía los equipos universitarios.
+      // Ahora se muestran todos los equipos evaluados, incluyendo universitarios.
+      const dataRespond: PaginatedGames = await res.json();
 
       // Si la página actual está vacía pero no es la primera, retroceder
       if (dataRespond.data.length === 0 && page > 1) {
@@ -147,6 +148,7 @@ const SchoolGradesPage: React.FC = () => {
       id: game.videogameId,
       nombre: game.videogameName,
       equipo: game.teamName,
+      teamCode: game.teamCode,
       materia: game.subject || "Sin materia",
       nrc: game.nrc || "Sin NRC",
       participantes: game.members.map((member) => member.fullName),
@@ -160,6 +162,7 @@ const SchoolGradesPage: React.FC = () => {
       id: game.videogameId,
       nombre: game.videogameName,
       equipo: game.teamName,
+      teamCode: game.teamCode,
       materia: game.subject || "Sin materia",
       nrc: game.nrc || "Sin NRC",
       participantes: game.members.map((member) => member.fullName),
@@ -199,7 +202,7 @@ const SchoolGradesPage: React.FC = () => {
 
 
           {/* Solo muestra paginación si NO estás en búsqueda */}
-          {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
+          {!searchResults && (gamesData?.metadata?.totalPages ?? 0) > 1 && (
             <div className="flex justify-center items-center gap-4 mt-6 py-6">
               <button
                 className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"

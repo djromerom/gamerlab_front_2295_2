@@ -19,6 +19,10 @@ function Landing(): React.ReactElement {
   const startDate = new Date("2026-05-28T08:00:00")
   const endDate = new Date("2026-05-28T12:00:00")
 
+  // temporary workaround to disable inscriptions (2026-1). It should become an admin setting
+  // To restore registrations, also uncomment route in RoutesConfiguration.tsx
+  const showRegisterButton = false;
+
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
     document.documentElement.classList.add("dark")
@@ -112,40 +116,46 @@ function Landing(): React.ReactElement {
   return (
     <>
       <NavBar />
-      <div className="relative h-dvh bg-[#0d0f14] overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-          style={{ backgroundImage: "url('/background.webp')" }}
-        >
-          <div className="absolute inset-0"></div>
+      <div className="relative min-h-dvh bg-[#0d0f14] overflow-x-hidden">
+        {/* Contenedor del fondo animado para evitar que su movimiento cause scroll */}
+        <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
+          <div
+            className="absolute -inset-12 bg-cover bg-center bg-no-repeat animate-float"
+            style={{ backgroundImage: "url('/background.webp')" }}
+          >
+            <div className="absolute inset-0"></div>
+          </div>
         </div>
 
-        <div className="relative z-10 text-white text-center sm:pt-11 px-4 flex flex-col justify-center items-center min-h-screen">
-          {eventStarted ? (
-            <FairStartedAnnouncement
-              showConfetti={showConfetti}
-              confettiFadingOut={confettiFadingOut}
-              eventEnded={eventEnded}
-            />
-          ) : (
-            <CountdownTimer targetDate={startDate} onCountdownEnd={handleCountdownEnd} />
-          )}
+        <div className="relative z-10 text-white text-center px-4 flex flex-col items-center min-h-dvh">
+          <div className="my-auto flex flex-col items-center justify-center w-full pt-16 pb-24 md:py-16">
+            {eventStarted ? (
+              <FairStartedAnnouncement
+                showConfetti={showConfetti}
+                confettiFadingOut={confettiFadingOut}
+                eventEnded={eventEnded}
+              />
+            ) : (
+              <CountdownTimer targetDate={startDate} onCountdownEnd={handleCountdownEnd} />
+            )}
 
-          <h1 className="md:px-24 font-inter text-3xl md:text-4xl sm:text-5xl xl:text-7xl font-bold">
-            Una exhibición de los mejores videojuegos estudiantiles
-          </h1>
-          <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4">Feria Gamer Uninorte</h2>
-          <p className="text-md md:text-2xl mt-6 max-w-4xl">{getDescriptionText()}</p>
-          <div className="mt-8">
-            {/* See registro-equipo in RoutesConfiguration for an explanation c:
-            <button
-              onClick={() => navigate(getButtonRoute())}
-              disabled={true} //temporary disabled inscriptions through frontend. Re-enable in the future, or make it a setting in the admin dashboard.
-              className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
-            >
-              {getButtonText()}
-            </button>
-            */}
+            <h1 className="md:px-24 font-inter text-3xl md:text-4xl sm:text-5xl xl:text-7xl max-h-[500px]:!text-3xl font-bold">
+              Una exhibición de los mejores videojuegos estudiantiles
+            </h1>
+            <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4 max-h-[500px]:!text-xl">Feria Gamer Uninorte</h2>
+            <p className="text-md md:text-2xl mt-6 max-w-4xl max-h-[500px]:!text-base">{getDescriptionText()}</p>
+            <div className="mt-8">
+              
+              {/* See registro-equipo in RoutesConfiguration for an explanation c:
+              showRegisterButton && (
+                <button
+                  onClick={() => navigate(getButtonRoute())}
+                  className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
+                >
+                  {getButtonText()}
+                </button>
+              )*/}
+            </div>
           </div>
           <TextSizeControls />
           <DiscordButton discordUrl={discordSupportUrl} />

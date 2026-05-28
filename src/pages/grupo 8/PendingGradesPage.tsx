@@ -1,16 +1,25 @@
-import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
-import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
-import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
+import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import LayoutAplication from "@/layouts/LayoutAplication";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface VideogameDetails {
   videogameId: number;
   videogameName: string;
   logoUrl: string;
   teamName: string;
+  teamCode?: string;
   members: { fullName: string }[];
   nrc: string | null;
   subject: string | null;
@@ -34,6 +43,7 @@ interface SearchResultItem {
   id: number;
   nombre: string;
   equipo: string;
+  teamCode?: string;
   materia: string;
   nrc: string;
   participantes: string[];
@@ -62,11 +72,40 @@ const PendingGradesPage: React.FC = () => {
   // Para búsqueda
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(
+    null,
+  );
 
-  const { canViewJudges } = useGlobalState()
+  // [MODIFICACIÓN]: Estado para selección múltiple de juegos
+  const [selectedGameIds, setSelectedGameIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const navigate = useNavigate();
+
+  const { canViewJudges } = useGlobalState();
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
+
+  // [MODIFICACIÓN]: Alterna la selección de un juego
+  const toggleGameSelection = (gameId: number) => {
+    setSelectedGameIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(gameId)) {
+        newSet.delete(gameId);
+      } else {
+        newSet.add(gameId);
+      }
+      return newSet;
+    });
+  };
+
+  // [MODIFICACIÓN]: Navega a la página de calificación masiva con los juegos seleccionados
+  const handleBatchCalificar = () => {
+    const selectedGames = gamesToShow.filter((game) =>
+      selectedGameIds.has(game.id),
+    );
+    navigate("/calificar-lote", { state: { games: selectedGames } });
+  };
 
   const fetchGames = async (page: number, limit: number) => {
     setIsPageLoading(true);
@@ -79,7 +118,7 @@ const PendingGradesPage: React.FC = () => {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -103,7 +142,8 @@ const PendingGradesPage: React.FC = () => {
       setGamesData(dataRespond);
     } catch (err: any) {
       setError(
-        err.message || "Ocurrió un error desconocido al cargar los juegos pendientes."
+        err.message ||
+          "Ocurrió un error desconocido al cargar los juegos pendientes.",
       );
       setGamesData(null);
     } finally {
@@ -131,7 +171,7 @@ const PendingGradesPage: React.FC = () => {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -148,7 +188,7 @@ const PendingGradesPage: React.FC = () => {
       const data: SearchResults = await res.json();
       setSearchResults(data.data || []);
     } catch (err: any) {
-      console.error('Search error:', err);
+      console.error("Search error:", err);
       setError(err.message || "Error al buscar juegos");
       setSearchResults([]);
     } finally {
@@ -168,51 +208,61 @@ const PendingGradesPage: React.FC = () => {
   };
   // Permission denied
 
-    
-    if (canViewJudges === false) {
-      return (
-        <LayoutAplication breadcrumbs={breadcrumbs}>
-          <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-            <Card className="w-full shadow-sm border">
-              <CardHeader className="p-4 sm:p-6 pb-2">
-                <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Evaluación no Disponible</CardTitle>
-                <CardDescription className="text-xs sm:text-sm text-foreground/50">
-                  <p className="text-sm text-foreground/70">Las actividades de evaluación aún no se encuentran habilitadas para su realización. </p>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <p className="text-foreground/70 text-sm bold">Por favor, espera a que se active el período establecido para este proceso.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </LayoutAplication>
-      )
-    }
+  if (canViewJudges === false) {
+    return (
+      <LayoutAplication breadcrumbs={breadcrumbs}>
+        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <Card className="w-full shadow-sm border">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-lg sm:text-xl font-medium text-foreground">
+                Evaluación no Disponible
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-foreground/50">
+                <p className="text-sm text-foreground/70">
+                  Las actividades de evaluación aún no se encuentran habilitadas
+                  para su realización.{" "}
+                </p>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
+              <p className="text-foreground/70 text-sm bold">
+                Por favor, espera a que se active el período establecido para
+                este proceso.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </LayoutAplication>
+    );
+  }
 
   // Mapeo para el grid - SIMPLIFICADO
-  const gamesToShow = searchResults !== null
-    ? searchResults.map((game) => ({
-      id: game.id,
-      nombre: game.nombre,
-      equipo: game.equipo,
-      materia: game.materia,
-      nrc: game.nrc,
-      participantes: game.participantes,
-      imagen: game.imagen,
-      descripcion: game.descripcion,
-      isEvaluated: game.isEvaluated,
-    }))
-    : gamesData?.data.map((videogame) => ({
-      id: videogame.videogameId,
-      nombre: videogame.videogameName,
-      equipo: videogame.teamName,
-      materia: videogame.subject || "Sin materia",
-      nrc: videogame.nrc || "Sin NRC",
-      participantes: videogame.members.map((member) => member.fullName),
-      imagen: videogame.logoUrl,
-      descripcion: videogame.description || "Sin descripción",
-      isEvaluated: videogame.isEvaluated,
-    })) || [];
+  const gamesToShow =
+    searchResults !== null
+      ? searchResults.map((game) => ({
+          id: game.id,
+          nombre: game.nombre,
+          equipo: game.equipo,
+          teamCode: game.teamCode,
+          materia: game.materia,
+          nrc: game.nrc,
+          participantes: game.participantes,
+          imagen: game.imagen,
+          descripcion: game.descripcion,
+          isEvaluated: game.isEvaluated,
+        }))
+      : gamesData?.data.map((videogame) => ({
+          id: videogame.videogameId,
+          nombre: videogame.videogameName,
+          equipo: videogame.teamName,
+          teamCode: videogame.teamCode,
+          materia: videogame.subject || "Sin materia",
+          nrc: videogame.nrc || "Sin NRC",
+          participantes: videogame.members.map((member) => member.fullName),
+          imagen: videogame.logoUrl,
+          descripcion: videogame.description || "Sin descripción",
+          isEvaluated: videogame.isEvaluated,
+        })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -220,14 +270,17 @@ const PendingGradesPage: React.FC = () => {
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (
         <>
-          {error && !gamesData && error !== "Las evaluaciones no están habilitadas en este momento." && (
-            <div
-              className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
-              role="alert"
-            >
-              <span className="font-medium">Error:</span> {error}
-            </div>
-          )}
+          {error &&
+            !gamesData &&
+            error !==
+              "Las evaluaciones no están habilitadas en este momento." && (
+              <div
+                className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 text-center"
+                role="alert"
+              >
+                <span className="font-medium">Error:</span> {error}
+              </div>
+            )}
           <PendingGamesGrid
             games={gamesToShow}
             showComments={false}
@@ -237,58 +290,81 @@ const PendingGradesPage: React.FC = () => {
             searchQuery={searchQuery}
             key={`page-${gamesData?.metadata.currentPage || 1}`}
             page="/pendientes-calificar"
+            selectedGameIds={selectedGameIds}
+            onToggleSelection={toggleGameSelection}
           />
 
-
-          {/* Solo muestra paginación si NO estás en búsqueda */}
-          {!searchResults && gamesData?.metadata?.totalPages && gamesData.metadata.totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-6 py-6">
-              <button
-                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
-                onClick={() => handlePageChange(gamesData!.metadata!.currentPage - 1)}
-                disabled={gamesData?.metadata?.currentPage === 1}
+          {/* [MODIFICACIÓN]: Botón para calificar múltiples juegos seleccionados */}
+          {selectedGameIds.size > 0 && (
+            <div className="flex justify-center mt-4 mb-2">
+              <Button
+                onClick={handleBatchCalificar}
+                className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] px-6 py-2 rounded-md shadow-lg cursor-pointer"
               >
-                Anterior
-              </button>
-              <span className="font-medium">
-                Página {gamesData?.metadata?.currentPage} de {gamesData?.metadata?.totalPages}
-              </span>
-              <button
-                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
-                onClick={() => handlePageChange(gamesData!.metadata!.currentPage + 1)}
-                disabled={gamesData?.metadata?.currentPage === gamesData?.metadata?.totalPages}
-              >
-                Siguiente
-              </button>
+                Calificar seleccionados ({selectedGameIds.size})
+              </Button>
             </div>
           )}
-          {!isPageLoading &&
-            !error &&
-            gamesToShow.length === 0 && (
-              <div className="p-4 text-center text-lg text-foreground/70">
-                {searchQuery.trim()
-                  ? `No se encontraron resultados para "${searchQuery}"`
-                  : "No se encontraron juegos pendientes por calificar."
-                }
+
+          {/* Solo muestra paginación si NO estás en búsqueda */}
+          {!searchResults &&
+            (gamesData?.metadata?.totalPages ?? 0) > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-6 py-6">
+                <button
+                  className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
+                  onClick={() =>
+                    handlePageChange(gamesData!.metadata!.currentPage - 1)
+                  }
+                  disabled={gamesData?.metadata?.currentPage === 1}
+                >
+                  Anterior
+                </button>
+                <span className="font-medium">
+                  Página {gamesData?.metadata?.currentPage} de{" "}
+                  {gamesData?.metadata?.totalPages}
+                </span>
+                <button
+                  className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50 cursor-pointer"
+                  onClick={() =>
+                    handlePageChange(gamesData!.metadata!.currentPage + 1)
+                  }
+                  disabled={
+                    gamesData?.metadata?.currentPage ===
+                    gamesData?.metadata?.totalPages
+                  }
+                >
+                  Siguiente
+                </button>
               </div>
             )}
-            {error && !gamesData && (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
-                  <svg
-                    className="mx-auto mb-2 w-8 h-8 text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
-                  </svg>
-                  <span className="font-semibold block mb-1">¡Atención!</span>
-                  <span>{error}</span>
-                </div>
+          {!isPageLoading && !error && gamesToShow.length === 0 && (
+            <div className="p-4 text-center text-lg text-foreground/70">
+              {searchQuery.trim()
+                ? `No se encontraron resultados para "${searchQuery}"`
+                : "No se encontraron juegos pendientes por calificar."}
+            </div>
+          )}
+          {error && !gamesData && (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow text-center max-w-md w-full">
+                <svg
+                  className="mx-auto mb-2 w-8 h-8 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"
+                  />
+                </svg>
+                <span className="font-semibold block mb-1">¡Atención!</span>
+                <span>{error}</span>
               </div>
-            )}
+            </div>
+          )}
         </>
       )}
     </LayoutAplication>
