@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TeamRowData, Props, NrcInfo, MateriaInfo } from "./teams-utils";
+import { TeamRowData, NrcInfo, MateriaInfo } from "./teams-utils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
@@ -121,54 +121,11 @@ export const TeamsManagementTable = ({
   }, [teams, externalFilter, debouncedSearchTerm]);
 
   // Counters
-  const totalTeamsCount = teams?.length ?? 0;
-  const uninorteCount = teams?.filter(t => !(t as any)?.isExternal).length ?? 0;
-  const externalCount = teams?.filter(t => (t as any)?.isExternal).length ?? 0;
-
-  const setCliebtPage = useCallback((page: number) => {
-    try {
-      onPageChange(page);
-    } catch { }
-  }, [onPageChange]);
-  const [clientPage, setClientPage] = useState<number>(1);
-
-  const [clientPageSize, setClientPageSize] = useState<number>(paginationMeta.itemsPerPage);
-
-  // FIX: definir categoryFilter, categorizeTeam y datasetForCounts para evitar errores
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
-  const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
-    if ((team as any)?.isExternal) return "Externos";
-    const rawCode: string = (team as any)?.teamCode ?? "";
-    const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
-    switch (prefix) {
-      case "N1": return "sem1";
-      case "N2": return "sem2";
-      case "N3": return "sem3";
-      case "N4": return "sem4";
-      default: return undefined;
-    }
-  };
-  const datasetForCounts = teams ?? [];
-
-  useEffect(() => {
-    setClientPage(1);
-  }, [categoryFilter]);
-
-  const itemsPerPage = clientPageSize;
-  const currentPage = clientPage;
-  const filteredAllTeams =
-    categoryFilter === "all"
-      ? datasetForCounts
-      : datasetForCounts.filter((t) => categorizeTeam(t) === categoryFilter);
-
-  const totalFiltered = filteredAllTeams.length;
-  const clientTotalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
-
-  useEffect(() => {
-    if (currentPage > clientTotalPages) {
-      setClientPage(1);
-    }
-  }, [currentPage, clientTotalPages]);
+  // allTeams trae el total real cuando existe; teams suele venir paginado desde backend.
+  const datasetForCounts = allTeams?.length ? allTeams : teams ?? [];
+  const totalTeamsCount = datasetForCounts.length;
+  const uninorteCount = datasetForCounts.filter(t => !(t as any)?.isExternal).length;
+  const externalCount = datasetForCounts.filter(t => (t as any)?.isExternal).length;
 
   const showLoader = isDataLoading || internalIsLoading;
   const showError = (msg: string) => toast.error(msg);
@@ -897,7 +854,7 @@ export const TeamsManagementTable = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && filteredAllTeams.length === 0 ? (
+            {showLoader && filteredTeamsGlobal.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -922,15 +879,9 @@ export const TeamsManagementTable = ({
               // filtro por tipo + búsqueda
               // apply client-side filter: only all / uninorte / external
               (() => {
-                // APPLY PAGINATION SLICE BASED ON currentPage/itemsPerPage
-                const filteredTeams = filteredTeamsGlobal;
-                const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
-                const currentPage = paginationMeta?.currentPage ?? 1;
-
-                const startIdx = (currentPage - 1) * itemsPerPage;
-                const pageItems = itemsPerPage === 999999
-                  ? filteredTeams
-                  : filteredTeams.slice(startIdx, startIdx + itemsPerPage);
+                // La paginación la controla el backend.
+                // Aquí NO se hace slice porque teams ya representa la página actual.
+                const pageItems = filteredTeamsGlobal;
 
                 if (pageItems.length === 0) {
                   return (
@@ -991,14 +942,7 @@ export const TeamsManagementTable = ({
         {(() => {
           const itemsPerPage = paginationMeta?.itemsPerPage ?? 10;
           const currentPage = paginationMeta?.currentPage ?? 1;
-
-          // Recalcular totalPages según el filtro/búsqueda actual
-          const filteredTeams = filteredTeamsGlobal;
-
-          const totalPages =
-            itemsPerPage === 999999
-              ? filteredTeams.length > 0 ? 1 : 0
-              : Math.ceil(filteredTeams.length / itemsPerPage);
+          const totalPages = paginationMeta?.totalPages ?? 0;
 
           return (
             <div className="flex justify-between items-center p-4 text-sm border-t border-border gap-2">
@@ -1007,12 +951,10 @@ export const TeamsManagementTable = ({
                 <Select
                   value={String(itemsPerPage)}
                   onValueChange={(value) => {
-                    if (value === "all") {
-                      onLimitChange(999999);
-                      try { onPageChange(1); } catch { }
-                    } else {
-                      onLimitChange(parseInt(value, 10));
-                    }
+                    const newLimit = value === "all" ? 999999 : parseInt(value, 10);
+
+                    try { onPageChange(1); } catch { }
+                    onLimitChange(newLimit);
                   }}
                   disabled={showLoader}
                 >
@@ -1257,4 +1199,3 @@ export const TeamsManagementTable = ({
     </div>
   );
 };
-
