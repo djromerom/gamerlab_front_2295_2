@@ -470,7 +470,7 @@ export function JuradosAssignment() {
       setLoadError(null);
 
       const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
-        apiRequest<any>("/juror?includeInactive=false&limit=100&page=1", {
+        apiRequest<any>("/juror?includeInactive=false&limit=300&page=1", {
           method: "GET",
         }),
         apiRequest<any>("/juror/evaluation-tracking", {
