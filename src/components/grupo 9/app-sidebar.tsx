@@ -108,6 +108,11 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
         {
+          name: "Mis Jurados",
+          url: "/mis-jurados",
+          icon: Gavel,
+        },
+        {
           name: "Editar equipo",
           url: "/editar-equipo",
           icon: FileUser,

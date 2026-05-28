@@ -25,10 +25,16 @@ import GradedPage from "@/pages/grupo 8/GradedPage";
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
-import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
-import SchoolRate from "@/pages/grupo 8/SchoolRate";
-import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
-import CriteriaPage from "@/pages/grupo 9/CriterionPage";
+import GradedPage from "@/pages/grupo 8/GradedPage";
+import NrcsPage from "@/pages/grupo 9/NrcsPage";
+import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
+import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
+import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
+import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
+import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
+import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import HomePage from "@/pages/grupo 9/HomePage";
@@ -220,6 +226,11 @@ const routes: RouteConfig[] = [
   {
     path: "/editar-equipo",
     element: <EditTeamPage />,
+    roles: ["Estudiante"],
+  },
+  {
+    path: "/mis-jurados",
+    element: <MisJuradosPage />,
     roles: ["Estudiante"],
   },
   {
