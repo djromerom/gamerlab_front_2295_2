@@ -871,49 +871,45 @@ export function JuradosAssignment() {
     }
   };
 
-  const exportJurorsToCsv = () => {
-    const headers = [
-      "Nombres",
-      "Apellidos",
-      "Nombre completo",
-      "Correo",
-      "Tipo operativo",
-      "Categoría",
-      "Último ingreso",
-      "Evaluados",
-      "Pendientes",
-    ];
+  const exportJurors = async () => {
+    try {
+      setIsSubmitting(true);
+      const res = await apiRequest("/reports/exportJurados", {
+        method: "GET",
+      });
 
-    const rows = jurados.map((jurado) => [
-      jurado.firstName,
-      jurado.lastName,
-      jurado.name,
-      jurado.email,
-      getJurorTypeLabel(jurado.tipo),
-      getJurorCategoryLabel(jurado.jurorCategory),
-      formatDate(jurado.lastSignInAt),
-      jurado.evaluatedGameNames.join(" | "),
-      jurado.unevaluatedGameNames.join(" | "),
-    ]);
+      // apiRequest returns the parsed JSON by default or response based on implementation. 
+      // Let's verify how apiRequest works.
+      // Usually, if apiRequest returns the response or we can fetch directly:
+      // Let's fetch using direct fetch to get a Blob.
+      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
+      const response = await fetch(endpoint, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
 
-    const csvContent = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-          .join(",")
-      )
-      .join("\n");
+      if (!response.ok) {
+        throw new Error("Error al exportar reporte de jurados");
+      }
 
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "jurados.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `reporte_jurados_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error instanceof Error ? error.message : "No se pudo exportar la lista de jurados."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenCreateJuror = () => {
@@ -1807,7 +1803,7 @@ export function JuradosAssignment() {
             onOpenJurorMenuIdChange={setOpenJurorMenuId}
             isSubmitting={isSubmitting}
             onClose={() => setShowJuradosListModal(false)}
-            onExportCsv={exportJurorsToCsv}
+            onExport={exportJurors}
             onOpenCreateJuror={handleOpenCreateJuror}
             onEditJuror={handleEditJuror}
             onResendConfirmation={handleResendConfirmation}
