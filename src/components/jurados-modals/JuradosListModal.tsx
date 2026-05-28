@@ -25,7 +25,7 @@ interface JuradosListModalProps {
   onOpenJurorMenuIdChange: (id: string | null) => void;
   isSubmitting: boolean;
   onClose: () => void;
-  onExportCsv: () => void;
+  onExport: () => void;
   onOpenCreateJuror: () => void;
   onEditJuror: (jurado: Jurado) => void;
   onResendConfirmation: (email: string) => void;
@@ -43,7 +43,7 @@ export function JuradosListModal({
   onOpenJurorMenuIdChange,
   isSubmitting,
   onClose,
-  onExportCsv,
+  onExport,
   onOpenCreateJuror,
   onEditJuror,
   onResendConfirmation,
@@ -90,7 +90,7 @@ export function JuradosListModal({
             </div>
 
             <button
-              onClick={onExportCsv}
+              onClick={onExport}
               disabled={isSubmitting}
               className="h-11 md:h-12 w-11 md:w-12 flex-shrink-0 rounded-xl border border-border bg-card hover:bg-accent flex items-center justify-center disabled:opacity-50"
               title="Descargar"

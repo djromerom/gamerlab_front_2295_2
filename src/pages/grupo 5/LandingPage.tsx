@@ -145,14 +145,16 @@ function Landing(): React.ReactElement {
             <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4 max-h-[500px]:!text-xl">Feria Gamer Uninorte</h2>
             <p className="text-md md:text-2xl mt-6 max-w-4xl max-h-[500px]:!text-base">{getDescriptionText()}</p>
             <div className="mt-8">
-              {showRegisterButton && (
+              
+              {/* See registro-equipo in RoutesConfiguration for an explanation c:
+              showRegisterButton && (
                 <button
                   onClick={() => navigate(getButtonRoute())}
                   className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
                 >
                   {getButtonText()}
                 </button>
-              )}
+              )*/}
             </div>
           </div>
           <TextSizeControls />

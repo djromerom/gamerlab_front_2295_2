@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { HelpCircle } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import Review from "@/components/grupo 5/Review"
+import JudgesGrades from "@/components/grupo 5/JudgesGrades"
 
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
@@ -379,6 +380,7 @@ export default function Scoreboard() {
           </div>
         </CardContent>
       </Card>
+      <JudgesGrades />
       <Review />
     </div>
   )
