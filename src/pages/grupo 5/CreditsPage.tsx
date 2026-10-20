@@ -229,6 +229,12 @@ export default function DevelopersCredits() {
                           >
                             v3
                           </button>
+                          <button
+                            onClick={() => setActiveVersion(4)}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all text-xs font-medium ${activeVersion === 4 ? "bg-red-500/20 text-red-300 border border-red-400" : "bg-[#110D20] text-gray-300 hover:bg-[#1A1428] border border-white/10"}`}
+                          >
+                            v4
+                          </button>
                         </div>
                       </div>
                       
@@ -298,7 +304,7 @@ export default function DevelopersCredits() {
                       {dev.version && dev.version.length > 0 && (
                         <div className="flex gap-2">
                           {dev.version.map((v) => (
-                            <span key={v} className={`px-2 py-0.5 rounded text-xs font-medium ${v === 1 ? "bg-blue-500/20 text-blue-300" : v === 2 ? "bg-green-500/20 text-green-300" : "bg-yellow-500/20 text-yellow-300"}`}>
+                            <span key={v} className={`px-2 py-0.5 rounded text-xs font-medium ${v === 1 ? "bg-blue-500/20 text-blue-300" : v === 2 ? "bg-green-500/20 text-green-300" : v == 3 ? "bg-yellow-500/20 text-yellow-300" : "bg-red-500/20 text-red-300"}`}>
                               v{v}.0
                             </span>
                           ))}
