@@ -26,14 +26,12 @@ import {
   FileSpreadsheet,
   Loader2,
   Save,
-  Upload,
   X,
 } from "lucide-react";
 import { useState } from "react";
 // Tabs removed: single flow Subject -> NRC
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
@@ -58,7 +56,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const defaultNRC = initialNRC || "-";
   // 1. Estados exclusivos de la Interfaz de Usuario (UI)
   const [downloading, setDownloading] = useState(false);
-  const [uploadingGrades, setUploadingGrades] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editedGrade, setEditedGrade] = useState<string>("");
@@ -216,74 +213,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       })
       .finally(() => {
         setDownloadingTemplate(false);
-      });
-  };
-
-  // Upload grading file
-  const uploadGradingFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-    ];
-
-    if (!validTypes.includes(file.type)) {
-      toast.error("Por favor, sube un archivo Excel válido (.xlsx o .xls)");
-      return;
-    }
-
-    setUploadingGrades(true);
-    toast("Subiendo calificaciones...");
-
-    const formData = new FormData();
-    formData.append("file", file);
-    // Nota: subida GLOBAL — no añadimos filtros (nrc/subject) al formData
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
-
-    fetch(endpoint, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          return response.json().then((data) => {
-            throw new Error(data.message || "Error al subir calificaciones");
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        toast.success(
-          `Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`,
-        );
-
-        // Clear all caches to force a global refresh (subida fue global)
-        setFetchedStudentsByNRC({});
-        setFetchedStudentsBySubject({});
-        // Re-fetch current view depending on selection
-        if (selectedNRC && selectedNRC !== "") {
-          fetchStudentsByNRC(selectedNRC, currentPage);
-        } else if (selectedSubject) {
-          fetchStudentsBySubject(selectedSubject, currentPage);
-        }
-
-        // Reset file input
-        event.target.value = "";
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al subir calificaciones: ${error.message || "No se pudo completar la carga"}`,
-        );
-      })
-      .finally(() => {
-        setUploadingGrades(false);
       });
   };
 
@@ -466,43 +395,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </Tooltip>
   );
 
-  // Upload Grades Button
-  const UploadGradesButton = (
-    <div className="relative">
-      <Input
-        id="upload-grades"
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={uploadGradingFile}
-        disabled={uploadingGrades}
-        className="hidden"
-      />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Label htmlFor="upload-grades">
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              disabled={uploadingGrades}
-              asChild
-            >
-              <span>
-                {uploadingGrades ? (
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-1.5" />
-                )}
-                {uploadingGrades ? "Subiendo..." : "Subir"}
-              </span>
-            </Button>
-          </Label>
-        </TooltipTrigger>
-        <TooltipContent side="top">Subir calificaciones (Excel)</TooltipContent>
-      </Tooltip>
-    </div>
-  );
-
   // Unified table view (used for both mobile and desktop)
   return (
     <div className="bg-background text-foreground min-h-screen p-4">
@@ -541,14 +433,13 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                       Calificación Jurado Senior
                     </h3>
                     <p className="text-xs opacity-70 mt-0.5">
-                      Descarga una plantilla, completa las notas y súbelas, o
-                      edita directamente en la tabla
+                      Descarga una plantilla o edita las notas directamente
+                      en la tabla
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {DownloadTemplateButton}
-                  {UploadGradesButton}
                 </div>
               </div>
             </div>
