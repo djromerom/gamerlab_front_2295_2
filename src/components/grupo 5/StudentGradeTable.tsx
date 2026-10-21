@@ -21,7 +21,6 @@ import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   Edit,
   FileSpreadsheet,
   Loader2,
@@ -56,7 +55,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const defaultNRC = initialNRC || "-";
   // 1. Estados exclusivos de la Interfaz de Usuario (UI)
   const [downloading, setDownloading] = useState(false);
-  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editedGrade, setEditedGrade] = useState<string>("");
   const [savingGrade, setSavingGrade] = useState(false);
@@ -169,50 +167,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       })
       .finally(() => {
         setDownloading(false);
-      });
-  };
-
-  // Download grading template
-  const downloadGradingTemplate = () => {
-    setDownloadingTemplate(true);
-
-    // Descargar plantilla GLOBAL: ignorar filtros
-    toast(`Preparando plantilla de calificaciones global...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
-
-    fetch(endpoint, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error("Error al descargar plantilla");
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success(
-          "Plantilla descargada. Completa las notas y súbela de vuelta.",
-        );
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al descargar plantilla: ${error.message || "No se pudo completar la descarga"}`,
-        );
-      })
-      .finally(() => {
-        setDownloadingTemplate(false);
       });
   };
 
@@ -369,32 +323,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     </Tooltip>
   );
 
-  // Download Template Button
-  const DownloadTemplateButton = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          className="cursor-pointer"
-          onClick={downloadGradingTemplate}
-          aria-label="Descargar plantilla de calificaciones"
-          disabled={downloadingTemplate}
-        >
-          {downloadingTemplate ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-1.5" />
-          )}
-          {downloadingTemplate ? "Descargando..." : "Plantilla"}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Descargar plantilla de calificaciones
-      </TooltipContent>
-    </Tooltip>
-  );
-
   // Unified table view (used for both mobile and desktop)
   return (
     <div className="bg-background text-foreground min-h-screen p-4">
@@ -417,34 +345,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       {/* Barra de Filtros y Acciones */}
       <Card className="rounded-lg overflow-hidden bg-card mb-6">
         <div className="p-5 space-y-4">
-          {/* Gestión de Calificaciones Jurado Senior*/}
-          {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
-          {selectedSubject && (
-            <div className="pt-0 pb-4 border-b border-border">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">
-                      Calificación Jurado Senior
-                    </h3>
-                    <p className="text-xs opacity-70 mt-0.5">
-                      Descarga una plantilla o edita las notas directamente
-                      en la tabla
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {DownloadTemplateButton}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Fila única: Materia | Filtrar por NRC (pills) */}
           <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
             {/* Materia */}
