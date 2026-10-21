@@ -23,8 +23,10 @@ import {
   ChevronRight,
   Download,
   Edit,
+  Filter,
   FileSpreadsheet,
   Loader2,
+  Search,
   Save,
   Upload,
   X,
@@ -34,6 +36,13 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -63,6 +72,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editedGrade, setEditedGrade] = useState<string>("");
   const [savingGrade, setSavingGrade] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterType, setFilterType] = useState<"student" | "team">("student");
 
   // 2. Nuestro asistente personal (el Hook) trayendo la data:
   const {
@@ -88,6 +99,21 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     setFetchedStudentsByNRC,
     setFetchedStudentsBySubject,
   } = useTeacherDashboard({ initialNRC });
+
+  const normalizeSearch = (value: unknown) =>
+    String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .trim();
+
+  const filteredTeams = teams.filter((team: any) => {
+    const studentNames = Array.isArray(team.integrantes)
+      ? team.integrantes.join(" ")
+      : team.integrantes || "";
+    const searchableName = filterType === "student" ? studentNames : team.teamName;
+    return normalizeSearch(searchableName).includes(normalizeSearch(filterSearch));
+  });
 
   // Show error state
   if (error) {
@@ -620,7 +646,52 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               )}
             </div>
 
-            <div className="w-full lg:w-1/3" />
+            <div className="w-full lg:w-1/3 lg:max-w-sm">
+              <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">
+                Filtrar:
+              </label>
+              <div className="flex">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
+                  <Input
+                    id="grade-search"
+                    value={filterSearch}
+                    onChange={(event) => setFilterSearch(event.target.value)}
+                    placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"}
+                    className="h-9 pl-9 rounded-r-none"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      className="h-9 w-9 rounded-l-none -ml-px"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuRadioGroup
+                      value={filterType}
+                      onValueChange={(value) =>
+                        setFilterType(value as "student" | "team")
+                      }
+                    >
+                      <DropdownMenuRadioItem value="student">
+                        Estudiante
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="team">
+                        Equipo
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -691,7 +762,17 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                 </TableCell>
               </TableRow>
             ) : (
-              teams.map((t: any, i: number) => (
+              filteredTeams.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="h-24 text-center text-sm opacity-70"
+                  >
+                    No se encontraron equipos con esos criterios de búsqueda.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTeams.map((t: any, i: number) => (
                 <TableRow
                   key={t.teamCode}
                   className="hover:bg-muted/50 transition-colors"
@@ -798,7 +879,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                ))
+              )
             )}
           </TableBody>
         </Table>
@@ -808,8 +890,8 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       {!initialLoading && !isLoading && teams.length > 0 && (
         <div className="flex items-center justify-between px-2 text-sm opacity-70">
           <div>
-            Mostrando {teams.length} equipo(s) de la página{" "}
-            {paginationMetadata ? paginationMetadata.currentPage : 1}
+            Mostrando {filteredTeams.length} de {teams.length} equipo(s) en la
+            página {paginationMetadata ? paginationMetadata.currentPage : 1}
           </div>
           <div className="flex items-center gap-4">
             <span>
