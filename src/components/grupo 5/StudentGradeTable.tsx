@@ -14,20 +14,17 @@ import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   Edit,
   Filter,
   FileSpreadsheet,
   Loader2,
   Search,
   Save,
-  Upload,
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,8 +51,6 @@ interface PaginationMetadata {
 export default function StudentGradeTable() {
   // 1. Estados exclusivos de la Interfaz de Usuario (UI)
   const [downloading, setDownloading] = useState(false);
-  const [uploadingGrades, setUploadingGrades] = useState(false);
-  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [isEditingGrades, setIsEditingGrades] = useState(false);
   const [editedGrades, setEditedGrades] = useState<Record<string, string>>({});
   const [savingGrade, setSavingGrade] = useState(false);
@@ -168,110 +163,7 @@ export default function StudentGradeTable() {
       });
   };
 
-  // Download grading template
-  const downloadGradingTemplate = () => {
-    setDownloadingTemplate(true);
-
-    // Descargar plantilla GLOBAL: ignorar filtros
-    toast(`Preparando plantilla de calificaciones global...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
-
-    fetch(endpoint, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error("Error al descargar plantilla");
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success(
-          "Plantilla descargada. Completa las notas y súbela de vuelta.",
-        );
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al descargar plantilla: ${error.message || "No se pudo completar la descarga"}`,
-        );
-      })
-      .finally(() => {
-        setDownloadingTemplate(false);
-      });
-  };
-
-  // Upload grading file
-  const uploadGradingFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-    ];
-
-    if (!validTypes.includes(file.type)) {
-      toast.error("Por favor, sube un archivo Excel válido (.xlsx o .xls)");
-      return;
-    }
-
-    setUploadingGrades(true);
-    toast("Subiendo calificaciones...");
-
-    const formData = new FormData();
-    formData.append("file", file);
-    // Nota: subida GLOBAL — no añadimos filtros (nrc/subject) al formData
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
-
-    fetch(endpoint, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          return response.json().then((data) => {
-            throw new Error(data.message || "Error al subir calificaciones");
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        toast.success(
-          `Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`,
-        );
-
-        reloadProjects();
-
-        // Reset file input
-        event.target.value = "";
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al subir calificaciones: ${error.message || "No se pudo completar la carga"}`,
-        );
-      })
-      .finally(() => {
-        setUploadingGrades(false);
-      });
-  };
-
+  // Las notas se gestionan desde la edición en bloque de la tabla.
   const gradeKey = (team: any) => String(team.videogameId ?? team.teamCode);
   const enterEditMode = () => {
     const drafts: Record<string, string> = {};
@@ -363,69 +255,6 @@ export default function StudentGradeTable() {
     </Tooltip>
   );
 
-  // Download Template Button
-  const DownloadTemplateButton = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          className="cursor-pointer"
-          onClick={downloadGradingTemplate}
-          aria-label="Descargar plantilla de calificaciones"
-          disabled={downloadingTemplate}
-        >
-          {downloadingTemplate ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-1.5" />
-          )}
-          {downloadingTemplate ? "Descargando..." : "Plantilla"}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Descargar plantilla de calificaciones
-      </TooltipContent>
-    </Tooltip>
-  );
-
-  // Upload Grades Button
-  const UploadGradesButton = (
-    <div className="relative">
-      <Input
-        id="upload-grades"
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={uploadGradingFile}
-        disabled={uploadingGrades}
-        className="hidden"
-      />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Label htmlFor="upload-grades">
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              disabled={uploadingGrades}
-              asChild
-            >
-              <span>
-                {uploadingGrades ? (
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-1.5" />
-                )}
-                {uploadingGrades ? "Subiendo..." : "Subir"}
-              </span>
-            </Button>
-          </Label>
-        </TooltipTrigger>
-        <TooltipContent side="top">Subir calificaciones (Excel)</TooltipContent>
-      </Tooltip>
-    </div>
-  );
-
   // Unified table view (used for both mobile and desktop)
   return (
     <div className="bg-background text-foreground min-h-screen p-4">
@@ -463,38 +292,8 @@ export default function StudentGradeTable() {
       {/* Barra de Filtros y Acciones */}
       <Card className="rounded-lg overflow-hidden bg-card mb-6">
         <div className="p-5 space-y-4">
-          {/* Gestión de Calificaciones Jurado Senior*/}
-          {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
-          {availableFairs.length > 0 && (
-            <div className="pt-0 pb-4 border-b border-border">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">
-                      Calificación Jurado Senior
-                    </h3>
-                    <p className="text-xs opacity-70 mt-0.5">
-                      Descarga una plantilla, completa las notas y súbelas, o
-                      edita directamente en la tabla
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {DownloadTemplateButton}
-                  {UploadGradesButton}
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex flex-col lg:flex-row lg:items-start gap-4 border-b border-border pb-4">
-          {/* Filtro de Feria */}
-          <div className="w-full lg:flex-1">
+            <div className="w-full lg:flex-1">
               <label className="block text-xs font-medium mb-2 opacity-70">
                 Filtrar por Feria
               </label>
