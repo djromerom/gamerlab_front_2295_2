@@ -29,7 +29,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 // Tabs removed: single flow Subject -> NRC
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,9 +60,10 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const [downloading, setDownloading] = useState(false);
   const [uploadingGrades, setUploadingGrades] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
-  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
-  const [editedGrade, setEditedGrade] = useState<string>("");
+  const [isEditingGrades, setIsEditingGrades] = useState(false);
+  const [editedGrades, setEditedGrades] = useState<Record<string, string>>({});
   const [savingGrade, setSavingGrade] = useState(false);
+  const gradeInputRefs = useRef(new Map<string, HTMLInputElement>());
 
   // 2. Nuestro asistente personal (el Hook) trayendo la data:
   const {
@@ -287,128 +288,73 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       });
   };
 
-  // Start editing a team row
-  const startEditing = (index: number, currentGrade?: number) => {
-    setEditingRowIndex(index);
-    setEditedGrade(currentGrade != null ? String(currentGrade) : "");
+  const gradeKey = (team: any) => String(team.videogameId ?? team.teamCode);
+  const enterEditMode = () => {
+    const drafts: Record<string, string> = {};
+    teams.forEach((team: any) => {
+      drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : String(team.calificacionDocente);
+    });
+    setEditedGrades(drafts);
+    setIsEditingGrades(true);
+  };
+  const cancelEditMode = () => {
+    setIsEditingGrades(false);
+    setEditedGrades({});
   };
 
-  // Cancel editing
-  const cancelEditing = () => {
-    setEditingRowIndex(null);
-    setEditedGrade("");
-  };
-
-  // Save edited grade (now for a team)
-  const saveGrade = async (team: any) => {
-    // Asegura que gradeValue tenga solo un decimal
-    const gradeValue = parseFloat(Number(editedGrade).toFixed(1));
-
-    // Validate grade
-    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 5) {
-      toast.error("La nota debe ser un número entre 0 y 5");
+  const saveGrades = async () => {
+    const changed = teams.filter((team: any) => {
+      const value = editedGrades[gradeKey(team)] ?? "";
+      return value !== (team.calificacionDocente == null ? "" : String(team.calificacionDocente));
+    });
+    if (changed.length === 0) {
+      toast.info("No hay cambios para guardar");
+      cancelEditMode();
       return;
     }
-
-    setSavingGrade(true);
-    toast("Guardando calificación...");
-
-    try {
-      // Ahora simplemente usamos el campo videogameId del equipo
-      const finalVideogameId = team.videogameId;
-      if (!finalVideogameId) {
-        toast.error("No se encontró videogameId para el equipo.");
-        setSavingGrade(false);
+    for (const team of changed) {
+      const value = editedGrades[gradeKey(team)]?.trim() ?? "";
+      const score = Number(value);
+      if (value === "" || !Number.isFinite(score) || score < 0 || score > 5) {
+        toast.error("Todas las notas editadas deben ser números entre 0 y 5");
         return;
       }
-      const payload: any = {
-        videogameId: finalVideogameId,
-        score: gradeValue,
-        isSenior: true,
-      };
-
-      // Use the new inline endpoint that expects { teamId, score }.
-      const teamEvalEndpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation`;
-
-      // Build headers: Content-Type required; include Authorization Bearer if cookie `access-token` exists
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      try {
-        if (typeof document !== "undefined" && document.cookie) {
-          const match = document.cookie.match("(?:^|; )access-token=([^;]+)");
-          if (match && match[1]) {
-            const token = decodeURIComponent(match[1]);
-            headers["Authorization"] = `Bearer ${token}`;
-          }
-        }
-      } catch (e) {
-        // ignore cookie read errors
-        console.debug("No se pudo leer cookie access-token", e);
+      if (!team.videogameId) {
+        toast.error("No se encontró videogameId para uno de los juegos");
+        return;
       }
-
-      const response = await fetch(teamEvalEndpoint, {
-        method: "POST",
-        credentials: "include",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      toast.dismiss();
-
-      // Try to parse JSON body safely; backend may return empty body on 204 or on errors
-      let parsed: any = null;
-      try {
-        parsed = await response.json();
-      } catch (e) {
-        // ignore parse errors — we'll rely on status code and fallback messages
-        parsed = null;
-      }
-
-      if (!response.ok) {
-        const msg =
-          parsed?.message || `Error ${response.status} al guardar calificación`;
-        throw new Error(msg);
-      }
-
-      toast.success(`Calificación guardada: ${gradeValue}`);
-      // After saving the senior grade we prefer to reload the authoritative
-      // data for the current page from the backend instead of trying to
-      // patch the local cache. This avoids sync issues when backend alters
-      // shapes or computes derived fields.
-      const cacheKey = selectedNRC
-        ? `${selectedNRC}-${currentPage}`
-        : `${selectedSubject}-${currentPage}`;
-
-      if (selectedNRC) {
-        // Remove cached page and re-fetch from backend
-        setFetchedStudentsByNRC((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
+    }
+    setSavingGrade(true);
+    toast("Guardando cambios...");
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const match = typeof document !== "undefined" ? document.cookie.match("(?:^|; )access-token=([^;]+)") : null;
+      if (match?.[1]) headers.Authorization = `Bearer ${decodeURIComponent(match[1])}`;
+      for (const team of changed) {
+        const score = parseFloat(Number(editedGrades[gradeKey(team)]).toFixed(1));
+        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation`, {
+          method: "POST", credentials: "include", headers,
+          body: JSON.stringify({ videogameId: team.videogameId, score, isSenior: true }),
         });
-        // Await refetch so UI updates immediately with server data
+        let parsed: any = null;
+        try { parsed = await response.json(); } catch { /* empty response */ }
+        if (!response.ok) throw new Error(parsed?.message || `Error ${response.status} al guardar una nota`);
+      }
+      toast.dismiss();
+      toast.success(`Se guardaron ${changed.length} nota(s)`);
+      const cacheKey = selectedNRC ? `${selectedNRC}-${currentPage}` : `${selectedSubject}-${currentPage}`;
+      if (selectedNRC) {
+        setFetchedStudentsByNRC((prev) => { const next = { ...prev }; delete next[cacheKey]; return next; });
         await fetchStudentsByNRC(selectedNRC, currentPage);
       } else {
-        setFetchedStudentsBySubject((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
-        });
+        setFetchedStudentsBySubject((prev) => { const next = { ...prev }; delete next[cacheKey]; return next; });
         await fetchStudentsBySubject(selectedSubject, currentPage);
       }
-
-      // Reset editing state
-      cancelEditing();
+      cancelEditMode();
     } catch (error) {
-      console.error("Error:", error);
-      toast.error(
-        `Error: ${error instanceof Error ? error.message : "No se pudo guardar la calificación"}`,
-      );
-    } finally {
-      setSavingGrade(false);
-    }
+      toast.dismiss();
+      toast.error(`Error: ${error instanceof Error ? error.message : "No se pudieron guardar las notas"}`);
+    } finally { setSavingGrade(false); }
   };
 
   // Export Button
@@ -516,6 +462,21 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             </p>
           </div>
           <div className="flex items-start sm:items-center">
+            {isEditingGrades ? (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={cancelEditMode} disabled={savingGrade}>
+                  <X className="h-4 w-4 mr-1.5" /> Cancelar
+                </Button>
+                <Button size="sm" onClick={saveGrades} disabled={savingGrade}>
+                  {savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
+                  {savingGrade ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={enterEditMode} disabled={!teams.length || isLoading || initialLoading}>
+                <Edit className="h-4 w-4 mr-1.5" /> Editar notas
+              </Button>
+            )}
             {/* Export button in the top-right corner of the header */}
             <div className="ml-2">{ExportButton}</div>
           </div>
@@ -639,7 +600,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
               <TableHead className="text-center">
                 Calificación Docente
               </TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -668,14 +628,11 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                   <TableCell>
                     <Skeleton className="h-4 w-12 mx-auto" />
                   </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-8 w-8 mx-auto rounded-full" />
-                  </TableCell>
                 </TableRow>
               ))
             ) : noStudents || teams.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-48 text-center">
+                <TableCell colSpan={7} className="h-48 text-center">
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-4 mx-auto">
                       <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
@@ -719,43 +676,31 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    {editingRowIndex === i ? (
+                    {isEditingGrades ? (
                       <div className="flex items-center justify-center gap-2">
                         <Input
+                          ref={(element) => {
+                            const key = gradeKey(t);
+                            if (element) gradeInputRefs.current.set(key, element);
+                            else gradeInputRefs.current.delete(key);
+                          }}
                           type="number"
                           min="0"
                           max="5"
                           step="0.1"
-                          value={editedGrade}
-                          onChange={(e) => setEditedGrade(e.target.value)}
+                          value={editedGrades[gradeKey(t)] ?? ""}
+                          onChange={(e) => setEditedGrades((prev) => ({ ...prev, [gradeKey(t)]: e.target.value }))}
                           className="w-20 h-8 text-center"
-                          autoFocus
+                          autoFocus={i === 0}
                           disabled={savingGrade}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              const nextTeam = teams[i + 1];
+                              if (nextTeam) gradeInputRefs.current.get(gradeKey(nextTeam))?.focus();
+                            }
+                          }}
                         />
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-100"
-                            onClick={() => saveGrade(t)}
-                            disabled={savingGrade}
-                          >
-                            {savingGrade ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Save className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-100"
-                            onClick={cancelEditing}
-                            disabled={savingGrade}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
                       </div>
                     ) : (
                       <span
@@ -772,30 +717,6 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                         )}
                       </span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center items-center">
-                      {editingRowIndex !== i && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                              onClick={() =>
-                                startEditing(i, t.calificacionDocente)
-                              }
-                              disabled={savingGrade || editingRowIndex !== null}
-                            >
-                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            Editar calificación docente
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
                   </TableCell>
                 </TableRow>
               ))
