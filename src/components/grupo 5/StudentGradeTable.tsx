@@ -492,8 +492,9 @@ export default function StudentGradeTable() {
             </div>
           )}
 
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4 border-b border-border pb-4">
           {/* Filtro de Feria */}
-          <div className="w-full border-b border-border pb-4">
+          <div className="w-full lg:flex-1">
               <label className="block text-xs font-medium mb-2 opacity-70">
                 Filtrar por Feria
               </label>
@@ -531,11 +532,11 @@ export default function StudentGradeTable() {
               </div>
           </div>
 
-          <div className="w-full border-b border-border pb-4">
+          <div className="w-full lg:w-1/3 lg:max-w-sm lg:ml-auto">
             <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">
               Filtrar por estudiante o equipo
             </label>
-            <div className="flex max-w-sm">
+            <div className="flex max-w-sm lg:ml-auto">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
                 <Input
@@ -543,7 +544,7 @@ export default function StudentGradeTable() {
                   value={filterSearch}
                   onChange={(event) => setFilterSearch(event.target.value)}
                   placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"}
-                  className="h-9 pl-9 rounded-r-none"
+                  className="h-8 md:h-8 pl-9 rounded-r-none"
                 />
               </div>
               <DropdownMenu>
@@ -554,7 +555,7 @@ export default function StudentGradeTable() {
                     size="icon"
                     aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`}
                     title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`}
-                    className="h-9 w-9 rounded-l-none -ml-px"
+                    className="!h-8 !w-8 rounded-l-none -ml-px"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -570,6 +571,7 @@ export default function StudentGradeTable() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          </div>
           </div>
 
           {/* Filtro opcional: al dejarlo en Todos se conservan todos los proyectos del alcance. */}
