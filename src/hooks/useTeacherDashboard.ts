@@ -1,11 +1,7 @@
-// [MODIFICACION]: Creacion del Custom Hook para aislar la logica de obtencion de datos del perfil
-// docente
-
-// Aqui se aplica el principio de separacion de responsabilidades, el componente solo se encarga de
-// la UI y el hook de la logica de negocio
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { fetchEditions, type Edition } from "@/fetchs/editions";
+import { useFetch } from "@/hooks/useFetch";
 
 interface PaginationMetadata {
   totalItems: number;
@@ -16,525 +12,304 @@ interface PaginationMetadata {
 }
 
 interface UseTeacherDashboardProps {
-  initialNRC?: string;
   itemsPerPage?: number;
 }
 
-export function useTeacherDashboard({
-  initialNRC,
-  itemsPerPage = 20,
-}: UseTeacherDashboardProps = {}) {
-  // Aqui se colocan los estados (isLoading, students, error, etc)
-  const defaultNRC = initialNRC || "-";
-  // Selection states: primero Materia, luego NRC (NRC depende de la materia)
-  const [selectedNRC, setSelectedNRC] = useState<string>("");
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const [paginationMetadata, setPaginationMetadata] =
-    useState<PaginationMetadata | null>(null);
-
-  // Available options
-  const [availableNRCs, setAvailableNRCs] = useState<any[]>([]);
-  // Guarda la lista completa de NRCs recibida inicialmente para poder aplicar filtros locales
+export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardProps = {}) {
+  const customFetch = useFetch();
+  const [availableFairs, setAvailableFairs] = useState<Edition[]>([]);
   const [allNRCs, setAllNRCs] = useState<any[]>([]);
-  const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
-
-  // Data cache - keeps fetched data to avoid re-fetching
-  const [fetchedStudentsByNRC, setFetchedStudentsByNRC] = useState<
-    Record<string, any[]>
-  >({});
-  const [fetchedStudentsBySubject, setFetchedStudentsBySubject] = useState<
-    Record<string, any[]>
-  >({});
-
-
-
-  // Estados de carga (¡Estos se quedan en el asistente!)
+  // Empty edition means all fairs. Empty NRC means all NRCs in the selected scope.
+  const [selectedFair, setSelectedFairState] = useState("");
+  const [selectedNRC, setSelectedNRCState] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allProjects, setAllProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [noStudents, setNoStudents] = useState(false);
 
-  // Nota: ahora usamos únicamente el endpoint `/professors/my-subjects` (cada materia incluye sus NRCs)
-  // por lo que no necesitamos llamar a `/professors/my-nrcs` por separado. Inicializamos `allNRCs`
-  // cuando cargamos las materias en el efecto de abajo.
-
-  // Initialize available subjects
-  useEffect(() => {
-    const fetchAvailableSubjects = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/my-subjects`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Error fetching available subjects");
-        }
-
-        const data = await response.json();
-        
-        // Agregar materia virtual para equipos evaluados como jurado
-        data.push({
-          id: "juror_virtual",
-          name: "Evaluaciones como Jurado (Universitarios)",
-          nrcs: []
-        });
-
-        setAvailableSubjects(data);
-
-        // Extraer todos los NRCs incluidos en cada materia y anexar info de la materia
-        const allNrcsFromSubjects = (data || []).flatMap((subject: any) => {
-          const subjectId = subject.id || subject._id || subject.code;
-          const subjectName = subject.name || subject.title || "";
-          const nrcs = subject.nrcs || [];
-          return nrcs.map((nrc: any) => ({
-            ...nrc,
-            subject: { id: subjectId, name: subjectName },
-          }));
-        });
-
-        // Guardamos todos los NRCs en el estado (se usará para filtrado local)
-        setAllNRCs(allNrcsFromSubjects);
-
-        if (data.length > 0) {
-          const initialSubjectName = data[0].name;
-          setSelectedSubject(initialSubjectName);
-          // Inicialmente filtramos los NRCs para la materia seleccionada
-          const filtered = allNrcsFromSubjects.filter((n: any) => {
-            const name = n.subject?.name || n.subjectName || n.name || "";
-            return (
-              name &&
-              String(name).toLowerCase() ===
-                String(initialSubjectName).toLowerCase()
-            );
-          });
-          setAvailableNRCs(filtered);
-          // Si hay exactamente un NRC para la materia, auto-seleccionarlo (salvo que venga initialNRC explícito)
-          if (filtered.length === 1) {
-            if (!(defaultNRC && defaultNRC !== "-")) {
-              setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
-            }
-          }
-          // Si se pasó un NRC por props (defaultNRC), lo aplicamos si existe (tiene prioridad)
-          if (defaultNRC && defaultNRC !== "-") {
-            const match = allNrcsFromSubjects.find(
-              (x: any) =>
-                String(x.code) === String(defaultNRC) ||
-                String(x.id) === String(defaultNRC),
-            );
-            if (match) setSelectedNRC(defaultNRC);
-          }
-        } else {
-          toast.info("No se encontraron materias disponibles");
-        }
-      } catch (err) {
-        console.error("Error fetching available Subjects:", err);
-        toast.error("Error al cargar las materias");
-      } finally {
-        // Desactivamos la pantalla inicial de carga
-        setInitialLoading(false);
-      }
-    };
-
-    fetchAvailableSubjects();
+  const setSelectedNRC = useCallback((nrcId: string) => {
+    setSelectedNRCState(nrcId);
+    setCurrentPage(1);
   }, []);
 
-  // When the selected subject changes, try to narrow the list of NRCs to that subject.
-  useEffect(() => {
-    if (!selectedSubject) return;
+  const setSelectedFair = useCallback((editionId: string) => {
+    setSelectedFairState(editionId);
+    setSelectedNRCState("");
+    setCurrentPage(1);
+    setAllProjects([]);
+  }, []);
 
-    const fetchNRCsBySubject = async () => {
-      // Usamos la lista completa `allNRCs` (que ya contiene `subject` si pedimos includeSubjects=true)
-      const subjObj = availableSubjects.find(
-        (s: any) =>
-          String(s.name).toLowerCase() ===
-          String(selectedSubject).toLowerCase(),
-      );
-      const subjectId =
-        subjObj?.id ||
-        subjObj?.subjectId ||
-        subjObj?._id ||
-        subjObj?.code ||
-        null;
+  const validEditionIds = useMemo(
+    () => new Set(availableFairs.map((edition) => String(edition.id))),
+    [availableFairs],
+  );
 
-      const filtered = allNRCs.filter((nrc: any) => {
-        if (!nrc) return false;
-        // Si el backend incluyó subject, comparamos por subject.id
-        if (nrc.subject && (nrc.subject.id || nrc.subject._id)) {
-          const nrcSubjectId = nrc.subject.id || nrc.subject._id;
-          if (subjectId) return String(nrcSubjectId) === String(subjectId);
-        }
-        // Si no hay id, buscamos claves comunes en el objeto nrc
-        const nrcSubjectIdAlt =
-          nrc.subjectId ||
-          nrc.subject_id ||
-          nrc.materiaId ||
-          nrc.materia_id ||
-          nrc.signatureId ||
-          nrc.signature_id;
-        if (subjectId && nrcSubjectIdAlt)
-          return String(nrcSubjectIdAlt) === String(subjectId);
-
-        // Fallback por nombre de materia
-        const name =
-          nrc.subject?.name ||
-          nrc.subjectName ||
-          nrc.name ||
-          nrc.signature ||
-          "";
+  const availableNRCs = useMemo(
+    () => {
+      const scopedNRCs = allNRCs.filter((nrc) => {
+        const nrcEditionId = String(nrc.editionId);
         return (
-          name &&
-          String(name).toLowerCase() === String(selectedSubject).toLowerCase()
+          validEditionIds.has(nrcEditionId) &&
+          (!selectedFair || nrcEditionId === selectedFair)
         );
       });
 
-      if (filtered.length > 0) {
-        setAvailableNRCs(filtered);
-        // Si solo hay un NRC disponible para la materia, auto-seleccionarlo
-        if (filtered.length === 1) {
-          setSelectedNRC(filtered[0].code ?? filtered[0].id ?? "");
-        } else {
-          // Varios NRCs: mostramos la opción "Todos los NRCs" por defecto
-          setSelectedNRC("");
+      if (selectedFair) return scopedNRCs;
+
+      // En "Todas las Ferias", un solo filtro por código cubre todas sus ediciones.
+      const uniqueByCode = new Map<string, any>();
+      scopedNRCs.forEach((nrc) => {
+        const code = String(nrc.code);
+        if (!uniqueByCode.has(code)) uniqueByCode.set(code, nrc);
+      });
+      return Array.from(uniqueByCode.values());
+    },
+    [allNRCs, selectedFair, validEditionIds],
+  );
+
+  // Para consultar proyectos se conservan todos los NRC/edición, aunque el filtro
+  // visual de "Todas las Ferias" agrupe los botones por código.
+  const reportNRCs = useMemo(
+    () =>
+      allNRCs.filter((nrc) => {
+        const editionId = String(nrc.editionId);
+        return (
+          validEditionIds.has(editionId) &&
+          (!selectedFair || editionId === selectedFair)
+        );
+      }),
+    [allNRCs, selectedFair, validEditionIds],
+  );
+
+  const selectedEdition = availableFairs.find(
+    (edition) => String(edition.id) === selectedFair,
+  );
+  const projectsForFilters = useMemo(
+    () =>
+      selectedNRC
+        ? allProjects.filter((project) =>
+            selectedFair
+              ? String(project.nrcId) === selectedNRC
+              : String(project.nrc) === selectedNRC,
+          )
+        : allProjects,
+    [allProjects, selectedFair, selectedNRC],
+  );
+
+  const paginationMetadata = useMemo<PaginationMetadata>(() => {
+    const totalItems = projectsForFilters.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    return {
+      totalItems,
+      itemsOnCurrentPage: Math.min(
+        itemsPerPage,
+        Math.max(0, totalItems - (currentPage - 1) * itemsPerPage),
+      ),
+      currentPage,
+      itemsPerPage,
+      totalPages,
+    };
+  }, [projectsForFilters.length, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadFilterOptions = async () => {
+      setInitialLoading(true);
+      setError(null);
+      try {
+        const [editions, nrcResponse] = await Promise.all([
+          fetchEditions(),
+          customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }),
+        ]);
+        if (!nrcResponse.ok) {
+          throw new Error(`Error ${nrcResponse.status} al cargar NRCs`);
         }
-      } else {
-        setAvailableNRCs([]);
-        setSelectedNRC("");
+
+        const nrcBody = await nrcResponse.json();
+        const nrcs = Array.isArray(nrcBody)
+          ? nrcBody
+          : Array.isArray(nrcBody?.data)
+            ? nrcBody.data
+            : [];
+        if (cancelled) return;
+
+        setAvailableFairs(
+          [...editions].sort(
+            (a, b) => b.year - a.year || b.semester - a.semester,
+          ),
+        );
+        setAllNRCs(nrcs);
+      } catch (err) {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Error al cargar ferias y NRCs";
+        setError(message);
+        toast.error(message);
+      } finally {
+        if (!cancelled) setInitialLoading(false);
       }
     };
 
-    fetchNRCsBySubject();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSubject]);
+    loadFilterOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, [customFetch]);
 
-  // Fetch students by NRC
-  const fetchStudentsByNRC = useCallback(
-    async (nrc: string, page: number = 1) => {
-      if (!nrc || nrc === "-") return;
+  const fetchReportPage = useCallback(
+    async (
+      nrcId: string,
+      editionId: string,
+      page: number,
+      signal: AbortSignal,
+    ) => {
+      const query = new URLSearchParams({
+        editionId,
+        page: String(page),
+        limit: String(itemsPerPage),
+      });
+      const response = await customFetch(
+        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/by-id/${encodeURIComponent(nrcId)}?${query}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          signal,
+        },
+      );
+      if (response.status === 404) return { data: [], metadata: null };
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      const result = await response.json();
+      const rows = Array.isArray(result.data) ? result.data : [];
+      return {
+        data: rows.filter(
+          (row: any) =>
+            String(row.editionId) === editionId && String(row.nrcId) === nrcId,
+        ),
+        metadata: result.metadata ?? null,
+      };
+    },
+    [customFetch, itemsPerPage],
+  );
 
-      const cacheKey = `${nrc}-${page}`;
-
-      // Check cache first
-      if (fetchedStudentsByNRC[cacheKey]) {
-        const cached = fetchedStudentsByNRC[cacheKey] || [];
-        // Reflect cached state in the UI (avoid stale "no projects" view)
-        setNoStudents(!cached || cached.length === 0);
-        setPaginationMetadata((prev) => prev || null);
+  const loadProjects = useCallback(
+    async (signal: AbortSignal) => {
+      const selectedEditionNRCs = reportNRCs;
+      if (selectedEditionNRCs.length === 0) {
+        setAllProjects([]);
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
       setError(null);
-      setNoStudents(false);
-
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${nrc}?page=${page}&limit=${itemsPerPage}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          },
+        // Request the first page for each NRC to learn how many pages it has.
+        const firstPages = await Promise.all(
+          selectedEditionNRCs.map(async (nrc) => {
+            const editionId = String(nrc.editionId);
+            const nrcId = String(nrc.id);
+            const result = await fetchReportPage(nrcId, editionId, 1, signal);
+            return { editionId, nrcId, result };
+          }),
         );
 
-        toast.dismiss();
+        // Complete every NRC report before applying the shared client pagination.
+        const reportRows = await Promise.all(
+          firstPages.map(async ({ editionId, nrcId, result }) => {
+            const totalPages = Math.max(1, Number(result.metadata?.totalPages) || 1);
+            const remainingPages = await Promise.all(
+              Array.from({ length: totalPages - 1 }, (_, index) =>
+                fetchReportPage(nrcId, editionId, index + 2, signal),
+              ),
+            );
+            return [result.data, ...remainingPages.map((page) => page.data)].flat();
+          }),
+        );
 
-        if (response.status === 404) {
-          setFetchedStudentsByNRC((prev) => ({
-            ...prev,
-            [cacheKey]: [],
-          }));
-          setNoStudents(true);
-          setPaginationMetadata(null);
-          toast.info(`No hay videojuegos registrados para el NRC ${nrc}`);
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const studentsData = data.data || [];
-        const metadata = data.metadata;
-        setFetchedStudentsByNRC((prev) => ({
-          ...prev,
-          [cacheKey]: studentsData,
-        }));
-
-        setPaginationMetadata(metadata);
-
-        if (studentsData.length > 0) {
-          // Calcular número de registros en la tabla (equipos únicos) a partir de los estudiantes recibidos
-          const teamSet = new Set<string>();
-          studentsData.forEach((s: any) => {
-            const teamCode =
-              s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
-            teamSet.add(String(teamCode));
-          });
-          const teamCount = teamSet.size;
-          toast.success(
-            `${teamCount} equipos en la tabla cargados para el NRC ${nrc}`,
-          );
-        } else {
-          setNoStudents(true);
-          toast.info(`No hay información registrada para el NRC ${nrc}`);
-        }
-      } catch (err) {
-        console.error("Error fetching students:", err);
-        const errorMsg =
-          err instanceof Error ? err.message : "Error al cargar videojuegos";
-        setError(errorMsg);
-        toast.error(`Error: ${errorMsg}`);
-
-        setFetchedStudentsByNRC((prev) => ({
-          ...prev,
-          [cacheKey]: [],
-        }));
-        setPaginationMetadata(null);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [itemsPerPage],
-  );
-
-  // Fetch students by subject
-  const fetchStudentsBySubject = useCallback(
-    async (subject: string, page: number = 1) => {
-      if (!subject) return;
-
-      const cacheKey = `${subject}-${page}`;
-
-      // Check cache first
-      if (fetchedStudentsBySubject[cacheKey]) {
-        const cached = fetchedStudentsBySubject[cacheKey] || [];
-        // Reflect cached state in the UI immediately
-        setNoStudents(!cached || cached.length === 0);
-        setPaginationMetadata((prev) => prev || null);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      setNoStudents(false);
-
-      try {
-        let response;
-        if (subject === "Evaluaciones como Jurado (Universitarios)") {
-          response = await fetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/juror-evaluations?page=${page}&limit=${itemsPerPage}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            },
-          );
-        } else {
-          response = await fetch(
-            `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            },
-          );
-        }
-
-        toast.dismiss();
-
-        if (response.status === 404) {
-          setFetchedStudentsBySubject((prev) => ({
-            ...prev,
-            [cacheKey]: [],
-          }));
-          setNoStudents(true);
-          setPaginationMetadata(null);
-          toast.info(
-            `No hay videojuegos registrados para la materia ${subject}`,
-          );
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const studentsArray = data.data || [];
-        const metadata = data.metadata;
-
-        setFetchedStudentsBySubject((prev) => ({
-          ...prev,
-          [cacheKey]: studentsArray,
-        }));
-
-        setPaginationMetadata(metadata);
-
-        if (!studentsArray || studentsArray.length === 0) {
-          setNoStudents(true);
-          toast.info(
-            `No hay información registrada para la materia ${subject}`,
-          );
-        } else {
-          // Agrupar por equipo para contar registros en la tabla
-          const teamSet = new Set<string>();
-          studentsArray.forEach((s: any) => {
-            const teamCode =
-              s.teamCode || s.teamId || s.team || `TEAM_${s.studentCode}`;
-            teamSet.add(String(teamCode));
-          });
-          const teamCount = teamSet.size;
-          toast.success(
-            `${teamCount} equipos en la tabla cargados para la materia ${subject}`,
-          );
-        }
-      } catch (err) {
-        console.error("Error fetching students by subject:", err);
-        const errorMsg =
-          err instanceof Error
-            ? err.message
-            : "Error al cargar videojuegos por materia";
-        setError(errorMsg);
-        toast.error(`Error: ${errorMsg}`);
-
-        setFetchedStudentsBySubject((prev) => ({
-          ...prev,
-          [cacheKey]: [],
-        }));
-        setPaginationMetadata(null);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [itemsPerPage],
-  );
-
-  // Handle data fetching when selection changes: priorizamos materia, pero si hay NRC seleccionado usamos ese reporte
-  useEffect(() => {
-    setError(null);
-    setNoStudents(false);
-    setCurrentPage(1);
-    setPaginationMetadata(null);
-
-    // Si hay NRC específico seleccionado, usamos ese
-    if (selectedNRC && selectedNRC !== "") {
-      fetchStudentsByNRC(selectedNRC, 1);
-    }
-    // Si no hay NRC o está vacío, pero hay materia, cargamos por materia (todos los NRCs)
-    else if (selectedSubject) {
-      fetchStudentsBySubject(selectedSubject, 1);
-    }
-  }, [
-    selectedNRC,
-    selectedSubject,
-    fetchStudentsByNRC,
-    fetchStudentsBySubject,
-  ]);
-
-  // Handle page changes
-  useEffect(() => {
-    if (currentPage > 1) {
-      if (selectedNRC && selectedNRC !== "") {
-        fetchStudentsByNRC(selectedNRC, currentPage);
-      } else if (selectedSubject) {
-        fetchStudentsBySubject(selectedSubject, currentPage);
-      }
-    }
-  }, [
-    currentPage,
-    selectedNRC,
-    selectedSubject,
-    fetchStudentsByNRC,
-    fetchStudentsBySubject,
-  ]);
-
-
-
-  // Get current students data
-  const getCurrentStudents = () => {
-    const cacheKey = selectedNRC
-      ? `${selectedNRC}-${currentPage}`
-      : `${selectedSubject}-${currentPage}`;
-    if (selectedNRC) {
-      return fetchedStudentsByNRC[cacheKey] || [];
-    }
-    return fetchedStudentsBySubject[cacheKey] || [];
-  };
-
-  const students = getCurrentStudents();
-
-  // Agrupar estudiantes por equipo (soporta varios shapes: teamCode, team, teamName)
-  // Agrupar por equipo usando los campos del backend (teamCode, nrc, team, integrantes, etc.)
-  const teams = useMemo(() => {
-    const map = new Map<string, any>();
-
-    students.forEach((s: any) => {
-      const teamCode =
-        s.teamCode ||
-        s.team ||
-        s.videogameId ||
-        s.videogame ||
-        `TEAM_${s.nrc || ""}_${s.team || ""}`;
-      if (!map.has(teamCode)) {
-        map.set(teamCode, {
-          teamCode: s.teamCode || s.team || "-",
-          nrc: s.nrc || "-",
-          teamName: s.team || s.teamName || "-",
-          integrantes: s.integrantes
-            ? s.integrantes.split(",").map((x: any) => x.trim())
-            : [],
-          videogame: s.videogame || "-",
-          calificacionFeria: s.calificacionFeria ?? null,
-          calificacionDocente: s.calificacionDocente ?? null,
-          videogameId: s.videogameId ?? null,
-          _rows: [s],
+        if (signal.aborted) return;
+        const uniqueRows = new Map<string, any>();
+        reportRows.flat().forEach((row: any) => {
+          const key = `${row.editionId}:${row.nrcId}:${row.teamCode ?? row.videogameId}`;
+          if (!uniqueRows.has(key)) uniqueRows.set(key, row);
         });
-      } else {
-        const t = map.get(teamCode);
-        if (s.integrantes) {
-          const nuevos = s.integrantes.split(",").map((x: any) => x.trim());
-          t.integrantes = Array.from(new Set([...t.integrantes, ...nuevos]));
-        }
-        t._rows.push(s);
+        setAllProjects(Array.from(uniqueRows.values()));
+      } catch (err) {
+        if (signal.aborted) return;
+        const message =
+          err instanceof Error ? err.message : "Error al cargar proyectos";
+        setAllProjects([]);
+        setError(message);
+        toast.error(message);
+      } finally {
+        if (!signal.aborted) setIsLoading(false);
       }
-    });
-    return Array.from(map.values());
-  }, [students]);
+    },
+    [reportNRCs, fetchReportPage],
+  );
 
-  // No view mode: la navegación es Materia -> NRC
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  // Pagination handlers
+  const reloadProjects = useCallback(() => {
+    setRefreshVersion((version) => version + 1);
+  }, []);
+
+  useEffect(() => {
+    if (initialLoading) return;
+    const controller = new AbortController();
+    loadProjects(controller.signal);
+    return () => controller.abort();
+  }, [initialLoading, loadProjects, refreshVersion]);
+
+  const pageProjects = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return projectsForFilters.slice(start, start + itemsPerPage);
+  }, [projectsForFilters, currentPage, itemsPerPage]);
+
+  const teams = useMemo(
+    () =>
+      pageProjects.map((project: any) => ({
+        teamCode: project.teamCode || "-",
+        nrc: project.nrc || "-",
+        teamName: project.team || "-",
+        integrantes: project.integrantes
+          ? String(project.integrantes).split(",").map((name: string) => name.trim())
+          : [],
+        videogame: project.videogame || "-",
+        calificacionFeria: project.calificacionFeria ?? null,
+        calificacionDocente: project.calificacionDocente ?? null,
+        videogameId: project.videogameId ?? null,
+        _rows: [project],
+      })),
+    [pageProjects],
+  );
+
+  const noStudents = !initialLoading && !isLoading && teams.length === 0;
   const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+    if (currentPage > 1) setCurrentPage((page) => page - 1);
+  };
+  const handleNextPage = () => {
+    if (currentPage < paginationMetadata.totalPages) {
+      setCurrentPage((page) => page + 1);
     }
   };
 
-  const handleNextPage = () => {
-    if (paginationMetadata && currentPage < paginationMetadata.totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
   return {
-    // Aqui se retornan las varialbes y funciones que el componente visual necesita usar
     selectedNRC,
     setSelectedNRC,
-    selectedSubject,
-    setSelectedSubject,
+    selectedFair,
+    setSelectedFair,
+    selectedEdition,
     currentPage,
     setCurrentPage,
     paginationMetadata,
     availableNRCs,
-    availableSubjects,
+    availableFairs,
     isLoading,
     initialLoading,
     error,
@@ -543,9 +318,6 @@ export function useTeacherDashboard({
     teams,
     handlePreviousPage,
     handleNextPage,
-    fetchStudentsByNRC,
-    fetchStudentsBySubject,
-    setFetchedStudentsByNRC,
-    setFetchedStudentsBySubject,
+    reloadProjects,
   };
 }
