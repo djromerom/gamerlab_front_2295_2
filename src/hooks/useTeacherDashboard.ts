@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { fetchEditions, type Edition } from "@/fetchs/editions";
+import type { Edition } from "@/fetchs/editions";
 import { useFetch } from "@/hooks/useFetch";
 
 interface PaginationMetadata {
@@ -13,9 +13,13 @@ interface PaginationMetadata {
 
 interface UseTeacherDashboardProps {
   itemsPerPage?: number;
+  search?: string;
+  searchType?: "student" | "team";
+  sortBy?: "student" | "team";
+  sortOrder?: "asc" | "desc";
 }
 
-export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardProps = {}) {
+export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType = "student", sortBy = "team", sortOrder = "asc" }: UseTeacherDashboardProps = {}) {
   const customFetch = useFetch();
   const [availableFairs, setAvailableFairs] = useState<Edition[]>([]);
   const [allNRCs, setAllNRCs] = useState<any[]>([]);
@@ -23,10 +27,14 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
   const [selectedFair, setSelectedFairState] = useState("");
   const [selectedNRC, setSelectedNRCState] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [paginationMetadata, setPaginationMetadata] = useState<PaginationMetadata>({
+    totalItems: 0, itemsOnCurrentPage: 0, currentPage: 1, itemsPerPage, totalPages: 0,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterOptionsRetryVersion, setFilterOptionsRetryVersion] = useState(0);
 
   const setSelectedNRC = useCallback((nrcId: string) => {
     setSelectedNRCState(nrcId);
@@ -37,7 +45,6 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
     setSelectedFairState(editionId);
     setSelectedNRCState("");
     setCurrentPage(1);
-    setAllProjects([]);
   }, []);
 
   const validEditionIds = useMemo(
@@ -55,62 +62,14 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
         );
       });
 
-      if (selectedFair) return scopedNRCs;
-
-      // En "Todas las Ferias", un solo filtro por código cubre todas sus ediciones.
-      const uniqueByCode = new Map<string, any>();
-      scopedNRCs.forEach((nrc) => {
-        const code = String(nrc.code);
-        if (!uniqueByCode.has(code)) uniqueByCode.set(code, nrc);
-      });
-      return Array.from(uniqueByCode.values());
+      return scopedNRCs;
     },
-    [allNRCs, selectedFair, validEditionIds],
-  );
-
-  // Para consultar proyectos se conservan todos los NRC/edición, aunque el filtro
-  // visual de "Todas las Ferias" agrupe los botones por código.
-  const reportNRCs = useMemo(
-    () =>
-      allNRCs.filter((nrc) => {
-        const editionId = String(nrc.editionId);
-        return (
-          validEditionIds.has(editionId) &&
-          (!selectedFair || editionId === selectedFair)
-        );
-      }),
     [allNRCs, selectedFair, validEditionIds],
   );
 
   const selectedEdition = availableFairs.find(
     (edition) => String(edition.id) === selectedFair,
   );
-  const projectsForFilters = useMemo(
-    () =>
-      selectedNRC
-        ? allProjects.filter((project) =>
-            selectedFair
-              ? String(project.nrcId) === selectedNRC
-              : String(project.nrc) === selectedNRC,
-          )
-        : allProjects,
-    [allProjects, selectedFair, selectedNRC],
-  );
-
-  const paginationMetadata = useMemo<PaginationMetadata>(() => {
-    const totalItems = projectsForFilters.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    return {
-      totalItems,
-      itemsOnCurrentPage: Math.min(
-        itemsPerPage,
-        Math.max(0, totalItems - (currentPage - 1) * itemsPerPage),
-      ),
-      currentPage,
-      itemsPerPage,
-      totalPages,
-    };
-  }, [projectsForFilters.length, currentPage, itemsPerPage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,23 +77,19 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
       setInitialLoading(true);
       setError(null);
       try {
-        const [editions, nrcResponse] = await Promise.all([
-          fetchEditions(),
-          customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`, {
+        const response = await customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/grading-games/filter-options`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          }),
-        ]);
-        if (!nrcResponse.ok) {
-          throw new Error(`Error ${nrcResponse.status} al cargar NRCs`);
-        }
-
-        const nrcBody = await nrcResponse.json();
-        const nrcs = Array.isArray(nrcBody)
-          ? nrcBody
-          : Array.isArray(nrcBody?.data)
-            ? nrcBody.data
-            : [];
+          });
+        if (!response.ok) throw new Error(`Error ${response.status} al cargar ferias y NRC del profesor`);
+        const result = await response.json();
+        const editions = Array.isArray(result?.editions) ? result.editions : [];
+        const rawNrcs = Array.isArray(result?.nrcs) ? result.nrcs : [];
+        const nrcsByEditionAndId = new Map<string, any>();
+        rawNrcs.forEach((nrc: any) => {
+          const key = `${nrc.editionId}:${nrc.id}`;
+          if (!nrcsByEditionAndId.has(key)) nrcsByEditionAndId.set(key, nrc);
+        });
         if (cancelled) return;
 
         setAvailableFairs(
@@ -142,7 +97,7 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
             (a, b) => b.year - a.year || b.semester - a.semester,
           ),
         );
-        setAllNRCs(nrcs);
+        setAllNRCs([...nrcsByEditionAndId.values()]);
       } catch (err) {
         if (cancelled) return;
         const message =
@@ -158,106 +113,66 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
     return () => {
       cancelled = true;
     };
-  }, [customFetch]);
-
-  const fetchReportPage = useCallback(
-    async (
-      nrcId: string,
-      editionId: string,
-      page: number,
-      signal: AbortSignal,
-    ) => {
-      const query = new URLSearchParams({
-        editionId,
-        page: String(page),
-        limit: String(itemsPerPage),
-      });
-      const response = await customFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/by-id/${encodeURIComponent(nrcId)}?${query}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          signal,
-        },
-      );
-      if (response.status === 404) return { data: [], metadata: null };
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      const result = await response.json();
-      const rows = Array.isArray(result.data) ? result.data : [];
-      return {
-        data: rows.filter(
-          (row: any) =>
-            String(row.editionId) === editionId && String(row.nrcId) === nrcId,
-        ),
-        metadata: result.metadata ?? null,
-      };
-    },
-    [customFetch, itemsPerPage],
-  );
+  }, [customFetch, filterOptionsRetryVersion]);
 
   const loadProjects = useCallback(
     async (signal: AbortSignal) => {
-      const selectedEditionNRCs = reportNRCs;
-      if (selectedEditionNRCs.length === 0) {
-        setAllProjects([]);
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
       try {
-        // Request the first page for each NRC to learn how many pages it has.
-        const firstPages = await Promise.all(
-          selectedEditionNRCs.map(async (nrc) => {
-            const editionId = String(nrc.editionId);
-            const nrcId = String(nrc.id);
-            const result = await fetchReportPage(nrcId, editionId, 1, signal);
-            return { editionId, nrcId, result };
-          }),
+        const query = new URLSearchParams({ page: String(currentPage), limit: String(itemsPerPage) });
+        if (selectedFair) query.set("editionId", selectedFair);
+        if (selectedNRC) query.set("nrcId", selectedNRC);
+        if (search.trim()) query.set(searchType, search.trim());
+        query.set("sortBy", sortBy);
+        query.set("sortOrder", sortOrder);
+        const response = await customFetch(
+          `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/grading-games?${query}`,
+          { method: "GET", headers: { "Content-Type": "application/json" }, signal },
         );
-
-        // Complete every NRC report before applying the shared client pagination.
-        const reportRows = await Promise.all(
-          firstPages.map(async ({ editionId, nrcId, result }) => {
-            const totalPages = Math.max(1, Number(result.metadata?.totalPages) || 1);
-            const remainingPages = await Promise.all(
-              Array.from({ length: totalPages - 1 }, (_, index) =>
-                fetchReportPage(nrcId, editionId, index + 2, signal),
-              ),
-            );
-            return [result.data, ...remainingPages.map((page) => page.data)].flat();
-          }),
-        );
-
+        if (!response.ok) {
+          let detail = response.statusText;
+          try {
+            const body = await response.json();
+            if (typeof body?.message === "string") detail = body.message;
+            else if (Array.isArray(body?.message)) detail = body.message.join(", ");
+          } catch { /* Some errors do not include a JSON body. */ }
+          throw new Error(`Error ${response.status}: ${detail}`);
+        }
+        const result = await response.json();
         if (signal.aborted) return;
-        const uniqueRows = new Map<string, any>();
-        reportRows.flat().forEach((row: any) => {
-          const key = `${row.editionId}:${row.nrcId}:${row.teamCode ?? row.videogameId}`;
-          if (!uniqueRows.has(key)) uniqueRows.set(key, row);
+        setProjects(Array.isArray(result.data) ? result.data : []);
+        setPaginationMetadata(result.metadata ?? {
+          totalItems: 0, itemsOnCurrentPage: 0, currentPage, itemsPerPage, totalPages: 0,
         });
-        setAllProjects(Array.from(uniqueRows.values()));
       } catch (err) {
         if (signal.aborted) return;
         const message =
           err instanceof Error ? err.message : "Error al cargar proyectos";
-        setAllProjects([]);
         setError(message);
         toast.error(message);
       } finally {
         if (!signal.aborted) setIsLoading(false);
       }
     },
-    [reportNRCs, fetchReportPage],
+    [customFetch, currentPage, itemsPerPage, search, searchType, selectedFair, selectedNRC, sortBy, sortOrder],
   );
 
   const [refreshVersion, setRefreshVersion] = useState(0);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, searchType, sortBy, sortOrder]);
+
   const reloadProjects = useCallback(() => {
     setRefreshVersion((version) => version + 1);
   }, []);
+
+  const retryLoad = useCallback(() => {
+    setError(null);
+    setFilterOptionsRetryVersion((version) => version + 1);
+    reloadProjects();
+  }, [reloadProjects]);
 
   useEffect(() => {
     if (initialLoading) return;
@@ -266,16 +181,11 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
     return () => controller.abort();
   }, [initialLoading, loadProjects, refreshVersion]);
 
-  const pageProjects = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return projectsForFilters.slice(start, start + itemsPerPage);
-  }, [projectsForFilters, currentPage, itemsPerPage]);
-
   const teams = useMemo(
     () =>
-      pageProjects.map((project: any) => ({
+      projects.map((project: any) => ({
         teamCode: project.teamCode || "-",
-        nrc: project.nrc || "-",
+        nrc: project.nrc ?? null,
         teamName: project.team || "-",
         integrantes: project.integrantes
           ? String(project.integrantes).split(",").map((name: string) => name.trim())
@@ -284,9 +194,19 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
         calificacionFeria: project.calificacionFeria ?? null,
         calificacionDocente: project.calificacionDocente ?? null,
         videogameId: project.videogameId ?? null,
+        editionId: project.editionId ?? null,
+        editionLabel: (() => {
+          const edition = availableFairs.find((item) => String(item.id) === String(project.editionId));
+          if (!edition) return project.editionId == null ? "-" : `Edición ${project.editionId}`;
+          const semester = edition.semester === 10 ? 1 : edition.semester === 30 ? 2 : edition.semester;
+          return `${edition.year} - S${semester}`;
+        })(),
+        nrcId: project.nrcId ?? null,
+        canEdit: project.canEdit === true,
+        source: project.source === "historical" ? "historical" : "current",
         _rows: [project],
       })),
-    [pageProjects],
+    [projects, availableFairs],
   );
 
   const noStudents = !initialLoading && !isLoading && teams.length === 0;
@@ -319,5 +239,6 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
     handlePreviousPage,
     handleNextPage,
     reloadProjects,
+    retryLoad,
   };
 }

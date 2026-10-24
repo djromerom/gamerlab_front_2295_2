@@ -24,6 +24,11 @@ interface Props {
   setFilterSearch: (value: string) => void;
   filterType: GradeFilterType;
   setFilterType: (value: GradeFilterType) => void;
+  sortBy: "student" | "team";
+  setSortBy: (value: "student" | "team") => void;
+  sortOrder: "asc" | "desc";
+  setSortOrder: (value: "asc" | "desc") => void;
+  onClear: () => void;
 }
 
 const semesterLabel = (semester: number) => semester === 10 ? 1 : semester === 30 ? 2 : semester;
@@ -32,6 +37,7 @@ export default function StudentGradeFilters({
   selectedFair, setSelectedFair, setSelectedNRC, availableFairs,
   selectedEdition, availableNRCs, selectedNRC, initialLoading,
   filterSearch, setFilterSearch, filterType, setFilterType,
+  sortBy, setSortBy, sortOrder, setSortOrder, onClear,
 }: Props) {
   return (
     <Card className="rounded-lg overflow-hidden bg-card mb-6">
@@ -70,6 +76,25 @@ export default function StudentGradeFilters({
             </div>
           </div>
         </div>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="grade-sort-by" className="block text-xs font-medium mb-1.5 opacity-70">Ordenar por</label>
+              <select id="grade-sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value as "student" | "team")} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <option value="team">Grupo</option>
+                <option value="student">Estudiante</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="grade-sort-order" className="block text-xs font-medium mb-1.5 opacity-70">Orden</label>
+              <select id="grade-sort-order" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "asc" | "desc")} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <option value="asc">A-Z</option>
+                <option value="desc">Z-A</option>
+              </select>
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onClear} className="cursor-pointer self-start sm:self-auto">Limpiar filtros</Button>
+        </div>
         <div className="w-full">
           <label className="block text-xs font-medium mb-2 opacity-70">
             Filtrar por NRC{selectedEdition ? ` · ${selectedEdition.year} - S${semesterLabel(selectedEdition.semester)}` : ""}
@@ -77,8 +102,8 @@ export default function StudentGradeFilters({
           <div className="flex flex-wrap justify-start gap-2">
             <Button variant={selectedNRC === "" ? "default" : "outline"} size="sm" onClick={() => setSelectedNRC("")} className="cursor-pointer">Todos los NRCs</Button>
             {availableNRCs.map((nrc) => {
-              const value = String(selectedFair ? nrc.id : nrc.code);
-              return <Button key={selectedFair ? nrc.id : String(nrc.code)} variant={selectedNRC === value ? "default" : "outline"} size="sm" onClick={() => setSelectedNRC(selectedNRC === value ? "" : value)} className="cursor-pointer">{nrc.code}</Button>;
+              const value = String(nrc.id);
+              return <Button key={nrc.id} variant={selectedNRC === value ? "default" : "outline"} size="sm" onClick={() => setSelectedNRC(selectedNRC === value ? "" : value)} className="cursor-pointer">{nrc.code}</Button>;
             })}
             {!initialLoading && availableNRCs.length === 0 && <span className="text-xs text-muted-foreground self-center">No hay NRCs para este filtro.</span>}
           </div>

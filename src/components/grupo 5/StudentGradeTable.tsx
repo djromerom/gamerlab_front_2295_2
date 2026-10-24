@@ -1,16 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Edit, FileSpreadsheet, Loader2, Save, X } from "lucide-react";
 import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
+import { useFetch } from "@/hooks/useFetch";
 import StudentGradeFilters from "./StudentGradeFilters";
 import StudentGradeTableView from "./StudentGradeTableView";
 import { gradeKey, normalizeSearch, type GradeFilterType, type GradeTeam } from "./student-grade-table-types";
 
 export default function StudentGradeTable() {
+  const customFetch = useFetch();
   const [downloading, setDownloading] = useState(false);
   const [isEditingGrades, setIsEditingGrades] = useState(false);
   const [editedGrades, setEditedGrades] = useState<Record<string, string>>({});
@@ -18,25 +20,43 @@ export default function StudentGradeTable() {
   const gradeInputRefs = useRef(new Map<string, HTMLInputElement>());
   const [filterSearch, setFilterSearch] = useState("");
   const [filterType, setFilterType] = useState<GradeFilterType>("student");
-  const dashboard = useTeacherDashboard();
+  const [sortBy, setSortBy] = useState<"student" | "team">("team");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const dashboard = useTeacherDashboard({ search: filterSearch, searchType: filterType, sortBy, sortOrder });
   const {
     selectedNRC, setSelectedNRC, selectedFair, setSelectedFair, selectedEdition,
     availableFairs, currentPage, paginationMetadata, availableNRCs, isLoading,
-    initialLoading, error, setError, noStudents, teams, handlePreviousPage,
-    handleNextPage, reloadProjects,
+    initialLoading, error, noStudents, teams, handlePreviousPage,
+    handleNextPage, reloadProjects, retryLoad,
   } = dashboard;
 
-  const filteredTeams = teams.filter((team: GradeTeam) => {
-    const studentNames = Array.isArray(team.integrantes) ? team.integrantes.join(" ") : team.integrantes || "";
-    return normalizeSearch(filterType === "student" ? studentNames : team.teamName).includes(normalizeSearch(filterSearch));
-  });
+  const filteredTeams = useMemo(() => [...teams].sort((a, b) => {
+    const key = (team: GradeTeam) => sortBy === "team"
+      ? team.teamName
+      : (Array.isArray(team.integrantes) ? team.integrantes[0] : team.integrantes) || "";
+    const comparison = normalizeSearch(key(a)).localeCompare(normalizeSearch(key(b)), "es");
+    return sortOrder === "asc" ? comparison : -comparison;
+  }), [teams, sortBy, sortOrder]);
+
+  const clearFilters = () => {
+    setSelectedFair("");
+    setSelectedNRC("");
+    setFilterSearch("");
+    setFilterType("student");
+    setSortBy("team");
+    setSortOrder("asc");
+  };
 
   const exportToExcel = async () => {
     setDownloading(true);
-    toast("Preparando exportación global (todos los NRCs)...");
+    toast("Preparando exportación de los resultados filtrados...");
     try {
-      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
-      const response = await fetch(endpoint, { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } });
+      const query = new URLSearchParams({ final: "true", sortBy, sortOrder });
+      if (selectedFair) query.set("editionId", selectedFair);
+      if (selectedNRC) query.set("nrcId", selectedNRC);
+      if (filterSearch.trim()) query.set(filterType, filterSearch.trim());
+      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?${query}`;
+      const response = await customFetch(endpoint, { method: "GET", headers: { "Content-Type": "application/json" } });
       toast.dismiss();
       if (!response.ok) throw new Error("Error al exportar a Excel");
       const blob = await response.blob();
@@ -48,7 +68,7 @@ export default function StudentGradeTable() {
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("Reporte global exportado correctamente");
+      toast.success("Reporte de resultados filtrados exportado correctamente");
     } catch (exportError) {
       toast.dismiss();
       console.error("Error:", exportError);
@@ -60,14 +80,14 @@ export default function StudentGradeTable() {
 
   const enterEditMode = () => {
     const drafts: Record<string, string> = {};
-    teams.forEach((team: GradeTeam) => { drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : String(team.calificacionDocente); });
+    teams.filter((team: GradeTeam) => team.canEdit).forEach((team: GradeTeam) => { drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : String(team.calificacionDocente); });
     setEditedGrades(drafts);
     setIsEditingGrades(true);
   };
   const cancelEditMode = () => { setIsEditingGrades(false); setEditedGrades({}); };
 
   const saveGrades = async () => {
-    const changed = teams.filter((team: GradeTeam) => (editedGrades[gradeKey(team)] ?? "") !== (team.calificacionDocente == null ? "" : String(team.calificacionDocente)));
+    const changed = teams.filter((team: GradeTeam) => team.canEdit && (editedGrades[gradeKey(team)] ?? "") !== (team.calificacionDocente == null ? "" : String(team.calificacionDocente)));
     if (changed.length === 0) { toast.info("No hay cambios para guardar"); cancelEditMode(); return; }
     for (const team of changed) {
       const value = editedGrades[gradeKey(team)]?.trim() ?? "";
@@ -98,11 +118,10 @@ export default function StudentGradeTable() {
     } finally { setSavingGrade(false); }
   };
 
-  if (error) return <div className="p-4 rounded-md border"><h3 className="text-lg font-semibold">Error al cargar datos</h3><p>{error}</p><Button variant="outline" className="mt-2 cursor-pointer" onClick={() => { setError(null); reloadProjects(); toast.info("Intentando cargar los datos nuevamente..."); }}>Reintentar</Button></div>;
-
   return <div className="bg-background text-foreground min-h-screen p-4">
-    <div className="mb-6 px-4"><div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><div><h1 className="text-xl font-medium">Panel de Calificaciones</h1><p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p></div><div className="flex items-start sm:items-center">{isEditingGrades ? <div className="flex gap-2"><Button variant="outline" size="sm" onClick={cancelEditMode} disabled={savingGrade}><X className="h-4 w-4 mr-1.5" /> Cancelar</Button><Button size="sm" onClick={saveGrades} disabled={savingGrade}>{savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{savingGrade ? "Guardando..." : "Guardar cambios"}</Button></div> : <Button variant="outline" size="sm" onClick={enterEditMode} disabled={!teams.length || isLoading || initialLoading}><Edit className="h-4 w-4 mr-1.5" /> Editar notas</Button>}<div className="ml-2"><Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" className="cursor-pointer" onClick={exportToExcel} aria-label="Exportar todas las calificaciones" disabled={downloading}>{downloading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1.5" />}<span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span><span className="sm:hidden">Excel</span></Button></TooltipTrigger><TooltipContent side="top">Exportar todas las calificaciones a Excel</TooltipContent></Tooltip></div></div></div></div>
-    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} filterType={filterType} setFilterType={setFilterType} />
+    <div className="mb-6 px-4"><div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><div><h1 className="text-xl font-medium">Panel de Calificaciones</h1><p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p></div><div className="flex items-start sm:items-center">{isEditingGrades ? <div className="flex gap-2"><Button variant="outline" size="sm" onClick={cancelEditMode} disabled={savingGrade}><X className="h-4 w-4 mr-1.5" /> Cancelar</Button><Button size="sm" onClick={saveGrades} disabled={savingGrade}>{savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{savingGrade ? "Guardando..." : "Guardar cambios"}</Button></div> : <Button variant="outline" size="sm" onClick={enterEditMode} disabled={!teams.some((team: GradeTeam) => team.canEdit) || isLoading || initialLoading}><Edit className="h-4 w-4 mr-1.5" /> Editar notas</Button>}<div className="ml-2"><Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" className="cursor-pointer" onClick={exportToExcel} aria-label="Exportar resultados filtrados" disabled={downloading}>{downloading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1.5" />}<span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span><span className="sm:hidden">Excel</span></Button></TooltipTrigger><TooltipContent side="top">Exportar los resultados filtrados a Excel</TooltipContent></Tooltip></div></div></div></div>
+    {error && <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"><div><strong>Error al actualizar el listado.</strong> La tabla conserva el último resultado válido y puede corresponder a los filtros anteriores. {error}</div><Button variant="outline" size="sm" className="cursor-pointer self-start sm:self-auto" onClick={retryLoad}>Reintentar</Button></div>}
+    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} filterType={filterType} setFilterType={setFilterType} sortBy={sortBy} setSortBy={setSortBy} sortOrder={sortOrder} setSortOrder={setSortOrder} onClear={clearFilters} />
     <StudentGradeTableView teams={teams} filteredTeams={filteredTeams} initialLoading={initialLoading} isLoading={isLoading} noStudents={noStudents} isEditingGrades={isEditingGrades} editedGrades={editedGrades} setEditedGrades={setEditedGrades} savingGrade={savingGrade} gradeInputRefs={gradeInputRefs} currentPage={currentPage} totalPages={paginationMetadata?.totalPages ?? 0} handlePreviousPage={handlePreviousPage} handleNextPage={handleNextPage} />
   </div>;
 }
