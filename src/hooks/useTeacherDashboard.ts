@@ -203,7 +203,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
         })(),
         nrcId: project.nrcId ?? null,
         canEdit: project.canEdit === true,
-        source: project.source === "historical" ? "historical" : "current",
+        source: project.source === "historical" ? "historical" as const : "current" as const,
         _rows: [project],
       })),
     [projects, availableFairs],
