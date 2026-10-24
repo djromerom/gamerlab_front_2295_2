@@ -15,6 +15,7 @@ interface Props {
   isEditingGrades: boolean;
   editedGrades: Record<string, string>;
   setEditedGrades: (update: (previous: Record<string, string>) => Record<string, string>) => void;
+  gradeResults: Record<string, { ok: boolean; message: string }>;
   savingGrade: boolean;
   gradeInputRefs: RefObject<Map<string, HTMLInputElement>>;
   currentPage: number;
@@ -23,7 +24,7 @@ interface Props {
   handleNextPage: () => void;
 }
 
-export default function StudentGradeTableView({ teams, filteredTeams, initialLoading, isLoading, noStudents, isEditingGrades, editedGrades, setEditedGrades, savingGrade, gradeInputRefs, currentPage, totalPages, handlePreviousPage, handleNextPage }: Props) {
+export default function StudentGradeTableView({ teams, filteredTeams, initialLoading, isLoading, noStudents, isEditingGrades, editedGrades, setEditedGrades, gradeResults, savingGrade, gradeInputRefs, currentPage, totalPages, handlePreviousPage, handleNextPage }: Props) {
   return <>
     <div className="rounded-md border bg-[var(--card)] shadow-sm overflow-hidden">
       <Table>
@@ -39,12 +40,16 @@ export default function StudentGradeTableView({ teams, filteredTeams, initialLoa
             <TableRow><TableCell colSpan={8} className="h-24 text-center text-sm opacity-70">No se encontraron equipos con esos criterios de búsqueda.</TableCell></TableRow>
           ) : filteredTeams.map((team, index) => {
             const key = gradeKey(team);
-            return <TableRow key={`${team.editionId ?? "edition"}-${team.teamCode}-${team.videogameId ?? "game"}`} className="hover:bg-muted/50 transition-colors">
+            const draft = (editedGrades[key] ?? "").trim();
+            const original = team.calificacionDocente;
+            const isDirty = team.canEdit && (draft === "" ? original != null : !Number.isFinite(Number(draft)) || original == null || Number(draft) !== original);
+            const result = gradeResults[key];
+            return <TableRow key={`${team.editionId ?? "edition"}-${team.teamCode}-${team.videogameId ?? "game"}`} className={`hover:bg-muted/50 transition-colors ${isDirty ? "bg-amber-500/10" : ""}`}>
               <TableCell className="font-medium">{team.teamCode}</TableCell><TableCell>{team.editionLabel}</TableCell><TableCell>{team.source === "historical" && !team.nrc ? <span className="text-muted-foreground" title="Este snapshot histórico se creó antes de guardar los NRC asociados.">No registrado</span> : team.nrc || "-"}</TableCell><TableCell>{team.teamName}</TableCell>
               <TableCell><div className="text-sm opacity-80">{Array.isArray(team.integrantes) ? team.integrantes.join(", ") : team.integrantes || "-"}</div></TableCell>
               <TableCell>{team.videogame}</TableCell>
               <TableCell className="text-center">{team.calificacionFeria != null ? team.calificacionFeria.toFixed(1) : <span className="text-orange-600 font-medium">Pendiente</span>}</TableCell>
-              <TableCell className="text-center">{isEditingGrades && team.canEdit ? <div className="flex items-center justify-center gap-2"><Input ref={(element) => { if (element) gradeInputRefs.current.set(key, element); else gradeInputRefs.current.delete(key); }} type="number" min="0" max="5" step="0.1" value={editedGrades[key] ?? ""} onChange={(event) => setEditedGrades((previous) => ({ ...previous, [key]: event.target.value }))} className="w-20 h-8 text-center" autoFocus={index === 0} disabled={savingGrade} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); const nextTeam = filteredTeams.slice(index + 1).find((candidate) => candidate.canEdit); if (nextTeam) gradeInputRefs.current.get(gradeKey(nextTeam))?.focus(); } }} /></div> : <span className={team.calificacionDocente != null ? "" : "text-orange-600 font-medium"}>{team.calificacionDocente != null ? team.calificacionDocente.toFixed(1) : team.source === "historical" ? <span className="text-muted-foreground">Sin dato histórico</span> : "Pendiente"}{!team.canEdit && <span className="block text-xs opacity-60">Solo lectura</span>}</span>}</TableCell>
+              <TableCell className="text-center">{isEditingGrades && team.canEdit ? <div className="flex flex-col items-center gap-1"><Input ref={(element) => { if (element) gradeInputRefs.current.set(key, element); else gradeInputRefs.current.delete(key); }} type="number" min="0" max="5" step="0.01" value={editedGrades[key] ?? ""} onChange={(event) => setEditedGrades((previous) => ({ ...previous, [key]: event.target.value }))} aria-invalid={result?.ok === false} className={`w-24 h-8 text-center ${result?.ok === false ? "border-destructive" : ""}`} autoFocus={index === 0} disabled={savingGrade} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); const nextTeam = filteredTeams.slice(index + 1).find((candidate) => candidate.canEdit); if (nextTeam) gradeInputRefs.current.get(gradeKey(nextTeam))?.focus(); } }} />{isDirty && !result && <span className="text-xs text-amber-700 dark:text-amber-300">Modificada</span>}{result && <span role="status" className={`text-xs ${result.ok ? "text-emerald-600" : "text-destructive"}`}>{result.ok ? "Guardada" : result.message}</span>}</div> : <span className={team.calificacionDocente != null ? "" : "text-orange-600 font-medium"}>{team.calificacionDocente != null ? team.calificacionDocente.toFixed(1) : team.source === "historical" ? <span className="text-muted-foreground">Sin dato histórico</span> : "Pendiente"}{!team.canEdit && <span className="block text-xs opacity-60">Solo lectura</span>}</span>}</TableCell>
             </TableRow>;
           })}
         </TableBody>
