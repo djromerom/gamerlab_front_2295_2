@@ -61,6 +61,8 @@ export default function StudentGradeTable() {
   const [savingGrade, setSavingGrade] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
   const [filterType, setFilterType] = useState<"student" | "team">("student");
+  const [sortBy, setSortBy] = useState<"student" | "team">("team");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // 2. Nuestro asistente personal (el Hook) trayendo la data:
   const {
@@ -83,7 +85,7 @@ export default function StudentGradeTable() {
     handlePreviousPage,
     handleNextPage,
     reloadProjects,
-  } = useTeacherDashboard();
+  } = useTeacherDashboard({ sortBy, sortOrder });
 
   const normalizeSearch = (value: unknown) =>
     String(value ?? "")
@@ -99,6 +101,16 @@ export default function StudentGradeTable() {
     const searchableName = filterType === "student" ? studentNames : team.teamName;
     return normalizeSearch(searchableName).includes(normalizeSearch(filterSearch));
   });
+
+  const clearFilters = () => {
+    setSelectedFair("");
+    setSelectedNRC("");
+    setFilterSearch("");
+    setFilterType("student");
+    setSortBy("team");
+    setSortOrder("asc");
+    setCurrentPage(1);
+  };
 
   // Show error state
   if (error) {
@@ -647,6 +659,53 @@ export default function StudentGradeTable() {
               </DropdownMenu>
             </div>
           </div>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="grade-sort-by" className="block text-xs font-medium mb-1.5 opacity-70">
+                Ordenar por
+              </label>
+              <select
+                id="grade-sort-by"
+                value={sortBy}
+                onChange={(event) => {
+                  setSortBy(event.target.value as "student" | "team");
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="team">Grupo</option>
+                <option value="student">Estudiante</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="grade-sort-order" className="block text-xs font-medium mb-1.5 opacity-70">
+                Orden
+              </label>
+              <select
+                id="grade-sort-order"
+                value={sortOrder}
+                onChange={(event) => {
+                  setSortOrder(event.target.value as "asc" | "desc");
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="asc">A-Z</option>
+                <option value="desc">Z-A</option>
+              </select>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearFilters}
+            className="cursor-pointer self-start sm:self-auto"
+          >
+            Limpiar filtros
+          </Button>
         </div>
       </Card>
 
