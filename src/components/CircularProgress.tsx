@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 
@@ -27,7 +28,7 @@ export default function CircularProgress({
 
 
     const getNumberCalifications = async () => {
-        const resTeam = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
+        const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
             method: 'GET',
             headers: { "Content-Type": "application/json" },
             credentials: 'include',
@@ -42,7 +43,7 @@ export default function CircularProgress({
         const idTeam = getTeam.id
 
 
-        const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/juror/teams/${idTeam}/evaluation-stats`, {
+        const res = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/juror/teams/${idTeam}/evaluation-stats`, {
             method: 'GET',
             headers: { "Content-Type": "application/json" },
             credentials: 'include',

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -53,7 +54,7 @@ export default function ResetPassword() {
         setCurrentToken(token);
 
         try {
-            const response = await fetch(
+            const response = await apiFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/verify-token?type=RESETEAR_CONTRASENA&token=${encodeURIComponent(token)}`,
             {
                 method: "GET",
@@ -133,7 +134,7 @@ export default function ResetPassword() {
         setMessage("Estableciendo tu contraseña...");
     
         try {
-            const response = await fetch(
+            const response = await apiFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/set-password`,
             {
                 method: "POST",

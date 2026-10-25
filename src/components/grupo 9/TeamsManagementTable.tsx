@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
@@ -138,7 +139,7 @@ export const TeamsManagementTable = ({
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(API_ENDPOINT, {
+        const res = await apiFetch(API_ENDPOINT, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -182,7 +183,7 @@ export const TeamsManagementTable = ({
       },
     };
 
-    const res = await fetch(`${apiBaseUrl}/teams/${teamId}`, {
+    const res = await apiFetch(`${apiBaseUrl}/teams/${teamId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -203,7 +204,7 @@ export const TeamsManagementTable = ({
       const body: any = { email, typeOfEmail };
       if (reason) body.rejectionReason = reason;
 
-      const res = await fetch(`${apiBaseUrl}/email/resend-team-email`, {
+      const res = await apiFetch(`${apiBaseUrl}/email/resend-team-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -242,7 +243,7 @@ export const TeamsManagementTable = ({
         if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
         try {
           const body: any = { email, typeOfEmail: certType, certificate: "" };
-          const res = await fetch(`${apiBaseUrl}/email/resend-certificate-email`, {
+          const res = await apiFetch(`${apiBaseUrl}/email/resend-certificate-email`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -299,7 +300,7 @@ export const TeamsManagementTable = ({
     if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
+      const res = await apiFetch(`${apiBaseUrl}/auth/resend-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -693,7 +694,7 @@ export const TeamsManagementTable = ({
     if (internalIsLoading) return;
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/teams/${deletingId}`, {
+      const res = await apiFetch(`${apiBaseUrl}/teams/${deletingId}`, {
         method: "DELETE",
         credentials: "include",
       });

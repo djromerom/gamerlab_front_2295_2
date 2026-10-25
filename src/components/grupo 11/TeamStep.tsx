@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useMultiForm } from "@/contexts/MultiFormContext";
@@ -27,7 +28,7 @@ export default function TeamStep() {
     setLoading(true);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/name/${teamName}`
       );
       const exists = await res.json();

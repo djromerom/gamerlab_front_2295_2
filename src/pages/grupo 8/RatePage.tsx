@@ -35,7 +35,7 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
 import { UiCriterion } from "@/types/criterion";
 import { Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -52,6 +52,11 @@ interface Game {
 }
 
 export default function RatePage() {
+  const pendingSubmission = useRef<{
+    fingerprint: string;
+    idempotencyKey: string;
+    body: string;
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const game = location.state?.game as Game | undefined;
@@ -264,12 +269,25 @@ export default function RatePage() {
       });
     }
 
-    const evaluationPayload = {
-      date: currentDate,
+    const fingerprint = JSON.stringify({
       videogameId: game.id,
-      comments: comments,
-      details: parsedDetails,
-    };
+      comments,
+      details: parsedDetails.map(({ criterionId, score }) => ({ criterionId, score })),
+    });
+    if (pendingSubmission.current?.fingerprint !== fingerprint) {
+      const evaluationPayload = {
+        date: currentDate,
+        videogameId: game.id,
+        comments,
+        details: parsedDetails,
+      };
+      pendingSubmission.current = {
+        fingerprint,
+        idempotencyKey: crypto.randomUUID(),
+        body: JSON.stringify(evaluationPayload),
+      };
+    }
+    const submission = pendingSubmission.current;
     // evaluacion exitosa no existe
     // Enviamos la evaluación usando apiFetch para proteger el trabajo del jurado.
     // Si la sesión expiró justo antes de dar 'Confirmar', apiFetch la recuperará automáticamente.
@@ -279,8 +297,11 @@ export default function RatePage() {
         {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(evaluationPayload),
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": submission.idempotencyKey,
+          },
+          body: submission.body,
         },
       );
 
@@ -302,6 +323,7 @@ export default function RatePage() {
       }
 
       setConfirmDialogOpen(false);
+      pendingSubmission.current = null;
       showSuccessToast(
         `Evaluación del juego "${game.nombre}" enviada exitosamente`,
       );

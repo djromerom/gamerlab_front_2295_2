@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const contextRefreshAccessToken = async (): Promise<string | null> => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`,
         {
           method: "POST",

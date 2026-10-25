@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { Textarea } from "@/components/grupo 8/textarea";
@@ -308,7 +310,7 @@ export default function SchoolRate() {
     };
     // evaluacion exitosa no existe
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/with-details`,
         {
           method: "POST",
