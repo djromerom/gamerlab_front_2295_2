@@ -531,7 +531,8 @@ export default function StudentGradeTable() {
           )}
 
           {/* Filtro de Feria */}
-          <div className="w-full border-b border-border pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4 border-b border-border pb-4">
+            <div className="w-full lg:flex-1">
               <label className="block text-xs font-medium mb-2 opacity-70">
                 Filtrar por Feria
               </label>
@@ -567,99 +568,56 @@ export default function StudentGradeTable() {
                   </span>
                 )}
               </div>
-          </div>
-
-          {/* Filtro opcional: al dejarlo en Todos se conservan todos los proyectos del alcance. */}
-          <div className="w-full">
-            <label className="block text-xs font-medium mb-2 opacity-70">
-              Filtrar por NRC{selectedEdition ? ` · ${selectedEdition.year} - S${selectedEdition.semester === 10 ? 1 : selectedEdition.semester === 30 ? 2 : selectedEdition.semester}` : ""}
-            </label>
-            <div className="flex flex-wrap justify-start gap-2">
-              <Button
-                variant={selectedNRC === "" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedNRC("")}
-                className="cursor-pointer"
-              >
-                Todos los NRCs
-              </Button>
-              {availableNRCs.map((nrc) => (
-                <Button
-                  key={selectedFair ? nrc.id : String(nrc.code)}
-                  variant={
-                    selectedNRC === String(selectedFair ? nrc.id : nrc.code)
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() => {
-                    const filterValue = String(
-                      selectedFair ? nrc.id : nrc.code,
-                    );
-                    setSelectedNRC(
-                      selectedNRC === filterValue ? "" : filterValue,
-                    );
-                  }}
-                  className="cursor-pointer"
-                >
-                  {nrc.code}
-                </Button>
-              ))}
-              {!initialLoading && availableNRCs.length === 0 && (
-                <span className="text-xs text-muted-foreground self-center">
-                  No hay NRCs para este filtro.
-                </span>
-              )}
             </div>
-          </div>
 
-          <div className="w-full lg:max-w-sm">
-            <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">
-              Filtrar por nombre
-            </label>
-            <div className="flex">
-              <div className="relative min-w-0 flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
-                <Input
-                  id="grade-search"
-                  value={filterSearch}
-                  onChange={(event) => {
-                    setFilterSearch(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"}
-                  className="h-9 pl-9 rounded-r-none"
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`}
-                    title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`}
-                    className="h-9 w-9 rounded-l-none -ml-px"
-                  >
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuRadioGroup
-                    value={filterType}
-                    onValueChange={(value) => {
-                      setFilterType(value as "student" | "team");
+            <div className="w-full lg:w-1/3 lg:max-w-sm lg:ml-auto">
+              <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">
+                Filtrar por estudiante o equipo
+              </label>
+              <div className="flex max-w-sm lg:ml-auto">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
+                  <Input
+                    id="grade-search"
+                    value={filterSearch}
+                    onChange={(event) => {
+                      setFilterSearch(event.target.value);
                       setCurrentPage(1);
                     }}
-                  >
-                    <DropdownMenuRadioItem value="student">Estudiante</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="team">Equipo</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"}
+                    className="h-8 md:h-8 pl-9 rounded-r-none"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      className="!h-8 !w-8 rounded-l-none -ml-px"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuRadioGroup
+                      value={filterType}
+                      onValueChange={(value) => {
+                        setFilterType(value as "student" | "team");
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <DropdownMenuRadioItem value="student">Estudiante</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="team">Equipo</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
-        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border pb-4">
           <div className="flex flex-wrap items-end gap-3">
             <div>
@@ -706,6 +664,51 @@ export default function StudentGradeTable() {
           >
             Limpiar filtros
           </Button>
+        </div>
+
+        {/* Filtro opcional: al dejarlo en Todos se conservan todos los proyectos del alcance. */}
+        <div className="w-full">
+          <label className="block text-xs font-medium mb-2 opacity-70">
+            Filtrar por NRC{selectedEdition ? ` · ${selectedEdition.year} - S${selectedEdition.semester === 10 ? 1 : selectedEdition.semester === 30 ? 2 : selectedEdition.semester}` : ""}
+          </label>
+          <div className="flex flex-wrap justify-start gap-2">
+            <Button
+              variant={selectedNRC === "" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedNRC("")}
+              className="cursor-pointer"
+            >
+              Todos los NRCs
+            </Button>
+            {availableNRCs.map((nrc) => (
+              <Button
+                key={selectedFair ? nrc.id : String(nrc.code)}
+                variant={
+                  selectedNRC === String(selectedFair ? nrc.id : nrc.code)
+                    ? "default"
+                    : "outline"
+                }
+                size="sm"
+                onClick={() => {
+                  const filterValue = String(
+                    selectedFair ? nrc.id : nrc.code,
+                  );
+                  setSelectedNRC(
+                    selectedNRC === filterValue ? "" : filterValue,
+                  );
+                }}
+                className="cursor-pointer"
+              >
+                {nrc.code}
+              </Button>
+            ))}
+            {!initialLoading && availableNRCs.length === 0 && (
+              <span className="text-xs text-muted-foreground self-center">
+                No hay NRCs para este filtro.
+              </span>
+            )}
+          </div>
+        </div>
         </div>
       </Card>
 
