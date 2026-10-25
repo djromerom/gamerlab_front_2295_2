@@ -25,6 +25,11 @@ interface Props {
   filterType: GradeFilterType;
   setFilterType: (value: GradeFilterType) => void;
   disabled?: boolean;
+  sortBy: "student" | "team";
+  setSortBy: (value: "student" | "team") => void;
+  sortOrder: "asc" | "desc";
+  setSortOrder: (value: "asc" | "desc") => void;
+  onClear: () => void;
 }
 
 const semesterLabel = (semester: number) => semester === 10 ? 1 : semester === 30 ? 2 : semester;
@@ -34,6 +39,7 @@ export default function StudentGradeFilters({
   selectedEdition, availableNRCs, selectedNRC, initialLoading,
   filterSearch, setFilterSearch, filterType, setFilterType,
   disabled = false,
+  sortBy, setSortBy, sortOrder, setSortOrder, onClear,
 }: Props) {
   return (
     <Card className="rounded-lg overflow-hidden bg-card mb-6">
@@ -71,6 +77,25 @@ export default function StudentGradeFilters({
               </DropdownMenu>
             </div>
           </div>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="grade-sort-by" className="block text-xs font-medium mb-1.5 opacity-70">Ordenar por</label>
+              <select id="grade-sort-by" disabled={disabled} value={sortBy} onChange={(event) => setSortBy(event.target.value as "student" | "team")} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <option value="team">Grupo</option>
+                <option value="student">Estudiante</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="grade-sort-order" className="block text-xs font-medium mb-1.5 opacity-70">Orden</label>
+              <select id="grade-sort-order" disabled={disabled} value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "asc" | "desc")} className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <option value="asc">A-Z</option>
+                <option value="desc">Z-A</option>
+              </select>
+            </div>
+          </div>
+          <Button type="button" disabled={disabled} variant="outline" size="sm" onClick={onClear} className="cursor-pointer self-start sm:self-auto">Limpiar filtros</Button>
         </div>
         <div className="w-full">
           <label className="block text-xs font-medium mb-2 opacity-70">
