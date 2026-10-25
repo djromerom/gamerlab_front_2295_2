@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
@@ -60,7 +61,7 @@ const SchoolGradesPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/graded-games?jurorId=${jurorId}&page=${page}&limit=${limit}`,
         {
           method: "GET",
@@ -111,7 +112,7 @@ const SchoolGradesPage: React.FC = () => {
     setIsSearching(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/graded-games/search?q=${encodeURIComponent(query)}`,
 
         {

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -152,7 +153,7 @@ export default function MisJuradosPage() {
       try {
         setLoading(true);
 
-        const teamsRes = await fetch(`${apiBaseUrl}/teams`, {
+        const teamsRes = await apiFetch(`${apiBaseUrl}/teams`, {
           method: "GET",
           credentials: "include",
           headers: {
@@ -197,7 +198,7 @@ export default function MisJuradosPage() {
 
         setStudentGameName(myVideogameName);
 
-        const juradosRes = await fetch(`${apiBaseUrl}/reports/JuradosData`, {
+        const juradosRes = await apiFetch(`${apiBaseUrl}/reports/JuradosData`, {
           method: "GET",
           credentials: "include",
           headers: {

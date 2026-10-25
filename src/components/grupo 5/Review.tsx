@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 "use client"
 
 import { useState, useEffect } from "react"
@@ -235,7 +236,7 @@ export default function Review() {
   const fetchEvaluations = async (page: number, limit: number = 10) => {
     setIsLoading(true)
     try {
-      const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students?page=${page}&limit=${limit}`, {
+      const res = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students?page=${page}&limit=${limit}`, {
         method: "GET",
         credentials: "include",
       })

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 // CustomTableRowBeta.tsx
 "use client";
 
@@ -41,7 +42,7 @@ export const CustomTableRowBeta = ({ title, description }: CustomTableRowProps) 
     
 
     try {
-      const response = await fetch(endpointUrl, {
+      const response = await apiFetch(endpointUrl, {
         method: "GET",
         credentials: "include",
       });

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 // Frontend JavaScript/TypeScript
 // Frontend TypeScript helper for file upload and temporary URL retrieval
 export interface UploadResult {
@@ -32,7 +33,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload`, {
+  const res = await apiFetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload`, {
     method: 'POST',
     body: formData,
     credentials: 'include', // include cookies for auth if backend relies on them
@@ -51,7 +52,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload/zip`,
+  const res = await apiFetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload/zip`,
     {
       method: 'POST',
       body: formData,
@@ -69,7 +70,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
 export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   if (!uploadId) throw new Error('getImageUrl: uploadId is required');
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${BACKEND_BASE.replace(/\/$/, '')}/upload/${encodeURIComponent(uploadId)}/url?
     )}`,
     {
@@ -102,7 +103,7 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
 export async function getGameFileEntry(videogameID: number): Promise<videogameFetchResult> {
   const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/videogames/${videogameID}`;
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${endpoint}`,
     {
       method: 'GET',

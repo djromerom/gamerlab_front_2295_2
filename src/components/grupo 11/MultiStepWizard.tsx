@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useForm, FormProvider } from "react-hook-form";
@@ -67,7 +68,7 @@ export default function MultiStepWizard() {
 
   async function onSubmit(data: CombinedFormValues) {
 
-    const res = await fetch(
+    const res = await apiFetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
       }`
     );

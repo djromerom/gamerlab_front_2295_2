@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { ProfessorsTable } from "@/components/grupo 9/professorsTable";
 import { useState, useEffect } from "react";
@@ -48,7 +50,7 @@ export const ProfessorsPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${PROFESSORS_API_ENDPOINT}?page=${page}&limit=${limit}`, // Added includeInactive=true to get all, filtering is in table
         {
           method: "GET",

@@ -6,7 +6,7 @@ import { useCriteria } from "@/hooks/use-criteria";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -30,6 +30,11 @@ interface GameScores {
 }
 
 export default function BatchRatePage() {
+  const pendingSubmission = useRef<{
+    fingerprint: string;
+    idempotencyKey: string;
+    body: string;
+  } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const games = (location.state?.games || []) as BatchGame[];
@@ -72,16 +77,6 @@ export default function BatchRatePage() {
     } catch (e) {
       // Ignorar
     }
-  };
-
-  const clearAllDrafts = () => {
-    games.forEach((game) => {
-      try {
-        localStorage.removeItem(`batch-rate-draft-${game.id}`);
-      } catch (e) {
-        /* Ignorar */
-      }
-    });
   };
 
   useEffect(() => {
@@ -235,13 +230,32 @@ export default function BatchRatePage() {
       };
     });
 
+    const fingerprint = JSON.stringify(
+      evaluations.map(({ videogameId, comments, details }) => ({
+        videogameId,
+        comments,
+        details: details.map(({ criterionId, score }) => ({ criterionId, score })),
+      })),
+    );
+    if (pendingSubmission.current?.fingerprint !== fingerprint) {
+      pendingSubmission.current = {
+        fingerprint,
+        idempotencyKey: crypto.randomUUID(),
+        body: JSON.stringify({ evaluations }),
+      };
+    }
+    const submission = pendingSubmission.current;
+
     try {
       const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/batch`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ evaluations }),
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": submission.idempotencyKey,
+          },
+          body: submission.body,
         },
       );
 
@@ -250,7 +264,16 @@ export default function BatchRatePage() {
         throw new Error(data.message || "Error al guardar evaluaciones");
 
       setResult(data.results);
-      clearAllDrafts();
+      pendingSubmission.current = null;
+      data.results.successful.forEach(
+        (item: { videogameId: number }) => {
+          try {
+            localStorage.removeItem(`batch-rate-draft-${item.videogameId}`);
+          } catch {
+            // Ignore storage failures; the in-memory form remains available.
+          }
+        },
+      );
 
       toast.success(
         `${data.results.successful.length} evaluaciones guardadas correctamente`,

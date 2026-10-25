@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { Card } from "@/components/ui/card";
@@ -28,7 +30,7 @@ export default function GradeWeightsPage() {
 	async function load() {
 		try {
 			// GET the weights for the configured edition
-			const res = await fetch(`${API_BASE_URL}/settings/weights`, {
+			const res = await apiFetch(`${API_BASE_URL}/settings/weights`, {
 				method: "GET",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
@@ -80,7 +82,7 @@ export default function GradeWeightsPage() {
 		setLoading(true);
 		try {
 			// call backend (expects editionId + seniorPct/juniorPct) and require a successful response before confirming
-			const res = await fetch(`${API_BASE_URL}/settings/weights`, {
+			const res = await apiFetch(`${API_BASE_URL}/settings/weights`, {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },

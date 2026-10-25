@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import {
   SidebarInset,
@@ -177,7 +179,7 @@ export function RealtimeTrackingPanel() {
     try {
       setLoadError(null);
 
-      const response = await fetch(`${API_BASE}/juror/evaluation-tracking`, {
+      const response = await apiFetch(`${API_BASE}/juror/evaluation-tracking`, {
         method: "GET",
         credentials: "include",
         cache: "no-store",

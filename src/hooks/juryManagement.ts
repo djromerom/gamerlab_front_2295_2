@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { PaginatedJurors } from "@/components/grupo 12/utils";
 import { toast } from "sonner";
 
@@ -8,7 +9,7 @@ const includeInactive = false;
 export const juryManagement = {
     getJuries : async (page: number, limit: number) => {
 
-        const res = await fetch(`${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`, {
+        const res = await apiFetch(`${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`, {
             method: "GET",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -31,7 +32,7 @@ export const juryManagement = {
 
     getTeams: async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/teams/?page=1&limit=null`, {
+            const res = await apiFetch(`${API_BASE_URL}/teams/?page=1&limit=null`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -48,7 +49,7 @@ export const juryManagement = {
 
     getTeamsByJuror: async (jurorId) => {
         try {
-            const res = await fetch(`${API_ENDPOINT}/${jurorId}/teams`, {
+            const res = await apiFetch(`${API_ENDPOINT}/${jurorId}/teams`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" }
@@ -70,7 +71,7 @@ export const juryManagement = {
 
     getIncompleteJurors: async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
+            const res = await apiFetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -86,7 +87,7 @@ export const juryManagement = {
     },
 
     automaticAssignment: async () => {
-        const res = await fetch(`${API_ENDPOINT}/evaluations-assignment`, {
+        const res = await apiFetch(`${API_ENDPOINT}/evaluations-assignment`, {
             method: 'GET',
             credentials: 'include',
             headers: { 
@@ -110,7 +111,7 @@ export const juryManagement = {
     },
 
     manualAssignment: async (jurorId, teamId) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'POST',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -131,7 +132,7 @@ export const juryManagement = {
     },
 
     deleteAllAssignments: async (setLoading) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments/all`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments/all`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -150,7 +151,7 @@ export const juryManagement = {
     },
 
     deleteAllAsignmentsByJury: async (juryId, setLoading) => {
-        const res = await fetch(`${API_ENDPOINT}/${juryId}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/${juryId}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -169,7 +170,7 @@ export const juryManagement = {
     },
 
     deleteAnAssignment: async (jurorId, teamId) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },

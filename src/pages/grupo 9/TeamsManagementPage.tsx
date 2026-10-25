@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { TeamsManagementTable } from "@/components/grupo 9/TeamsManagementTable";
 import { useState, useEffect, useCallback } from "react";
@@ -38,7 +40,7 @@ const TeamsManagementPage = () => {
     } // prevent multiple petitions
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${API_ENDPOINT}/teams/leader/${encodeURIComponent(email)}/status`, {
+      const res = await apiFetch(`${API_ENDPOINT}/teams/leader/${encodeURIComponent(email)}/status`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -190,7 +192,7 @@ const TeamsManagementPage = () => {
 
   const fetchAllTeams = async () => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_ENDPOINT}/teams`,
         {
           method: "GET",
@@ -229,7 +231,7 @@ const TeamsManagementPage = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_ENDPOINT}/teams?page=${page}&limit=${limit}`,
         {
           method: "GET",

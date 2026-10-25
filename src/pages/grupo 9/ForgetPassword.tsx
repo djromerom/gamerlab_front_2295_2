@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,7 @@ export default function ForgetPassword() {
         setError(null);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/reset-password`, {
+            const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

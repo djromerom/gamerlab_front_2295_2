@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, UserIcon, UserPen, BadgeXIcon, Download } from "lucide-react";
@@ -67,7 +69,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     setExportLoading(true);
     try {
       const endpoint = `${apiBaseUrl.replace(/\/$/, "")}/reports/exportJurados`;
-      const res = await fetch(endpoint, { method: "GET", credentials: "include" });
+      const res = await apiFetch(endpoint, { method: "GET", credentials: "include" });
       if (!res.ok) {
         let msg = `Error ${res.status}: ${res.statusText}`;
         try {
