@@ -123,11 +123,13 @@ export default function StudentGradeTable() {
   // Export to Excel function
   const exportToExcel = () => {
     setDownloading(true);
+    toast("Preparando exportación de los resultados filtrados...");
 
-    // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
-    toast(`Preparando exportación global (todos los NRCs)...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
+    const query = new URLSearchParams({ final: "true" });
+    if (selectedFair) query.set("editionId", selectedFair);
+    if (selectedNRC) query.set("nrcId", selectedNRC);
+    if (filterSearch.trim()) query.set(filterType, filterSearch.trim());
+    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?${query}`;
 
     fetch(endpoint, {
       method: "GET",
@@ -149,7 +151,7 @@ export default function StudentGradeTable() {
         document.body.appendChild(a);
         a.click();
         a.remove();
-        toast.success(`Reporte global exportado correctamente`);
+        toast.success("Reporte de resultados filtrados exportado correctamente");
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -275,7 +277,7 @@ export default function StudentGradeTable() {
           size="sm"
           className="cursor-pointer"
           onClick={exportToExcel}
-          aria-label="Exportar todas las calificaciones"
+          aria-label="Exportar resultados filtrados"
           disabled={downloading}
         >
           {downloading ? (
@@ -290,7 +292,7 @@ export default function StudentGradeTable() {
         </Button>
       </TooltipTrigger>
       <TooltipContent side="top">
-        Exportar todas las calificaciones a Excel
+        Exportar los resultados filtrados a Excel
       </TooltipContent>
     </Tooltip>
   );
