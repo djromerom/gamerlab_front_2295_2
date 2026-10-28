@@ -23,7 +23,7 @@ function canRetry(method: string, headers: Headers) {
 
 function buildOptions(options: RequestInit, token?: string | null): RequestInit {
   const headers = new Headers(options.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (token) headers.set("Authorization", ["Bearer", token].join(" "));
   return { ...options, credentials: options.credentials ?? "include", headers };
 }
 

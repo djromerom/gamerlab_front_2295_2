@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useFetch } from "./useFetch";
 
 interface PaginationMetadata {
   totalItems: number;
@@ -24,6 +25,7 @@ export function useTeacherDashboard({
   initialNRC,
   itemsPerPage = 20,
 }: UseTeacherDashboardProps = {}) {
+  const customFetch = useFetch();
   // Aqui se colocan los estados (isLoading, students, error, etc)
   const defaultNRC = initialNRC || "-";
   // Selection states: primero Materia, luego NRC (NRC depende de la materia)
@@ -66,7 +68,7 @@ export function useTeacherDashboard({
   useEffect(() => {
     const fetchAvailableSubjects = async () => {
       try {
-        const response = await fetch(
+        const response = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/my-subjects`,
           {
             method: "GET",
@@ -236,7 +238,7 @@ export function useTeacherDashboard({
       setNoStudents(false);
 
       try {
-        const response = await fetch(
+        const response = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/nrc-report/${nrc}?page=${page}&limit=${itemsPerPage}`,
           {
             method: "GET",
@@ -330,7 +332,7 @@ export function useTeacherDashboard({
       try {
         let response;
         if (subject === "Evaluaciones como Jurado (Universitarios)") {
-          response = await fetch(
+          response = await customFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/juror-evaluations?page=${page}&limit=${itemsPerPage}`,
             {
               method: "GET",
@@ -339,7 +341,7 @@ export function useTeacherDashboard({
             },
           );
         } else {
-          response = await fetch(
+          response = await customFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/signature-report/${encodeURIComponent(subject)}?page=${page}&limit=${itemsPerPage}`,
             {
               method: "GET",

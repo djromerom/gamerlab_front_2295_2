@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useFetch } from "@/hooks/useFetch";
 
 interface Props {
   initialNRC?: string;
@@ -55,6 +56,7 @@ interface PaginationMetadata {
 }
 
 export default function StudentGradeTable({ initialNRC }: Props) {
+  const customFetch = useFetch();
   const defaultNRC = initialNRC || "-";
   // 1. Estados exclusivos de la Interfaz de Usuario (UI)
   const [downloading, setDownloading] = useState(false);
@@ -142,7 +144,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
     const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
 
-    fetch(endpoint, {
+    customFetch(endpoint, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -184,7 +186,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
     const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
 
-    fetch(endpoint, {
+    customFetch(endpoint, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -244,7 +246,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
 
     const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
 
-    fetch(endpoint, {
+    customFetch(endpoint, {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -348,7 +350,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         console.debug("No se pudo leer cookie access-token", e);
       }
 
-      const response = await fetch(teamEvalEndpoint, {
+      const response = await customFetch(teamEvalEndpoint, {
         method: "POST",
         credentials: "include",
         headers,
