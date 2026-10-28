@@ -46,14 +46,25 @@ export const GenerateResultDialog: React.FC<GenerateResultDialogProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead>ID del jurado</TableHead>
+                    <TableHead>Jurado</TableHead>
                     <TableHead>Motivo</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {result.skipped.map((s) => (
                     <TableRow key={s.jurorId}>
-                      <TableCell className="font-mono text-xs break-all">{s.jurorId}</TableCell>
+                      <TableCell>
+                        {s.name?.trim() ? (
+                          <>
+                            <div className="text-sm font-medium">{s.name}</div>
+                            <div className="font-mono text-xs text-muted-foreground break-all">
+                              {s.jurorId}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="font-mono text-xs break-all">{s.jurorId}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{s.reason}</TableCell>
                     </TableRow>
                   ))}

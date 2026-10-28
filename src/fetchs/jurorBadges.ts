@@ -20,6 +20,7 @@ export interface JurorBadgesList {
 
 export interface SkippedJuror {
   jurorId: string;
+  name?: string; // el back aún no lo envía; se muestra cuando lo incluya
   reason: string;
 }
 

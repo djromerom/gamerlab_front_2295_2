@@ -83,7 +83,11 @@ const JurorBadgesPage: React.FC = () => {
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      await downloadJurorBadgesPdf(selectedIds.size ? [...selectedIds] : undefined);
+      // Con todas seleccionadas se omiten los ids: el back las incluye todas y la URL no crece
+      const allSelected = selectedIds.size === badges.length;
+      await downloadJurorBadgesPdf(
+        selectedIds.size && !allSelected ? [...selectedIds] : undefined,
+      );
     } catch (err) {
       toast.error("Error", { description: errorMessage(err, "No se pudo descargar el PDF.") });
     } finally {
