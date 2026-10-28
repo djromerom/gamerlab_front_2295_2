@@ -28,6 +28,20 @@ interface videogameFetchResult {
 
 const BACKEND_BASE = (import.meta.env.VITE_ENDPOINT_BACKEND as string) || 'http://localhost:3000';
 
+// Convierte la respuesta de error de /upload en un mensaje legible para el usuario.
+// El backend limita las subidas por IP (429) y valida el contenido real del archivo (400) (BG-02).
+async function uploadErrorMessage(res: Response, maxSize: string): Promise<string> {
+  if (res.status === 429) {
+    return 'Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.';
+  }
+  if (res.status === 413) {
+    return `Uno de los archivos es demasiado grande. El tamaño máximo permitido es ${maxSize}.`;
+  }
+  const body = await res.json().catch(() => null);
+  const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+  return message || `No se pudo subir el archivo (error ${res.status}).`;
+}
+
 export async function uploadImage(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
@@ -39,8 +53,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`uploadImage failed: ${res.status} ${res.statusText} ${text}`);
+    throw new Error(await uploadErrorMessage(res, '1MB'));
   }
 
   const uploadResult = (await res.json()) as UploadResult;
@@ -59,8 +72,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
     });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`uploadZip failed: ${res.status} ${res.statusText} ${text}`);
+    throw new Error(await uploadErrorMessage(res, '500MB'));
   }
 
   return (await res.json()) as UploadResult;
