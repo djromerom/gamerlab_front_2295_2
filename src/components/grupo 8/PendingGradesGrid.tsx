@@ -246,7 +246,6 @@ export const PendingGamesGrid: React.FC<
           game={selectedGame}
           showTotalScore={showTotalScore}
           showComments={showComments}
-          onCalificar={() => handleCalificarClick(selectedGame)}
         />
       )}
     </div>

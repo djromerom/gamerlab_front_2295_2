@@ -187,11 +187,6 @@ export function RealtimeTrackingPanel() {
         },
       });
 
-      if (response.status === 403) {
-        setLoadError("No tienes permisos para ver el panel de seguimiento.");
-        return;
-      }
-
       if (!response.ok) {
         throw new Error(`Error ${response.status}`);
       }

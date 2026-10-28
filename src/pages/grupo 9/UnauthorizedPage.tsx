@@ -146,6 +146,14 @@ export default function UnauthorizedPage() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Volver al inicio
                 </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/contacto")}
+                  className="px-6 py-3 border border-[#AC7CFF] text-[#AC7CFF] hover:bg-[#110D20] font-medium rounded-lg transition-colors cursor-pointer"
+                >
+                  Contactar soporte
+                </Button>
               </div>
             </div>
           </div>
