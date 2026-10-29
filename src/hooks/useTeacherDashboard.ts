@@ -13,9 +13,15 @@ interface PaginationMetadata {
 
 interface UseTeacherDashboardProps {
   itemsPerPage?: number;
+  sortBy?: "student" | "team";
+  sortOrder?: "asc" | "desc";
 }
 
-export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardProps = {}) {
+export function useTeacherDashboard({
+  itemsPerPage = 20,
+  sortBy,
+  sortOrder = "asc",
+}: UseTeacherDashboardProps = {}) {
   const customFetch = useFetch();
   const [availableFairs, setAvailableFairs] = useState<Edition[]>([]);
   const [allNRCs, setAllNRCs] = useState<any[]>([]);
@@ -266,10 +272,30 @@ export function useTeacherDashboard({ itemsPerPage = 20 }: UseTeacherDashboardPr
     return () => controller.abort();
   }, [initialLoading, loadProjects, refreshVersion]);
 
+  const orderedProjects = useMemo(() => {
+    if (!sortBy) return projectsForFilters;
+
+    const getSortKey = (project: any) => {
+      if (sortBy === "team") return String(project.team ?? "");
+
+      const members = Array.isArray(project.integrantes)
+        ? project.integrantes
+        : String(project.integrantes ?? "").split(",");
+      return String(members[0] ?? "").trim();
+    };
+
+    return [...projectsForFilters].sort((a, b) => {
+      const comparison = getSortKey(a).localeCompare(getSortKey(b), "es", {
+        sensitivity: "base",
+      });
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  }, [projectsForFilters, sortBy, sortOrder]);
+
   const pageProjects = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return projectsForFilters.slice(start, start + itemsPerPage);
-  }, [projectsForFilters, currentPage, itemsPerPage]);
+    return orderedProjects.slice(start, start + itemsPerPage);
+  }, [orderedProjects, currentPage, itemsPerPage]);
 
   const teams = useMemo(
     () =>
