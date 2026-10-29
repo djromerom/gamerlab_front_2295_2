@@ -5,6 +5,7 @@ import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
 import TeamCode from "@/components/grupo 5/TeamCode";
+import VerificationCode from "@/components/grupo 5/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
 
 const HomePage: React.FC = () => {
@@ -38,7 +39,8 @@ const HomePage: React.FC = () => {
         </section>
         <section className="flex flex-col md:flex-row items-center gap-10 space-y-4">
             <TeamCode variant="title" />
-        
+            <VerificationCode />
+
         
             {/* custom size and colors */}
             <CircularProgress

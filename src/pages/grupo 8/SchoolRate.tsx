@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { Textarea } from "@/components/grupo 8/textarea";
+import { TeamVerificationGate } from "@/components/grupo 8/TeamVerification";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +47,7 @@ interface Game {
   imagen?: string;
   equipo?: string;
   materia?: string;
+  teamId?: number; // HU-19: para verificar el grupo antes de calificar
   teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   nrc?: string;
   participantes?: string[];
@@ -515,6 +517,8 @@ export default function SchoolRate() {
           </div>
 
           <div className="col-span-12 md:col-span-8">
+            {/* HU-19: los grupos N0 no exigen código; los universitarios asignados al profesor sí */}
+            <TeamVerificationGate teamId={game.teamId} teamName={game.equipo}>
             <Card className="h-full py-6">
               <CardHeader>
                 <CardTitle className="text-lg font-bold">
@@ -647,6 +651,7 @@ export default function SchoolRate() {
                 </div>
               </CardContent>
             </Card>
+            </TeamVerificationGate>
           </div>
         </div>
 
