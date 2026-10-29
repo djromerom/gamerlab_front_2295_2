@@ -41,22 +41,41 @@ export default function StudentGradeTable() {
   };
 
   const exportToExcel = async () => {
+    if (teams.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
     setDownloading(true);
     toast("Preparando exportación de los resultados filtrados...");
     try {
       const query = new URLSearchParams({ final: "true", sortBy, sortOrder });
       if (selectedFair) query.set("editionId", selectedFair);
       if (selectedNRC) query.set("nrcId", selectedNRC);
-      if (filterSearch.trim()) query.set(filterType, filterSearch.trim());
-      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?${query}`;
-      const response = await customFetch(endpoint, { method: "GET", headers: { "Content-Type": "application/json" } });
+      if (filterSearch.trim()) query.set("search", filterSearch.trim());
+      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-report-grouped?${query}`;
+      const response = await customFetch(endpoint, { method: "GET", credentials: "include" });
       toast.dismiss();
-      if (!response.ok) throw new Error("Error al exportar a Excel");
+      if (!response.ok) {
+        let message = `Error ${response.status} al exportar a Excel`;
+        try {
+          const body = await response.json();
+          message = Array.isArray(body?.message) ? body.message.join(", ") : body?.message || message;
+        } catch { /* La respuesta puede no incluir JSON. */ }
+        throw new Error(message);
+      }
+
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const utf8Filename = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+      const plainFilename = /filename="([^"]+)"/i.exec(disposition)?.[1];
+      const filename = utf8Filename
+        ? decodeURIComponent(utf8Filename)
+        : plainFilename || `calificaciones_${new Date().toISOString().slice(0, 10)}.xlsx`;
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `Reporte_Calificaciones_FeriaGamer_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      anchor.download = filename;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -65,7 +84,7 @@ export default function StudentGradeTable() {
     } catch (exportError) {
       toast.dismiss();
       console.error("Error:", exportError);
-      toast.error(`Error al exportar: ${exportError instanceof Error ? exportError.message : "No se pudo completar la exportación"}`);
+      toast.error(exportError instanceof Error ? exportError.message : "No se pudo completar la exportación");
     } finally {
       setDownloading(false);
     }
