@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamRowData, NrcInfo, MateriaInfo } from "./teams-utils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
+import { TeamVerificationCodeDialog } from "./TeamVerificationCodeDialog";
+import { isCollegeTeamCode } from "@/fetchs/teamVerification";
 import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,6 +39,9 @@ export const TeamsManagementTable = ({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // HU-19: equipo cuyo código de verificación se está consultando
+  const [verificationTeam, setVerificationTeam] = useState<{ id: number; name: string; teamCode?: string } | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
@@ -115,7 +120,8 @@ export const TeamsManagementTable = ({
       ? filteredByExternal.filter((t) => {
         const teamName = (t.nombre_equipo ?? "").toLowerCase();
         const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-        return teamName.includes(term) || gameName.includes(term);
+        const teamCode = (t.teamCode ?? "").toLowerCase();
+        return teamName.includes(term) || gameName.includes(term) || teamCode.includes(term);
       })
       : filteredByExternal;
   }, [teams, externalFilter, debouncedSearchTerm]);
@@ -339,6 +345,10 @@ export const TeamsManagementTable = ({
             <div>
               <div className="font-medium">{equipoNombre}</div>
               <div className="text-sm text-muted-foreground">{videojuegoNombre}</div>
+              {/* HU-19: el número identifica al equipo sin ambigüedad (lo ven el estudiante y el jurado) */}
+              {team.teamCode && (
+                <div className="text-xs text-muted-foreground font-mono">{team.teamCode}</div>
+              )}
             </div>
           </div>
         );
@@ -790,7 +800,7 @@ export const TeamsManagementTable = ({
               <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <input
                 className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
-                placeholder="Buscar equipo o videojuego..."
+                placeholder="Buscar equipo, código o videojuego..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -918,6 +928,21 @@ export const TeamsManagementTable = ({
                           >
                             Editar
                           </DropdownMenuItem>
+                          {/* Los equipos de colegios (N0) no tienen código de verificación */}
+                          {!isCollegeTeamCode(team.teamCode) && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setVerificationTeam({
+                                  id: team.id_equipo,
+                                  name: team.nombre_equipo ?? "Equipo",
+                                  teamCode: team.teamCode,
+                                })
+                              }
+                              className="cursor-pointer"
+                            >
+                              Código de verificación
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => {
                               setDeletingId(team.id_equipo);
@@ -1161,6 +1186,11 @@ export const TeamsManagementTable = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TeamVerificationCodeDialog
+        team={verificationTeam}
+        onClose={() => setVerificationTeam(null)}
+      />
 
       {/* Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -1,11 +1,13 @@
 import { Textarea } from "@/components/grupo 8/textarea";
+import { TeamVerificationForm } from "@/components/grupo 8/TeamVerification";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCriteria } from "@/hooks/use-criteria";
+import { useTeamVerification } from "@/hooks/useTeamVerification";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -14,6 +16,7 @@ interface BatchGame {
   id: number;
   nombre: string;
   equipo: string;
+  teamId?: number; // HU-19: para verificar el grupo antes de calificar
   teamCode?: string; // [MODIFICACIÓN]: Agregado código del equipo
   materia: string;
   nrc: string;
@@ -38,6 +41,12 @@ export default function BatchRatePage() {
     fromPage === "colegios" ? "/colegios-calificar" : "/pendientes-calificar";
 
   const { criteria: apiCriteria, isLoading: isLoadingCriteria } = useCriteria();
+  // HU-19: cada grupo del lote se verifica con su código antes de calificarlo
+  const {
+    isLoading: isLoadingVerification,
+    isVerified,
+    markVerified,
+  } = useTeamVerification(games.map((game) => game.teamId));
 
   const [activeTab, setActiveTab] = useState(0);
   const [gameScores, setGameScores] = useState<GameScores>({});
@@ -192,6 +201,15 @@ export default function BatchRatePage() {
   };
 
   const handleSubmitAll = async () => {
+    const unverifiedIndex = games.findIndex((game) => !isVerified(game.teamId));
+    if (unverifiedIndex !== -1) {
+      toast.error(
+        `"${games[unverifiedIndex].nombre}": digita el código de verificación del grupo`,
+      );
+      setActiveTab(unverifiedIndex);
+      return;
+    }
+
     setIsSubmitting(true);
     const currentDate = new Date().toISOString();
 
@@ -268,6 +286,9 @@ export default function BatchRatePage() {
 
   const currentGame = games[activeTab];
 
+  const gameLabel = (videogameId: number) =>
+    games.find((game) => game.id === videogameId)?.nombre ?? `ID ${videogameId}`;
+
   if (!currentGame) {
     return (
       <LayoutAplication breadcrumbs={[]}>
@@ -318,7 +339,7 @@ export default function BatchRatePage() {
                       key={s.videogameId}
                       className="text-sm text-green-600 dark:text-green-300"
                     >
-                      ID {s.videogameId} → Evaluación #{s.evaluationId}
+                      {gameLabel(s.videogameId)} →Evaluación #{s.evaluationId}
                     </p>
                   ))}
                 </div>
@@ -332,7 +353,7 @@ export default function BatchRatePage() {
                         key={f.videogameId}
                         className="text-sm text-red-600 dark:text-red-300"
                       >
-                        ID {f.videogameId}: {f.error}
+                        {gameLabel(f.videogameId)}: {f.error}
                       </p>
                     ))}
                   </div>
@@ -361,6 +382,12 @@ export default function BatchRatePage() {
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >
+                    {!isLoadingVerification && !isVerified(game.teamId) && (
+                      <Lock
+                        className="inline h-3 w-3 mr-1 -mt-0.5"
+                        aria-label="Grupo sin verificar"
+                      />
+                    )}
                     {game.nombre}
                   </button>
                 ))}
@@ -380,6 +407,26 @@ export default function BatchRatePage() {
                     ` | Código: ${currentGame.teamCode.split("-").pop() || currentGame.teamCode}`}
                 </p>
               </CardHeader>
+              {!isVerified(currentGame.teamId) ? (
+                <CardContent className="px-4 md:px-6">
+                  {isLoadingVerification ? (
+                    <div className="flex justify-center items-center gap-2 py-8">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm text-muted-foreground">
+                        Verificando grupos...
+                      </span>
+                    </div>
+                  ) : (
+                    <TeamVerificationForm
+                      key={currentGame.teamId}
+                      teamId={currentGame.teamId!}
+                      teamName={currentGame.equipo}
+                      onVerified={markVerified}
+                      className="shadow-none py-4"
+                    />
+                  )}
+                </CardContent>
+              ) : (
               <CardContent className="px-4 md:px-6">
                 {/* Criterios de evaluación */}
                 <div className="space-y-3 md:space-y-4">
@@ -439,6 +486,7 @@ export default function BatchRatePage() {
                   />
                 </div>
               </CardContent>
+              )}
             </Card>
 
             {/* Botones */}
@@ -452,7 +500,7 @@ export default function BatchRatePage() {
               </Button>
               <Button
                 onClick={handleSubmitAll}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingVerification}
                 className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] cursor-pointer w-full md:w-auto"
               >
                 {isSubmitting ? (

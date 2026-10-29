@@ -50,6 +50,7 @@ interface Game {
   id: number;
   nombre: string;
   equipo: string;
+  teamId?: number; // HU-19: para verificar el grupo antes de calificar
   teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   materia: string;
   nrc: string;

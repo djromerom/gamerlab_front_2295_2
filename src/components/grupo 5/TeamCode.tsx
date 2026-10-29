@@ -10,18 +10,14 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
     const [team, setTeam] = useState<Team | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
     const { user, userRole } = useAuth();
+    const isStudent = userRole === "Estudiante";
 
-    if (userRole === undefined) {
-        return null;
-    }
-
-    if (userRole !== "Estudiante") {
-        return null;
-    }
-
-
+    // [MODIFICADO]: Los hooks van antes de cualquier return condicional (reglas de hooks de React).
+    // [ANTES]: Se retornaba null por rol antes de declarar los useEffect.
     // 1. Traer todos los teams
     useEffect(() => {
+        if (!isStudent) return;
+
         const fetchData = async () => {
             try {
                 const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
@@ -40,7 +36,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
         };
 
         fetchData();
-    }, []);
+    }, [isStudent]);
 
     //   2. Filtrar team cuando user.id YA EXISTE y teams YA ESTÁN CARGADOS
     useEffect(() => {
@@ -66,11 +62,19 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
         return code;
     };
 
+    if (!isStudent) {
+        return null;
+    }
+
     if (variant === "default") {
         return (
             <div className="flex justify-start ml-0 m-4 min-w-[350px]">
-                <div className="flex justify-between gap-3 rounded-2xl p-0 text-xl border-2 border-border bg-card">
-                    <p className="pl-4 p-2 font-semibold text-base text-foreground">Codigo del equipo:</p>
+                <div className="flex justify-between items-center gap-3 rounded-2xl p-0 text-xl border-2 border-border bg-card">
+                    {/* [MODIFICACIÓN]: Se muestra el nombre del equipo junto al código (HU-19: el jurado ve ambos). */}
+                    {team?.teamName && (
+                        <p className="pl-4 p-2 font-semibold text-base text-foreground border-r-2 border-border">{team.teamName}</p>
+                    )}
+                    <p className={`${team?.teamName ? "" : "pl-4 "}p-2 font-semibold text-base text-foreground`}>Codigo del equipo:</p>
                     {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
                     {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
@@ -79,16 +83,22 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                 </div>
             </div>
         )
-    } else if (variant === "title" && userRole === "Estudiante") {
+    } else if (variant === "title") {
         return (
             <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card">
                 <div className="flex justify-center text-4xl border-b-2 border-border pb-2">
                     <h1 className="font-bold tracking-tighter">Equipo</h1>
                 </div>
+                {/* [MODIFICACIÓN]: Nombre del equipo sobre el código, para que coincida con lo que ve el jurado. */}
+                {team?.teamName && (
+                    <p className="text-center text-xl font-semibold pt-3 max-w-[320px] break-words">{team.teamName}</p>
+                )}
+                {/* Etiqueta para no confundirlo con el código de verificación que se muestra al lado */}
+                <p className="text-center text-sm text-muted-foreground pt-2">Código del equipo</p>
                 <div className="flex justify-center ">
                     {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
                     {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
-                    <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl p-5 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
+                    <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl px-5 pb-5 pt-1 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
                 </div>
