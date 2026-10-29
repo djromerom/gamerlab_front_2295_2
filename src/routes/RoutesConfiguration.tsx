@@ -87,7 +87,7 @@ const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPanel />,
-    roles: ["Administrador", "Profesor"],
+    roles: ["Administrador"],
   },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {

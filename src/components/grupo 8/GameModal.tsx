@@ -27,6 +27,8 @@ interface GameModalProps {
   };
   showTotalScore?: boolean;
   showComments?: boolean;
+  // Navegación de la pantalla que abre el modal (cada rol califica en su propia ruta)
+  onCalificar?: () => void;
 }
 
 const GameModal: React.FC<GameModalProps> = ({
@@ -34,13 +36,18 @@ const GameModal: React.FC<GameModalProps> = ({
   onClose,
   game,
   showComments = false,
+  onCalificar,
 }) => {
   const navigate = useNavigate();
 
   if (!game) return null;
 
   const handleCalificarClick = () => {
-    navigate(`/pendientes-calificar/${game.id}`, { state: { game } });
+    if (onCalificar) {
+      onCalificar();
+    } else {
+      navigate(`/pendientes-calificar/${game.id}`, { state: { game } });
+    }
     onClose();
   };
 
