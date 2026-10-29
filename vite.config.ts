@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
@@ -19,5 +20,12 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'cross-origin',
       'Cross-Origin-Embedder-Policy': 'credentialless',
     }
-  }
+  },
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+    env: {
+      VITE_ENDPOINT_BACKEND: "http://api.test",
+    },
+  },
 });

@@ -1,6 +1,6 @@
 // src/components/ProtectedRoute.tsx
 import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/types/auth";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"; 
@@ -11,6 +11,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
   const { user, userRole, loading } = useAuth();
+  const location = useLocation();
 
   // Mientras carga perfil…
   if (loading)
@@ -20,9 +21,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
       </>
     );
 
-  // Si no hay usuario autenticado, vamos a /inicio-sesion
+  // Si no hay usuario autenticado, vamos a /login recordando la ruta (y su state)
+  // para volver a ella después de iniciar sesión
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Si el rol no está permitido…

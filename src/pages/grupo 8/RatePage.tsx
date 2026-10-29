@@ -51,6 +51,14 @@ interface Game {
   descripcion?: string;
 }
 
+// Borrador local de la calificación: si la sesión expira, lo escrito se recupera al volver (HU-05)
+interface RateDraft {
+  scores: Record<number, string | number>;
+  comments: string;
+}
+
+const getDraftKey = (gameId: number) => `rate-draft-${gameId}`;
+
 export default function RatePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,15 +79,56 @@ export default function RatePage() {
 
   useEffect(() => {
     if (apiCriteria.length > 0) {
+      // Recuperar borrador del localStorage al cargar los criterios
+      let draft: RateDraft | null = null;
+      if (game) {
+        try {
+          const saved = localStorage.getItem(getDraftKey(game.id));
+          if (saved) draft = JSON.parse(saved) as RateDraft;
+        } catch (e) {
+          console.warn("Error recuperando borrador de localStorage:", e);
+        }
+      }
+
       setUiCriteria(
         apiCriteria.map((criterion) => ({
           ...criterion,
-          score: "",
+          score: draft?.scores?.[criterion.id] ?? "",
           maxScore: 5,
         })),
       );
+      if (typeof draft?.comments === "string") {
+        setComments(draft.comments);
+      }
+      if (draft) {
+        toast.info("Borrador recuperado", { duration: 2000 });
+      }
     }
-  }, [apiCriteria]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiCriteria, game?.id]);
+
+  // Auto-guardar en localStorage cada vez que cambia un puntaje o el comentario
+  useEffect(() => {
+    if (!game || uiCriteria.length === 0) return;
+
+    const scores: RateDraft["scores"] = {};
+    for (const criterion of uiCriteria) {
+      if (criterion.score !== "") scores[criterion.id] = criterion.score;
+    }
+
+    try {
+      if (Object.keys(scores).length === 0 && !comments) {
+        localStorage.removeItem(getDraftKey(game.id));
+      } else {
+        localStorage.setItem(
+          getDraftKey(game.id),
+          JSON.stringify({ scores, comments } satisfies RateDraft),
+        );
+      }
+    } catch {
+      // Ignorar errores de almacenamiento
+    }
+  }, [uiCriteria, comments, game]);
 
   useEffect(() => {
     if (!game) {
@@ -299,6 +348,13 @@ export default function RatePage() {
           // no-op: no JSON body
         }
         throw new Error(errorText);
+      }
+
+      // Limpiar borrador de localStorage al enviar exitosamente
+      try {
+        localStorage.removeItem(getDraftKey(game.id));
+      } catch {
+        // Ignorar errores de almacenamiento
       }
 
       setConfirmDialogOpen(false);

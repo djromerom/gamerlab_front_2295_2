@@ -1,3 +1,5 @@
+import { SESSION_EXPIRED_EVENT } from "@/lib/session";
+
 export async function apiFetch(url: string, options: RequestInit = {}) {
   // 1. Configuramos opciones por defecto para incluir cookies en todas las peticiones (DRY)
   const defaultOptions: RequestInit = {
@@ -54,6 +56,12 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
         console.log("Refresco exitoso. Reintentando la petición original...");
         // Reintentamos la petición original tal cual estaba antes de la modificación (una sola vez post-refresh)
         response = await fetch(url, defaultOptions);
+      } else if (
+        refreshResponse.status === 401 ||
+        refreshResponse.status === 403
+      ) {
+        // El refresh token venció o es inválido: AuthContext avisa al usuario y lo lleva al login
+        window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
       }
     } catch (error) {
       console.error("Error en el proceso de autorecuperación:", error);

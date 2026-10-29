@@ -14,8 +14,16 @@ import {
   UserProfile,
 } from "@/types/auth";
 import { apiFetch } from "@/lib/api";
+import {
+  getRefreshDelayMs,
+  REFRESH_RETRY_DELAY_MS,
+  SESSION_EXPIRED_EVENT,
+} from "@/lib/session";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Error de /auth/refresh que indica que la sesión ya no es válida (refresh vencido o inválido).
+class SessionRejectedError extends Error {}
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -23,33 +31,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [sessionExpired, setSessionExpired] = useState<boolean>(false);
 
-  // [MODIFICACIÓN]: Referencia para mantener el control del temporizador de refresco y poder detenerlo al cerrar sesión
-  // [AUTOR]: IA  |  [FECHA]: 2026-05-02
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // [MODIFICACIÓN]: Temporizador de renovación programado según accessTokenExpiresIn (HU-05)
+  // [ANTES]: setInterval fijo de 14 min, con solo 1 min de margen sobre el token de 15 min
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextRefreshAtRef = useRef<number | null>(null);
+  // Indica si hay una sesión activa, para distinguir una expiración de la carga inicial sin sesión
+  const hasSessionRef = useRef(false);
 
   function stopHeartbeat() {
-    if (refreshIntervalRef.current) {
-      console.log("Heartbeat: Deteniendo el intervalo de refresco...");
-      clearInterval(refreshIntervalRef.current);
-      refreshIntervalRef.current = null;
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
     }
+    nextRefreshAtRef.current = null;
   }
 
-  function startHeartbeat() {
-    if (!refreshIntervalRef.current) {
-      console.log("Heartbeat: Iniciando el intervalo de refresco...");
-      refreshIntervalRef.current = setInterval(async () => {
-        console.log("Heartbeat: Refrescando sesión automáticamente para evitar expiración...");
-        await contextRefreshAccessToken().catch(() => {
-          console.warn("Heartbeat: Falló el refresco automático. Deteniendo reloj.");
-          stopHeartbeat();
-        });
-      }, 840000);
-    }
+  function scheduleRefresh(delayMs: number) {
+    stopHeartbeat();
+    nextRefreshAtRef.current = Date.now() + delayMs;
+    refreshTimeoutRef.current = setTimeout(runScheduledRefresh, delayMs);
   }
 
-  const fetchProfile = async () => {
+  function runScheduledRefresh() {
+    stopHeartbeat();
+    contextRefreshAccessToken().catch(() => {
+      // Si la sesión sigue activa fue un fallo de red o del servidor: se reintenta
+      if (hasSessionRef.current) {
+        console.warn("Heartbeat: Falló la renovación. Reintentando...");
+        scheduleRefresh(REFRESH_RETRY_DELAY_MS);
+      }
+    });
+  }
+
+  // Cierra la sesión local. Si había sesión, se marca como expirada para avisar al usuario.
+  function endSession() {
+    stopHeartbeat();
+    if (hasSessionRef.current) {
+      setSessionExpired(true);
+    }
+    hasSessionRef.current = false;
+    setUser(null);
+    setAccessToken(null);
+    setLoading(false);
+  }
+
+  const fetchProfile = async (): Promise<boolean> => {
+    let ok = false;
     try {
       const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/me`,
@@ -62,6 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (res.ok) {
         const data = (await res.json()) as UserProfile;
         setUser(data);
+        ok = true;
       } else {
         setUser(null);
         setAccessToken(null);
@@ -72,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setAccessToken(null);
     }
     setLoading(false);
+    return ok;
   };
 
   const contextRefreshAccessToken = async (): Promise<string | null> => {
@@ -84,38 +115,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         },
       );
 
+      if (res.status === 401 || res.status === 403) {
+        throw new SessionRejectedError(
+          `Refresh API request failed with status ${res.status}`,
+        );
+      }
       if (!res.ok) {
-        setUser(null);
-        setAccessToken(null);
-        setLoading(false);
         throw new Error(`Refresh API request failed with status ${res.status}`);
       }
 
       const data = await res.json();
 
-      if (data.accessToken && typeof data.accessToken === "string") {
-        setAccessToken(data.accessToken);
-        await fetchProfile();
-        // [MODIFICADO]: Iniciar o asegurar que el temporizador esté activo si tenemos sesión válida
-        startHeartbeat();
-        return data.accessToken;
-      } else {
-        setUser(null);
-        setAccessToken(null);
-        setLoading(false);
-        throw new Error(
+      if (!data.accessToken || typeof data.accessToken !== "string") {
+        throw new SessionRejectedError(
           "Access token not found or invalid in refresh response",
         );
       }
+
+      setAccessToken(data.accessToken);
+      // El perfil solo se pide al iniciar la sesión, no en cada renovación
+      const hasProfile = hasSessionRef.current || (await fetchProfile());
+      if (hasProfile) {
+        hasSessionRef.current = true;
+        setSessionExpired(false);
+        scheduleRefresh(getRefreshDelayMs(data.accessTokenExpiresIn));
+      }
+      return data.accessToken;
     } catch (error) {
       if (error instanceof Error && error.message.includes("status 401")) {
         // No imprimimos error en rojo porque es normal (ej. primera carga sin estar logueado)
       } else {
         console.error("AuthContext: Failed to refresh access token:", error);
       }
-      setUser(null);
-      setAccessToken(null);
-      setLoading(false);
+      // [MODIFICADO]: Un fallo de red o del servidor no cierra una sesión activa; el heartbeat reintenta
+      // [ANTES]: Cualquier fallo cerraba la sesión
+      if (error instanceof SessionRejectedError || !hasSessionRef.current) {
+        endSession();
+      }
       throw error;
     }
   };
@@ -159,6 +195,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // [MODIFICADO]: Se detiene explícitamente el temporizador de refresco antes de limpiar la sesión
     // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
     stopHeartbeat();
+    hasSessionRef.current = false;
+    setSessionExpired(false);
 
     try {
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
@@ -182,9 +220,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     initSession();
 
+    // 2. Los navegadores retrasan los temporizadores en pestañas ocultas o con el equipo suspendido:
+    // al volver a la pestaña se renueva de inmediato si la renovación quedó atrasada.
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        nextRefreshAtRef.current !== null &&
+        Date.now() >= nextRefreshAtRef.current
+      ) {
+        runScheduledRefresh();
+      }
+    };
+
+    // 3. apiFetch avisa cuando el backend rechaza el refresh token en una petición cualquiera
+    const handleSessionExpired = () => {
+      if (hasSessionRef.current) {
+        endSession();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
     // Limpieza: Al desmontar el componente (ej. cerrar app), detenemos el reloj
     return () => {
       stopHeartbeat();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     };
   }, []);
 
@@ -196,11 +258,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       user,
       userRole,
       loading,
+      sessionExpired,
       login,
       refreshAccessToken: contextRefreshAccessToken,
       logout,
     }),
-    [user, userRole, loading, accessToken],
+    [user, userRole, loading, sessionExpired, accessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
