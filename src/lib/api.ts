@@ -1,3 +1,7 @@
+import { SESSION_EXPIRED_EVENT } from "@/lib/session";
+
+export class SessionRejectedError extends Error {}
+
 type AuthHandlers = {
   accessToken?: string | null;
   refreshAccessToken?: () => Promise<string | null>;
@@ -62,6 +66,9 @@ async function renewAccessToken(auth: AuthHandlers): Promise<string | null> {
 
   const refreshUrl = `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/refresh`;
   const response = await fetch(refreshUrl, { method: "POST", credentials: "include" });
+  if (response.status === 401 || response.status === 403) {
+    throw new SessionRejectedError("Refresh token rejected");
+  }
   if (!response.ok) return null;
   const data = await response.json();
   return typeof data?.accessToken === "string" ? data.accessToken : null;
@@ -82,7 +89,6 @@ export async function apiFetch(
   try {
     const refreshedToken = await renewAccessToken(auth);
     if (!refreshedToken) {
-      await auth.logout?.();
       return response;
     }
 
@@ -91,7 +97,11 @@ export async function apiFetch(
     response = await sendWithTransientRetries(input, buildOptions(options, refreshedToken), true);
     return response;
   } catch (error) {
-    await auth.logout?.();
+    if (error instanceof SessionRejectedError) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      await auth.logout?.();
+      return response;
+    }
     const refreshError = new Error(error instanceof Error
       ? `No pudimos renovar tu sesión: ${error.message}`
       : "No pudimos renovar tu sesión");

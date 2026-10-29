@@ -424,7 +424,7 @@ export const developers = [
 		{
 		id: 39,
 		name: "Juan Alvarez",
-		role: "Backend Developer",
+		role: "Backend Leader",
 		department: ["backend"],
 		version: [4],
 		github: "https://github.com/JuanAlvaP",
@@ -451,7 +451,7 @@ export const developers = [
 	{
 		id: 42,
 		name: "Camilo Acevedo",
-		role: "Frontend Developer",
+		role: "Frontend Leader",
 		department: ["frontend"],
 		version: [4],
 		github: "https://github.com/camiloaacevedo",
@@ -466,7 +466,6 @@ export const developers = [
 		github: "https://github.com/stilano",
 		email: "stilano@uninorte.edu.co",
 	},
-
 	{
 		id: 44,
 		name: "Allison Ruiz",
@@ -475,6 +474,15 @@ export const developers = [
 		version: [4],
 		github: "https://github.com/Ally2403",
 		email: "allisonruiz@uninorte.edu.co",
+	},
+	{
+		id: 45,
+		name: "Jorge Silva",
+		role: "Frontend Developer",
+		department: ["frontend"],
+		version: [4],
+		github: "https://github.com/Jorgedst",
+		email: "dtapiaj@uninorte.edu.co",
 	},
 	
 ];

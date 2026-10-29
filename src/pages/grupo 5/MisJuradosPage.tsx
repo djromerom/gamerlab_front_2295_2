@@ -77,9 +77,13 @@ function getCompletedGames(raw: RawJuradoData): string[] {
 
 function normalizeJurado(raw: RawJuradoData, videogameName: string): JuradoInfo {
   const completedGames = getCompletedGames(raw);
+  const fallbackId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   return {
-    id: String(raw.id ?? raw.correo ?? raw.email ?? crypto.randomUUID()),
+    id: String(raw.id ?? raw.correo ?? raw.email ?? fallbackId),
     name: raw.nombre ?? raw.name ?? "Jurado sin nombre",
     email: raw.correo ?? raw.email ?? "",
     status: raw.estado ?? raw.status ?? "Sin estado",
