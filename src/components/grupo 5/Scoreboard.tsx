@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 "use client"
 
 
@@ -46,7 +47,7 @@ export default function Scoreboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
+        const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" }
@@ -91,7 +92,7 @@ export default function Scoreboard() {
 
     (async () => {
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/final-score/team/${team.id}`,
           {
             method: "GET",
@@ -160,7 +161,7 @@ export default function Scoreboard() {
     // ratingsACRef.current = new AbortController()
     setLoading(true)
     try {
-      const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
+      const res = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

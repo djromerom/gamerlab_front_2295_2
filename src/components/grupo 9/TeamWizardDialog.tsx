@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -14,14 +15,14 @@ import TeamWizardForm from "./TeamWizardForm";
 ──────────────────────────────────────────────────────────────────── */
 
 async function checkGameNameUnique(apiBaseUrl: string, gameName: string) {
-  const res = await fetch(`${apiBaseUrl}/teams/videogame/${encodeURIComponent(gameName)}`);
+  const res = await apiFetch(`${apiBaseUrl}/teams/videogame/${encodeURIComponent(gameName)}`);
   if (!res.ok) throw new Error("No se pudo verificar el nombre del videojuego.");
   const exists = await res.json();
   return exists === true;
 }
 
 async function checkNameTeamUnique(apiBaseUrl: string, teamName: string) {
-  const res = await fetch(`${apiBaseUrl}/teams/name/${encodeURIComponent(teamName)}`);
+  const res = await apiFetch(`${apiBaseUrl}/teams/name/${encodeURIComponent(teamName)}`);
   if (!res.ok) throw new Error("No se pudo verificar el nombre del equipo.");
   const exists = await res.json();
   return exists === true;
@@ -40,7 +41,7 @@ async function findUsedEmails(apiBaseUrl: string, emails: string[], excludeEmail
 
   try {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/teams/validate-emails`;
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -324,7 +325,7 @@ export default function TeamWizardDialog({
     const fetchNrcs = async () => {
       setIsPageLoading(true);
       try {
-        const res = await fetch(API_ENDPOINT, {
+        const res = await apiFetch(API_ENDPOINT, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

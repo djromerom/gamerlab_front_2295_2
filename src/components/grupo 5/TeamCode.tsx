@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Team } from "@/types/Team";
@@ -24,7 +25,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
+                const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`, {
                     method: "GET",
                     credentials: "include",
                     headers: { "Content-Type": "application/json" }

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -51,7 +53,7 @@ let refreshTokenPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
+    const response = await apiFetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       credentials: "include",
       cache: "no-store",
@@ -81,7 +83,7 @@ async function apiRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await apiFetch(`${API_BASE}${path}`, {
     ...options,
     headers,
     credentials: "include",
@@ -888,7 +890,7 @@ export function JuradosAssignment() {
       // Usually, if apiRequest returns the response or we can fetch directly:
       // Let's fetch using direct fetch to get a Blob.
       const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

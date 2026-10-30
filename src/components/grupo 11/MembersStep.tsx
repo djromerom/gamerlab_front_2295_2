@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 // Updated MembersStep.tsx
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export default function MembersStep() {
     
     // setIsValidatingEmails(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/validate-emails`, {
+      const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/validate-emails`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export default function MembersStep() {
     const fetchNrcs = async () => {
       setIsPageLoading(true);
       try {
-        const res = await fetch(API_ENDPOINT, {
+        const res = await apiFetch(API_ENDPOINT, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

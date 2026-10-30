@@ -15,6 +15,8 @@ export interface AuthContextType {
   accessToken: string | null;
   userRole: Role | null;
   user: UserProfile | null;
+  /** La sesión se cerró porque el refresh token venció o es inválido */
+  sessionExpired: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
   logout: () => Promise<void>;

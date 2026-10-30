@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -76,9 +77,13 @@ function getCompletedGames(raw: RawJuradoData): string[] {
 
 function normalizeJurado(raw: RawJuradoData, videogameName: string): JuradoInfo {
   const completedGames = getCompletedGames(raw);
+  const fallbackId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   return {
-    id: String(raw.id ?? raw.correo ?? raw.email ?? crypto.randomUUID()),
+    id: String(raw.id ?? raw.correo ?? raw.email ?? fallbackId),
     name: raw.nombre ?? raw.name ?? "Jurado sin nombre",
     email: raw.correo ?? raw.email ?? "",
     status: raw.estado ?? raw.status ?? "Sin estado",
@@ -152,7 +157,7 @@ export default function MisJuradosPage() {
       try {
         setLoading(true);
 
-        const teamsRes = await fetch(`${apiBaseUrl}/teams`, {
+        const teamsRes = await apiFetch(`${apiBaseUrl}/teams`, {
           method: "GET",
           credentials: "include",
           headers: {
@@ -197,7 +202,7 @@ export default function MisJuradosPage() {
 
         setStudentGameName(myVideogameName);
 
-        const juradosRes = await fetch(`${apiBaseUrl}/reports/JuradosData`, {
+        const juradosRes = await apiFetch(`${apiBaseUrl}/reports/JuradosData`, {
           method: "GET",
           credentials: "include",
           headers: {

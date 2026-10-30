@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { WizardSchema } from "./validationTeamsAdmin";
 
 export type SubmitCtx = {
@@ -294,7 +295,7 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
 
     let res: Response | null = null;
     try {
-      res = await fetch(url, fetchOpts as any);
+      res = await apiFetch(url, fetchOpts as any);
       const rawText = await res.text().catch(() => "<no body>");
       let parsed: any = null;
       try {

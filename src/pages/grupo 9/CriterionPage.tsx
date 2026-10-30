@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { CriterionTable } from "@/components/grupo 9/CriterionTable";
 import { useState, useEffect } from "react";
@@ -46,7 +48,7 @@ const CriteriaPage = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/criteria?page=${page}&limit=${limit}`,
         {
           method: "GET",
