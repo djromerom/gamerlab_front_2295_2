@@ -14,7 +14,8 @@ import {
   Settings,
   UniversityIcon,
   Trophy,
-  CalendarRange
+  CalendarRange,
+  IdCard
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -56,6 +57,7 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Users },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
+        { name: "Escarapelas", url: "/escarapelas", icon: IdCard },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },

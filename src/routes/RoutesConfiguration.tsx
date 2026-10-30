@@ -20,6 +20,7 @@ import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
+import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 
 import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
 import JuryPage from "@/pages/grupo 11/JuryPage";
@@ -86,7 +87,7 @@ const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPanel />,
-    roles: ["Administrador", "Profesor"],
+    roles: ["Administrador"],
   },
   { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
   {
@@ -158,6 +159,11 @@ const routes: RouteConfig[] = [
   {
     path: "/gestionar-ediciones",
     element: <EditionsManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/escarapelas",
+    element: <JurorBadgesPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },

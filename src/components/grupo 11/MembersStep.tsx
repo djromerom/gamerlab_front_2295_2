@@ -58,6 +58,10 @@ export default function MembersStep() {
         body: JSON.stringify({ emails: emailsToValidate }),
       });
       
+      // El backend limita esta ruta pública por IP (BG-02)
+      if (response.status === 429) {
+        throw new Error("Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.");
+      }
       if (!response.ok) {
         throw new Error(`Error ${response.status}: Error al validar correos`);
       }
