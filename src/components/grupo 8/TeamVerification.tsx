@@ -52,7 +52,7 @@ export function TeamVerificationForm({
       const message =
         err instanceof Error ? err.message : "No se pudo verificar el código.";
       setError(message);
-      // 429: demasiados intentos fallidos; el backend desbloquea a los 10 minutos.
+      // 429: demasiados intentos fallidos; el backend indica en el mensaje cuánto esperar.
       if (err instanceof TeamVerificationError && err.status === 429) {
         setIsLocked(true);
       }
