@@ -9,7 +9,7 @@ import VerificationCode from "@/components/grupo 5/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
 
 const HomePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   return (
     <LayoutAplication breadcrumbs={[]}>
       <section className="flex flex-col justify-evenly items-center w-full h-full min-w-[250px]">
@@ -43,6 +43,7 @@ const HomePage: React.FC = () => {
 
         
             {/* custom size and colors */}
+            {userRole === "Estudiante" && (
             <CircularProgress
             size={140}
             strokeWidth={14}
@@ -55,6 +56,7 @@ const HomePage: React.FC = () => {
             </div>
             )}
             />
+            )}
         </section>
       </section>
     </LayoutAplication>
