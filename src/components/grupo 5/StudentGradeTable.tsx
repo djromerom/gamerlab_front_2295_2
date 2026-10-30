@@ -1,12 +1,5 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -23,17 +16,25 @@ import {
   ChevronRight,
   Download,
   Edit,
+  Filter,
   FileSpreadsheet,
   Loader2,
+  Search,
   Save,
   Upload,
   X,
 } from "lucide-react";
 import { useState } from "react";
-// Tabs removed: single flow Subject -> NRC
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -41,10 +42,6 @@ import {
 } from "@/components/ui/tooltip";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-
-interface Props {
-  initialNRC?: string;
-}
 
 interface PaginationMetadata {
   totalItems: number;
@@ -54,8 +51,7 @@ interface PaginationMetadata {
   totalPages: number;
 }
 
-export default function StudentGradeTable({ initialNRC }: Props) {
-  const defaultNRC = initialNRC || "-";
+export default function StudentGradeTable() {
   // 1. Estados exclusivos de la Interfaz de Usuario (UI)
   const [downloading, setDownloading] = useState(false);
   const [uploadingGrades, setUploadingGrades] = useState(false);
@@ -63,18 +59,23 @@ export default function StudentGradeTable({ initialNRC }: Props) {
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [editedGrade, setEditedGrade] = useState<string>("");
   const [savingGrade, setSavingGrade] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterType, setFilterType] = useState<"student" | "team">("student");
+  const [sortBy, setSortBy] = useState<"student" | "team">("team");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // 2. Nuestro asistente personal (el Hook) trayendo la data:
   const {
     selectedNRC,
     setSelectedNRC,
-    selectedSubject,
-    setSelectedSubject,
+    selectedFair,
+    setSelectedFair,
+    selectedEdition,
+    availableFairs,
     currentPage,
     setCurrentPage,
     paginationMetadata,
     availableNRCs,
-    availableSubjects,
     isLoading,
     initialLoading,
     error,
@@ -83,11 +84,33 @@ export default function StudentGradeTable({ initialNRC }: Props) {
     teams,
     handlePreviousPage,
     handleNextPage,
-    fetchStudentsByNRC,
-    fetchStudentsBySubject,
-    setFetchedStudentsByNRC,
-    setFetchedStudentsBySubject,
-  } = useTeacherDashboard({ initialNRC });
+    reloadProjects,
+  } = useTeacherDashboard({ sortBy, sortOrder });
+
+  const normalizeSearch = (value: unknown) =>
+    String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .trim();
+
+  const filteredTeams = teams.filter((team: any) => {
+    const studentNames = Array.isArray(team.integrantes)
+      ? team.integrantes.join(" ")
+      : team.integrantes || "";
+    const searchableName = filterType === "student" ? studentNames : team.teamName;
+    return normalizeSearch(searchableName).includes(normalizeSearch(filterSearch));
+  });
+
+  const clearFilters = () => {
+    setSelectedFair("");
+    setSelectedNRC("");
+    setFilterSearch("");
+    setFilterType("student");
+    setSortBy("team");
+    setSortOrder("asc");
+    setCurrentPage(1);
+  };
 
   // Show error state
   if (error) {
@@ -100,26 +123,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           className="mt-2 cursor-pointer"
           onClick={() => {
             setError(null);
-            // Clear cache to force refresh
-            const cacheKey = selectedNRC
-              ? `${selectedNRC}-${currentPage}`
-              : `${selectedSubject}-${currentPage}`;
-
-            if (selectedNRC) {
-              setFetchedStudentsByNRC((prev) => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsByNRC(selectedNRC, currentPage);
-            } else {
-              setFetchedStudentsBySubject((prev) => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsBySubject(selectedSubject, currentPage);
-            }
+            reloadProjects();
             toast.info("Intentando cargar los datos nuevamente...");
           }}
         >
@@ -263,15 +267,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
           `Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`,
         );
 
-        // Clear all caches to force a global refresh (subida fue global)
-        setFetchedStudentsByNRC({});
-        setFetchedStudentsBySubject({});
-        // Re-fetch current view depending on selection
-        if (selectedNRC && selectedNRC !== "") {
-          fetchStudentsByNRC(selectedNRC, currentPage);
-        } else if (selectedSubject) {
-          fetchStudentsBySubject(selectedSubject, currentPage);
-        }
+        reloadProjects();
 
         // Reset file input
         event.target.value = "";
@@ -377,27 +373,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
       // data for the current page from the backend instead of trying to
       // patch the local cache. This avoids sync issues when backend alters
       // shapes or computes derived fields.
-      const cacheKey = selectedNRC
-        ? `${selectedNRC}-${currentPage}`
-        : `${selectedSubject}-${currentPage}`;
-
-      if (selectedNRC) {
-        // Remove cached page and re-fetch from backend
-        setFetchedStudentsByNRC((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
-        });
-        // Await refetch so UI updates immediately with server data
-        await fetchStudentsByNRC(selectedNRC, currentPage);
-      } else {
-        setFetchedStudentsBySubject((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
-        });
-        await fetchStudentsBySubject(selectedSubject, currentPage);
-      }
+      reloadProjects();
 
       // Reset editing state
       cancelEditing();
@@ -527,7 +503,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
         <div className="p-5 space-y-4">
           {/* Gestión de Calificaciones Jurado Senior*/}
           {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
-          {selectedSubject && (
+          {availableFairs.length > 0 && (
             <div className="pt-0 pb-4 border-b border-border">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="flex items-start gap-3">
@@ -554,74 +530,185 @@ export default function StudentGradeTable({ initialNRC }: Props) {
             </div>
           )}
 
-          {/* Fila única: Materia | Filtrar por NRC (pills) */}
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-            {/* Materia */}
-            <div className="w-full lg:w-1/3">
-              <label className="block text-xs font-medium mb-1.5 opacity-70">
-                Materia
+          {/* Filtro de Feria */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4 border-b border-border pb-4">
+            <div className="w-full lg:flex-1">
+              <label className="block text-xs font-medium mb-2 opacity-70">
+                Filtrar por Feria
               </label>
-              <Select
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
-              >
-                <SelectTrigger className="cursor-pointer h-9">
-                  <SelectValue placeholder="Selecciona Materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSubjects.map((subject) => (
-                    <SelectItem
-                      key={subject.name}
-                      value={subject.name}
-                      className="cursor-pointer"
+              <div className="flex flex-wrap justify-start gap-2">
+                <Button
+                  variant={selectedFair === "" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedFair("");
+                    setSelectedNRC("");
+                  }}
+                  className="cursor-pointer"
+                >
+                  Todas las Ferias
+                </Button>
+                {availableFairs.map((fair) => (
+                  <Button
+                    key={fair.id}
+                    variant={selectedFair === String(fair.id) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedFair(String(fair.id));
+                      setSelectedNRC("");
+                    }}
+                    className="cursor-pointer"
+                  >
+                    {fair.year} - S{fair.semester === 10 ? 1 : fair.semester === 30 ? 2 : fair.semester}
+                  </Button>
+                ))}
+                {availableFairs.length === 0 && (
+                  <span className="text-xs text-muted-foreground self-center">
+                    No hay ferias disponibles
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="w-full lg:w-1/3 lg:max-w-sm lg:ml-auto">
+              <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">
+                Filtrar por estudiante o equipo
+              </label>
+              <div className="flex max-w-sm lg:ml-auto">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
+                  <Input
+                    id="grade-search"
+                    value={filterSearch}
+                    onChange={(event) => {
+                      setFilterSearch(event.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"}
+                    className="h-8 md:h-8 pl-9 rounded-r-none"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`}
+                      className="!h-8 !w-8 rounded-l-none -ml-px"
                     >
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuRadioGroup
+                      value={filterType}
+                      onValueChange={(value) => {
+                        setFilterType(value as "student" | "team");
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <DropdownMenuRadioItem value="student">Estudiante</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="team">Equipo</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-
-            {/* NRC pills + label */}
-            <div className="w-full lg:w-1/3">
-              {selectedSubject && availableNRCs.length > 0 && (
-                <>
-                  <div className="flex items-center justify-start gap-3 mb-2">
-                    <label className="block text-xs font-medium opacity-70">
-                      Filtrar por NRC
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableNRCs.length > 1 && (
-                      <Button
-                        variant={selectedNRC === "" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedNRC("")}
-                        className="cursor-pointer"
-                      >
-                        Todos los NRCs
-                      </Button>
-                    )}
-                    {availableNRCs.map((nrc) => (
-                      <Button
-                        key={nrc.code}
-                        variant={
-                          selectedNRC === nrc.code ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => setSelectedNRC(nrc.code)}
-                        className="cursor-pointer"
-                      >
-                        {nrc.code}
-                      </Button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="w-full lg:w-1/3" />
           </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="grade-sort-by" className="block text-xs font-medium mb-1.5 opacity-70">
+                Ordenar por
+              </label>
+              <select
+                id="grade-sort-by"
+                value={sortBy}
+                onChange={(event) => {
+                  setSortBy(event.target.value as "student" | "team");
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="team">Grupo</option>
+                <option value="student">Estudiante</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="grade-sort-order" className="block text-xs font-medium mb-1.5 opacity-70">
+                Orden
+              </label>
+              <select
+                id="grade-sort-order"
+                value={sortOrder}
+                onChange={(event) => {
+                  setSortOrder(event.target.value as "asc" | "desc");
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="asc">A-Z</option>
+                <option value="desc">Z-A</option>
+              </select>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearFilters}
+            className="cursor-pointer self-start sm:self-auto"
+          >
+            Limpiar filtros
+          </Button>
+        </div>
+
+        {/* Filtro opcional: al dejarlo en Todos se conservan todos los proyectos del alcance. */}
+        <div className="w-full">
+          <label className="block text-xs font-medium mb-2 opacity-70">
+            Filtrar por NRC{selectedEdition ? ` · ${selectedEdition.year} - S${selectedEdition.semester === 10 ? 1 : selectedEdition.semester === 30 ? 2 : selectedEdition.semester}` : ""}
+          </label>
+          <div className="flex flex-wrap justify-start gap-2">
+            <Button
+              variant={selectedNRC === "" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedNRC("")}
+              className="cursor-pointer"
+            >
+              Todos los NRCs
+            </Button>
+            {availableNRCs.map((nrc) => (
+              <Button
+                key={selectedFair ? nrc.id : String(nrc.code)}
+                variant={
+                  selectedNRC === String(selectedFair ? nrc.id : nrc.code)
+                    ? "default"
+                    : "outline"
+                }
+                size="sm"
+                onClick={() => {
+                  const filterValue = String(
+                    selectedFair ? nrc.id : nrc.code,
+                  );
+                  setSelectedNRC(
+                    selectedNRC === filterValue ? "" : filterValue,
+                  );
+                }}
+                className="cursor-pointer"
+              >
+                {nrc.code}
+              </Button>
+            ))}
+            {!initialLoading && availableNRCs.length === 0 && (
+              <span className="text-xs text-muted-foreground self-center">
+                No hay NRCs para este filtro.
+              </span>
+            )}
+          </div>
+        </div>
         </div>
       </Card>
 
@@ -673,7 +760,7 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                   </TableCell>
                 </TableRow>
               ))
-            ) : noStudents || teams.length === 0 ? (
+            ) : noStudents || filteredTeams.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-48 text-center">
                   <div className="flex flex-col items-center justify-center text-center">
@@ -681,17 +768,16 @@ export default function StudentGradeTable({ initialNRC }: Props) {
                       <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                     </div>
                     <p className="font-semibold text-lg mb-1">
-                      No hay proyectos registrados
+                      No hay proyectos registrados para estos filtros
                     </p>
                     <p className="text-sm opacity-70">
-                      Verifica que tus estudiantes hayan inscrito sus
-                      videojuegos
+                      Verifica los proyectos asociados a las ferias y NRC seleccionados.
                     </p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              teams.map((t: any, i: number) => (
+              filteredTeams.map((t: any, i: number) => (
                 <TableRow
                   key={t.teamCode}
                   className="hover:bg-muted/50 transition-colors"
