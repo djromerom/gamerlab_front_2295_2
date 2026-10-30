@@ -3,6 +3,8 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+// apiFetch renueva la sesión si expiró
+import { apiFetch } from "@/lib/api";
 
 interface VideogameDetails {
   videogameId: number;
@@ -56,7 +58,7 @@ const GradedPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/graded-games?jurorId=${jurorId}&page=${page}&limit=${limit}`,
         {
           method: "GET",
@@ -105,7 +107,7 @@ const GradedPage: React.FC = () => {
     setIsSearching(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/graded-games/search?q=${encodeURIComponent(query)}`,
 
         {

@@ -1,13 +1,19 @@
 import { Textarea } from "@/components/grupo 8/textarea";
 import { TeamVerificationForm } from "@/components/grupo 8/TeamVerification";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCriteria } from "@/hooks/use-criteria";
 import { useTeamVerification } from "@/hooks/useTeamVerification";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
-import { Loader2, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -286,8 +292,32 @@ export default function BatchRatePage() {
 
   const currentGame = games[activeTab];
 
+  const findGame = (videogameId: number) =>
+    games.find((game) => game.id === videogameId);
+
   const gameLabel = (videogameId: number) =>
-    games.find((game) => game.id === videogameId)?.nombre ?? `ID ${videogameId}`;
+    findGame(videogameId)?.nombre ?? `ID ${videogameId}`;
+
+  // Resumen de lo que el jurado acaba de enviar, con la misma ponderación que la calificación individual
+  const scoreSummary = (videogameId: number) => {
+    const scoreData = gameScores[videogameId];
+    const details = apiCriteria.map((criterion) => ({
+      name: criterion.name,
+      weight: criterion.weight,
+      score:
+        parseScoreValue(
+          scoreData?.details?.find((d) => d.criterionId === criterion.id)
+            ?.score ?? "",
+          5,
+        ) ?? 0,
+    }));
+    return {
+      details,
+      total: details.reduce((acc, d) => acc + d.score * d.weight, 0),
+      max: details.reduce((acc, d) => acc + 5 * d.weight, 0),
+      comments: scoreData?.comments?.trim() ?? "",
+    };
+  };
 
   if (!currentGame) {
     return (
@@ -324,47 +354,105 @@ export default function BatchRatePage() {
         </p>
 
         {result ? (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Resultado de la calificación masiva</CardTitle>
+          <Card className="mb-6 py-6">
+            <CardHeader className="px-4 md:px-6">
+              <CardTitle className="text-lg md:text-xl">
+                Resultado de la calificación
+              </CardTitle>
+              <CardDescription>
+                {result.successful.length} de{" "}
+                {result.successful.length + result.failed.length} evaluaciones
+                guardadas
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <h3 className="font-semibold text-green-700 dark:text-green-400">
-                    ✅ Exitosas: {result.successful.length}
+            <CardContent className="px-4 md:px-6 space-y-6">
+              {result.successful.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Guardadas ({result.successful.length})
                   </h3>
-                  {result.successful.map((s) => (
-                    <p
-                      key={s.videogameId}
-                      className="text-sm text-green-600 dark:text-green-300"
-                    >
-                      {gameLabel(s.videogameId)} →Evaluación #{s.evaluationId}
-                    </p>
-                  ))}
-                </div>
-                {result.failed.length > 0 && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <h3 className="font-semibold text-red-700 dark:text-red-400">
-                      ❌ Fallidas: {result.failed.length}
-                    </h3>
-                    {result.failed.map((f) => (
-                      <p
-                        key={f.videogameId}
-                        className="text-sm text-red-600 dark:text-red-300"
+                  {result.successful.map((s) => {
+                    const game = findGame(s.videogameId);
+                    const summary = scoreSummary(s.videogameId);
+                    return (
+                      <div
+                        key={s.videogameId}
+                        className="rounded-lg border border-green-600/30 bg-green-50/50 dark:bg-green-900/10 p-4 space-y-3"
                       >
-                        {gameLabel(f.videogameId)}: {f.error}
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium">{gameLabel(s.videogameId)}</p>
+                            {game && (
+                              <p className="text-sm text-muted-foreground">
+                                {game.equipo}
+                                {game.teamCode && ` · ${game.teamCode}`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="sm:text-right flex-shrink-0">
+                            <p className="text-xl font-bold text-primary">
+                              {summary.total.toFixed(2)}
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {" "}/ {summary.max.toFixed(2)}
+                              </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Evaluación #{s.evaluationId}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {summary.details.map((d) => (
+                            <span
+                              key={d.name}
+                              className="rounded-md bg-muted px-2 py-1 text-xs"
+                            >
+                              {d.name}:{" "}
+                              <span className="font-semibold">{d.score.toFixed(1)}</span>
+                            </span>
+                          ))}
+                        </div>
+
+                        {summary.comments && (
+                          <p className="text-sm text-muted-foreground italic break-words">
+                            “{summary.comments}”
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </section>
+              )}
+
+              {result.failed.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-400">
+                    <XCircle className="h-5 w-5" />
+                    No guardadas ({result.failed.length})
+                  </h3>
+                  {result.failed.map((f) => (
+                    <div
+                      key={f.videogameId}
+                      className="rounded-lg border border-red-600/30 bg-red-50/50 dark:bg-red-900/10 p-4"
+                    >
+                      <p className="font-medium">{gameLabel(f.videogameId)}</p>
+                      <p className="text-sm text-red-600 dark:text-red-400">
+                        {f.error}
                       </p>
-                    ))}
-                  </div>
-                )}
-                <Button
-                  onClick={() => navigate(backRoute)}
-                  className="cursor-pointer"
-                >
-                  Volver a pendientes
-                </Button>
-              </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              <Button
+                onClick={() => navigate(backRoute)}
+                className="cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver a pendientes
+              </Button>
             </CardContent>
           </Card>
         ) : (

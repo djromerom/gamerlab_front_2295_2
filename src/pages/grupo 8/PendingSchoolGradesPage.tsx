@@ -2,6 +2,8 @@ import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { Button } from "@/components/ui/button";
 import LayoutAplication from "@/layouts/LayoutAplication";
+// apiFetch renueva la sesión si expiró (p. ej. al volver de calificar un lote largo)
+import { apiFetch } from "@/lib/api";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -83,7 +85,7 @@ const PendingSchoolGradesPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/pending-games?page=${page}&limit=${limit}`,
         {
           method: "GET",
@@ -159,7 +161,7 @@ const PendingSchoolGradesPage: React.FC = () => {
 
     try {
       // URL CORREGIDA: usar pending-games/search en lugar de search-games
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/pending-games/search?q=${encodeURIComponent(query)}`,
         {
           method: "GET",

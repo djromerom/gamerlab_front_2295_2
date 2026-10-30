@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { useCriteria } from "@/hooks/use-criteria";
 import LayoutAplication from "@/layouts/LayoutAplication";
+import { apiFetch } from "@/lib/api";
 import { UiCriterion } from "@/types/criterion";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -309,8 +310,9 @@ export default function SchoolRate() {
       details: parsedDetails,
     };
     // evaluacion exitosa no existe
+    // Se usa apiFetch (como en RatePage) para no perder la nota si la sesión expiró mientras se calificaba.
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/evaluation/with-details`,
         {
           method: "POST",
