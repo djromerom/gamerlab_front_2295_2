@@ -14,8 +14,6 @@ export interface GradeTeam {
   source?: "current" | "historical";
 }
 
-export type GradeFilterType = "student" | "team";
-
 export function gradeKey(team: GradeTeam) {
   return `${team.editionId ?? "edition"}:${team.teamCode}:${team.videogameId ?? "game"}`;
 }
