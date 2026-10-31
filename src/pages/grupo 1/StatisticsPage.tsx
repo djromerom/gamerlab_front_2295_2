@@ -18,10 +18,15 @@ import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import DownloadReport from "@/components/grupo 1/DownloadReport";
 import TablaPorJurado from "@/components/grupo 1/JudgesTable";
 import { AVERAGES_HIDDEN_MESSAGE, averageOfGames } from "@/lib/averages";
+import {
+  progressPercentage,
+  useEvaluationProgress,
+} from "@/fetchs/evaluationProgress";
 
 export default function StatisticsPage() {
   const { listaVideojuegos, isLoading, error, fetchGlobalData } =
     useGlobalState();
+  const { progress: evaluationProgress } = useEvaluationProgress();
 
   // Estado local para manejar la carga de la página (igual que ProfessorsPage)
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -45,18 +50,12 @@ export default function StatisticsPage() {
   const totalVideojuegos = listaVideojuegos.length;
   const promedioGeneral = averageOfGames(listaVideojuegos) ?? (totalVideojuegos > 0 ? null : "0.00");
 
-  const totalEvaluaciones = listaVideojuegos.reduce(
-    (acc, game) => acc + (game.evaluacionesCompletadas || 0),
-    0,
-  );
-  const totalJuradosAsignadosGeneral = listaVideojuegos.reduce(
-    (acc, game) => acc + (game.totalJuradosAsignados || 0),
-    0,
-  );
-  const progresoEvaluacionPorcentaje =
-    totalJuradosAsignadosGeneral > 0
-      ? (totalEvaluaciones / totalJuradosAsignadosGeneral) * 100
-      : 0;
+  // Progreso global: misma fuente que Estado Eval. y Asignación de jurados.
+  const totalEvaluaciones = evaluationProgress?.completed ?? 0;
+  const totalJuradosAsignadosGeneral = evaluationProgress?.assigned ?? 0;
+  const progresoEvaluacionPorcentaje = evaluationProgress
+    ? progressPercentage(evaluationProgress)
+    : 0;
 
   const VALUE_Jurados = "tablaJurados";
 
