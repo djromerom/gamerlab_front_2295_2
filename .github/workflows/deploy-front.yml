@@ -79,8 +79,14 @@ jobs:
               exit 1
             fi
 
-            # BuildKit secrets are not part of the layer cache key: hash them so the build layer is invalidated when they change
-            echo "VITE_VARS_HASH=$(printf '%s|%s' "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
+        # BuildKit secrets are not part of the layer cache key: hash them so the build layer is invalidated when they change.
+        # Separate step: values written to GITHUB_ENV are only visible from the next step on.
+        - name: Hash VITE_secrets for the layer cache
+          run: |
+            set -euo pipefail
+            HASH=$(printf '%s|%s' "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" | sha256sum | cut -d' ' -f1)
+            echo "VITE vars hash: $HASH"
+            echo "VITE_VARS_HASH=$HASH" >> "$GITHUB_ENV"
 
         - name: Build and push base image
           uses: docker/build-push-action@v6
