@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  fetchTeamVerificationStatus,
+  fetchTeamVerificationState,
+  type TeamVerificationLock,
   type TeamVerificationStatus,
 } from "@/fetchs/teamVerification";
 
@@ -13,6 +14,7 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
   const idsKey = ids.join(",");
 
   const [status, setStatus] = useState<TeamVerificationStatus>({});
+  const [locks, setLocks] = useState<Record<number, TeamVerificationLock>>({});
   const [isLoading, setIsLoading] = useState(ids.length > 0);
 
   useEffect(() => {
@@ -23,8 +25,12 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
 
     let cancelled = false;
     setIsLoading(true);
-    fetchTeamVerificationStatus(ids)
-      .then((data) => !cancelled && setStatus(data))
+    fetchTeamVerificationState(ids)
+      .then((data) => {
+        if (cancelled) return;
+        setStatus(data.status);
+        setLocks(data.locks);
+      })
       // Si falla la consulta se pide el código; verify responde bien si el grupo ya estaba verificado.
       .catch((error) => console.error("Error consultando la verificación de grupos:", error))
       .finally(() => !cancelled && setIsLoading(false));
@@ -44,5 +50,37 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
     setStatus((prev) => ({ ...prev, [teamId]: true }));
   }, []);
 
-  return { isLoading, isVerified, markVerified };
+  /** ISO 8601 hasta cuando el grupo está bloqueado por intentos, o null si no lo está / se desconoce. */
+  const getLockedUntil = useCallback(
+    (teamId?: number): string | null => {
+      const lock = teamId === undefined ? undefined : locks[teamId];
+      return lock?.locked && lock.lockedUntil ? lock.lockedUntil : null;
+    },
+    [locks],
+  );
+
+  // Bloqueos cuya hora calculó el front (el backend no la informó): se muestran como «Espera 10 minutos».
+  const [estimated, setEstimated] = useState<Record<number, boolean>>({});
+
+  const markLocked = useCallback(
+    (teamId: number, lockedUntil: string, isEstimated = false) => {
+      setLocks((prev) => ({ ...prev, [teamId]: { locked: true, lockedUntil } }));
+      setEstimated((prev) => ({ ...prev, [teamId]: isEstimated }));
+    },
+    [],
+  );
+
+  const isLockEstimated = useCallback(
+    (teamId?: number) => teamId !== undefined && estimated[teamId] === true,
+    [estimated],
+  );
+
+  return {
+    isLoading,
+    isVerified,
+    markVerified,
+    getLockedUntil,
+    isLockEstimated,
+    markLocked,
+  };
 }

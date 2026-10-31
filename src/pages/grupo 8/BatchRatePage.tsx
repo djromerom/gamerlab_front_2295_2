@@ -57,6 +57,9 @@ export default function BatchRatePage() {
     isLoading: isLoadingVerification,
     isVerified,
     markVerified,
+    getLockedUntil,
+    isLockEstimated,
+    markLocked,
   } = useTeamVerification(games.map((game) => game.teamId));
 
   const [activeTab, setActiveTab] = useState(0);
@@ -533,6 +536,9 @@ export default function BatchRatePage() {
                       teamId={currentGame.teamId!}
                       teamName={currentGame.equipo}
                       onVerified={markVerified}
+                      lockedUntil={getLockedUntil(currentGame.teamId)}
+                      lockEstimated={isLockEstimated(currentGame.teamId)}
+                      onLocked={markLocked}
                       className="shadow-none py-4"
                     />
                   )}
