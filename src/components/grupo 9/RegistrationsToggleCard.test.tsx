@@ -45,4 +45,12 @@ describe("RegistrationsToggleCard", () => {
     await waitFor(() => expect(screen.getByText(/No se pudo actualizar/)).toBeTruthy());
     expect(screen.getByText("Cerradas")).toBeTruthy();
   });
+
+  it("si el GET falla, muestra error de carga y deshabilita el switch", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
+    render(<RegistrationsToggleCard />);
+    await screen.findByText(/No se pudo cargar/);
+    expect(screen.queryByText("Cerradas")).toBeNull();
+    expect((screen.getByRole("switch") as HTMLButtonElement).disabled).toBe(true);
+  });
 });

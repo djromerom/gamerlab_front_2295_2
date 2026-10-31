@@ -2,13 +2,18 @@ import { apiFetch } from "@/lib/api";
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND;
 
+/** Público. Lanza si la petición falla. */
+export async function readRegistrationsOpen(): Promise<boolean> {
+  const res = await fetch(`${API_URL}/settings/registrations`);
+  if (!res.ok) throw new Error("Error al leer las inscripciones");
+  const data = (await res.json()) as { registrationsOpen?: unknown };
+  return data.registrationsOpen === true;
+}
+
 /** Público. Si la petición falla se considera cerrado. */
 export async function fetchRegistrationsOpen(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/settings/registrations`);
-    if (!res.ok) return false;
-    const data = (await res.json()) as { registrationsOpen?: unknown };
-    return data.registrationsOpen === true;
+    return await readRegistrationsOpen();
   } catch {
     return false;
   }

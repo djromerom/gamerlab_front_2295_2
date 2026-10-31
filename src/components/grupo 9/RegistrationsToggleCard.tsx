@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import {
-  fetchRegistrationsOpen,
+  readRegistrationsOpen,
   updateRegistrationsOpen,
 } from "@/fetchs/registrations";
 
@@ -12,9 +12,13 @@ const RegistrationsToggleCard: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    fetchRegistrationsOpen().then((value) => {
-      if (active) setOpen(value);
-    });
+    readRegistrationsOpen()
+      .then((value) => {
+        if (active) setOpen(value);
+      })
+      .catch(() => {
+        if (active) setError("No se pudo cargar el estado de las inscripciones.");
+      });
     return () => {
       active = false;
     };
@@ -41,7 +45,7 @@ const RegistrationsToggleCard: React.FC = () => {
           <div className="w-full p-4 flex items-center justify-between transition-colors">
             <span className="font-medium">Inscripciones de equipos</span>
             <span className="text-sm opacity-70">
-              {open === null ? "Cargando..." : open ? "Abiertas" : "Cerradas"}
+              {open === null ? (error ? "Sin datos" : "Cargando...") : open ? "Abiertas" : "Cerradas"}
             </span>
           </div>
           <div className="px-4 py-3 border-t">

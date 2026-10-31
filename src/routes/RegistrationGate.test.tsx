@@ -54,6 +54,7 @@ describe("RegistrationGate", () => {
   it("mientras carga no muestra ninguno", () => {
     stub(() => new Promise(() => {}));
     renderGate();
+    expect(screen.getByText("Cargando...")).toBeTruthy();
     expect(screen.queryByText("Inscripciones cerradas")).toBeNull();
     expect(screen.queryByText("Formulario de registro")).toBeNull();
   });
