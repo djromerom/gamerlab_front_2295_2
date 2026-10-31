@@ -49,13 +49,13 @@ export interface NRCData {
   id: number; // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
   materiaNombre: string; // Nombre de la materia asociada
-  promedioxNRC?: number; // Promedio de NRC, si es necesario
+  promedioxNRC?: number | null; // null: ranking oculto. Promedio de NRC, si es necesario
 }
 
 // Para el gráfico de torta "Distribución por Materia"
 export interface DatosGraficoMateria {
   name: string; // Nombre de la materia
-  value: number; // Valor para el gráfico (promedio de videojuegos en esa materia)
+  value: number | null; // null: ranking oculto. Valor para el gráfico (promedio de videojuegos en esa materia)
   color?: string; // Color opcional para el segmento del gráfico
 }
 

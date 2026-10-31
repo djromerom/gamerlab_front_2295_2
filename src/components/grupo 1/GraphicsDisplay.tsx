@@ -30,23 +30,11 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage } from "@/lib/averages";
 
 interface CriterioChartData {
     criterio: string;
     valor: number;
-}
-
-// Para datos de promedios generales por materia (usado por pie y ahora por el bar chart base)
-interface MateriaPromedioData {
-    name: string;  // Nombre de la materia
-    value: number; // Promedio de la materia
-    color?: string;
-}
-
-// Para datos de promedios por NRC (para el bar chart cuando se filtra por materia)
-interface NRCPromedioData {
-    name: string;    // Nombre del NRC (e.g., "NRC 12345")
-    promedio: number; // Promedio para ese NRC
 }
 
 const NOMBRES_CRITERIOS_GRAFICOS = [
@@ -136,39 +124,16 @@ const GraphicDisplay = () => {
         });
     }, [criteriosSeleccionado]);
 
-    // Datos para la tabla "Promedios por Materia" y el estado base del nuevo Bar Chart Horizontal (Slide 2)
-    // Esto ya lo tenías como pieChartData, lo renombramos para claridad.
-    const promediosGeneralesPorMateria: MateriaPromedioData[] = useMemo(() => {
-        if (Array.isArray(datosGraficoTortaMaterias)) { // datosGraficoTortaMaterias es tu fuente original
-            return datosGraficoTortaMaterias.filter(
-                item => item && typeof item.value === 'number' && !isNaN(item.value) && typeof item.name === 'string'
-            );
-        }
-        return [];
-    }, [datosGraficoTortaMaterias]);
-
-
-    // Datos para el nuevo Bar Chart Horizontal (Slide 2)
-    const barChartHorizontalData: (MateriaPromedioData | NRCPromedioData)[] = useMemo(() => {
-        if (filtroMateria === "Todas") {
-            // Mostrar promedios generales por materia
-            return promediosGeneralesPorMateria.map(item => ({
-                name: item.name, // Nombre de la materia
-                promedio: item.value // Promedio de la materia (renombramos 'value' a 'promedio' para consistencia del dataKey)
-            })).sort((a, b) => b.promedio - a.promedio); // Opcional: ordenar
-        } else {
-            // Mostrar promedios por NRC de la materia seleccionada
-            if (!listaVideojuegosFiltrados) return [];
-            
-            return listaVideojuegosFiltrados
-                .filter(vj => vj.materia === filtroMateria)
-                .map(vj => ({
-                    name: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.codigo.toString() || "N/A", // Asegúrate de que nrcsFiltrados esté definido
-                    promedio: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.promedioxNRC || 0, // Asegúrate de que nrcsFiltrados esté definido
-                }))
-                .sort((a, b) => b.promedio - a.promedio); // Opcional: ordenar
-        }
-    }, [filtroMateria, promediosGeneralesPorMateria, listaVideojuegosFiltrados, nrcsFiltrados]);
+    // Promedios por materia / NRC; con el ranking oculto el backend los envía en null.
+    const { materias: promediosGeneralesPorMateria, chart: barChartHorizontalData, hidden: promediosOcultos, materiasHidden } = useMemo(
+        () => buildAverageChartData({
+            materias: Array.isArray(datosGraficoTortaMaterias) ? datosGraficoTortaMaterias : [],
+            filtroMateria,
+            videojuegos: listaVideojuegosFiltrados ?? [],
+            nrcs: nrcsFiltrados ?? [],
+        }),
+        [datosGraficoTortaMaterias, filtroMateria, listaVideojuegosFiltrados, nrcsFiltrados]
+    );
 
 
     // Top 3 para la card (sin cambios)
@@ -385,7 +350,9 @@ const GraphicDisplay = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="px-2 pb-4">
-                                {barChartHorizontalData.length > 0 ? (
+                                {promediosOcultos ? (
+                                    renderNoDataMessage(AVERAGES_HIDDEN_MESSAGE)
+                                ) : barChartHorizontalData.length > 0 ? (
                                     <ChartContainer config={barChartHorizontalConfig} className="min-h-[300px] w-full">
                                         {/* Altura dinámica para el contenedor del gráfico */}
                                         <ResponsiveContainer width="100%" height={Math.max(300, barChartHorizontalData.length * 40)}>
@@ -551,7 +518,9 @@ const GraphicDisplay = () => {
                         <CardDescription>Detalle de la distribución</CardDescription>
                     </CardHeader>
                     <CardContent className="pb-6">
-                        {promediosGeneralesPorMateria.length > 0 ? ( // Usa la variable correcta
+                        {materiasHidden ? (
+                            <p className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : promediosGeneralesPorMateria.length > 0 ? ( // Usa la variable correcta
                             <div className="space-y-3">
                                 {promediosGeneralesPorMateria.map((item, index) => ( // Usa la variable correcta
                                     <div key={item.name} className="flex items-center justify-between gap-4">
@@ -559,7 +528,7 @@ const GraphicDisplay = () => {
                                             <div style={{ backgroundColor: item.color || `hsl(var(--chart-${index + 1}))` }} className="w-3 h-3 rounded-full flex-shrink-0"></div>
                                             <span className="text-sm font-medium truncate" title={item.name}>{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-semibold">{formatNumber(item.value, 2)}</span>
+                                        <span className="text-sm font-semibold">{formatAverage(item.value, 2) ?? 'N/A'}</span>
                                     </div>
                                 ))}
                             </div>
