@@ -2,6 +2,10 @@
 
 
 import { apiFetch } from "@/lib/api";
+import {
+  progressPercentage,
+  useEvaluationProgress,
+} from "@/fetchs/evaluationProgress";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import {
   SidebarInset,
@@ -175,6 +179,9 @@ export function RealtimeTrackingPanel() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
+  const { progress: evaluationProgress, reload: reloadProgress } =
+    useEvaluationProgress();
+
   const loadTeams = async () => {
     try {
       setLoadError(null);
@@ -216,10 +223,11 @@ export function RealtimeTrackingPanel() {
 
     const interval = window.setInterval(() => {
       void loadTeams();
+      void reloadProgress();
     }, 10000);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [reloadProgress]);
 
   const filteredBySemester = useMemo(() => {
     return teams.filter(
@@ -543,6 +551,23 @@ export function RealtimeTrackingPanel() {
                   </div>
                 </div>
               </div>
+
+              {evaluationProgress && (
+                <div className="bg-card border border-border rounded-xl p-3 md:p-4 mb-6 md:mb-8">
+                  <div className="text-muted-foreground text-xs mb-1">
+                    Progreso de evaluación
+                  </div>
+                  <div className="text-xl md:text-2xl">
+                    {evaluationProgress.completed} / {evaluationProgress.assigned}
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div
+                      className="bg-primary h-full rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercentage(evaluationProgress)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {incompleteAssignments.length > 0 && (
                 <div className="mb-8 rounded-xl border border-orange-500/40 bg-card p-4 text-sm text-orange-500">
