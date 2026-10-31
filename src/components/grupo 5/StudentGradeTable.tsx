@@ -9,7 +9,7 @@ import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
 import { useFetch } from "@/hooks/useFetch";
 import StudentGradeFilters from "./StudentGradeFilters";
 import StudentGradeTableView from "./StudentGradeTableView";
-import { gradeKey, type GradeFilterType, type GradeTeam } from "./student-grade-table-types";
+import { gradeKey, type GradeTeam } from "./student-grade-table-types";
 
 export default function StudentGradeTable() {
   const customFetch = useFetch();
@@ -21,10 +21,10 @@ export default function StudentGradeTable() {
   const [savingGrade, setSavingGrade] = useState(false);
   const gradeInputRefs = useRef(new Map<string, HTMLInputElement>());
   const [filterSearch, setFilterSearch] = useState("");
-  const [filterType, setFilterType] = useState<GradeFilterType>("student");
+  const [showHistorical, setShowHistorical] = useState(false);
   const [sortBy, setSortBy] = useState<"student" | "team">("team");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const dashboard = useTeacherDashboard({ search: filterSearch, searchType: filterType, sortBy, sortOrder });
+  const dashboard = useTeacherDashboard({ search: filterSearch, includeHistorical: showHistorical, sortBy, sortOrder });
   const {
     selectedNRC, setSelectedNRC, selectedFair, setSelectedFair, selectedEdition,
     availableFairs, currentPage, setCurrentPage, paginationMetadata, availableNRCs, isLoading,
@@ -114,7 +114,6 @@ export default function StudentGradeTable() {
     setSelectedFair("");
     setSelectedNRC("");
     setFilterSearch("");
-    setFilterType("student");
     setSortBy("team");
     setSortOrder("asc");
     setCurrentPage(1);
@@ -168,6 +167,15 @@ export default function StudentGradeTable() {
     } finally {
       setDownloading(false);
     }
+  };
+
+  const changeTab = (historical: boolean) => {
+    if (historical === showHistorical) return;
+    if (isEditingGrades) {
+      if (hasUnsavedChanges && !window.confirm("Tienes cambios sin guardar. ¿Quieres descartarlos?")) return;
+      cancelEditMode(true);
+    }
+    setShowHistorical(historical);
   };
 
   const enterEditMode = () => {
@@ -261,10 +269,10 @@ export default function StudentGradeTable() {
   };
 
   return <div className="bg-background text-foreground min-h-screen p-4">
-    <div className="mb-6 px-4"><div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><div><h1 className="text-xl font-medium">Panel de Calificaciones</h1><p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p></div><div className="flex items-start sm:items-center">{isEditingGrades ? <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => cancelEditMode()} disabled={savingGrade}><X className="h-4 w-4 mr-1.5" /> Cancelar</Button><Button size="sm" onClick={saveGrades} disabled={savingGrade}>{savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{savingGrade ? "Guardando..." : "Guardar todo"}</Button></div> : <Button variant="outline" size="sm" onClick={enterEditMode} disabled={!selectedNRC || !teams.some((team: GradeTeam) => team.canEdit) || isLoading || initialLoading} title={!selectedNRC ? "Selecciona una feria y un NRC para editar sus notas" : undefined}><Edit className="h-4 w-4 mr-1.5" />{selectedNRC ? "Editar notas" : "Selecciona un NRC"}</Button>}<div className="ml-2"><Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" className="cursor-pointer" onClick={exportToExcel} aria-label="Exportar resultados filtrados" disabled={downloading}>{downloading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1.5" />}<span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span><span className="sm:hidden">Excel</span></Button></TooltipTrigger><TooltipContent side="top">Exportar los resultados filtrados a Excel</TooltipContent></Tooltip></div></div></div></div>
+    <div className="mb-6 px-4"><div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><div><h1 className="text-xl font-medium">Panel de Calificaciones</h1><p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p></div><div className="flex items-start sm:items-center">{isEditingGrades ? <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => cancelEditMode()} disabled={savingGrade}><X className="h-4 w-4 mr-1.5" /> Cancelar</Button><Button size="sm" onClick={saveGrades} disabled={savingGrade}>{savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{savingGrade ? "Guardando..." : "Guardar todo"}</Button></div> : <Button variant="outline" size="sm" onClick={enterEditMode} disabled={showHistorical || !selectedNRC || !teams.some((team: GradeTeam) => team.canEdit) || isLoading || initialLoading} title={showHistorical ? "Los históricos son de solo lectura" : !selectedNRC ? "Selecciona una feria y un NRC para editar sus notas" : undefined}><Edit className="h-4 w-4 mr-1.5" />{selectedNRC ? "Editar notas" : "Selecciona un NRC"}</Button>}<div className="ml-2"><Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" className="cursor-pointer" onClick={exportToExcel} aria-label="Exportar resultados filtrados" disabled={downloading}>{downloading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1.5" />}<span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span><span className="sm:hidden">Excel</span></Button></TooltipTrigger><TooltipContent side="top">Exportar los resultados filtrados a Excel</TooltipContent></Tooltip></div></div></div></div>
     {error && <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"><div><strong>Error al actualizar el listado.</strong> La tabla conserva el último resultado válido y puede corresponder a los filtros anteriores. {error}</div><Button variant="outline" size="sm" className="cursor-pointer self-start sm:self-auto" onClick={retryLoad}>Reintentar</Button></div>}
-    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} filterType={filterType} setFilterType={setFilterType} sortBy={sortBy} setSortBy={setSortBy} sortOrder={sortOrder} setSortOrder={setSortOrder} onClear={clearFilters} />
-    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} filterType={filterType} setFilterType={setFilterType} sortBy={sortBy} setSortBy={setSortBy} sortOrder={sortOrder} setSortOrder={setSortOrder} onClear={clearFilters} disabled={isEditingGrades || savingGrade} />
+    <div role="tablist" aria-label="Vista del panel" className="mb-4 flex gap-2"><Button role="tab" aria-selected={!showHistorical} variant={showHistorical ? "outline" : "default"} size="sm" className="cursor-pointer" onClick={() => changeTab(false)} disabled={savingGrade}>Feria activa</Button><Button role="tab" aria-selected={showHistorical} variant={showHistorical ? "default" : "outline"} size="sm" className="cursor-pointer" onClick={() => changeTab(true)} disabled={savingGrade}>Históricos</Button></div>
+    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} sortBy={sortBy} setSortBy={setSortBy} sortOrder={sortOrder} setSortOrder={setSortOrder} onClear={clearFilters} disabled={isEditingGrades || savingGrade} />
     <StudentGradeTableView teams={teams} filteredTeams={filteredTeams} initialLoading={initialLoading} isLoading={isLoading} noStudents={noStudents} isEditingGrades={isEditingGrades} editedGrades={editedGrades} setEditedGrades={updateDraftGrades} gradeResults={gradeResults} savingGrade={savingGrade} gradeInputRefs={gradeInputRefs} currentPage={currentPage} totalPages={paginationMetadata?.totalPages ?? 0} handlePreviousPage={handlePreviousPage} handleNextPage={handleNextPage} />
   </div>;
 }
