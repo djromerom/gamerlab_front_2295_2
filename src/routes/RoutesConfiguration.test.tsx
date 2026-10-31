@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TextSizeProvider } from "@/contexts/TextSizeContext";
-import RoutesConfiguration from "@/routes/RoutesConfiguration";
+import RoutesConfiguration, { routes } from "@/routes/RoutesConfiguration";
 
 // HomePage depende de matchMedia y de otras peticiones: aquí solo importa a dónde se llega
 vi.mock("@/pages/grupo 9/HomePage", () => ({
@@ -124,4 +124,13 @@ describe("RoutesConfiguration (SP1: login, 404 y pantallas de relleno)", () => {
       expect(window.location.pathname).toBe("/inicio");
     },
   );
+});
+
+describe("routes", () => {
+  it("declara cada ruta una sola vez (/materias incluida)", () => {
+    const paths = routes.map((r) => r.path);
+    const duplicated = paths.filter((p, i) => paths.indexOf(p) !== i);
+    expect(duplicated).toEqual([]);
+    expect(paths.filter((p) => p === "/materias")).toHaveLength(1);
+  });
 });

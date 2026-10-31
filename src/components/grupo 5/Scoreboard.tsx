@@ -289,7 +289,7 @@ export default function Scoreboard() {
           <CardHeader className="p-4 sm:p-6 pb-2">
             <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Calificaciones no disponibles</CardTitle>
             <CardDescription className="text-xs sm:text-sm text-foreground/50">
-              Las calificaciones aún no han sido publicadas. !Proximamente¡
+              Las calificaciones aún no han sido publicadas. ¡Próximamente!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
