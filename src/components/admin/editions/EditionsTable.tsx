@@ -1,4 +1,5 @@
 import React from "react";
+import { editionsCountLabel } from "@/lib/pluralize";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
@@ -42,7 +43,7 @@ export const EditionsTable: React.FC<EditionsListProps> = ({
         {/* Fila 2: Botón y contador */}
         <div className="flex items-center justify-between gap-4 w-full">
           <div className="text-sm text-muted-foreground">
-            Mostrando {editions.length} edición{editions.length !== 1 ? "es" : ""} registrada{editions.length !== 1 ? "s" : ""}
+            {editionsCountLabel(editions.length)}
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
