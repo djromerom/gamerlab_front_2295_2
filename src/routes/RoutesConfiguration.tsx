@@ -50,7 +50,7 @@ import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
 
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
-import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
+import RegistrationGate from "@/routes/RegistrationGate";
 import VideogamesPage from "@/pages/teams/VideogamesPage";
 
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
@@ -95,12 +95,10 @@ const routes: RouteConfig[] = [
     element: <ConsultantPage />,
     roles: ["Consultor"],
   },
-  /* temporarily disabled inscriptions through the web
   {
     path: "/registro-equipo",
-    element: <TeamRegisterPage />,
-  }, 
-  */
+    element: <RegistrationGate />,
+  },
   {
     path: "/equipos",
     element: <VideogamesPage />,
