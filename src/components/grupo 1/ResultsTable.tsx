@@ -8,20 +8,13 @@ import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateCont
 import { TabsContent } from '@/components/ui/tabs'; // Asumiendo que lo usas dentro de Tabs
 import { Loader2 } from "lucide-react"; // Icono de carga
 import { Button } from "@/components/ui/button";
-
-// Nombres de los criterios como se espera que vengan del backend en VideojuegoData.criterios
-// O como los quieres mostrar en la cabecera. Es mejor si coinciden.
-const NOMBRES_CRITERIOS_TABLA = [
-  {key: "Interfaz de Usuario", display: "Interfaz"},
-  {key: "Interacción", display: "Interacción"},
-  {key: "Resultados", display: "Resultados"},
-  {key: "Presentación del Proyecto", display: "Presentación"},
-  {key: "Funcionamiento del Programa", display: "Funcionamiento"},
-  {key: "Presentación personal del equipo", display: "Presentación personal"},
-];
+import { useCriteria } from "@/hooks/use-criteria";
+import { buildCriteriaColumns, getCriterionValue } from "@/lib/criteria-columns";
 
 const TablaResultados = () => {
   const { listaVideojuegosFiltrados, isLoading, error, fetchGlobalData } = useGlobalState();
+
+  const { criteria } = useCriteria();
 
   const videojuegosOrdenados = useMemo(() => {
     if (!listaVideojuegosFiltrados) {
@@ -42,6 +35,11 @@ const TablaResultados = () => {
       return 0; // son iguales en términos de materia, podrías añadir un segundo criterio de orden
     });
   }, [listaVideojuegosFiltrados]); // Se recalculará si listaVideojuegosFiltrados cambia
+
+  const columnasCriterios = useMemo(
+    () => buildCriteriaColumns(criteria, listaVideojuegosFiltrados ?? []),
+    [criteria, listaVideojuegosFiltrados],
+  );
 
   if (isLoading) {
     return (
@@ -84,8 +82,8 @@ const TablaResultados = () => {
                   <TableHead>Videojuego</TableHead>
                   <TableHead>Materia</TableHead>
                   <TableHead>NRC</TableHead>
-                  {NOMBRES_CRITERIOS_TABLA.map(c => (
-                    <TableHead key={c.key}>{c.display}</TableHead>
+                  {columnasCriterios.map(c => (
+                    <TableHead key={c.id}>{c.name}</TableHead>
                   ))}
                   <TableHead>Puntaje</TableHead>
                   <TableHead>Estado Eval.</TableHead>
@@ -105,18 +103,14 @@ const TablaResultados = () => {
                       <TableCell className="font-medium">{videojuego.nombre || 'Sin Nombre'}</TableCell>
                       <TableCell>{videojuego.materia || '-'}</TableCell>
                       <TableCell>{videojuego.nrc || '-'}</TableCell>
-                      {NOMBRES_CRITERIOS_TABLA.map(criterioConfig => (
-                        <TableCell key={criterioConfig.key}>
-                          {/*
-                            Ahora usamos criteriosDelVideojuego, que está garantizado
-                            (o tratado como) un objeto.
-                            La lógica original de !== undefined sigue siendo válida y buena.
-                          */}
-                          {criteriosDelVideojuego[criterioConfig.key] !== undefined
-                            ? criteriosDelVideojuego[criterioConfig.key].toFixed(1)
-                            : 'N/A'}
-                        </TableCell>
-                      ))}
+                      {columnasCriterios.map(columna => {
+                        const valor = getCriterionValue(criteriosDelVideojuego, columna);
+                        return (
+                          <TableCell key={columna.id}>
+                            {typeof valor === 'number' ? valor.toFixed(1) : 'N/A'}
+                          </TableCell>
+                        );
+                      })}
                       <TableCell className="font-bold">
                         {/* Asegurarse que promedio es un número antes de llamar a toFixed */}
                         {typeof videojuego.promedio === 'number' ? videojuego.promedio.toFixed(2) : 'N/A'}
