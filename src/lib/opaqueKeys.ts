@@ -15,3 +15,16 @@ export function isOwnLikeEvent(
 ): boolean {
   return !!likeKey && payload.triggerKey === likeKey;
 }
+
+/** Extrae mi equipo de la respuesta de GET /teams (array, `{data}` o `{items}`) usando `isMine`. */
+export function resolveMyTeam(teamsData: unknown): Team | null {
+  const d = teamsData as { data?: unknown; items?: unknown } | null;
+  const list = Array.isArray(teamsData)
+    ? teamsData
+    : Array.isArray(d?.data)
+      ? d.data
+      : Array.isArray(d?.items)
+        ? d.items
+        : [];
+  return findMyTeam(list as Team[]);
+}

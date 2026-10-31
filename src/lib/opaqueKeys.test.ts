@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findMyTeam, isOwnLikeEvent } from "@/lib/opaqueKeys";
+import { findMyTeam, isOwnLikeEvent, resolveMyTeam } from "@/lib/opaqueKeys";
 import type { Team } from "@/types/Team";
 
 const team = (id: number, extra: Partial<Team> = {}): Team => ({
@@ -30,5 +30,19 @@ describe("isOwnLikeEvent", () => {
     expect(isOwnLikeEvent({ triggerKey: "abc123" }, "zzz")).toBe(false);
     expect(isOwnLikeEvent({}, "abc123")).toBe(false);
     expect(isOwnLikeEvent({ triggerKey: undefined }, undefined)).toBe(false);
+  });
+});
+
+describe("extractTeams / resolveMyTeam", () => {
+  const mine = { id: 2, isMine: true };
+  const other = { id: 1, userId: "u-1" };
+  it("resuelve con isMine en array, data e items, ignorando userId", () => {
+    expect(resolveMyTeam([other, mine])).toBe(mine);
+    expect(resolveMyTeam({ data: [other, mine] })).toBe(mine);
+    expect(resolveMyTeam({ items: [other, mine] })).toBe(mine);
+  });
+  it("null si no hay isMine", () => {
+    expect(resolveMyTeam({ data: [other] }, )).toBeNull();
+    expect(resolveMyTeam(null)).toBeNull();
   });
 });
