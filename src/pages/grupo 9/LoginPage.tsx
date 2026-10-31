@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { type Location, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -28,14 +28,31 @@ export default function LoginPage() {
     };
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, user, loading } = useAuth();
+  const { login, user, loading, sessionExpired } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Ruta protegida de la que venía el usuario (ProtectedRoute la envía en el state)
+  const from = (location.state as { from?: Location } | null)?.from;
 
-  // Redirect to home if user is already authenticated
-  useEffect(() => {
-    if (!loading && user) {
+  // Después de iniciar sesión se vuelve a la ruta de origen con su state,
+  // así el jurado retoma la calificación donde iba (HU-05)
+  const redirectAfterLogin = () => {
+    if (from) {
+      navigate(`${from.pathname}${from.search}${from.hash}`, {
+        replace: true,
+        state: from.state,
+      });
+    } else {
       navigate("/inicio", { replace: true });
     }
+  };
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      redirectAfterLogin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +65,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login({ email, password });
-      navigate("/inicio", { replace: true });
+      redirectAfterLogin();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -116,6 +133,15 @@ export default function LoginPage() {
             <CardTitle className="text-2xl sm:text-3xl md:text-[30px] leading-tight">
               ¡Hola, qué bien que estés de vuelta!
             </CardTitle>
+            {sessionExpired && (
+              <p
+                role="alert"
+                className="mt-3 rounded-md border border-amber-400/60 bg-amber-400/10 px-3 py-2 text-sm text-amber-200"
+              >
+                Tu sesión expiró. Lo que estabas escribiendo quedó guardado:
+                inicia sesión de nuevo para continuar donde ibas.
+              </p>
+            )}
             <CardDescription className="text-sm sm:text-[15px] mt-2">
               Si eres usuario Uninorte, puedes:
             </CardDescription>
@@ -160,6 +186,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={show ? "text" : "password"}
+                      autoComplete="current-password"
                       placeholder="********"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

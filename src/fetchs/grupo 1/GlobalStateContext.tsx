@@ -20,8 +20,8 @@ export interface VideojuegoData {
   logoUrl?: string | null;
   materia?: string | null; // Nombre de la materia
   nrc?: number | string | null; // Código del NRC asociado
-  promedio: number; // Promedio general ya calculado
-  criterios: {
+  promedio?: number; // Promedio general; ausente con el ranking oculto
+  criterios?: {
     [nombreCriterio: string]: number; // ej: { "Jugabilidad": 4.5, "Diseño": 4.0 }
   };
   evaluacionesCompletadas?: number; // Número de evaluaciones recibidas
@@ -49,13 +49,13 @@ export interface NRCData {
   id: number; // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
   materiaNombre: string; // Nombre de la materia asociada
-  promedioxNRC?: number; // Promedio de NRC, si es necesario
+  promedioxNRC?: number | null; // null: ranking oculto. Promedio de NRC, si es necesario
 }
 
 // Para el gráfico de torta "Distribución por Materia"
 export interface DatosGraficoMateria {
   name: string; // Nombre de la materia
-  value: number; // Valor para el gráfico (promedio de videojuegos en esa materia)
+  value: number | null; // null: ranking oculto. Valor para el gráfico (promedio de videojuegos en esa materia)
   color?: string; // Color opcional para el segmento del gráfico
 }
 
@@ -93,6 +93,7 @@ export interface GlobalStateContextType {
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
   fetchJurados: () => Promise<void>; // Recarga solo los jurados (requieren sesión)
   clearJurados: () => void;
+  hasSessionRef: React.MutableRefObject<boolean>; // lo marca JuradosAuthSync
 
   // Permiso local para mostrar u ocultar calificaciones (frontend-only)
   canViewScores: boolean;
@@ -295,11 +296,14 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setListaJurados([]);
   }, []);
 
+  // Lo actualiza JuradosAuthSync; fetchGlobalData solo pide los jurados si hay sesión.
+  const hasSessionRef = useRef(false);
+
   // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
-    fetchJurados();
+    if (hasSessionRef.current) fetchJurados();
     try {
       // Cargamos todos los datos globales (videojuegos, materias, NRCs, etc.)
       // usando apiFetch para garantizar que la comunicación sea resiliente a errores 401.
@@ -449,6 +453,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       fetchGlobalData,
       fetchJurados,
       clearJurados,
+      hasSessionRef,
     }),
     [
       // Dependencias: todos los estados que se incluyen en contextValue
@@ -487,17 +492,18 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
 // porque GlobalStateProvider está por fuera y no se entera del login (BG-02).
 export function JuradosAuthSync() {
   const { user, loading } = useAuth();
-  const { fetchJurados, clearJurados } = useGlobalState();
+  const { fetchJurados, clearJurados, hasSessionRef } = useGlobalState();
   const userId = user?.id;
 
   useEffect(() => {
     if (loading) return;
+    hasSessionRef.current = Boolean(userId);
     if (userId) {
       fetchJurados();
     } else {
       clearJurados();
     }
-  }, [userId, loading, fetchJurados, clearJurados]);
+  }, [userId, loading, fetchJurados, clearJurados, hasSessionRef]);
 
   return null;
 }

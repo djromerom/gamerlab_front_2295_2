@@ -15,11 +15,15 @@ export interface AuthContextType {
   accessToken: string | null;
   userRole: Role | null;
   user: UserProfile | null;
+  /** La sesión se cerró porque el refresh token venció o es inválido */
+  sessionExpired: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
   logout: () => Promise<void>;
 }
 export interface UserProfile {
+  /** Clave opaca (16 hex) para reconocer eventos de likes propios */
+  likeKey?: string;
   /** UUID único del usuario */
   id: string;
   /** Primer nombre */

@@ -3,6 +3,7 @@
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import Criteriabutton from "@/components/grupo 8/criteriabutton";
 import { Textarea } from "@/components/grupo 8/textarea";
+import { TeamVerificationGate } from "@/components/grupo 8/TeamVerification";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +36,7 @@ import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
 import { UiCriterion } from "@/types/criterion";
 import { Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -45,13 +46,27 @@ interface Game {
   imagen?: string;
   equipo?: string;
   materia?: string;
+  teamId?: number; // HU-19: para verificar el grupo antes de calificar
   teamCode?: string; // [MODIFICACIÓN]: Código de equipo
   nrc?: string;
   participantes?: string[];
   descripcion?: string;
 }
 
+// Borrador local de la calificación: si la sesión expira, lo escrito se recupera al volver (HU-05)
+interface RateDraft {
+  scores: Record<number, string | number>;
+  comments: string;
+}
+
+const getDraftKey = (gameId: number) => `rate-draft-${gameId}`;
+
 export default function RatePage() {
+  const pendingSubmission = useRef<{
+    fingerprint: string;
+    idempotencyKey: string;
+    body: string;
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const game = location.state?.game as Game | undefined;
@@ -71,15 +86,56 @@ export default function RatePage() {
 
   useEffect(() => {
     if (apiCriteria.length > 0) {
+      // Recuperar borrador del localStorage al cargar los criterios
+      let draft: RateDraft | null = null;
+      if (game) {
+        try {
+          const saved = localStorage.getItem(getDraftKey(game.id));
+          if (saved) draft = JSON.parse(saved) as RateDraft;
+        } catch (e) {
+          console.warn("Error recuperando borrador de localStorage:", e);
+        }
+      }
+
       setUiCriteria(
         apiCriteria.map((criterion) => ({
           ...criterion,
-          score: "",
+          score: draft?.scores?.[criterion.id] ?? "",
           maxScore: 5,
         })),
       );
+      if (typeof draft?.comments === "string") {
+        setComments(draft.comments);
+      }
+      if (draft) {
+        toast.info("Borrador recuperado", { duration: 2000 });
+      }
     }
-  }, [apiCriteria]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiCriteria, game?.id]);
+
+  // Auto-guardar en localStorage cada vez que cambia un puntaje o el comentario
+  useEffect(() => {
+    if (!game || uiCriteria.length === 0) return;
+
+    const scores: RateDraft["scores"] = {};
+    for (const criterion of uiCriteria) {
+      if (criterion.score !== "") scores[criterion.id] = criterion.score;
+    }
+
+    try {
+      if (Object.keys(scores).length === 0 && !comments) {
+        localStorage.removeItem(getDraftKey(game.id));
+      } else {
+        localStorage.setItem(
+          getDraftKey(game.id),
+          JSON.stringify({ scores, comments } satisfies RateDraft),
+        );
+      }
+    } catch {
+      // Ignorar errores de almacenamiento
+    }
+  }, [uiCriteria, comments, game]);
 
   useEffect(() => {
     if (!game) {
@@ -264,12 +320,25 @@ export default function RatePage() {
       });
     }
 
-    const evaluationPayload = {
-      date: currentDate,
+    const fingerprint = JSON.stringify({
       videogameId: game.id,
-      comments: comments,
-      details: parsedDetails,
-    };
+      comments,
+      details: parsedDetails.map(({ criterionId, score }) => ({ criterionId, score })),
+    });
+    if (pendingSubmission.current?.fingerprint !== fingerprint) {
+      const evaluationPayload = {
+        date: currentDate,
+        videogameId: game.id,
+        comments,
+        details: parsedDetails,
+      };
+      pendingSubmission.current = {
+        fingerprint,
+        idempotencyKey: crypto.randomUUID(),
+        body: JSON.stringify(evaluationPayload),
+      };
+    }
+    const submission = pendingSubmission.current;
     // evaluacion exitosa no existe
     // Enviamos la evaluación usando apiFetch para proteger el trabajo del jurado.
     // Si la sesión expiró justo antes de dar 'Confirmar', apiFetch la recuperará automáticamente.
@@ -279,8 +348,11 @@ export default function RatePage() {
         {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(evaluationPayload),
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": submission.idempotencyKey,
+          },
+          body: submission.body,
         },
       );
 
@@ -301,7 +373,15 @@ export default function RatePage() {
         throw new Error(errorText);
       }
 
+      // Limpiar borrador de localStorage al enviar exitosamente
+      try {
+        localStorage.removeItem(getDraftKey(game.id));
+      } catch {
+        // Ignorar errores de almacenamiento
+      }
+
       setConfirmDialogOpen(false);
+      pendingSubmission.current = null;
       showSuccessToast(
         `Evaluación del juego "${game.nombre}" enviada exitosamente`,
       );
@@ -473,6 +553,8 @@ export default function RatePage() {
           </div>
 
           <div className="col-span-12 md:col-span-8">
+            {/* HU-19: el formulario se habilita cuando el jurado digita el código del grupo */}
+            <TeamVerificationGate teamId={game.teamId} teamName={game.equipo}>
             <Card className="h-full py-6">
               <CardHeader>
                 <CardTitle className="text-lg font-bold">
@@ -581,6 +663,7 @@ export default function RatePage() {
                 </div>
               </CardContent>
             </Card>
+            </TeamVerificationGate>
           </div>
         </div>
 

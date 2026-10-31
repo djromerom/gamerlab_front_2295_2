@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 
@@ -27,33 +28,31 @@ export default function CircularProgress({
 
 
     const getNumberCalifications = async () => {
-        const resTeam = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
+        const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
             method: 'GET',
             headers: { "Content-Type": "application/json" },
             credentials: 'include',
         })
 
-        const getTeam = await resTeam.json()
-
         if (!resTeam.ok) {
-            throw new Error('Hubo un error al obtener los datos')
+            return null
         }
 
+        const getTeam = await resTeam.json()
         const idTeam = getTeam.id
 
 
-        const res = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/juror/teams/${idTeam}/evaluation-stats`, {
+        const res = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/juror/teams/${idTeam}/evaluation-stats`, {
             method: 'GET',
             headers: { "Content-Type": "application/json" },
             credentials: 'include',
         })
-console.log('Esta es la data: ')
+
         if (!res.ok) {
             return null
         }
         const data = await res.json();
 
-        console.log('Esta es la data: ', data)
         const ratio = data.totalJurorsAssigned <= 0 ? 0 : Math.min(1, data.jurorsWhoEvaluated / data.totalJurorsAssigned);
         const offset = circumference * (1 - ratio)
         const perc = Math.round(ratio * 100)
@@ -69,17 +68,15 @@ console.log('Esta es la data: ')
     }
 
     useEffect(() => {
-        getNumberCalifications()
         setNow(new Date())
-    }, [])
+        // Solo los estudiantes tienen equipo; para otros roles la consulta falla
+        if (!user || userRole !== "Estudiante") return;
+        getNumberCalifications().catch(() => null)
+    }, [user, userRole])
 
     if (startDate > now) {
         return null;
     }
-
-    if (userRole === undefined) {
-        return null;
-    } 
 
     if (userRole !== "Estudiante") {
         return null;

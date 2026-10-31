@@ -15,7 +15,8 @@ import {
   UniversityIcon,
   Trophy,
   CalendarRange,
-  IdCard
+  IdCard,
+  House
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -104,6 +105,12 @@ const MENU: Record<Role, MenuItem[]> = {
     {
       title: "Información",
       items: [
+        // HU-19: el inicio muestra el código de verificación que el estudiante le da al jurado
+        {
+          name: "Inicio",
+          url: "/inicio",
+          icon: House,
+        },
         {
           name: "Mis Calificaciones",
           url: "/mi-equipo",

@@ -6,14 +6,18 @@ export const mapConfirmationStatus = (statusId: number): string => {
   }
 };
 
-export const formatDate = (dateString: string): string =>
-  new Date(dateString).toLocaleString("es-ES", {
+export const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return "Nunca";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "Nunca";
+  return date.toLocaleString("es-ES", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
+};
 
 export interface JurorRowData {
   id: string;
@@ -21,7 +25,7 @@ export interface JurorRowData {
   lastName: string;
   email: string;
   confirmationStatusId: number | string; // Puede ser string si ya fue mapeado
-  lastSignInAt: string;
+  lastSignInAt: string | null;
   evaluatedCount: number;
   evaluatedGameNames: string[];
   unevaluatedCount: number;

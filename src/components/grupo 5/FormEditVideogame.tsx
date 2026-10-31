@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CloudUpload, X, AlertTriangle } from "lucide-react"
@@ -74,7 +75,7 @@ export default function FormEditVideogame (
 
     const getImages = async () => {
         try {
-            const response: any = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+            const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },

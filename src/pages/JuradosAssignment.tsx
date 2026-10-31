@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -43,6 +45,10 @@ import { AuditModal } from "@/components/jurados-modals/AuditModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
 import { toast } from "sonner";
+import {
+  progressPercentage,
+  useEvaluationProgress,
+} from "@/fetchs/evaluationProgress";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -51,7 +57,7 @@ let refreshTokenPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
+    const response = await apiFetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       credentials: "include",
       cache: "no-store",
@@ -81,7 +87,7 @@ async function apiRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await apiFetch(`${API_BASE}${path}`, {
     ...options,
     headers,
     credentials: "include",
@@ -464,7 +470,11 @@ export function JuradosAssignment() {
     tipo: "" as "" | JurorType,
   });
 
+  const { progress: evaluationProgress, reload: reloadProgress } =
+    useEvaluationProgress();
+
   const loadData = async () => {
+    void reloadProgress();
     try {
       setIsLoading(true);
       setLoadError(null);
@@ -888,7 +898,7 @@ export function JuradosAssignment() {
       // Usually, if apiRequest returns the response or we can fetch directly:
       // Let's fetch using direct fetch to get a Blob.
       const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -1363,6 +1373,14 @@ export function JuradosAssignment() {
 
             <div className="mt-1 flex flex-col min-[350px]:flex-row md:flex-col lg:flex-row items-center justify-between gap-2">
               <span className="text-[11px] text-muted-foreground">Cupos cubiertos</span>
+              {evaluationProgress && (
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/30 text-muted-foreground"
+                  title={`${progressPercentage(evaluationProgress).toFixed(0)}% de evaluaciones completadas`}
+                >
+                  Evaluaciones {evaluationProgress.completed}/{evaluationProgress.assigned}
+                </span>
+              )}
               {remanentesEnUso > 0 ? (
                 <div
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[10px] font-semibold"
