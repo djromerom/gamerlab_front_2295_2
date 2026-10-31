@@ -20,7 +20,9 @@ interface TeamVerificationFormProps {
   /** ISO 8601: bloqueo por intentos fallidos que el backend ya reportó para este grupo. */
   lockedUntil?: string | null;
   /** Avisa al padre de un bloqueo nuevo para que no se pierda al salir y volver al grupo. */
-  onLocked?: (teamId: number, lockedUntil: string) => void;
+  onLocked?: (teamId: number, lockedUntil: string, estimated?: boolean) => void;
+  /** true si `lockedUntil` es una estimación local (se muestra «Espera 10 minutos», sin hora). */
+  lockEstimated?: boolean;
   className?: string;
 }
 
@@ -31,10 +33,10 @@ interface LockState {
   showTime: boolean; // false si el backend no informó la hora
 }
 
-const parseLock = (iso?: string | null): LockState | null => {
+const parseLock = (iso?: string | null, showTime = true): LockState | null => {
   if (!iso) return null;
   const until = new Date(iso).getTime();
-  return Number.isNaN(until) || until <= Date.now() ? null : { until, showTime: true };
+  return Number.isNaN(until) || until <= Date.now() ? null : { until, showTime };
 };
 
 const formatTime = (ms: number): string => {
@@ -51,28 +53,40 @@ export function TeamVerificationForm({
   onVerified,
   lockedUntil,
   onLocked,
+  lockEstimated = false,
   className,
 }: TeamVerificationFormProps) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [lock, setLock] = useState<LockState | null>(() => parseLock(lockedUntil));
+  const [lock, setLock] = useState<LockState | null>(() =>
+    parseLock(lockedUntil, !lockEstimated),
+  );
   const isLocked = lock !== null;
 
   useEffect(() => {
-    const fromProp = parseLock(lockedUntil);
+    const fromProp = parseLock(lockedUntil, !lockEstimated);
     if (fromProp) setLock(fromProp);
-  }, [lockedUntil]);
+  }, [lockedUntil, lockEstimated]);
 
   // Al pasar la hora de desbloqueo el campo se habilita solo.
   useEffect(() => {
     if (!lock) return;
     const timer = setTimeout(
-      () => setLock(null),
+      () => {
+        setLock(null);
+        setError(null); // el mensaje del bloqueo ya no aplica
+      },
       Math.max(0, lock.until - Date.now()),
     );
     return () => clearTimeout(timer);
   }, [lock]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const applyEstimatedLock = () => {
+    const until = Date.now() + FALLBACK_LOCK_MS;
+    setLock({ until, showTime: false });
+    onLocked?.(teamId, new Date(until).toISOString(), true);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,8 +109,19 @@ export function TeamVerificationForm({
       // 429: demasiados intentos fallidos; se bloquea hasta la hora que informe el backend.
       if (err instanceof TeamVerificationError && err.status === 429) {
         const fromServer = parseLock(err.lockedUntil);
-        setLock(fromServer ?? { until: Date.now() + FALLBACK_LOCK_MS, showTime: false });
-        if (fromServer && err.lockedUntil) onLocked?.(teamId, err.lockedUntil);
+        if (fromServer && err.lockedUntil) {
+          setLock(fromServer);
+          onLocked?.(teamId, err.lockedUntil);
+        } else {
+          applyEstimatedLock();
+        }
+      } else if (
+        // Backend anterior: el 5.º fallo responde 400 «Intentos restantes: 0» y el 429 llega recién en el 6.º.
+        err instanceof TeamVerificationError &&
+        err.status === 400 &&
+        /Intentos restantes:\s*0\b/.test(err.message)
+      ) {
+        applyEstimatedLock();
       }
     } finally {
       setIsSubmitting(false);
@@ -123,7 +148,10 @@ export function TeamVerificationForm({
         >
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setError(null);
+            }}
             placeholder="Ej. K7M2QX"
             maxLength={8}
             autoComplete="off"
@@ -178,7 +206,7 @@ export function TeamVerificationGate({
   teamName,
   children,
 }: TeamVerificationGateProps) {
-  const { isLoading, isVerified, markVerified, getLockedUntil, markLocked } =
+  const { isLoading, isVerified, markVerified, getLockedUntil, isLockEstimated, markLocked } =
     useTeamVerification([teamId]);
 
   if (isVerified(teamId)) return <>{children}</>;
@@ -198,10 +226,12 @@ export function TeamVerificationGate({
 
   return (
     <TeamVerificationForm
+      key={teamId}
       teamId={teamId!}
       teamName={teamName}
       onVerified={markVerified}
       lockedUntil={getLockedUntil(teamId)}
+      lockEstimated={isLockEstimated(teamId)}
       onLocked={markLocked}
     />
   );

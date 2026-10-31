@@ -1,6 +1,11 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TeamVerificationGate } from "@/components/grupo 8/TeamVerification";
+import { useState } from "react";
+import {
+  TeamVerificationForm,
+  TeamVerificationGate,
+} from "@/components/grupo 8/TeamVerification";
+import { useTeamVerification } from "@/hooks/useTeamVerification";
 import { apiFetch } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));
@@ -180,5 +185,102 @@ describe("TeamVerificationForm: bloqueo por intentos", () => {
     await submit("ABCDEF");
 
     expect(screen.getByText("FORMULARIO DE CALIFICACION")).toBeTruthy();
+  });
+
+  it("backend viejo: 400 con «Intentos restantes: 0» bloquea 10 minutos sin hora", async () => {
+    mockBackend({
+      status: () => json(200, { status: { 7: false }, locks: {} }),
+      verify: () => json(400, { message: "Código incorrecto. Intentos restantes: 0" }),
+    });
+    await renderGate();
+    await submit("ABCDEF");
+
+    expect(input().disabled).toBe(true);
+    expect(button().disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("Espera 10 minutos");
+  });
+
+  it("al expirar el bloqueo no reaparece el error obsoleto", async () => {
+    const until = new Date(NOW.getTime() + 60 * 1000);
+    mockBackend({
+      status: () => json(200, { status: { 7: false }, locks: {} }),
+      verify: () =>
+        json(429, {
+          message: "Demasiados intentos fallidos. Espera 10 minutos",
+          lockedUntil: until.toISOString(),
+        }),
+    });
+    await renderGate();
+    await submit("ABCDEF");
+    expect(input().disabled).toBe(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61 * 1000);
+    });
+    expect(input().disabled).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("el bloqueo sin hora persiste al cambiar de grupo y volver; el otro grupo no se bloquea", async () => {
+    mockBackend({
+      status: () => json(200, { status: { 1: false, 2: false }, locks: {} }),
+      verify: () => json(429, { message: "Demasiados intentos fallidos. Espera 10 minutos" }),
+    });
+    function Harness() {
+      const [active, setActive] = useState(1);
+      const v = useTeamVerification([1, 2]);
+      return (
+        <>
+          <button onClick={() => setActive(1)}>ir A</button>
+          <button onClick={() => setActive(2)}>ir B</button>
+          {!v.isLoading && (
+            <TeamVerificationForm
+              key={active}
+              teamId={active}
+              onVerified={v.markVerified}
+              lockedUntil={v.getLockedUntil(active)}
+              lockEstimated={v.isLockEstimated(active)}
+              onLocked={v.markLocked}
+            />
+          )}
+        </>
+      );
+    }
+    render(<Harness />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await submit("ABCDEF");
+    expect(input().disabled).toBe(true);
+
+    fireEvent.click(screen.getByText("ir B"));
+    expect(input().disabled).toBe(false);
+    fireEvent.click(screen.getByText("ir A"));
+    expect(input().disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("Espera 10 minutos");
+  });
+
+  it("el gate no arrastra el bloqueo al cambiar de grupo", async () => {
+    mockBackend({
+      status: () => json(200, { status: { 7: false, 8: false }, locks: {} }),
+      verify: () => json(429, { message: "Demasiados intentos fallidos. Espera 10 minutos" }),
+    });
+    const ui = (id: number) => (
+      <TeamVerificationGate teamId={id}>
+        <div>OK</div>
+      </TeamVerificationGate>
+    );
+    const { rerender } = render(ui(7));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await submit("ABCDEF");
+    expect(input().disabled).toBe(true);
+
+    rerender(ui(8));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(input().disabled).toBe(false);
   });
 });

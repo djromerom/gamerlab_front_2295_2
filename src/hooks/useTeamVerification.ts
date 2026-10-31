@@ -59,9 +59,28 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
     [locks],
   );
 
-  const markLocked = useCallback((teamId: number, lockedUntil: string) => {
-    setLocks((prev) => ({ ...prev, [teamId]: { locked: true, lockedUntil } }));
-  }, []);
+  // Bloqueos cuya hora calculó el front (el backend no la informó): se muestran como «Espera 10 minutos».
+  const [estimated, setEstimated] = useState<Record<number, boolean>>({});
 
-  return { isLoading, isVerified, markVerified, getLockedUntil, markLocked };
+  const markLocked = useCallback(
+    (teamId: number, lockedUntil: string, isEstimated = false) => {
+      setLocks((prev) => ({ ...prev, [teamId]: { locked: true, lockedUntil } }));
+      setEstimated((prev) => ({ ...prev, [teamId]: isEstimated }));
+    },
+    [],
+  );
+
+  const isLockEstimated = useCallback(
+    (teamId?: number) => teamId !== undefined && estimated[teamId] === true,
+    [estimated],
+  );
+
+  return {
+    isLoading,
+    isVerified,
+    markVerified,
+    getLockedUntil,
+    isLockEstimated,
+    markLocked,
+  };
 }

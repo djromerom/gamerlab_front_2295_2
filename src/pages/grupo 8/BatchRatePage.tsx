@@ -58,6 +58,7 @@ export default function BatchRatePage() {
     isVerified,
     markVerified,
     getLockedUntil,
+    isLockEstimated,
     markLocked,
   } = useTeamVerification(games.map((game) => game.teamId));
 
@@ -536,6 +537,7 @@ export default function BatchRatePage() {
                       teamName={currentGame.equipo}
                       onVerified={markVerified}
                       lockedUntil={getLockedUntil(currentGame.teamId)}
+                      lockEstimated={isLockEstimated(currentGame.teamId)}
                       onLocked={markLocked}
                       className="shadow-none py-4"
                     />
