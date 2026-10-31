@@ -65,3 +65,14 @@ export function buildAverageChartData(args: {
     .sort((a, b) => b.promedio - a.promedio);
   return { materias: hidden ? [] : materias, chart, hidden, materiasHidden };
 }
+
+/** true si hay videojuegos y ninguno trae `promedio` (el backend lo omite con el ranking oculto). */
+export function isRankingHidden(games: { promedio?: number | null }[]): boolean {
+  return games.length > 0 && games.every((g) => g.promedio == null);
+}
+
+/** Promedio general (2 decimales) de los videojuegos con promedio numérico, o null si no hay. */
+export function averageOfGames(games: { promedio?: number | null }[]): string | null {
+  const nums = games.map((g) => g.promedio).filter(isNum);
+  return nums.length ? formatAverage(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
+}

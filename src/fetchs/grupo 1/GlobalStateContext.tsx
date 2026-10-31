@@ -20,8 +20,8 @@ export interface VideojuegoData {
   logoUrl?: string | null;
   materia?: string | null; // Nombre de la materia
   nrc?: number | string | null; // Código del NRC asociado
-  promedio: number; // Promedio general ya calculado
-  criterios: {
+  promedio?: number; // Promedio general; ausente con el ranking oculto
+  criterios?: {
     [nombreCriterio: string]: number; // ej: { "Jugabilidad": 4.5, "Diseño": 4.0 }
   };
   evaluacionesCompletadas?: number; // Número de evaluaciones recibidas

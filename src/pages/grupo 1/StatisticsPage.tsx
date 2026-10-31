@@ -17,6 +17,7 @@ import FiltrosPanel from "@/components/grupo 1/FilterPanel";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import DownloadReport from "@/components/grupo 1/DownloadReport";
 import TablaPorJurado from "@/components/grupo 1/JudgesTable";
+import { AVERAGES_HIDDEN_MESSAGE, averageOfGames } from "@/lib/averages";
 
 export default function StatisticsPage() {
   const { listaVideojuegos, isLoading, error, fetchGlobalData } =
@@ -42,13 +43,7 @@ export default function StatisticsPage() {
 
   // Lógica para las cards de resumen (basadas en la lista completa)
   const totalVideojuegos = listaVideojuegos.length;
-  const promedioGeneral =
-    totalVideojuegos > 0
-      ? (
-        listaVideojuegos.reduce((acc, game) => acc + game.promedio, 0) /
-        totalVideojuegos
-      ).toFixed(2)
-      : "0.00";
+  const promedioGeneral = averageOfGames(listaVideojuegos) ?? (totalVideojuegos > 0 ? null : "0.00");
 
   const totalEvaluaciones = listaVideojuegos.reduce(
     (acc, game) => acc + (game.evaluacionesCompletadas || 0),
@@ -139,7 +134,11 @@ export default function StatisticsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <div className="text-2xl font-bold">{promedioGeneral}</div>
+                  {promedioGeneral === null ? (
+                    <div className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</div>
+                  ) : (
+                    <div className="text-2xl font-bold">{promedioGeneral}</div>
+                  )}
                 </CardContent>
               </Card>
               <Card>

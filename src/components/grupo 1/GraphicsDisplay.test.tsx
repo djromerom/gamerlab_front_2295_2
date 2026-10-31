@@ -91,3 +91,30 @@ describe("GraphicsDisplay con promedios", () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("GraphicsDisplay con videojuegoData sin promedio (ranking oculto)", () => {
+  beforeEach(() => {
+    Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("Top 3, promedio general y criterios muestran el aviso, sin N/A, NaN ni undefined", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    state.value = {
+      ...base,
+      videojuegoSeleccionado: { id: 1, nombre: "Juego", materia: "Física", nrc: "101" },
+      listaVideojuegos: [{ id: 1, nombre: "Juego", materia: "Física", nrc: "101" }],
+      datosGraficoTortaMaterias: [],
+    };
+    const { container } = renderIt();
+    expect(screen.getAllByText(AVISO).length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText("N/A")).toBeNull();
+    expect(container.textContent).not.toMatch(/NaN|undefined|Infinity/);
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+});

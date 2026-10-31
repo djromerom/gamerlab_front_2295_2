@@ -75,3 +75,24 @@ describe("buildAverageChartData", () => {
     expect(r.hidden).toBe(false);
   });
 });
+
+import { averageOfGames, isRankingHidden } from "@/lib/averages";
+
+describe("isRankingHidden / averageOfGames", () => {
+  it("lista sin claves promedio: oculto, sin promedio general", () => {
+    const l = [{ id: 1 }, { id: 2, promedio: undefined }];
+    expect(isRankingHidden(l)).toBe(true);
+    expect(averageOfGames(l)).toBeNull();
+  });
+  it("lista vacía no es oculta", () => {
+    expect(isRankingHidden([])).toBe(false);
+  });
+  it("con números promedia (sin regresión)", () => {
+    const l = [{ promedio: 4 }, { promedio: 3 }];
+    expect(isRankingHidden(l)).toBe(false);
+    expect(averageOfGames(l)).toBe("3.50");
+  });
+  it("mezcla: promedia solo los numéricos, sin NaN", () => {
+    expect(averageOfGames([{ promedio: 4 }, {}])).toBe("4.00");
+  });
+});

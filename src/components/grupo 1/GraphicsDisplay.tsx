@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
-import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage } from "@/lib/averages";
+import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage, isRankingHidden } from "@/lib/averages";
 
 interface CriterioChartData {
     criterio: string;
@@ -105,12 +105,8 @@ const GraphicDisplay = () => {
     // Datos para Bar Chart Vertical (Slide 0) y Radar Chart (Slide 1)
     const datosCriteriosChart: CriterioChartData[] = useMemo(() => {
         if (!criteriosSeleccionado) {
-            // Si no hay criterios, puedes devolver un array con los displayKeys y valor 0
-            return NOMBRES_CRITERIOS_GRAFICOS.map(config => ({
-                criterio: config.displayKey,
-                valor: 0,
-                fill: config.color, // Opcional
-            }));
+            // Sin criterios (p. ej. ranking oculto) no se grafican ceros engañosos
+            return [];
         }
         return NOMBRES_CRITERIOS_GRAFICOS.map(config => {
             const valorDelBackend = criteriosSeleccionado[config.backendKey];
@@ -135,6 +131,9 @@ const GraphicDisplay = () => {
         [datosGraficoTortaMaterias, filtroMateria, listaVideojuegosFiltrados, nrcsFiltrados]
     );
 
+
+    const rankingOculto = useMemo(() => isRankingHidden(listaVideojuegos ?? []), [listaVideojuegos]);
+    const sinCriterios = rankingOculto ? AVERAGES_HIDDEN_MESSAGE : "Datos de criterios no disponibles para este gráfico.";
 
     // Top 3 para la card (sin cambios)
     const videojuegosRanking = useMemo(() => {
@@ -297,7 +296,7 @@ const GraphicDisplay = () => {
                                         </ResponsiveContainer>
                                     </ChartContainer>
                                 ) : (
-                                    renderNoDataMessage("Datos de criterios no disponibles para este gráfico.")
+                                    renderNoDataMessage(sinCriterios)
                                 )}
                             </CardContent>
                         </div>
@@ -330,7 +329,7 @@ const GraphicDisplay = () => {
                                         </ResponsiveContainer>
                                     </ChartContainer>
                                 ) : (
-                                    renderNoDataMessage("Datos de criterios no disponibles para este gráfico.")
+                                    renderNoDataMessage(sinCriterios)
                                 )}
                             </CardContent>
                         </div>
@@ -444,7 +443,7 @@ const GraphicDisplay = () => {
                                 )}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">Datos de criterios no disponibles. Selecciona un videojuego.</p>
+                            <p className="text-sm text-muted-foreground">{rankingOculto ? AVERAGES_HIDDEN_MESSAGE : "Datos de criterios no disponibles. Selecciona un videojuego."}</p>
                         )}
                     </CardContent>
                 </Card>
@@ -456,7 +455,9 @@ const GraphicDisplay = () => {
                         <CardDescription>Mejores calificaciones promedio</CardDescription>
                     </CardHeader>
                     <CardContent className="pb-6">
-                        {top3.length > 0 ? ( /* ... tu código ... */
+                        {rankingOculto ? (
+                            <p className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : top3.length > 0 ? ( /* ... tu código ... */
                             <div className="space-y-4">
                                 {top3.map((videojuego, index) => (
                                     <div key={videojuego.id} className="flex items-center gap-4">
@@ -489,6 +490,9 @@ const GraphicDisplay = () => {
                         <CardDescription>{videojuegoSeleccionado?.nombre || "N/A"}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center pt-8">
+                        {formatAverage(videojuegoSeleccionado?.promedio) === null ? (
+                            <p className="text-sm text-muted-foreground text-center">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : (<>
                         <div className="relative w-32 h-32 mb-4">
                             <svg className="w-full h-full" viewBox="0 0 100 100">
                                 <circle
@@ -504,10 +508,11 @@ const GraphicDisplay = () => {
                                 />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-3xl font-bold">{formatNumber(videojuegoSeleccionado?.promedio, 2)}</span>
+                                <span className="text-3xl font-bold">{formatAverage(videojuegoSeleccionado?.promedio)}</span>
                             </div>
                         </div>
                         <p className="text-sm text-muted-foreground">Calificación promedio total</p>
+                        </>)}
                     </CardContent>
                 </Card>
 
