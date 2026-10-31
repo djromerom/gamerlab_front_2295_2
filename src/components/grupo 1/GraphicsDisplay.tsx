@@ -490,8 +490,10 @@ const GraphicDisplay = () => {
                         <CardDescription>{videojuegoSeleccionado?.nombre || "N/A"}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center pt-8">
-                        {formatAverage(videojuegoSeleccionado?.promedio) === null ? (
+                        {rankingOculto ? (
                             <p className="text-sm text-muted-foreground text-center">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : formatAverage(videojuegoSeleccionado?.promedio) === null ? (
+                            <p className="text-sm text-muted-foreground text-center">Sin calificar</p>
                         ) : (<>
                         <div className="relative w-32 h-32 mb-4">
                             <svg className="w-full h-full" viewBox="0 0 100 100">

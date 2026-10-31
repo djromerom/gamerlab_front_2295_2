@@ -143,6 +143,7 @@ export default function Scoreboard() {
           return;
         }
         console.error("Error fetching team scores:", err);
+        setScoresHidden(false);
         setGeneralGrade(0);
         setJuniorGrade(0);
         setSeniorGrade(0);

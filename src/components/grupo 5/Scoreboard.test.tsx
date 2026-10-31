@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiFetch = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/api", () => ({ apiFetch }));
+const auth = vi.hoisted(() => ({ id: "u1" }));
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ user: { id: "u1" }, userRole: "Estudiante" }),
+  useAuth: () => ({ user: { id: auth.id }, userRole: "Estudiante" }),
 }));
 vi.mock("@/fetchs/grupo 1/GlobalStateContext", () => ({
   useGlobalState: () => ({ canViewScores: true }),
@@ -21,7 +22,7 @@ const json = (status: number, body: unknown) =>
 
 function backend(scoreRes: () => Response) {
   apiFetch.mockImplementation(async (url: string) => {
-    if (url.endsWith("/teams")) return json(200, [{ id: 7, userId: "u1" }]);
+    if (url.endsWith("/teams")) return json(200, [{ id: 7, userId: "u1" }, { id: 8, userId: "u2" }]);
     if (url.includes("/teams/final-score/team/")) return scoreRes();
     if (url.endsWith("/students")) return json(200, { data: [] });
     return json(404, {});
@@ -31,6 +32,7 @@ function backend(scoreRes: () => Response) {
 describe("Scoreboard con ranking oculto", () => {
   beforeEach(() => {
     apiFetch.mockReset();
+    auth.id = "u1";
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -67,5 +69,20 @@ describe("Scoreboard con ranking oculto", () => {
     render(<Scoreboard />);
     await waitFor(() => expect(screen.getByText("Retroalimentación del VideoJuego")).toBeTruthy());
     expect(screen.queryByText(AVISO)).toBeNull();
+  });
+
+  it("403 y luego fallo de red al cambiar de equipo: no deja el aviso viejo", async () => {
+    let calls = 0;
+    backend(() => {
+      calls++;
+      if (calls === 1) return json(403, {});
+      throw new TypeError("Failed to fetch");
+    });
+    const { rerender } = render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText(AVISO)).toBeTruthy());
+    auth.id = "u2";
+    rerender(<Scoreboard />);
+    await waitFor(() => expect(calls).toBe(2));
+    await waitFor(() => expect(screen.queryByText(AVISO)).toBeNull());
   });
 });
