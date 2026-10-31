@@ -52,6 +52,9 @@ function stubBackend({
       if (url === `${API}/auth/login`) {
         return json(401, { message: "Credenciales inválidas" });
       }
+      if (url === `${API}/settings/registrations`) {
+        return json(200, { registrationsOpen: false });
+      }
       return json(404, {});
     }),
   );

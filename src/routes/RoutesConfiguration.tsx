@@ -23,7 +23,6 @@ import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
-import RegistrationClosedPage from "@/pages/RegistrationClosedPage";
 
 import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
@@ -49,6 +48,7 @@ import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
 
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
+import RegistrationGate from "@/routes/RegistrationGate";
 import VideogamesPage from "@/pages/teams/VideogamesPage";
 
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
@@ -94,10 +94,9 @@ const routes: RouteConfig[] = [
     element: <Navigate to="/inicio" replace />,
     roles: ["Consultor"],
   },
-  // Inscripciones por la web deshabilitadas temporalmente: al reabrirlas se restaura TeamRegisterPage (pages/teams)
   {
     path: "/registro-equipo",
-    element: <RegistrationClosedPage />,
+    element: <RegistrationGate />,
   },
   {
     path: "/equipos",
