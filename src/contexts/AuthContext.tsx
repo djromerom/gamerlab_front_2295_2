@@ -153,8 +153,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // login no activa el `loading` global: RoutesConfiguration lo usa para reemplazar todo
+  // el árbol por una pantalla de carga, lo que desmontaba LoginPage y borraba el correo y el error.
+  // El estado de envío vive en LoginPage (isSubmitting).
   const login = async ({ email, password }: LoginCredentials) => {
-    setLoading(true);
     try {
       const res = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/login`,
@@ -168,7 +170,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const log = await res.json();
 
       if (!res.ok) {
-        setLoading(false);
         throw new Error(log.message || "Invalid credentials");
       }
       await contextRefreshAccessToken();
@@ -182,7 +183,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       ) {
         setUser(null);
         setAccessToken(null);
-        setLoading(false);
       }
       throw error;
     }
