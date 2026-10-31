@@ -31,19 +31,33 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage, isRankingHidden } from "@/lib/averages";
+import { useCriteria } from "@/hooks/use-criteria";
+import { buildCriteriaColumns, getCriterionValue } from "@/lib/criteria-columns";
 
 interface CriterioChartData {
     criterio: string;
     valor: number;
 }
 
-const NOMBRES_CRITERIOS_GRAFICOS = [
-    { backendKey: "Interfaz de Usuario", displayKey: "Interfaz", color: "hsl(var(--chart-1))" },
-    { backendKey: "Interacción", displayKey: "Interacción", color: "hsl(var(--chart-2))" },
-    { backendKey: "Resultados", displayKey: "Resultados", color: "hsl(var(--chart-3))" },
-    { backendKey: "Presentación del Proyecto", displayKey: "Presentación", color: "hsl(var(--chart-4))" },
-    { backendKey: "Funcionamiento del Programa", displayKey: "Funcionamiento", color: "hsl(var(--chart-5))" },
-    { backendKey: "Presentación personal del equipo", displayKey: "Presentación Personal", color: "hsl(var(--chart-1))" }, // Puedes repetir colores
+// Para datos de promedios generales por materia (usado por pie y ahora por el bar chart base)
+interface MateriaPromedioData {
+    name: string;  // Nombre de la materia
+    value: number; // Promedio de la materia
+    color?: string;
+}
+
+// Para datos de promedios por NRC (para el bar chart cuando se filtra por materia)
+interface NRCPromedioData {
+    name: string;    // Nombre del NRC (e.g., "NRC 12345")
+    promedio: number; // Promedio para ese NRC
+}
+
+const COLORES_CRITERIOS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
 ];
 
 const formatNumber = (value: number | undefined | null, fixedDigits: number): string => {
@@ -103,22 +117,28 @@ const GraphicDisplay = () => {
     }, [videojuegoSeleccionado]);
 
     // Datos para Bar Chart Vertical (Slide 0) y Radar Chart (Slide 1)
+    const { criteria } = useCriteria();
+    const columnasCriterios = useMemo(
+        () => buildCriteriaColumns(criteria, videojuegoSeleccionado ? [videojuegoSeleccionado] : []),
+        [criteria, videojuegoSeleccionado]
+    );
+
     const datosCriteriosChart: CriterioChartData[] = useMemo(() => {
         if (!criteriosSeleccionado) {
             // Sin criterios (p. ej. ranking oculto) no se grafican ceros engañosos
             return [];
         }
-        return NOMBRES_CRITERIOS_GRAFICOS.map(config => {
-            const valorDelBackend = criteriosSeleccionado[config.backendKey];
+        return columnasCriterios.map((columna, index) => {
+            const valorDelBackend = getCriterionValue(criteriosSeleccionado, columna);
             return {
-                criterio: config.displayKey, // Usar el nombre para mostrar
+                criterio: columna.name, // Nombre actual del criterio (GET /criteria)
                 valor: typeof valorDelBackend === 'number' && !isNaN(valorDelBackend)
                     ? Math.max(0, Math.min(valorDelBackend, 5)) // Asegurar que el valor es un número y está en rango
                     : 0, // Valor por defecto si no se encuentra o no es número
-                fill: config.color, // Opcional: para configurar colores en ChartContainer
+                fill: COLORES_CRITERIOS[index % COLORES_CRITERIOS.length],
             };
         });
-    }, [criteriosSeleccionado]);
+    }, [columnasCriterios, criteriosSeleccionado]);
 
     // Promedios por materia / NRC; con el ranking oculto el backend los envía en null.
     const { materias: promediosGeneralesPorMateria, chart: barChartHorizontalData, hidden: promediosOcultos, materiasHidden } = useMemo(
