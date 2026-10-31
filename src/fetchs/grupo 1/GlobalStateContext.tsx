@@ -93,6 +93,7 @@ export interface GlobalStateContextType {
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
   fetchJurados: () => Promise<void>; // Recarga solo los jurados (requieren sesión)
   clearJurados: () => void;
+  hasSessionRef: React.MutableRefObject<boolean>; // lo marca JuradosAuthSync
 
   // Permiso local para mostrar u ocultar calificaciones (frontend-only)
   canViewScores: boolean;
@@ -295,11 +296,14 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setListaJurados([]);
   }, []);
 
+  // Lo actualiza JuradosAuthSync; fetchGlobalData solo pide los jurados si hay sesión.
+  const hasSessionRef = useRef(false);
+
   // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
-    fetchJurados();
+    if (hasSessionRef.current) fetchJurados();
     try {
       // Cargamos todos los datos globales (videojuegos, materias, NRCs, etc.)
       // usando apiFetch para garantizar que la comunicación sea resiliente a errores 401.
@@ -449,6 +453,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       fetchGlobalData,
       fetchJurados,
       clearJurados,
+      hasSessionRef,
     }),
     [
       // Dependencias: todos los estados que se incluyen en contextValue
@@ -487,17 +492,18 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
 // porque GlobalStateProvider está por fuera y no se entera del login (BG-02).
 export function JuradosAuthSync() {
   const { user, loading } = useAuth();
-  const { fetchJurados, clearJurados } = useGlobalState();
+  const { fetchJurados, clearJurados, hasSessionRef } = useGlobalState();
   const userId = user?.id;
 
   useEffect(() => {
     if (loading) return;
+    hasSessionRef.current = Boolean(userId);
     if (userId) {
       fetchJurados();
     } else {
       clearJurados();
     }
-  }, [userId, loading, fetchJurados, clearJurados]);
+  }, [userId, loading, fetchJurados, clearJurados, hasSessionRef]);
 
   return null;
 }
