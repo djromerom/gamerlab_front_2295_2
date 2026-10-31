@@ -88,4 +88,27 @@ describe("LoginPage: sesión expirada (HU-05)", () => {
 
     expect(screen.getByText("Inicio")).toBeTruthy();
   });
+
+  it("el campo de contraseña pide autocomplete current-password", () => {
+    Object.assign(auth, {
+      user: null,
+      userRole: null,
+      loading: false,
+      sessionExpired: false,
+      login: vi.fn(),
+    });
+    const { container } = render(
+      <TextSizeProvider>
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TextSizeProvider>,
+    );
+
+    expect(
+      container.querySelector("#password")?.getAttribute("autocomplete"),
+    ).toBe("current-password");
+  });
 });

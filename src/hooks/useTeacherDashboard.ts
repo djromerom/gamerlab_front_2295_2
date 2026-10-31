@@ -14,12 +14,12 @@ interface PaginationMetadata {
 interface UseTeacherDashboardProps {
   itemsPerPage?: number;
   search?: string;
-  searchType?: "student" | "team";
+  includeHistorical?: boolean;
   sortBy?: "student" | "team";
   sortOrder?: "asc" | "desc";
 }
 
-export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType = "student", sortBy = "team", sortOrder = "asc" }: UseTeacherDashboardProps = {}) {
+export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHistorical = false, sortBy = "team", sortOrder = "asc" }: UseTeacherDashboardProps = {}) {
   const customFetch = useFetch();
   const [availableFairs, setAvailableFairs] = useState<Edition[]>([]);
   const [allNRCs, setAllNRCs] = useState<any[]>([]);
@@ -40,6 +40,13 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
     setSelectedNRCState(nrcId);
     setCurrentPage(1);
   }, []);
+
+  // Cambiar de pestaña (feria activa / históricos) cambia las opciones válidas: se reinician los filtros.
+  useEffect(() => {
+    setSelectedFairState("");
+    setSelectedNRCState("");
+    setCurrentPage(1);
+  }, [includeHistorical]);
 
   const setSelectedFair = useCallback((editionId: string) => {
     setSelectedFairState(editionId);
@@ -77,7 +84,8 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
       setInitialLoading(true);
       setError(null);
       try {
-        const response = await customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/grading-games/filter-options`, {
+        const optionsQuery = includeHistorical ? "?includeHistorical=true" : "";
+        const response = await customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/grading-games/filter-options${optionsQuery}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
@@ -113,7 +121,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
     return () => {
       cancelled = true;
     };
-  }, [customFetch, filterOptionsRetryVersion]);
+  }, [customFetch, filterOptionsRetryVersion, includeHistorical]);
 
   const loadProjects = useCallback(
     async (signal: AbortSignal) => {
@@ -123,13 +131,22 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
         const query = new URLSearchParams({ page: String(currentPage), limit: String(itemsPerPage) });
         if (selectedFair) query.set("editionId", selectedFair);
         if (selectedNRC) query.set("nrcId", selectedNRC);
-        if (search.trim()) query.set(searchType, search.trim());
+        if (search.trim()) query.set("search", search.trim());
+        if (includeHistorical) query.set("includeHistorical", "true");
         query.set("sortBy", sortBy);
         query.set("sortOrder", sortOrder);
         const response = await customFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/grading-games?${query}`,
           { method: "GET", headers: { "Content-Type": "application/json" }, signal },
         );
+        if (response.status === 404 && selectedNRC) {
+          // El NRC ya no pertenece al profesor en la feria activa: se vuelve a "Todos los NRC".
+          if (signal.aborted) return;
+          toast.info("El NRC seleccionado ya no está disponible. Se muestran todos tus NRC.");
+          setSelectedNRCState("");
+          setCurrentPage(1);
+          return;
+        }
         if (!response.ok) {
           let detail = response.statusText;
           try {
@@ -155,14 +172,14 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", searchType
         if (!signal.aborted) setIsLoading(false);
       }
     },
-    [customFetch, currentPage, itemsPerPage, search, searchType, selectedFair, selectedNRC, sortBy, sortOrder],
+    [customFetch, currentPage, itemsPerPage, search, includeHistorical, selectedFair, selectedNRC, sortBy, sortOrder],
   );
 
   const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, searchType, sortBy, sortOrder]);
+  }, [search, sortBy, sortOrder]);
 
   const reloadProjects = useCallback(() => {
     setRefreshVersion((version) => version + 1);

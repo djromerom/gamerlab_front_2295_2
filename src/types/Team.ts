@@ -4,7 +4,8 @@ export interface Team {
     gameName: string;
     teamName: string;
     teamCode: string;
-    userId?: string;
+    userId?: string; // obsoleto: el back lo retirará; usar isMine
+    isMine?: boolean; // solo con sesión: el usuario autenticado es el líder
     status: TeamStatus;
     video?: string;
     repo?: string;

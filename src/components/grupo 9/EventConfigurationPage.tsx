@@ -1,6 +1,7 @@
 import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import EventSetupCard from "./EventSetupCard";
+import RegistrationsToggleCard from "./RegistrationsToggleCard";
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "../grupo 8/boton";
@@ -28,6 +29,7 @@ const EventConfigurationPage: React.FC = () => {
                 <EventSetupCard value={canViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Permite que los jurados califiquen a los equipos del evento."/>
                 <EventSetupCard value={canViewScores} url="/settings/show-evaluations" title="Resultados de Evaluación" subtitle="Permite que los equipos vean las calificaciones que recibieron."/>
                 <EventSetupCard value={canViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público."/>
+                <RegistrationsToggleCard />
                 <div className="sm:flex-[0_1_10%] md:mb-6 space-y-2 border-2 rounded-lg overflow-hidden  md:w-full shadow-sm ">
                 <div className="border-b last:border-b-0">
                     <div className="w-full p-4 flex items-center justify-between transition-colors">

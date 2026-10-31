@@ -22,6 +22,8 @@ export interface AuthContextType {
   logout: () => Promise<void>;
 }
 export interface UserProfile {
+  /** Clave opaca (16 hex) para reconocer eventos de likes propios */
+  likeKey?: string;
   /** UUID único del usuario */
   id: string;
   /** Primer nombre */

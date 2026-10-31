@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { resolveMyTeam } from "@/lib/opaqueKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -101,33 +102,6 @@ function getTeamVideogameName(team: any): string | null {
   );
 }
 
-function isUserInTeam(team: any, userId: string, userEmail: string): boolean {
-  const teamUserId =
-    team?.userId ??
-    team?.id_usuario ??
-    team?.usuario?.id_usuario ??
-    team?.user?.id ??
-    "";
-
-  if (userId && String(teamUserId) === String(userId)) {
-    return true;
-  }
-
-  const members = team?.integrantes ?? team?.members ?? [];
-
-  if (Array.isArray(members) && userEmail) {
-    return members.some((member: any) => {
-      const memberEmail = String(
-        member?.correo ?? member?.email ?? "",
-      ).toLowerCase();
-
-      return memberEmail === userEmail.toLowerCase();
-    });
-  }
-
-  return false;
-}
-
 export default function MisJuradosPage() {
   const { user } = useAuth() as any;
 
@@ -174,17 +148,7 @@ export default function MisJuradosPage() {
 
         const teamsData = await teamsRes.json();
 
-        const teamsArray: any[] = Array.isArray(teamsData)
-          ? teamsData
-          : Array.isArray(teamsData?.data)
-            ? teamsData.data
-            : Array.isArray(teamsData?.items)
-              ? teamsData.items
-              : [];
-
-        const myTeam = teamsArray.find((team: any) =>
-          isUserInTeam(team, userId, userEmail),
-        );
+        const myTeam = resolveMyTeam(teamsData);
 
         if (!myTeam) {
           setStudentGameName(null);
