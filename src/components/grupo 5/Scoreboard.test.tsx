@@ -20,9 +20,17 @@ const AVISO = "Disponible cuando se publique el ranking";
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
+// El back marca el equipo propio con `isMine` (ids opacos); aquí se simula por usuario actual
+// para poder probar el cambio de equipo al cambiar de sesión.
+vi.mock("@/lib/opaqueKeys", () => ({
+  findMyTeam: (teams: { id: number }[]) =>
+    teams.find((t) => t.id === (auth.id === "u1" ? 7 : 8)) ?? null,
+}));
+const teamsList = [{ id: 7, isMine: true }, { id: 8, isMine: false }];
+
 function backend(scoreRes: () => Response) {
   apiFetch.mockImplementation(async (url: string) => {
-    if (url.endsWith("/teams")) return json(200, [{ id: 7, userId: "u1" }, { id: 8, userId: "u2" }]);
+    if (url.endsWith("/teams")) return json(200, teamsList);
     if (url.includes("/teams/final-score/team/")) return scoreRes();
     if (url.endsWith("/students")) return json(200, { data: [] });
     return json(404, {});
