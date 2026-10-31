@@ -16,6 +16,8 @@ import { apiFetch } from "@/lib/api";
 import { ArrowLeft, CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { getBatchBackRoute } from "./batchRoute";
 import { toast } from "sonner";
 
 interface BatchGame {
@@ -48,8 +50,8 @@ export default function BatchRatePage() {
   const navigate = useNavigate();
   const games = (location.state?.games || []) as BatchGame[];
   const fromPage = (location.state?.from || "jurado") as string;
-  const backRoute =
-    fromPage === "colegios" ? "/colegios-calificar" : "/pendientes-calificar";
+  const { userRole } = useAuth();
+  const backRoute = getBatchBackRoute(fromPage, userRole);
 
   const { criteria: apiCriteria, isLoading: isLoadingCriteria } = useCriteria();
   // HU-19: cada grupo del lote se verifica con su código antes de calificarlo
@@ -57,6 +59,9 @@ export default function BatchRatePage() {
     isLoading: isLoadingVerification,
     isVerified,
     markVerified,
+    getLockedUntil,
+    isLockEstimated,
+    markLocked,
   } = useTeamVerification(games.map((game) => game.teamId));
 
   const [activeTab, setActiveTab] = useState(0);
@@ -533,6 +538,9 @@ export default function BatchRatePage() {
                       teamId={currentGame.teamId!}
                       teamName={currentGame.equipo}
                       onVerified={markVerified}
+                      lockedUntil={getLockedUntil(currentGame.teamId)}
+                      lockEstimated={isLockEstimated(currentGame.teamId)}
+                      onLocked={markLocked}
                       className="shadow-none py-4"
                     />
                   )}

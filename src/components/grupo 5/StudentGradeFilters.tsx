@@ -1,15 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Filter, Search } from "lucide-react";
-import type { GradeFilterType } from "./student-grade-table-types";
+import { Search } from "lucide-react";
 
 interface Props {
   selectedFair: string;
@@ -22,8 +14,6 @@ interface Props {
   initialLoading: boolean;
   filterSearch: string;
   setFilterSearch: (value: string) => void;
-  filterType: GradeFilterType;
-  setFilterType: (value: GradeFilterType) => void;
   sortBy: "student" | "team";
   setSortBy: (value: "student" | "team") => void;
   sortOrder: "asc" | "desc";
@@ -37,7 +27,7 @@ const semesterLabel = (semester: number) => semester === 10 ? 1 : semester === 3
 export default function StudentGradeFilters({
   selectedFair, setSelectedFair, setSelectedNRC, availableFairs,
   selectedEdition, availableNRCs, selectedNRC, initialLoading,
-  filterSearch, setFilterSearch, filterType, setFilterType,
+  filterSearch, setFilterSearch,
   sortBy, setSortBy, sortOrder, setSortOrder, onClear, disabled = false,
 }: Props) {
   return (
@@ -57,23 +47,12 @@ export default function StudentGradeFilters({
             </div>
           </div>
           <div className="w-full lg:w-1/3 lg:max-w-sm lg:ml-auto">
-            <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">Filtrar por estudiante o equipo</label>
+            <label htmlFor="grade-search" className="block text-xs font-medium mb-1.5 opacity-70">Buscar por equipo o estudiante</label>
             <div className="flex max-w-sm lg:ml-auto">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
-                <Input id="grade-search" disabled={disabled} value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} placeholder={filterType === "student" ? "Nombre del estudiante" : "Nombre del equipo"} className="h-8 md:h-8 pl-9 rounded-r-none" />
+                <Input id="grade-search" disabled={disabled} value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} placeholder="Nombre o código de equipo o estudiante" className="h-8 md:h-8 pl-9" />
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" disabled={disabled} variant="outline" size="icon" aria-label={`Tipo de filtro: ${filterType === "student" ? "estudiante" : "equipo"}`} title={`Filtrar por ${filterType === "student" ? "estudiante" : "equipo"}`} className="!h-8 !w-8 rounded-l-none -ml-px"><Filter className="h-4 w-4" /></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuRadioGroup value={filterType} onValueChange={(value) => setFilterType(value as GradeFilterType)}>
-                    <DropdownMenuRadioItem disabled={disabled} value="student">Estudiante</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem disabled={disabled} value="team">Equipo</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         </div>

@@ -20,9 +20,25 @@ export type TeamVerificationStatus = Record<number, boolean>;
 
 /** Error HTTP que conserva el status para distinguir el bloqueo por intentos (429). */
 export class TeamVerificationError extends Error {
-  constructor(message: string, public readonly status: number) {
+  constructor(
+    message: string,
+    public readonly status: number,
+    /** ISO 8601 del desbloqueo, si el 429 lo trae. */
+    public readonly lockedUntil: string | null = null,
+  ) {
     super(message);
   }
+}
+
+export interface TeamVerificationLock {
+  locked: boolean;
+  lockedUntil: string | null;
+}
+
+export interface TeamVerificationState {
+  status: TeamVerificationStatus;
+  /** Vacío si el backend no envía `locks` (versión anterior). */
+  locks: Record<number, TeamVerificationLock>;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -38,14 +54,16 @@ export const isCollegeTeamCode = (teamCode?: string): boolean =>
  */
 async function toError(res: Response): Promise<TeamVerificationError> {
   let message = `Error ${res.status}`;
+  let lockedUntil: string | null = null;
   try {
     const body = await res.json();
+    if (typeof body?.lockedUntil === 'string') lockedUntil = body.lockedUntil;
     if (typeof body?.message === 'string') message = body.message;
     else if (Array.isArray(body?.message)) message = body.message.join(', ');
   } catch {
     // no es JSON
   }
-  return new TeamVerificationError(message, res.status);
+  return new TeamVerificationError(message, res.status, lockedUntil);
 }
 
 // ─── Estudiante ─────────────────────────────────────────────────────────────
@@ -69,6 +87,25 @@ export const fetchTeamVerificationStatus = async (
   );
   if (!res.ok) throw await toError(res);
   return res.json();
+};
+
+/**
+ * Estado de verificación y de bloqueo por intentos fallidos. Si el backend es anterior y responde
+ * solo el mapa de estados, `locks` queda vacío (nunca se asume que viene).
+ */
+export const fetchTeamVerificationState = async (
+  teamIds: number[],
+): Promise<TeamVerificationState> => {
+  const res = await apiFetch(
+    `${API_URL}/team-verification/status?teamIds=${encodeURIComponent(teamIds.join(','))}&includeLocks=true`,
+  );
+  if (!res.ok) throw await toError(res);
+  const data = await res.json();
+  if (data && typeof data.status === 'object' && data.status !== null) {
+    const locks = typeof data.locks === 'object' && data.locks !== null ? data.locks : {};
+    return { status: data.status, locks };
+  }
+  return { status: data ?? {}, locks: {} };
 };
 
 /**

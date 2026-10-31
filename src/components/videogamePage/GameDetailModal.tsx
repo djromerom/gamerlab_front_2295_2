@@ -1,4 +1,5 @@
 import { ExternalLink, Heart, Users, X } from "lucide-react";
+import { isOwnLikeEvent } from "@/lib/opaqueKeys";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../ui/button";
 import { useFetch } from "@/hooks/useFetch";
@@ -33,7 +34,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
     const handleLikesUpdated = (payload: any) => {
       if (
         payload.videogameId === team.videogameId &&
-        payload.triggerUserId === user.id &&
+        isOwnLikeEvent(payload, user.likeKey) &&
         payload.liked !== undefined
       ) {
         setIsLiked(payload.liked);

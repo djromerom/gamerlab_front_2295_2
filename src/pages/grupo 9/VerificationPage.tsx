@@ -401,6 +401,7 @@ export function VerifyEmailPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
@@ -428,6 +429,7 @@ export function VerifyEmailPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirma tu contraseña"

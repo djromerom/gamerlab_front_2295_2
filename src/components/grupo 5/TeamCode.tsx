@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { findMyTeam } from "@/lib/opaqueKeys";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Team } from "@/types/Team";
@@ -43,7 +44,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
     useEffect(() => {
         if (!user?.id || teams.length === 0) return;
 
-        const userTeam = teams.find(t => t.userId === user.id) || null;
+        const userTeam = findMyTeam(teams);
         setTeam(userTeam);
 
     }, [user?.id, teams]);
@@ -75,7 +76,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                     {team?.teamName && (
                         <p className="pl-4 p-2 font-semibold text-base text-foreground border-r-2 border-border">{team.teamName}</p>
                     )}
-                    <p className={`${team?.teamName ? "" : "pl-4 "}p-2 font-semibold text-base text-foreground`}>Codigo del equipo:</p>
+                    <p className={`${team?.teamName ? "" : "pl-4 "}p-2 font-semibold text-base text-foreground`}>Código del equipo:</p>
                     {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
                     {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">

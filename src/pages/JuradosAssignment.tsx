@@ -45,6 +45,10 @@ import { AuditModal } from "@/components/jurados-modals/AuditModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
 import { toast } from "sonner";
+import {
+  progressPercentage,
+  useEvaluationProgress,
+} from "@/fetchs/evaluationProgress";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -466,7 +470,11 @@ export function JuradosAssignment() {
     tipo: "" as "" | JurorType,
   });
 
+  const { progress: evaluationProgress, reload: reloadProgress } =
+    useEvaluationProgress();
+
   const loadData = async () => {
+    void reloadProgress();
     try {
       setIsLoading(true);
       setLoadError(null);
@@ -1365,6 +1373,14 @@ export function JuradosAssignment() {
 
             <div className="mt-1 flex flex-col min-[350px]:flex-row md:flex-col lg:flex-row items-center justify-between gap-2">
               <span className="text-[11px] text-muted-foreground">Cupos cubiertos</span>
+              {evaluationProgress && (
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/30 text-muted-foreground"
+                  title={`${progressPercentage(evaluationProgress).toFixed(0)}% de evaluaciones completadas`}
+                >
+                  Evaluaciones {evaluationProgress.completed}/{evaluationProgress.assigned}
+                </span>
+              )}
               {remanentesEnUso > 0 ? (
                 <div
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[10px] font-semibold"

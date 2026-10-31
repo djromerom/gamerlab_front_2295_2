@@ -1,5 +1,5 @@
 import React, { JSX } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,9 +22,7 @@ import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 
-import ProfessorPage from "@/pages/grupo 11/ProfessorPage";
-import JuryPage from "@/pages/grupo 11/JuryPage";
-import ConsultantPage from "@/pages/grupo 11/ConsultantPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
@@ -50,7 +48,7 @@ import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
 
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
-import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
+import RegistrationGate from "@/routes/RegistrationGate";
 import VideogamesPage from "@/pages/teams/VideogamesPage";
 
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
@@ -71,12 +69,13 @@ interface RouteConfig {
   roles?: Role[];
 }
 
-const routes: RouteConfig[] = [
+export const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
   { path: "/auth-error", element: <AuthErrorPage /> },
+  // Pantallas de relleno retiradas: se redirigen al inicio de su rol
   {
     path: "/profesor",
-    element: <ProfessorPage />,
+    element: <Navigate to="/inicio" replace />,
     roles: ["Administrador", "Profesor"],
   },
   {
@@ -89,18 +88,16 @@ const routes: RouteConfig[] = [
     element: <RealtimeTrackingPanel />,
     roles: ["Administrador"],
   },
-  { path: "/jurado", element: <JuryPage />, roles: ["Jurado"] },
+  { path: "/jurado", element: <Navigate to="/inicio" replace />, roles: ["Jurado"] },
   {
     path: "/consultor",
-    element: <ConsultantPage />,
+    element: <Navigate to="/inicio" replace />,
     roles: ["Consultor"],
   },
-  /* temporarily disabled inscriptions through the web
   {
     path: "/registro-equipo",
-    element: <TeamRegisterPage />,
-  }, 
-  */
+    element: <RegistrationGate />,
+  },
   {
     path: "/equipos",
     element: <VideogamesPage />,
@@ -207,7 +204,6 @@ const routes: RouteConfig[] = [
 
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
-  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {
@@ -276,7 +272,10 @@ const RoutesConfiguration: React.FC = () => {
         {routes.map((route) => {
           if (route.roles) {
             return (
-              <Route element={<ProtectedRoute roles={route.roles} />}>
+              <Route
+                key={route.path}
+                element={<ProtectedRoute roles={route.roles} />}
+              >
                 <Route path={route.path} element={route.element} />
               </Route>
             );
@@ -285,6 +284,7 @@ const RoutesConfiguration: React.FC = () => {
             <Route key={route.path} path={route.path} element={route.element} />
           );
         })}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

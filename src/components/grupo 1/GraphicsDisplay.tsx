@@ -30,6 +30,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage, isRankingHidden } from "@/lib/averages";
+import { useCriteria } from "@/hooks/use-criteria";
+import { buildCriteriaColumns, getCriterionValue } from "@/lib/criteria-columns";
 
 interface CriterioChartData {
     criterio: string;
@@ -49,13 +52,12 @@ interface NRCPromedioData {
     promedio: number; // Promedio para ese NRC
 }
 
-const NOMBRES_CRITERIOS_GRAFICOS = [
-    { backendKey: "Interfaz de Usuario", displayKey: "Interfaz", color: "hsl(var(--chart-1))" },
-    { backendKey: "Interacción", displayKey: "Interacción", color: "hsl(var(--chart-2))" },
-    { backendKey: "Resultados", displayKey: "Resultados", color: "hsl(var(--chart-3))" },
-    { backendKey: "Presentación del Proyecto", displayKey: "Presentación", color: "hsl(var(--chart-4))" },
-    { backendKey: "Funcionamiento del Programa", displayKey: "Funcionamiento", color: "hsl(var(--chart-5))" },
-    { backendKey: "Presentación personal del equipo", displayKey: "Presentación Personal", color: "hsl(var(--chart-1))" }, // Puedes repetir colores
+const COLORES_CRITERIOS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
 ];
 
 const formatNumber = (value: number | undefined | null, fixedDigits: number): string => {
@@ -115,61 +117,43 @@ const GraphicDisplay = () => {
     }, [videojuegoSeleccionado]);
 
     // Datos para Bar Chart Vertical (Slide 0) y Radar Chart (Slide 1)
+    const { criteria } = useCriteria();
+    const columnasCriterios = useMemo(
+        () => buildCriteriaColumns(criteria, videojuegoSeleccionado ? [videojuegoSeleccionado] : []),
+        [criteria, videojuegoSeleccionado]
+    );
+
     const datosCriteriosChart: CriterioChartData[] = useMemo(() => {
         if (!criteriosSeleccionado) {
-            // Si no hay criterios, puedes devolver un array con los displayKeys y valor 0
-            return NOMBRES_CRITERIOS_GRAFICOS.map(config => ({
-                criterio: config.displayKey,
-                valor: 0,
-                fill: config.color, // Opcional
-            }));
+            // Sin criterios (p. ej. ranking oculto) no se grafican ceros engañosos
+            return [];
         }
-        return NOMBRES_CRITERIOS_GRAFICOS.map(config => {
-            const valorDelBackend = criteriosSeleccionado[config.backendKey];
+        return columnasCriterios.map((columna, index) => {
+            const valorDelBackend = getCriterionValue(criteriosSeleccionado, columna);
             return {
-                criterio: config.displayKey, // Usar el nombre para mostrar
+                criterio: columna.name, // Nombre actual del criterio (GET /criteria)
                 valor: typeof valorDelBackend === 'number' && !isNaN(valorDelBackend)
                     ? Math.max(0, Math.min(valorDelBackend, 5)) // Asegurar que el valor es un número y está en rango
                     : 0, // Valor por defecto si no se encuentra o no es número
-                fill: config.color, // Opcional: para configurar colores en ChartContainer
+                fill: COLORES_CRITERIOS[index % COLORES_CRITERIOS.length],
             };
         });
-    }, [criteriosSeleccionado]);
+    }, [columnasCriterios, criteriosSeleccionado]);
 
-    // Datos para la tabla "Promedios por Materia" y el estado base del nuevo Bar Chart Horizontal (Slide 2)
-    // Esto ya lo tenías como pieChartData, lo renombramos para claridad.
-    const promediosGeneralesPorMateria: MateriaPromedioData[] = useMemo(() => {
-        if (Array.isArray(datosGraficoTortaMaterias)) { // datosGraficoTortaMaterias es tu fuente original
-            return datosGraficoTortaMaterias.filter(
-                item => item && typeof item.value === 'number' && !isNaN(item.value) && typeof item.name === 'string'
-            );
-        }
-        return [];
-    }, [datosGraficoTortaMaterias]);
+    // Promedios por materia / NRC; con el ranking oculto el backend los envía en null.
+    const { materias: promediosGeneralesPorMateria, chart: barChartHorizontalData, hidden: promediosOcultos, materiasHidden } = useMemo(
+        () => buildAverageChartData({
+            materias: Array.isArray(datosGraficoTortaMaterias) ? datosGraficoTortaMaterias : [],
+            filtroMateria,
+            videojuegos: listaVideojuegosFiltrados ?? [],
+            nrcs: nrcsFiltrados ?? [],
+        }),
+        [datosGraficoTortaMaterias, filtroMateria, listaVideojuegosFiltrados, nrcsFiltrados]
+    );
 
 
-    // Datos para el nuevo Bar Chart Horizontal (Slide 2)
-    const barChartHorizontalData: (MateriaPromedioData | NRCPromedioData)[] = useMemo(() => {
-        if (filtroMateria === "Todas") {
-            // Mostrar promedios generales por materia
-            return promediosGeneralesPorMateria.map(item => ({
-                name: item.name, // Nombre de la materia
-                promedio: item.value // Promedio de la materia (renombramos 'value' a 'promedio' para consistencia del dataKey)
-            })).sort((a, b) => b.promedio - a.promedio); // Opcional: ordenar
-        } else {
-            // Mostrar promedios por NRC de la materia seleccionada
-            if (!listaVideojuegosFiltrados) return [];
-            
-            return listaVideojuegosFiltrados
-                .filter(vj => vj.materia === filtroMateria)
-                .map(vj => ({
-                    name: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.codigo.toString() || "N/A", // Asegúrate de que nrcsFiltrados esté definido
-                    promedio: nrcsFiltrados?.find(nrc => nrc.codigo.toString() === vj.nrc)?.promedioxNRC || 0, // Asegúrate de que nrcsFiltrados esté definido
-                }))
-                .sort((a, b) => b.promedio - a.promedio); // Opcional: ordenar
-        }
-    }, [filtroMateria, promediosGeneralesPorMateria, listaVideojuegosFiltrados, nrcsFiltrados]);
-
+    const rankingOculto = useMemo(() => isRankingHidden(listaVideojuegos ?? []), [listaVideojuegos]);
+    const sinCriterios = rankingOculto ? AVERAGES_HIDDEN_MESSAGE : "Datos de criterios no disponibles para este gráfico.";
 
     // Top 3 para la card (sin cambios)
     const videojuegosRanking = useMemo(() => {
@@ -332,7 +316,7 @@ const GraphicDisplay = () => {
                                         </ResponsiveContainer>
                                     </ChartContainer>
                                 ) : (
-                                    renderNoDataMessage("Datos de criterios no disponibles para este gráfico.")
+                                    renderNoDataMessage(sinCriterios)
                                 )}
                             </CardContent>
                         </div>
@@ -365,7 +349,7 @@ const GraphicDisplay = () => {
                                         </ResponsiveContainer>
                                     </ChartContainer>
                                 ) : (
-                                    renderNoDataMessage("Datos de criterios no disponibles para este gráfico.")
+                                    renderNoDataMessage(sinCriterios)
                                 )}
                             </CardContent>
                         </div>
@@ -385,7 +369,9 @@ const GraphicDisplay = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="px-2 pb-4">
-                                {barChartHorizontalData.length > 0 ? (
+                                {promediosOcultos ? (
+                                    renderNoDataMessage(AVERAGES_HIDDEN_MESSAGE)
+                                ) : barChartHorizontalData.length > 0 ? (
                                     <ChartContainer config={barChartHorizontalConfig} className="min-h-[300px] w-full">
                                         {/* Altura dinámica para el contenedor del gráfico */}
                                         <ResponsiveContainer width="100%" height={Math.max(300, barChartHorizontalData.length * 40)}>
@@ -477,7 +463,7 @@ const GraphicDisplay = () => {
                                 )}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">Datos de criterios no disponibles. Selecciona un videojuego.</p>
+                            <p className="text-sm text-muted-foreground">{rankingOculto ? AVERAGES_HIDDEN_MESSAGE : "Datos de criterios no disponibles. Selecciona un videojuego."}</p>
                         )}
                     </CardContent>
                 </Card>
@@ -489,7 +475,9 @@ const GraphicDisplay = () => {
                         <CardDescription>Mejores calificaciones promedio</CardDescription>
                     </CardHeader>
                     <CardContent className="pb-6">
-                        {top3.length > 0 ? ( /* ... tu código ... */
+                        {rankingOculto ? (
+                            <p className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : top3.length > 0 ? ( /* ... tu código ... */
                             <div className="space-y-4">
                                 {top3.map((videojuego, index) => (
                                     <div key={videojuego.id} className="flex items-center gap-4">
@@ -522,6 +510,11 @@ const GraphicDisplay = () => {
                         <CardDescription>{videojuegoSeleccionado?.nombre || "N/A"}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center pt-8">
+                        {rankingOculto ? (
+                            <p className="text-sm text-muted-foreground text-center">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : formatAverage(videojuegoSeleccionado?.promedio) === null ? (
+                            <p className="text-sm text-muted-foreground text-center">Sin calificar</p>
+                        ) : (<>
                         <div className="relative w-32 h-32 mb-4">
                             <svg className="w-full h-full" viewBox="0 0 100 100">
                                 <circle
@@ -537,10 +530,11 @@ const GraphicDisplay = () => {
                                 />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-3xl font-bold">{formatNumber(videojuegoSeleccionado?.promedio, 2)}</span>
+                                <span className="text-3xl font-bold">{formatAverage(videojuegoSeleccionado?.promedio)}</span>
                             </div>
                         </div>
                         <p className="text-sm text-muted-foreground">Calificación promedio total</p>
+                        </>)}
                     </CardContent>
                 </Card>
 
@@ -551,7 +545,9 @@ const GraphicDisplay = () => {
                         <CardDescription>Detalle de la distribución</CardDescription>
                     </CardHeader>
                     <CardContent className="pb-6">
-                        {promediosGeneralesPorMateria.length > 0 ? ( // Usa la variable correcta
+                        {materiasHidden ? (
+                            <p className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</p>
+                        ) : promediosGeneralesPorMateria.length > 0 ? ( // Usa la variable correcta
                             <div className="space-y-3">
                                 {promediosGeneralesPorMateria.map((item, index) => ( // Usa la variable correcta
                                     <div key={item.name} className="flex items-center justify-between gap-4">
@@ -559,7 +555,7 @@ const GraphicDisplay = () => {
                                             <div style={{ backgroundColor: item.color || `hsl(var(--chart-${index + 1}))` }} className="w-3 h-3 rounded-full flex-shrink-0"></div>
                                             <span className="text-sm font-medium truncate" title={item.name}>{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-semibold">{formatNumber(item.value, 2)}</span>
+                                        <span className="text-sm font-semibold">{formatAverage(item.value, 2) ?? 'N/A'}</span>
                                     </div>
                                 ))}
                             </div>

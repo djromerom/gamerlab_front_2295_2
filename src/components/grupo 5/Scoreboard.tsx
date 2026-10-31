@@ -1,4 +1,6 @@
 import { apiFetch } from "@/lib/api";
+import { AVERAGES_HIDDEN_MESSAGE } from "@/lib/averages";
+import { findMyTeam } from "@/lib/opaqueKeys";
 "use client"
 
 
@@ -28,6 +30,8 @@ export default function Scoreboard() {
   const [generalGrade, setGeneralGrade] = useState<number>(0);
   const [seniorGrade, setSeniorGrade] = useState<number>(0);
   const [juniorGrade, setJuniorGrade] = useState<number>(0);
+  // true cuando el backend oculta el puntaje (ranking no publicado): 403 o sin las tres claves
+  const [scoresHidden, setScoresHidden] = useState(false);
 
   const [team, setTeam] = useState<Team | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -69,7 +73,7 @@ export default function Scoreboard() {
   useEffect(() => {
     if (!user?.id || teams.length === 0) return;
 
-    const userTeam = teams.find(t => t.userId === user.id) || null;
+    const userTeam = findMyTeam(teams);
     setTeam(userTeam);
 
   }, [user?.id, teams]);
@@ -80,6 +84,7 @@ export default function Scoreboard() {
       setGeneralGrade(0);
       setJuniorGrade(0);
       setSeniorGrade(0);
+      setScoresHidden(false);
       setLoading(false);
       return;
     }
@@ -102,8 +107,17 @@ export default function Scoreboard() {
           }
         );
 
+        if (response.status === 403) {
+          setScoresHidden(true);
+          setGeneralGrade(0);
+          setJuniorGrade(0);
+          setSeniorGrade(0);
+          return;
+        }
+
         if (!response.ok) {
           console.warn("Error fetching team scores:", response.status);
+          setScoresHidden(false);
           setGeneralGrade(0);
           setJuniorGrade(0);
           setSeniorGrade(0);
@@ -113,6 +127,9 @@ export default function Scoreboard() {
         const data = await response.json().catch(() => null);
         const item = Array.isArray(data) && data.length > 0 ? data[0] : null;
 
+        setScoresHidden(
+          !!item && item.finalScore == null && item.avgJunior == null && item.avgSenior == null,
+        );
         const finalScoreVar = item?.finalScore != null ? Number(item.finalScore.toFixed(2)) : 0;
         const avgJuniorVar = item?.avgJunior != null ? Number(item.avgJunior.toFixed(2)) : 0;
         const avgSeniorVar = item?.avgSenior != null ? Number(item.avgSenior.toFixed(2)) : 0;
@@ -127,6 +144,7 @@ export default function Scoreboard() {
           return;
         }
         console.error("Error fetching team scores:", err);
+        setScoresHidden(false);
         setGeneralGrade(0);
         setJuniorGrade(0);
         setSeniorGrade(0);
@@ -272,7 +290,7 @@ export default function Scoreboard() {
           <CardHeader className="p-4 sm:p-6 pb-2">
             <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Calificaciones no disponibles</CardTitle>
             <CardDescription className="text-xs sm:text-sm text-foreground/50">
-              Las calificaciones aún no han sido publicadas. !Proximamente¡
+              Las calificaciones aún no han sido publicadas. ¡Próximamente!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
@@ -302,6 +320,9 @@ export default function Scoreboard() {
         </CardHeader>
         {/* circulo de calificacion */}
         <CardContent className="p-3 sm:p-6 pt-2 space-y-3 sm:space-y-4">
+          {scoresHidden ? (
+            <p className="text-center text-sm sm:text-base text-muted-foreground py-6">{AVERAGES_HIDDEN_MESSAGE}</p>
+          ) : (<>
           <div className="flex flex-col items-center mb-6 sm:mb-10">
             <div className="relative w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60">
               <svg className="absolute inset-0 w-full h-full border-accent rounded-full border-0" viewBox="0 0 100 100">
@@ -379,6 +400,7 @@ export default function Scoreboard() {
             ))}
             {/* *-------------------------------------* */}
           </div>
+          </>)}
         </CardContent>
       </Card>
       <JudgesGrades />

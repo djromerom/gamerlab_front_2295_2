@@ -17,10 +17,16 @@ import FiltrosPanel from "@/components/grupo 1/FilterPanel";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import DownloadReport from "@/components/grupo 1/DownloadReport";
 import TablaPorJurado from "@/components/grupo 1/JudgesTable";
+import { AVERAGES_HIDDEN_MESSAGE, averageOfGames } from "@/lib/averages";
+import {
+  progressPercentage,
+  useEvaluationProgress,
+} from "@/fetchs/evaluationProgress";
 
 export default function StatisticsPage() {
   const { listaVideojuegos, isLoading, error, fetchGlobalData } =
     useGlobalState();
+  const { progress: evaluationProgress } = useEvaluationProgress();
 
   // Estado local para manejar la carga de la página (igual que ProfessorsPage)
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -42,26 +48,14 @@ export default function StatisticsPage() {
 
   // Lógica para las cards de resumen (basadas en la lista completa)
   const totalVideojuegos = listaVideojuegos.length;
-  const promedioGeneral =
-    totalVideojuegos > 0
-      ? (
-        listaVideojuegos.reduce((acc, game) => acc + game.promedio, 0) /
-        totalVideojuegos
-      ).toFixed(2)
-      : "0.00";
+  const promedioGeneral = averageOfGames(listaVideojuegos) ?? (totalVideojuegos > 0 ? null : "0.00");
 
-  const totalEvaluaciones = listaVideojuegos.reduce(
-    (acc, game) => acc + (game.evaluacionesCompletadas || 0),
-    0,
-  );
-  const totalJuradosAsignadosGeneral = listaVideojuegos.reduce(
-    (acc, game) => acc + (game.totalJuradosAsignados || 0),
-    0,
-  );
-  const progresoEvaluacionPorcentaje =
-    totalJuradosAsignadosGeneral > 0
-      ? (totalEvaluaciones / totalJuradosAsignadosGeneral) * 100
-      : 0;
+  // Progreso global: misma fuente que Estado Eval. y Asignación de jurados.
+  const totalEvaluaciones = evaluationProgress?.completed ?? 0;
+  const totalJuradosAsignadosGeneral = evaluationProgress?.assigned ?? 0;
+  const progresoEvaluacionPorcentaje = evaluationProgress
+    ? progressPercentage(evaluationProgress)
+    : 0;
 
   const VALUE_Jurados = "tablaJurados";
 
@@ -139,7 +133,11 @@ export default function StatisticsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <div className="text-2xl font-bold">{promedioGeneral}</div>
+                  {promedioGeneral === null ? (
+                    <div className="text-sm text-muted-foreground">{AVERAGES_HIDDEN_MESSAGE}</div>
+                  ) : (
+                    <div className="text-2xl font-bold">{promedioGeneral}</div>
+                  )}
                 </CardContent>
               </Card>
               <Card>
