@@ -9,6 +9,7 @@ import {
   Info,
   Gamepad2,
 } from "lucide-react";
+import { formatEditionDate } from "@/lib/editionDate";
 import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
@@ -281,20 +282,7 @@ export default function CompetitionInfo() {
     };
   }, []);
 
-  const formatDate = (isoString?: string) => {
-    if (!isoString) return "Por Definir";
-    try {
-      const date = new Date(isoString);
-      const formatted = new Intl.DateTimeFormat('es-ES', { 
-        weekday: 'long', 
-        day: 'numeric', 
-        month: 'long' 
-      }).format(date);
-      return formatted.replace(',', '').replace(/^\w/, c => c.toUpperCase());
-    } catch {
-      return "Fecha Inválida";
-    }
-  };
+  const formatDate = (isoString?: string) => formatEditionDate(isoString);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "--:--";

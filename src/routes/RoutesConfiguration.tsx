@@ -71,7 +71,7 @@ interface RouteConfig {
   roles?: Role[];
 }
 
-const routes: RouteConfig[] = [
+export const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
   { path: "/auth-error", element: <AuthErrorPage /> },
   {
@@ -207,7 +207,6 @@ const routes: RouteConfig[] = [
 
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
-  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
   { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
   {

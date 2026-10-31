@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   UserPlus,
   X,
@@ -37,8 +38,20 @@ export function JuradoAssignModal({
   onAssign,
   onReassign,
 }: JuradoAssignModalProps) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
         <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
           <div>

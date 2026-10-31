@@ -223,6 +223,7 @@ export default function ResetPassword() {
                             <Input
                                 id="resetPassword"
                                 type={show ? "text" : "password"}
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => {setPassword(e.target.value)}}
                                 placeholder="Ingresar contraseña"
@@ -253,6 +254,7 @@ export default function ResetPassword() {
                             <Input
                                 id="confirmResetPassword"
                                 type={showConfirm ? "text" : "password"}
+                                autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 disabled={status === "submitting_password"}
