@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { AVERAGES_HIDDEN_MESSAGE } from "@/lib/averages";
+import { findMyTeam } from "@/lib/opaqueKeys";
 "use client"
 
 
@@ -72,7 +73,7 @@ export default function Scoreboard() {
   useEffect(() => {
     if (!user?.id || teams.length === 0) return;
 
-    const userTeam = teams.find(t => t.userId === user.id) || null;
+    const userTeam = findMyTeam(teams);
     setTeam(userTeam);
 
   }, [user?.id, teams]);
