@@ -47,6 +47,7 @@ const HomePage: React.FC = () => {
 
         
             {/* custom size and colors */}
+            {userRole === "Estudiante" && (
             <CircularProgress
             size={140}
             strokeWidth={14}
@@ -59,6 +60,7 @@ const HomePage: React.FC = () => {
             </div>
             )}
             />
+            )}
         </section>
       </section>
     </LayoutAplication>
