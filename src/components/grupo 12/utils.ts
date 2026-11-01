@@ -1,4 +1,6 @@
-export const mapConfirmationStatus = (statusId: number): string => {
+import type { JurorCategory, JurorType } from "@/types/jurados";
+
+export const mapConfirmationStatus =(statusId: number): string => {
   switch (statusId) {
     case 1: return "Confirmado";
     case 2: return "Pendiente";
@@ -26,6 +28,8 @@ export interface JurorRowData {
   email: string;
   confirmationStatusId: number | string; // Puede ser string si ya fue mapeado
   lastSignInAt: string | null;
+  jurorCategory?: JurorCategory | null;
+  jurorType?: JurorType | null;
   evaluatedCount: number;
   evaluatedGameNames: string[];
   unevaluatedCount: number;
@@ -36,7 +40,31 @@ export interface JurorFormData {
   firstName: string;
   lastName: string;
   email: string;
+  jurorCategory: JurorCategory;
+  jurorType: JurorType;
 }
+
+// Junior y Oficial por defecto: Senior es solo para profesores que participan como jurados.
+export const DEFAULT_JUROR_CATEGORY: JurorCategory = "JUNIOR";
+export const DEFAULT_JUROR_TYPE: JurorType = "OFFICIAL";
+
+export const EMPTY_JUROR_FORM: JurorFormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  jurorCategory: DEFAULT_JUROR_CATEGORY,
+  jurorType: DEFAULT_JUROR_TYPE,
+};
+
+// El ValidationPipe del backend devuelve `message` como string o como lista de strings.
+export const getApiErrorMessage = (body: unknown, fallback: string): string => {
+  const message = (body as { message?: unknown } | null)?.message;
+  if (Array.isArray(message)) {
+    const parts = message.filter((m): m is string => typeof m === "string" && m.trim() !== "");
+    return parts.length > 0 ? parts.join(". ") : fallback;
+  }
+  return typeof message === "string" && message.trim() !== "" ? message : fallback;
+};
 
 export interface PaginationMetadata {
   totalItems: number;
