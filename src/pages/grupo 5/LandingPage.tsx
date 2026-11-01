@@ -10,6 +10,7 @@ import FairStartedAnnouncement from "@/components/grupo 5/FairStartedAnnouncemen
 import NavBar from "@/components/grupo 5/NavBar"
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
 import { DiscordButton } from "@/components/grupo 5/DiscordButton"
+import { fetchRegistrationsOpen } from "@/fetchs/registrations"
 
 function Landing(): React.ReactElement {
   const [eventStarted, setEventStarted] = useState<boolean>(false)
@@ -22,6 +23,18 @@ function Landing(): React.ReactElement {
   // temporary workaround to disable inscriptions (2026-1). It should become an admin setting
   // To restore registrations, also uncomment route in RoutesConfiguration.tsx
   const showRegisterButton = false;
+
+  // BG-07: con las inscripciones abiertas (ajuste del admin) el inicio lleva al formulario
+  const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false)
+  useEffect(() => {
+    let active = true
+    fetchRegistrationsOpen().then((open) => {
+      if (active) setRegistrationsOpen(open)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
@@ -145,6 +158,14 @@ function Landing(): React.ReactElement {
             <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4 max-h-[500px]:!text-xl">Feria Gamer Uninorte</h2>
             <p className="text-md md:text-2xl mt-6 max-w-4xl max-h-[500px]:!text-base">{getDescriptionText()}</p>
             <div className="mt-8">
+              {registrationsOpen && (
+                <button
+                  onClick={() => navigate("/registro-equipo")}
+                  className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
+                >
+                  Inscribe tu equipo
+                </button>
+              )}
               
               {/* See registro-equipo in RoutesConfiguration for an explanation c:
               showRegisterButton && (

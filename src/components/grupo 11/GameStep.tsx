@@ -18,6 +18,9 @@ import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFormContext } from "react-hook-form";
 import type { CombinedFormValues } from "@/lib/schemas";
 import { ImageCropper } from "./ImageCropper";
+import { apiFetch } from "@/lib/api";
+import { nameCheckUrl } from "@/lib/registration";
+import { toast } from "sonner";
 
 export default function GameStep() {
   const { back, next } = useMultiForm();
@@ -72,11 +75,14 @@ export default function GameStep() {
   // Manejar la imagen recortada
   const handleCroppedImage = (croppedFile: File) => {
     setValue("files", [croppedFile]);
+    clearErrors("files");
     setFileError(false);
   };
 
+  const [checkingName, setCheckingName] = useState(false);
+
   // Validar antes de avanzar
-  const handleNext = () => {
+  const handleNext = async () => {
     const gameName = watch("gameName");
     const description = watch("description");
     let hasErrors = false;
@@ -88,7 +94,7 @@ export default function GameStep() {
         message: "El nombre del videojuego es requerido",
       });
       hasErrors = true;
-    } else if (gameName.length > 30) {
+    } else if (gameName.trim().length > 30) {
       setError("gameName", {
         type: "manual",
         message: "El nombre no puede tener más de 30 caracteres",
@@ -98,6 +104,17 @@ export default function GameStep() {
       clearErrors("gameName");
     }
     
+    // Validar logo (obligatorio)
+    if ((watch("files") || []).length === 0) {
+      setError("files", {
+        type: "manual",
+        message: "El logo del videojuego es obligatorio",
+      });
+      hasErrors = true;
+    } else {
+      clearErrors("files");
+    }
+
     // Validar descripción
     if (!description || description.trim().length === 0) {
       setError("description", {
@@ -109,9 +126,29 @@ export default function GameStep() {
       clearErrors("description");
     }
     
-    // Solo avanzar si no hay errores
-    if (!hasErrors) {
+    if (hasErrors) return;
+
+    // BG-06: el nombre repetido se avisa aquí y no recién al enviar en el paso 4
+    setCheckingName(true);
+    try {
+      const res = await apiFetch(
+        nameCheckUrl(import.meta.env.VITE_ENDPOINT_BACKEND, "videogame", gameName)
+      );
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      if ((await res.json()) === true) {
+        setError("gameName", {
+          type: "manual",
+          message: "Ya existe un videojuego con este nombre. Por favor elige otro.",
+        });
+        return;
+      }
       next();
+    } catch {
+      toast("Error de red", {
+        description: "No se pudo verificar el nombre del videojuego.",
+      });
+    } finally {
+      setCheckingName(false);
     }
   };
 
@@ -215,9 +252,11 @@ export default function GameStep() {
         name="files"
         render={() => (
           <FormItem>
-            <FormLabel>Carga el logo</FormLabel>
+            <FormLabel>
+              Logo del videojuego <span className="text-red-400">(obligatorio)</span>
+            </FormLabel>
             <FormDescription>
-              Solo una imagen cuadrada de hasta 5 MB.
+              Una imagen cuadrada de hasta 1 MB. Sin logo no se puede continuar.
             </FormDescription>
             <FormControl>
               <div className="space-y-2">
@@ -268,6 +307,7 @@ export default function GameStep() {
                           </div>
                         </div>
                         <Button
+                          type="button"
                           variant="home"
                           size="icon"
                           className="cursor-pointer"
@@ -311,8 +351,8 @@ export default function GameStep() {
           Atrás
         </Button>
 
-        <Button variant="home" type="button" onClick={handleNext}>
-          Siguiente
+        <Button variant="home" type="button" onClick={handleNext} disabled={checkingName}>
+          {checkingName ? "Verificando..." : "Siguiente"}
         </Button>
       </div>
 

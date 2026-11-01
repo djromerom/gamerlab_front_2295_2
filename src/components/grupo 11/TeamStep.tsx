@@ -13,6 +13,7 @@ import {
 } from "../ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { nameCheckUrl } from "@/lib/registration";
 
 export default function TeamStep() {
   const { next } = useMultiForm();
@@ -29,8 +30,9 @@ export default function TeamStep() {
 
     try {
       const res = await apiFetch(
-        `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/name/${teamName}`
+        nameCheckUrl(import.meta.env.VITE_ENDPOINT_BACKEND, "name", teamName)
       );
+      if (!res.ok) throw new Error(`Error ${res.status}`);
       const exists = await res.json();
 
       if (exists === true) {
@@ -62,7 +64,7 @@ export default function TeamStep() {
           <FormItem>
             <FormLabel>Nombre del equipo</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Team Rocket" />
+              <Input {...field} placeholder="Team Rocket" maxLength={50} />
             </FormControl>
             <FormMessage />
           </FormItem>

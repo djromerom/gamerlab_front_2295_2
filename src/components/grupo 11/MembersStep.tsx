@@ -21,93 +21,109 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { CombinedFormValues } from "@/lib/schemas";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { nrcLabel } from "@/lib/registration";
 
 // Define an interface for your NRC option objects
 interface NrcOption {
   code: number | string;
   name?: string;
+  subject?: { id?: number; name?: string } | null;
   [key: string]: unknown;
 }
 
 export default function MembersStep() {
   const { back, next } = useMultiForm();
-  const { control, trigger, watch, setError } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setError, setFocus } = useFormContext<CombinedFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "members",
   });
 
-  // Watch all member emails to validate them against the API
-  const memberEmails = watch("members").map(member => member.correo);
   const [isValidatingEmails, setIsValidatingEmails] = useState(false);
 
-  // Email validation against API
-  const validateEmails = async () => {
-    // Filter out empty emails
-    const emailsToValidate = memberEmails.filter(email => email.trim() !== "");
-    
-    if (emailsToValidate.length === 0) return true; // No emails to validate
-    
-    // setIsValidatingEmails(true);
+  /**
+   * Revisa contra la API una lista de valores (correos o códigos) y marca el campo de cada
+   * integrante que ya esté registrado. Devuelve true si ninguno lo está.
+   */
+  const checkTaken = async (
+    path: "validate-emails" | "validate-student-codes",
+    bodyKey: "emails" | "studentCodes",
+    field: "correo" | "codigoEstudiantil",
+    message: string,
+  ): Promise<boolean> => {
+    const values = getValues("members").map((member) =>
+      field === "correo"
+        ? member.correo.trim().toLowerCase()
+        : member.codigoEstudiantil.trim(),
+    );
+    const toCheck = [...new Set(values.filter((value) => value !== ""))];
+    if (toCheck.length === 0) return true;
+
+    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [bodyKey]: toCheck }),
+    });
+
+    // Un back sin la ruta nueva (404) no bloquea el registro: el envío final igual la revisa
+    if (response.status === 404 && path === "validate-student-codes") return true;
+    // El backend limita estas rutas públicas por IP (BG-02)
+    if (response.status === 429) {
+      throw new Error("Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.");
+    }
+    if (!response.ok) {
+      throw new Error(`Error ${response.status} al validar los datos de los integrantes`);
+    }
+
+    const result = (await response.json()) as Record<string, boolean>;
+    const taken = values
+      .map((value, index) => (value && result[value] ? index : -1))
+      .filter((index) => index >= 0);
+    taken.forEach((index) => {
+      setError(`members.${index}.${field}`, { type: "manual", message });
+    });
+    if (taken.length > 0) {
+      // El campo puede quedar fuera de vista dentro de la lista con scroll
+      setFocus(`members.${taken[0]}.${field}`);
+      toast.error(`${message} (integrante ${taken.map((i) => i + 1).join(", ")})`);
+    }
+    return taken.length === 0;
+  };
+
+  const handleNext = async () => {
+    // Primero las reglas del formulario (vacíos, formato, repetidos dentro del equipo)
+    const isValid = await trigger("members");
+    if (!isValid) return;
+
+    setIsValidatingEmails(true);
     try {
-      const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/validate-emails`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ emails: emailsToValidate }),
-      });
-      
-      // El backend limita esta ruta pública por IP (BG-02)
-      if (response.status === 429) {
-        throw new Error("Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.");
-      }
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: Error al validar correos`);
-      }
-      
-      const result = await response.json();
-      
-      // Check each email in the result
-      let allValid = true;
-      fields.forEach((_, index) => {
-        const email = watch(`members.${index}.correo`);
-        if (email && result[email]) {
-          setError(`members.${index}.correo`, {
-            type: 'manual',
-            message: 'Este correo ya está registrado'
-          });
-          allValid = false;
-        }
-      });
-      
-      return allValid;
+      // Luego contra la API: correos y códigos ya registrados (BG-06)
+      const emailsFree = await checkTaken(
+        "validate-emails",
+        "emails",
+        "correo",
+        "Este correo ya está registrado",
+      );
+      const codesFree = await checkTaken(
+        "validate-student-codes",
+        "studentCodes",
+        "codigoEstudiantil",
+        "Este código ya está registrado en otro equipo",
+      );
+      if (emailsFree && codesFree) next();
     } catch (error) {
-      console.error("Error validating emails:", error);
-      toast.error("Error al validar correos", {
+      console.error("Error validating members:", error);
+      toast.error("No se pudieron validar los integrantes", {
         description: error instanceof Error ? error.message : "Error desconocido",
       });
-      return false;
     } finally {
       setIsValidatingEmails(false);
     }
   };
 
-  const handleNext = async () => {
-    // First validate the form fields
-    const isValid = await trigger("members");
-    if (!isValid) return;
-    
-    // Then validate emails against API
-    const emailsValid = await validateEmails();
-    if (!emailsValid) return;
-    
-    // If everything is valid, move to next step
-    next();
-  };
-
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`;
+  // includeSubjects: cada opción muestra la materia además del número (BG-07)
+  const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options?includeSubjects=true`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);
 
@@ -182,6 +198,7 @@ export default function MembersStep() {
               <span>Integrante {idx + 1}</span>
               {fields.length > 1 && (
                 <Button
+                  type="button"
                   variant="ghost"
                   className="cursor-pointer"
                   size="icon"
@@ -201,7 +218,7 @@ export default function MembersStep() {
                   <FormItem>
                     <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Nombre(s)" />
+                      <Input {...field} placeholder="Nombre(s)" maxLength={50} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,7 +233,7 @@ export default function MembersStep() {
                   <FormItem>
                     <FormLabel>Apellido</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Apellido(s)" />
+                      <Input {...field} placeholder="Apellido(s)" maxLength={50} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -250,7 +267,7 @@ export default function MembersStep() {
                   <FormItem>
                     <FormLabel>Código estudiantil</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="12345678" />
+                      <Input {...field} placeholder="200123456" inputMode="numeric" maxLength={20} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -316,9 +333,7 @@ export default function MembersStep() {
                                     key={String(nrcOption.code)}
                                     value={String(nrcOption.code)}
                                   >
-                                    {nrcOption.name
-                                      ? `${nrcOption.code} - ${nrcOption.name}`
-                                      : String(nrcOption.code)}
+                                    {nrcLabel(nrcOption)}
                                   </SelectItem>
                                 ))
                               ) : !isPageLoading &&
@@ -337,7 +352,11 @@ export default function MembersStep() {
                                   key={val}
                                   className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 cursor-pointer transition"
                                 >
-                                  <span>{val}</span>
+                                  <span>
+                                    {nrcLabel(
+                                      allNrcOptionsFromState.find((o) => String(o.code) === val) ?? { code: val },
+                                    )}
+                                  </span>
                                   <Button
                                     type="button"
                                     variant="ghost"
