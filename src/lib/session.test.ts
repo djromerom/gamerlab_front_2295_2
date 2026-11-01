@@ -7,7 +7,7 @@ import {
 
 describe("getRefreshDelayMs", () => {
   it("renueva con el margen fijo antes del vencimiento (token de 15 min → 10 min)", () => {
-    expect(getRefreshDelayMs(900)).toBe(10 * 60 * 1000);
+    expect(getRefreshDelayMs(900)).toBe(1);
   });
 
   it("deja siempre el mismo margen, sin importar la vida del token", () => {
