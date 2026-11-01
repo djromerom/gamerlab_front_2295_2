@@ -3,7 +3,8 @@ export type Role =
   | "Administrador"
   | "Jurado"
   | "Estudiante"
-  | "Consultor";
+  | "Consultor"
+  | "Staff";
 
 export interface LoginCredentials {
   email: string;

@@ -16,7 +16,9 @@ import {
   Trophy,
   CalendarRange,
   IdCard,
-  House
+  House,
+  QrCode,
+  UserPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -59,6 +61,8 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Jurados", url: "/jurados", icon: Users },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
         { name: "Escarapelas", url: "/escarapelas", icon: IdCard },
+        { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },
+        { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },
@@ -138,6 +142,14 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/mi-equipo",
           icon: LibraryBig,
         },
+      ],
+    },
+  ],
+  Staff: [
+    {
+      title: "Mesa de escarapelas",
+      items: [
+        { name: "Registrar llegada", url: "/check-in-jurados", icon: QrCode },
       ],
     },
   ],
