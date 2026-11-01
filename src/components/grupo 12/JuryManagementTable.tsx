@@ -16,21 +16,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { JurorRowData, Props, JurorFormData } from "./utils"; // Adjust path if needed
+import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_CATEGORY, DEFAULT_JUROR_TYPE, getApiErrorMessage } from "./utils"; // Adjust path if needed
 import { juryManagement } from "@/hooks/juryManagement";
+import { getJurorCategoryLabel, getJurorTypeLabel } from "@/types/jurados";
+import { JurorCategoryTypeFields } from "./JurorCategoryTypeFields";
 
 export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
   // 
   // <-- Recibe isLoading
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newJuror, setNewJuror] = useState<JurorFormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    jurorCategory: "JUNIOR",
-    jurorType: "OFFICIAL",
-  });
+  const [newJuror, setNewJuror] = useState<JurorFormData>(EMPTY_JUROR_FORM);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingJuror, setEditingJuror] = useState<JurorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -152,10 +148,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     (async () => {
       setSearchLoading(true);
       try {
-        const resp = await juryManagement.getJuries(1, 99999);
+        const data = await juryManagement.getAllJuries();
         if (cancelled) return;
-        // `getJuries` may return either an array or a paginated response with `.data`
-        const data: any = Array.isArray(resp) ? resp : resp?.data ?? [];
         setAllJurors(data);
       } catch (err: any) {
         console.error("Failed to fetch all jurors for search:", err);
@@ -185,6 +179,16 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       key: "email",
       label: "Email",
       renderCell: (juror: JurorRowData) => juror.email,
+    },
+    {
+      key: "jurorCategory",
+      label: "Categoría",
+      renderCell: (juror: JurorRowData) => getJurorCategoryLabel(juror.jurorCategory),
+    },
+    {
+      key: "jurorType",
+      label: "Tipo",
+      renderCell: (juror: JurorRowData) => getJurorTypeLabel(juror.jurorType),
     },
     {
       key: "confirmationStatusId",
@@ -492,19 +496,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       });
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Error al crear el jurado." }));
-        throw new Error(errorData.message || "Error al crear el jurado.");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(getApiErrorMessage(errorData, "Error al crear el jurado."));
       }
 
-      setNewJuror({
-        firstName: "",
-        lastName: "",
-        email: "",
-        jurorCategory: "JUNIOR",
-        jurorType: "OFFICIAL",
-      });
+      setNewJuror(EMPTY_JUROR_FORM);
       setAddDialogOpen(false);
       toast.success("Jurado agregado exitosamente.");
       onPageChange(1); // Go to first page to see the new juror
@@ -538,15 +534,15 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           body: JSON.stringify({
             firstName: editingJuror.firstName,
             lastName: editingJuror.lastName,
+            jurorCategory: editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY,
+            jurorType: editingJuror.jurorType ?? DEFAULT_JUROR_TYPE,
           }),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Error al actualizar el jurado." }));
-        throw new Error(errorData.message || "Error al actualizar el jurado.");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(getApiErrorMessage(errorData, "Error al actualizar el jurado."));
       }
 
       setEditDialogOpen(false);
@@ -709,6 +705,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         variant="outline"
                         className="flex justify-center cursor-pointer"
                         disabled={showLoader}
+                        aria-label="Agregar nuevo jurado"
                       >
                         <Plus className="h-4 w-4" />
                         <UserIcon className="h-4 w-4" />
@@ -782,44 +779,18 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         disabled={internalIsLoading}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="add-jurorCategory">Categoría</Label>
-                        <select
-                          id="add-jurorCategory"
-                          value={newJuror.jurorCategory}
-                          onChange={(event) =>
-                            setNewJuror((prev) => ({
-                              ...prev,
-                              jurorCategory: event.target.value as JurorFormData["jurorCategory"],
-                            }))
-                          }
-                          className="h-9 rounded-md border bg-background px-3 text-sm"
-                          disabled={internalIsLoading}
-                        >
-                          <option value="JUNIOR">Junior</option>
-                          <option value="SENIOR">Senior</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="add-jurorType">Tipo de jurado</Label>
-                        <select
-                          id="add-jurorType"
-                          value={newJuror.jurorType}
-                          onChange={(event) =>
-                            setNewJuror((prev) => ({
-                              ...prev,
-                              jurorType: event.target.value as JurorFormData["jurorType"],
-                            }))
-                          }
-                          className="h-9 rounded-md border bg-background px-3 text-sm"
-                          disabled={internalIsLoading}
-                        >
-                          <option value="OFFICIAL">Oficial</option>
-                          <option value="BACKUP">Remanente</option>
-                        </select>
-                      </div>
-                    </div>
+                    <JurorCategoryTypeFields
+                      idPrefix="add"
+                      jurorCategory={newJuror.jurorCategory}
+                      jurorType={newJuror.jurorType}
+                      onCategoryChange={(jurorCategory) =>
+                        setNewJuror((prev) => ({ ...prev, jurorCategory }))
+                      }
+                      onTypeChange={(jurorType) =>
+                        setNewJuror((prev) => ({ ...prev, jurorType }))
+                      }
+                      disabled={internalIsLoading}
+                    />
                   </div>
                   <DialogFooter>
                     <Button
@@ -828,13 +799,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                       variant="outline"
                       onClick={() => {
                         setAddDialogOpen(false);
-                        setNewJuror({
-                          firstName: "",
-                          lastName: "",
-                          email: "",
-                          jurorCategory: "JUNIOR",
-                          jurorType: "OFFICIAL",
-                        });
+                        setNewJuror(EMPTY_JUROR_FORM);
                       }}
                       disabled={internalIsLoading}
                     >
@@ -1085,6 +1050,18 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                     readOnly
                   />
                 </div>
+                <JurorCategoryTypeFields
+                  idPrefix="edit"
+                  jurorCategory={editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY}
+                  jurorType={editingJuror.jurorType ?? DEFAULT_JUROR_TYPE}
+                  onCategoryChange={(jurorCategory) =>
+                    setEditingJuror((prev) => (prev ? { ...prev, jurorCategory } : null))
+                  }
+                  onTypeChange={(jurorType) =>
+                    setEditingJuror((prev) => (prev ? { ...prev, jurorType } : null))
+                  }
+                  disabled={internalIsLoading}
+                />
               </div>
               <DialogFooter>
                 <Button
