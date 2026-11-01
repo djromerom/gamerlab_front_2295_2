@@ -97,7 +97,7 @@ export default function MembersStep() {
 
     setIsValidatingEmails(true);
     try {
-      // Luego contra la API: correos y códigos ya registrados (BG-06)
+      // Luego contra la API: correos y códigos ya registrados
       const emailsFree = await checkTaken(
         "validate-emails",
         "emails",
@@ -122,7 +122,7 @@ export default function MembersStep() {
   };
 
   const [isPageLoading, setIsPageLoading] = useState(true);
-  // includeSubjects: cada opción muestra la materia además del número (BG-07)
+  // includeSubjects: cada opción muestra la materia además del número
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options?includeSubjects=true`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);

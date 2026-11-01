@@ -28,7 +28,7 @@ export const MemberSchema = z.object({
     .min(1, { message: "Debe seleccionar al menos un NRC" }),
 });
 
-/** BG-06: dos integrantes no pueden compartir correo ni código estudiantil. */
+/** Dos integrantes no pueden compartir correo ni código estudiantil. */
 export const MembersSchema = z
   .array(MemberSchema)
   .min(1, { message: "El equipo debe tener al menos un integrante" })

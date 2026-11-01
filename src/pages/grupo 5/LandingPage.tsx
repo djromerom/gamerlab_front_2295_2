@@ -24,7 +24,7 @@ function Landing(): React.ReactElement {
   // To restore registrations, also uncomment route in RoutesConfiguration.tsx
   const showRegisterButton = false;
 
-  // BG-07: con las inscripciones abiertas (ajuste del admin) el inicio lleva al formulario
+  // Con las inscripciones abiertas (ajuste del admin) el inicio lleva al formulario
   const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false)
   useEffect(() => {
     let active = true

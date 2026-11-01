@@ -21,7 +21,7 @@ export const MultiFormProvider = ({
   initialStep = 0,
 }: {
   children: ReactNode;
-  /** Paso con el que arranca (el registro lo restaura del borrador, BG-07). */
+  /** Paso con el que arranca (el registro lo restaura del borrador). */
   initialStep?: number;
 }) => {
   const [step, setStep] = useState(() => Math.min(Math.max(initialStep, 0), 3));

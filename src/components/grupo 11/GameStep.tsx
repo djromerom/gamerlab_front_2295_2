@@ -128,7 +128,7 @@ export default function GameStep() {
     
     if (hasErrors) return;
 
-    // BG-06: el nombre repetido se avisa aquí y no recién al enviar en el paso 4
+    // El nombre repetido se avisa aquí y no recién al enviar en el paso 4
     setCheckingName(true);
     try {
       const res = await apiFetch(

@@ -27,7 +27,7 @@ const form = (overrides: Partial<CombinedFormValues> = {}): CombinedFormValues =
   ...overrides,
 });
 
-describe("registro de equipos: envío (BG-05)", () => {
+describe("registro de equipos: envío", () => {
   it("sin logo no envía logoUrl", () => {
     const payload = buildRegistrationPayload(form(), { additionalImages: [] });
     expect(payload.videogame).not.toHaveProperty("logoUrl");
@@ -57,7 +57,7 @@ describe("registro de equipos: envío (BG-05)", () => {
   });
 });
 
-describe("registro de equipos: mensajes y rutas (BG-06)", () => {
+describe("registro de equipos: mensajes y rutas", () => {
   it("codifica y recorta el nombre en la revisión", () => {
     expect(nameCheckUrl("http://api", "name", "  Equipo/Barra #1 ")).toBe(
       "http://api/teams/name/Equipo%2FBarra%20%231",
@@ -77,13 +77,13 @@ describe("registro de equipos: mensajes y rutas (BG-06)", () => {
     expect(cleanApiMessage("El correo a@b.co ya está en uso.")).toBe("El correo a@b.co ya está en uso.");
   });
 
-  it("muestra la materia en cada NRC (BG-07)", () => {
+  it("muestra la materia en cada NRC", () => {
     expect(nrcLabel({ code: 3501, subject: { name: "Programación I" } })).toBe("3501 · Programación I");
     expect(nrcLabel({ code: 3501 })).toBe("3501");
   });
 });
 
-describe("registro de equipos: esquema (BG-06)", () => {
+describe("registro de equipos: esquema", () => {
   const errorsOf = (values: CombinedFormValues) => {
     const result = CombinedSchema.safeParse(values);
     return result.success ? [] : result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
@@ -129,7 +129,7 @@ describe("registro de equipos: esquema (BG-06)", () => {
   });
 });
 
-describe("registro de equipos: borrador (BG-07)", () => {
+describe("registro de equipos: borrador", () => {
   beforeEach(() => sessionStorage.clear());
 
   it("guarda y restaura el texto, sin archivos ni captcha", () => {

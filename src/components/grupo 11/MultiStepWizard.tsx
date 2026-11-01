@@ -29,7 +29,7 @@ const EMPTY_MEMBER = {
   nrc: [] as string[],
 };
 
-/** Guarda en sessionStorage lo escrito y el paso actual (BG-07: recargar borraba todo). */
+/** Guarda en sessionStorage lo escrito y el paso actual (recargar borraba todo). */
 function DraftSaver({ disabledRef }: { disabledRef: MutableRefObject<boolean> }) {
   const { step } = useMultiForm();
   const { watch, getValues } = useFormContext<CombinedFormValues>();
@@ -55,7 +55,7 @@ export default function MultiStepWizard() {
   const customFetch = useFetch();
   const navigate = useNavigate();
   const [draft] = useState(() => loadRegistrationDraft());
-  // Archivo → URL ya subida: si el envío falla, el reintento no vuelve a subirlo (BG-06)
+  // Archivo → URL ya subida: si el envío falla, el reintento no vuelve a subirlo
   const uploadedUrls = useRef(new Map<File, string>());
   const submitted = useRef(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
@@ -130,7 +130,7 @@ export default function MultiStepWizard() {
         submitted.current = true;
         clearRegistrationDraft();
         toast.dismiss();
-        // BG-07: el alumno ve en qué estado queda la inscripción (antes un toast se perdía al navegar)
+        // El alumno ve en qué estado queda la inscripción (antes un toast se perdía al navegar)
         setRegisteredEmail(payload.members[0]?.memberEmail ?? "");
         return;
       }

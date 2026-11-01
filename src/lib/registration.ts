@@ -1,11 +1,11 @@
 import type { CombinedFormValues } from "@/lib/schemas";
 
 /**
- * Utilidades del registro de equipos (chore registro-equipos-validaciones: BG-05, BG-06 y BG-07
- * del beta-test del 1 de noviembre).
+ * Utilidades del registro de equipos (chore registro-equipos-validaciones, a partir del beta-test
+ * del 1 de noviembre).
  */
 
-/** Ruta pública de revisión de un nombre, codificado y sin espacios en los extremos (BG-06). */
+/** Ruta pública de revisión de un nombre, codificado y sin espacios en los extremos. */
 export function nameCheckUrl(base: string, kind: "name" | "videogame", value: string): string {
   return `${base}/teams/${kind}/${encodeURIComponent(value.trim())}`;
 }
@@ -30,7 +30,7 @@ export function cleanApiMessage(message: unknown): string {
 
 type RegistrationPayloadFiles = { logoUrl?: string; additionalImages: string[] };
 
-/** Cuerpo de POST /teams. Sin logo no se envía `logoUrl` (BG-05: `""` respondía 400). */
+/** Cuerpo de POST /teams. Sin logo no se envía `logoUrl` (`""` respondía 400). */
 export function buildRegistrationPayload(
   data: CombinedFormValues,
   files: RegistrationPayloadFiles,
@@ -58,7 +58,7 @@ export function buildRegistrationPayload(
   };
 }
 
-/** Opción del selector de NRC: "3501 · Programación I"; sin materia, solo el número (BG-07). */
+/** Opción del selector de NRC: "3501 · Programación I"; sin materia, solo el número. */
 export function nrcLabel(option: {
   code: number | string;
   name?: string;
@@ -68,7 +68,7 @@ export function nrcLabel(option: {
   return subject ? `${option.code} · ${subject}` : String(option.code);
 }
 
-/* ---------- Borrador en sessionStorage (BG-07: recargar borraba todo) ---------- */
+/* ---------- Borrador en sessionStorage (recargar borraba todo) ---------- */
 
 export const REGISTRATION_DRAFT_KEY = "arkad:registro-equipo:borrador";
 
