@@ -21,6 +21,8 @@ import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
+import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
+import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -61,7 +63,8 @@ type Role =
   | "Administrador"
   | "Jurado"
   | "Consultor"
-  | "Estudiante";
+  | "Estudiante"
+  | "Staff";
 
 interface RouteConfig {
   path: string;
@@ -141,7 +144,7 @@ export const routes: RouteConfig[] = [
   {
     path: "/inicio",
     element: <HomePage />,
-    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado"],
+    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado", "Staff"],
   },
   {
     path: "/estadisticas",
@@ -161,6 +164,16 @@ export const routes: RouteConfig[] = [
   {
     path: "/escarapelas",
     element: <JurorBadgesPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/check-in-jurados",
+    element: <JurorCheckInPage />,
+    roles: ["Staff", "Administrador"],
+  },
+  {
+    path: "/cuentas-staff",
+    element: <StaffAccountsPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },

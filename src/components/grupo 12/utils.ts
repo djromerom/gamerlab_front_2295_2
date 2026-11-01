@@ -1,6 +1,6 @@
 import type { JurorCategory, JurorType } from "@/types/jurados";
 
-export const mapConfirmationStatus =(statusId: number): string => {
+export const mapConfirmationStatus = (statusId: number): string => {
   switch (statusId) {
     case 1: return "Confirmado";
     case 2: return "Pendiente";
