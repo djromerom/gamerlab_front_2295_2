@@ -36,6 +36,8 @@ export interface JurorFormData {
   firstName: string;
   lastName: string;
   email: string;
+  jurorCategory: "JUNIOR" | "SENIOR";
+  jurorType: "OFFICIAL" | "BACKUP";
 }
 
 export interface PaginationMetadata {

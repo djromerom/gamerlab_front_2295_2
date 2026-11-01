@@ -932,8 +932,8 @@ export function JuradosAssignment() {
       firstName: "",
       lastName: "",
       email: "",
-      jurorCategory: "",
-      tipo: "",
+      jurorCategory: "JUNIOR",
+      tipo: "OFFICIAL",
     });
     setOpenJurorMenuId(null);
     setShowCreateJurorModal(true);

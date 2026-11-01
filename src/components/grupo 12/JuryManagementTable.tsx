@@ -24,7 +24,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   // <-- Recibe isLoading
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newJuror, setNewJuror] = useState<JurorFormData>({ firstName: "", lastName: "", email: "" });
+  const [newJuror, setNewJuror] = useState<JurorFormData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    jurorCategory: "JUNIOR",
+    jurorType: "OFFICIAL",
+  });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingJuror, setEditingJuror] = useState<JurorRowData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -480,6 +486,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           firstName: newJuror.firstName,
           lastName: newJuror.lastName,
           email: newJuror.email,
+          jurorCategory: newJuror.jurorCategory,
+          jurorType: newJuror.jurorType,
         }),
       });
 
@@ -490,7 +498,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         throw new Error(errorData.message || "Error al crear el jurado.");
       }
 
-      setNewJuror({ firstName: "", lastName: "", email: "" });
+      setNewJuror({
+        firstName: "",
+        lastName: "",
+        email: "",
+        jurorCategory: "JUNIOR",
+        jurorType: "OFFICIAL",
+      });
       setAddDialogOpen(false);
       toast.success("Jurado agregado exitosamente.");
       onPageChange(1); // Go to first page to see the new juror
@@ -768,6 +782,44 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                         disabled={internalIsLoading}
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="add-jurorCategory">Categoría</Label>
+                        <select
+                          id="add-jurorCategory"
+                          value={newJuror.jurorCategory}
+                          onChange={(event) =>
+                            setNewJuror((prev) => ({
+                              ...prev,
+                              jurorCategory: event.target.value as JurorFormData["jurorCategory"],
+                            }))
+                          }
+                          className="h-9 rounded-md border bg-background px-3 text-sm"
+                          disabled={internalIsLoading}
+                        >
+                          <option value="JUNIOR">Junior</option>
+                          <option value="SENIOR">Senior</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="add-jurorType">Tipo de jurado</Label>
+                        <select
+                          id="add-jurorType"
+                          value={newJuror.jurorType}
+                          onChange={(event) =>
+                            setNewJuror((prev) => ({
+                              ...prev,
+                              jurorType: event.target.value as JurorFormData["jurorType"],
+                            }))
+                          }
+                          className="h-9 rounded-md border bg-background px-3 text-sm"
+                          disabled={internalIsLoading}
+                        >
+                          <option value="OFFICIAL">Oficial</option>
+                          <option value="BACKUP">Remanente</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button
@@ -776,7 +828,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                       variant="outline"
                       onClick={() => {
                         setAddDialogOpen(false);
-                        setNewJuror({ firstName: "", lastName: "", email: "" });
+                        setNewJuror({
+                          firstName: "",
+                          lastName: "",
+                          email: "",
+                          jurorCategory: "JUNIOR",
+                          jurorType: "OFFICIAL",
+                        });
                       }}
                       disabled={internalIsLoading}
                     >
