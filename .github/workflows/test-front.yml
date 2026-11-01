@@ -30,5 +30,7 @@ jobs:
         run: npx eslint .
         continue-on-error: true
 
+      # Bloqueante: sin continue-on-error, una prueba en rojo deja el PR en rojo.
+      # --reporter=verbose lista cada prueba en el log para revisar que corrieron (no "0 tests").
       - name: Run tests
-        run: npm test
+        run: npm run test:ci

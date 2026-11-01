@@ -52,3 +52,54 @@ export default tseslint.config({
   },
 })
 ```
+
+## Testing
+
+Las pruebas usan **Vitest** con **Testing Library** sobre `jsdom`. Cada archivo `*.test.ts(x)` vive junto al código que prueba, dentro de `src/`.
+
+No necesitan `.env` ni el backend levantado: `vite.config.ts` fija `VITE_ENDPOINT_BACKEND=http://api.test` para las pruebas, y las llamadas a la API (`fetch`, `apiFetch`, `useFetch`) se mockean en cada prueba. Una prueba nueva nunca debe llamar a la API real, a Supabase ni a otro servicio externo.
+
+```bash
+# Todas las pruebas
+npm test
+
+# Modo watch mientras desarrollas
+npm run test:watch
+
+# Un solo archivo o una carpeta
+npx vitest run src/lib/session.test.ts
+npx vitest run src/hooks
+
+# Las pruebas cuyo nombre contenga un texto
+npx vitest run -t "renueva"
+
+# El mismo comando que corre CI (lista cada prueba)
+npm run test:ci
+```
+
+### Un ejemplo por módulo
+
+| Módulo | Ejemplo |
+|---|---|
+| `components/` | `src/components/CircularProgress.test.tsx` |
+| `contexts/` | `src/contexts/AuthContext.test.tsx` |
+| `data/` | `src/data/contributorsData.test.ts` |
+| `fetchs/` | `src/fetchs/evaluationProgress.test.ts` |
+| `hooks/` | `src/hooks/useTeacherDashboard.test.tsx` |
+| `layouts/` | `src/layouts/LayoutAplication.test.tsx` |
+| `lib/` | `src/lib/api.test.ts` |
+| `pages/` | `src/pages/grupo 9/LoginPage.test.tsx` |
+| `routes/` | `src/routes/RoutesConfiguration.test.tsx` |
+
+`types/` solo tiene tipos y `assets/` y `styles/` no tienen código, así que no llevan pruebas.
+
+### Integración continua
+
+El workflow `.github/workflows/test-front.yml` (job `test-build`) corre en cada PR a `dev-deploy` y `main`:
+
+1. `npm ci`
+2. `npm run build`: chequeo de tipos (`tsc -b`) y build de Vite. Bloquea.
+3. `npx eslint .`: todavía no bloquea por la deuda de lint actual.
+4. `npm run test:ci`: bloquea. Si una prueba falla, el PR queda en rojo.
+
+Antes de aprobar un PR, revisa en el log del paso *Run tests* que las pruebas salgan en verde y que el total no sea 0.
