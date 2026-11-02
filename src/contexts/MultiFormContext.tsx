@@ -16,8 +16,15 @@ export const useMultiForm = () => {
   return ctx;
 };
 
-export const MultiFormProvider = ({ children }: { children: ReactNode }) => {
-  const [step, setStep] = useState(0);
+export const MultiFormProvider = ({
+  children,
+  initialStep = 0,
+}: {
+  children: ReactNode;
+  /** Paso con el que arranca (el registro lo restaura del borrador). */
+  initialStep?: number;
+}) => {
+  const [step, setStep] = useState(() => Math.min(Math.max(initialStep, 0), 3));
   const next = () => setStep((s) => Math.min(s + 1, 3));
   const back = () => setStep((s) => Math.max(s - 1, 0));
   const reset = () => setStep(0);

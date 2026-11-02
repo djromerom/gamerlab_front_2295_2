@@ -1,39 +1,74 @@
+import { apiFetch } from "@/lib/api";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Form } from "@/components/ui/form";
-import { MultiFormProvider } from "@/contexts/MultiFormContext";
+import { MultiFormProvider, useMultiForm } from "@/contexts/MultiFormContext";
 import StepRenderer from "./StepRenderer";
 import { CombinedFormValues, CombinedSchema } from "@/lib/schemas";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type MutableRefObject } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 import { uploadImage, getImageUrl } from "@/components/grupo 11/azureFile";
+import {
+  buildRegistrationPayload,
+  cleanApiMessage,
+  clearRegistrationDraft,
+  loadRegistrationDraft,
+  nameCheckUrl,
+  saveRegistrationDraft,
+} from "@/lib/registration";
+
+const EMPTY_MEMBER = {
+  nombre: "",
+  apellido: "",
+  correo: "",
+  codigoEstudiantil: "",
+  nrc: [] as string[],
+};
+
+/** Guarda en sessionStorage lo escrito y el paso actual (recargar borraba todo). */
+function DraftSaver({ disabledRef }: { disabledRef: MutableRefObject<boolean> }) {
+  const { step } = useMultiForm();
+  const { watch, getValues } = useFormContext<CombinedFormValues>();
+  const stepRef = useRef(step);
+
+  useEffect(() => {
+    stepRef.current = step;
+    if (!disabledRef.current) saveRegistrationDraft(step, getValues());
+  }, [step, getValues, disabledRef]);
+
+  useEffect(() => {
+    const subscription = watch(() => {
+      if (!disabledRef.current) saveRegistrationDraft(stepRef.current, getValues());
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, getValues, disabledRef]);
+
+  return null;
+}
 
 export default function MultiStepWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const customFetch = useFetch();
   const navigate = useNavigate();
+  const [draft] = useState(() => loadRegistrationDraft());
+  // Archivo → URL ya subida: si el envío falla, el reintento no vuelve a subirlo
+  const uploadedUrls = useRef(new Map<File, string>());
+  const submitted = useRef(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
     defaultValues: {
-      teamName: "",
-      members: [
-        {
-          nombre: "",
-          apellido: "",
-          correo: "",
-          codigoEstudiantil: "",
-          nrc: [],
-        },
-      ],
-      gameName: "",
-      YoutubeUrl: "",
-      RepoUrl: "",
-      description: "",
+      teamName: draft?.values.teamName ?? "",
+      members: draft?.values.members.length ? draft.values.members : [{ ...EMPTY_MEMBER }],
+      gameName: draft?.values.gameName ?? "",
+      YoutubeUrl: draft?.values.YoutubeUrl ?? "",
+      RepoUrl: draft?.values.RepoUrl ?? "",
+      description: draft?.values.description ?? "",
       files: [] as File[],
       additionalFiles: [] as File[],
       recaptcha: "",
@@ -41,105 +76,45 @@ export default function MultiStepWizard() {
     },
   });
 
-  // Set default values only once on mount
-  useEffect(() => {
-    methods.reset({
-      teamName: "",
-      members: [
-        {
-          nombre: "",
-          apellido: "",
-          correo: "",
-          codigoEstudiantil: "",
-          nrc: [],
-        },
-      ],
-      gameName: "",
-      YoutubeUrl: "",
-      RepoUrl: "",
-      description: "",
-      files: [] as File[],
-      additionalFiles: [] as File[],
-      recaptcha: "",
-      dataConsent: false,
-    });
-  }, []); // Empty dependency array = runs only once on mount
+  async function uploadOnce(file: File): Promise<string> {
+    const cached = uploadedUrls.current.get(file);
+    if (cached) return cached;
+    const uploadResult = await uploadImage(file);
+    const urlResult = await getImageUrl(uploadResult.id);
+    uploadedUrls.current.set(file, urlResult.url);
+    return urlResult.url;
+  }
 
   async function onSubmit(data: CombinedFormValues) {
-
-    const res = await fetch(
-      `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/videogame/${data.gameName
-      }`
-    );
-    const exists = await res.json();
-    if (exists === true) {
-      toast.error("El nombre del videojuego ya está en uso.");
-      return;
-    }
-
     setIsLoading(true);
-    const preUploadedUrls = (data as any).uploadedFileUrls as string[] | undefined;
-    const willUploadFiles = !preUploadedUrls || preUploadedUrls.length === 0;
+    let uploadToastId: string | number | undefined;
 
-    const totalFiles = (data.files?.length || 0) + (data.additionalFiles?.length || 0);
-    const uploadToastId = willUploadFiles && totalFiles > 0
-      ? toast.loading("Subiendo archivos...")
-      : undefined;
-
-    //TODO - GAMEEMBED: workflow: upload gamefiles to azure and THEN talk to backend. awful
     try {
-      const uploadedFileUrls: string[] = [];
-      const uploadedAdditionalFileUrls: string[] = [];
-
-      // If the step already uploaded files and stored their URLs in the form
-      // (e.g. MembersStep executed uploads), prefer those and skip uploading again.
-      if (preUploadedUrls && preUploadedUrls.length > 0) {
-        uploadedFileUrls.push(...preUploadedUrls);
-      } else {
-        // Upload logo files (files)
-        if (data.files && data.files.length > 0) {
-          for (const file of data.files) {
-            const uploadResult = await uploadImage(file);
-            const urlResult = await getImageUrl(uploadResult.id);
-            uploadedFileUrls.push(urlResult.url);
-          }
-        }
-
-        if (data.additionalFiles && data.additionalFiles.length > 0) {
-          for (let i = 0; i < data.additionalFiles.length; i++) {
-            const file = data.additionalFiles[i];
-            const uploadResult = await uploadImage(file);
-            const urlResult = await getImageUrl(uploadResult.id);
-            uploadedAdditionalFileUrls.push(urlResult.url);
-          }
-        }
-
-        if (uploadToastId) {
-          toast.success("Archivos subidos correctamente", {
-            id: uploadToastId,
-          });
-        }
+      // Última revisión antes de subir nada (el paso 3 ya la hizo, pero otro equipo pudo tomarlo)
+      const res = await apiFetch(
+        nameCheckUrl(import.meta.env.VITE_ENDPOINT_BACKEND, "videogame", data.gameName)
+      );
+      if (res.ok && (await res.json()) === true) {
+        throw new Error("El nombre del videojuego ya está en uso. Vuelve al paso 3 y cámbialo.");
       }
 
-      const payload = {
-        teamName: data.teamName,
-        members: data.members.map((m) => ({
-          memberFirstName: m.nombre,
-          memberLastName: m.apellido,
-          memberEmail: m.correo,
-          studentCode: m.codigoEstudiantil,
-          nrc: m.nrc,
-        })),
-        videogame: {
-          vgName: data.gameName,
-          description: data.description,
-          logoUrl: uploadedFileUrls[0] || "",
-          videoUrl: data.YoutubeUrl && data.YoutubeUrl.trim() !== "" ? data.YoutubeUrl.trim() : "",
-          repoUrl: data.RepoUrl && data.RepoUrl.trim() !== "" ? data.RepoUrl.trim() : "",
-          additionalImages: uploadedAdditionalFileUrls,
-        },
-        recaptchaToken: data.recaptcha,
-      };
+      const files = [...(data.files ?? []), ...(data.additionalFiles ?? [])];
+      const pending = files.filter((file) => !uploadedUrls.current.has(file));
+      if (pending.length > 0) uploadToastId = toast.loading("Subiendo archivos...");
+
+      const logoFile = data.files?.[0];
+      const logoUrl = logoFile ? await uploadOnce(logoFile) : undefined;
+      const additionalImages: string[] = [];
+      for (const file of data.additionalFiles ?? []) {
+        additionalImages.push(await uploadOnce(file));
+      }
+
+      if (uploadToastId !== undefined) {
+        toast.success("Archivos subidos correctamente", { id: uploadToastId });
+        uploadToastId = undefined;
+      }
+
+      const payload = buildRegistrationPayload(data, { logoUrl, additionalImages });
 
       const response = await customFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/teams`,
@@ -152,46 +127,61 @@ export default function MultiStepWizard() {
       );
 
       if (response.status === 201) {
-        toast.success("Equipo registrado correctamente");
-        navigate("/equipos");
-      } else {
-        const errorData = await response.json();
-        let errorMessage = "Error en el registro";
-
-        if (errorData && errorData.message) {
-          // Manejar diferentes mensajes de error
-          if (typeof errorData.message === 'string') {
-            errorMessage = errorData.message;
-          } else if (Array.isArray(errorData.message)) {
-            errorMessage = errorData.message.join(', ');
-          } else if (typeof errorData.message === 'object') {
-            errorMessage = Object.values(errorData.message).join(', ');
-          }
-        }
-
-        throw new Error(errorMessage || `Error ${response.status}`);
+        submitted.current = true;
+        clearRegistrationDraft();
+        toast.dismiss();
+        // El alumno ve en qué estado queda la inscripción (antes un toast se perdía al navegar)
+        setRegisteredEmail(payload.members[0]?.memberEmail ?? "");
+        return;
       }
+
+      const errorData = await response.json().catch(() => null);
+      throw new Error(cleanApiMessage(errorData?.message) || `Error ${response.status}`);
     } catch (e) {
-      if (uploadToastId) toast.dismiss(uploadToastId);
-      let description = "Error inesperado";
-      if (e instanceof Error && e.message.includes("413")) {
-        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
-      } else {
-        description = e instanceof Error ? e.message : String(e);
+      if (uploadToastId !== undefined) toast.dismiss(uploadToastId);
+      let description = e instanceof Error ? e.message : String(e);
+      if (description.includes("413")) {
+        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1 MB.";
       }
+      // El token del captcha ya se usó: hay que marcarlo otra vez antes de reintentar
+      methods.setValue("recaptcha", "");
       toast.error("Error en el registro", {
-        description: description,
-        duration: 5000,
+        description: `${description} Corrige el dato, marca de nuevo el captcha y vuelve a enviar.`,
+        duration: 8000,
       });
     } finally {
       setIsLoading(false);
     }
   }
 
+  if (registeredEmail !== null) {
+    return (
+      <div className="space-y-4 py-6 text-center text-white" role="status">
+        <h2 className="text-2xl font-bold">¡Equipo registrado!</h2>
+        <p>
+          Enviamos un correo a <strong>{registeredEmail || "el líder del equipo"}</strong> para
+          confirmar la cuenta y crear la contraseña.
+        </p>
+        <p>
+          La inscripción queda <strong>en revisión</strong> hasta que el administrador apruebe el
+          videojuego. Mientras tanto, el equipo aparece como pendiente en la galería.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate("/equipos")}
+          className="mt-2 rounded-lg bg-white px-4 py-2 font-medium text-[#060312] hover:bg-gray-100 cursor-pointer"
+        >
+          Ver videojuegos
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <MultiFormProvider>
+    <MultiFormProvider initialStep={draft?.step ?? 0}>
       <FormProvider {...methods}>
         <Form {...methods}>
+          <DraftSaver disabledRef={submitted} />
           {isLoading ? (
             <div className="text-center py-20 text-xl text-white animate-pulse">
               Procesando registro...

@@ -1,847 +1,278 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Edit,
-  FileSpreadsheet,
-  Loader2,
-  Save,
-  Upload,
-  X,
-} from "lucide-react";
-import { useState } from "react";
-// Tabs removed: single flow Subject -> NRC
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Edit, FileSpreadsheet, Loader2, Save, X } from "lucide-react";
+import { useTeacherDashboard } from "@/hooks/useTeacherDashboard";
+import { useFetch } from "@/hooks/useFetch";
+import StudentGradeFilters from "./StudentGradeFilters";
+import StudentGradeTableView from "./StudentGradeTableView";
+import { gradeKey, type GradeTeam } from "./student-grade-table-types";
 
-interface Props {
-  initialNRC?: string;
-}
-
-interface PaginationMetadata {
-  totalItems: number;
-  itemsOnCurrentPage: number;
-  currentPage: number;
-  itemsPerPage: number;
-  totalPages: number;
-}
-
-export default function StudentGradeTable({ initialNRC }: Props) {
-  const defaultNRC = initialNRC || "-";
-  // 1. Estados exclusivos de la Interfaz de Usuario (UI)
+export default function StudentGradeTable() {
+  const customFetch = useFetch();
   const [downloading, setDownloading] = useState(false);
-  const [uploadingGrades, setUploadingGrades] = useState(false);
-  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
-  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
-  const [editedGrade, setEditedGrade] = useState<string>("");
+  const [isEditingGrades, setIsEditingGrades] = useState(false);
+  const [editedGrades, setEditedGrades] = useState<Record<string, string>>({});
+  const [editedTeams, setEditedTeams] = useState<Record<string, GradeTeam>>({});
+  const [gradeResults, setGradeResults] = useState<Record<string, { ok: boolean; message: string }>>({});
   const [savingGrade, setSavingGrade] = useState(false);
-
-  // 2. Nuestro asistente personal (el Hook) trayendo la data:
+  const gradeInputRefs = useRef(new Map<string, HTMLInputElement>());
+  const [filterSearch, setFilterSearch] = useState("");
+  const [showHistorical, setShowHistorical] = useState(false);
+  const [sortBy, setSortBy] = useState<"student" | "team">("team");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const dashboard = useTeacherDashboard({ search: filterSearch, includeHistorical: showHistorical, sortBy, sortOrder });
   const {
-    selectedNRC,
-    setSelectedNRC,
-    selectedSubject,
-    setSelectedSubject,
-    currentPage,
-    setCurrentPage,
-    paginationMetadata,
-    availableNRCs,
-    availableSubjects,
-    isLoading,
-    initialLoading,
-    error,
-    setError,
-    noStudents,
-    teams,
-    handlePreviousPage,
-    handleNextPage,
-    fetchStudentsByNRC,
-    fetchStudentsBySubject,
-    setFetchedStudentsByNRC,
-    setFetchedStudentsBySubject,
-  } = useTeacherDashboard({ initialNRC });
+    selectedNRC, setSelectedNRC, selectedFair, setSelectedFair, selectedEdition,
+    availableFairs, currentPage, setCurrentPage, paginationMetadata, availableNRCs, isLoading,
+    initialLoading, error, noStudents, teams, handlePreviousPage,
+    handleNextPage, reloadProjects, retryLoad,
+  } = dashboard;
 
-  // Show error state
-  if (error) {
-    return (
-      <div className="p-4 rounded-md border">
-        <h3 className="text-lg font-semibold">Error al cargar datos</h3>
-        <p>{error}</p>
-        <Button
-          variant="outline"
-          className="mt-2 cursor-pointer"
-          onClick={() => {
-            setError(null);
-            // Clear cache to force refresh
-            const cacheKey = selectedNRC
-              ? `${selectedNRC}-${currentPage}`
-              : `${selectedSubject}-${currentPage}`;
+  const filteredTeams = useMemo(() => [...teams].sort((a, b) => {
+    const key = (team: GradeTeam) => sortBy === "team"
+      ? team.teamName
+      : (Array.isArray(team.integrantes) ? team.integrantes[0] : team.integrantes) || "";
+    const comparison = key(a).toLocaleLowerCase("es").localeCompare(key(b).toLocaleLowerCase("es"), "es");
+    return sortOrder === "asc" ? comparison : -comparison;
+  }), [teams, sortBy, sortOrder]);
 
-            if (selectedNRC) {
-              setFetchedStudentsByNRC((prev) => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsByNRC(selectedNRC, currentPage);
-            } else {
-              setFetchedStudentsBySubject((prev) => {
-                const newCache = { ...prev };
-                delete newCache[cacheKey];
-                return newCache;
-              });
-              fetchStudentsBySubject(selectedSubject, currentPage);
-            }
-            toast.info("Intentando cargar los datos nuevamente...");
-          }}
-        >
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
+  const editableTeams = useMemo(() => {
+    const byKey = new Map<string, GradeTeam>(Object.entries(editedTeams));
+    teams.filter((team: GradeTeam) => team.canEdit).forEach((team) => {
+      const key = gradeKey(team);
+      if (!byKey.has(key)) byKey.set(key, team);
+    });
+    return [...byKey.values()];
+  }, [teams, editedTeams]);
 
-  const getGradeStatus = (_grade: number) => {
-    return "";
-  };
+  const hasUnsavedChanges = useMemo(() => editableTeams.some((team: GradeTeam) => {
+    if (!team.canEdit) return false;
+    const value = (editedGrades[gradeKey(team)] ?? "").trim();
+    const original = team.calificacionDocente;
+    if (value === "") return original != null;
+    const numericValue = Number(value);
+    return !Number.isFinite(numericValue) || original == null || numericValue !== original;
+  }), [editableTeams, editedGrades]);
 
-  // Export to Excel function
-  const exportToExcel = () => {
-    setDownloading(true);
-
-    // Exportar de forma GLOBAL: ignorar filtros de Materia/NRC
-    toast(`Preparando exportación global (todos los NRCs)...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all?final=true`;
-
-    fetch(endpoint, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error("Error al exportar a Excel");
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Reporte_Calificaciones_FeriaGamer_${new Date().toISOString().slice(0, 10)}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success(`Reporte global exportado correctamente`);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al exportar: ${error.message || "No se pudo completar la exportación"}`,
-        );
-      })
-      .finally(() => {
-        setDownloading(false);
+  useEffect(() => {
+    if (!isEditingGrades) return;
+    const currentEditable = teams.filter((team: GradeTeam) => team.canEdit);
+    if (currentEditable.length === 0) return;
+    setEditedTeams((previous) => {
+      const next = { ...previous };
+      currentEditable.forEach((team) => { next[gradeKey(team)] = team; });
+      return next;
+    });
+    setEditedGrades((previous) => {
+      const next = { ...previous };
+      currentEditable.forEach((team) => {
+        const key = gradeKey(team);
+        if (!(key in next)) next[key] = team.calificacionDocente == null ? "" : String(team.calificacionDocente);
       });
-  };
+      return next;
+    });
+  }, [isEditingGrades, teams]);
 
-  // Download grading template
-  const downloadGradingTemplate = () => {
-    setDownloadingTemplate(true);
+  useEffect(() => {
+    if (!isEditingGrades || !hasUnsavedChanges) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isEditingGrades, hasUnsavedChanges]);
 
-    // Descargar plantilla GLOBAL: ignorar filtros
-    toast(`Preparando plantilla de calificaciones global...`);
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-template-all`;
-
-    fetch(endpoint, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          throw new Error("Error al descargar plantilla");
-        }
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Plantilla_Evaluación_Docente_FeriaGamer.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success(
-          "Plantilla descargada. Completa las notas y súbela de vuelta.",
-        );
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al descargar plantilla: ${error.message || "No se pudo completar la descarga"}`,
-        );
-      })
-      .finally(() => {
-        setDownloadingTemplate(false);
-      });
-  };
-
-  // Upload grading file
-  const uploadGradingFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-    ];
-
-    if (!validTypes.includes(file.type)) {
-      toast.error("Por favor, sube un archivo Excel válido (.xlsx o .xls)");
-      return;
-    }
-
-    setUploadingGrades(true);
-    toast("Subiendo calificaciones...");
-
-    const formData = new FormData();
-    formData.append("file", file);
-    // Nota: subida GLOBAL — no añadimos filtros (nrc/subject) al formData
-
-    const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/upload-senior-grades`;
-
-    fetch(endpoint, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    })
-      .then((response) => {
-        toast.dismiss();
-        if (!response.ok) {
-          return response.json().then((data) => {
-            throw new Error(data.message || "Error al subir calificaciones");
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        toast.success(
-          `Calificaciones guardadas exitosamente. ${data.updated || 0} registros actualizados.`,
-        );
-
-        // Clear all caches to force a global refresh (subida fue global)
-        setFetchedStudentsByNRC({});
-        setFetchedStudentsBySubject({});
-        // Re-fetch current view depending on selection
-        if (selectedNRC && selectedNRC !== "") {
-          fetchStudentsByNRC(selectedNRC, currentPage);
-        } else if (selectedSubject) {
-          fetchStudentsBySubject(selectedSubject, currentPage);
-        }
-
-        // Reset file input
-        event.target.value = "";
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error(
-          `Error al subir calificaciones: ${error.message || "No se pudo completar la carga"}`,
-        );
-      })
-      .finally(() => {
-        setUploadingGrades(false);
-      });
-  };
-
-  // Start editing a team row
-  const startEditing = (index: number, currentGrade?: number) => {
-    setEditingRowIndex(index);
-    setEditedGrade(currentGrade != null ? String(currentGrade) : "");
-  };
-
-  // Cancel editing
-  const cancelEditing = () => {
-    setEditingRowIndex(null);
-    setEditedGrade("");
-  };
-
-  // Save edited grade (now for a team)
-  const saveGrade = async (team: any) => {
-    // Asegura que gradeValue tenga solo un decimal
-    const gradeValue = parseFloat(Number(editedGrade).toFixed(1));
-
-    // Validate grade
-    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 5) {
-      toast.error("La nota debe ser un número entre 0 y 5");
-      return;
-    }
-
-    setSavingGrade(true);
-    toast("Guardando calificación...");
-
-    try {
-      // Ahora simplemente usamos el campo videogameId del equipo
-      const finalVideogameId = team.videogameId;
-      if (!finalVideogameId) {
-        toast.error("No se encontró videogameId para el equipo.");
-        setSavingGrade(false);
+  useEffect(() => {
+    if (!isEditingGrades || !hasUnsavedChanges) return;
+    const confirmInternalNavigation = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>("a[href]");
+      if (!link || link.target === "_blank" || link.hasAttribute("download") || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const destination = new URL(link.href, window.location.href);
+      if (destination.origin !== window.location.origin || destination.href === window.location.href) return;
+      if (!window.confirm("Tienes cambios sin guardar. ¿Quieres salir y descartarlos?")) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         return;
       }
-      const payload: any = {
-        videogameId: finalVideogameId,
-        score: gradeValue,
-        isSenior: true,
-      };
+      setIsEditingGrades(false);
+      setEditedGrades({});
+      setEditedTeams({});
+      setGradeResults({});
+    };
+    window.addEventListener("click", confirmInternalNavigation, true);
+    return () => window.removeEventListener("click", confirmInternalNavigation, true);
+  }, [isEditingGrades, hasUnsavedChanges]);
 
-      // Use the new inline endpoint that expects { teamId, score }.
-      const teamEvalEndpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation`;
+  const clearFilters = () => {
+    setSelectedFair("");
+    setSelectedNRC("");
+    setFilterSearch("");
+    setSortBy("team");
+    setSortOrder("asc");
+    setCurrentPage(1);
+  };
 
-      // Build headers: Content-Type required; include Authorization Bearer if cookie `access-token` exists
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
+  const exportToExcel = async () => {
+    if (teams.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
 
-      try {
-        if (typeof document !== "undefined" && document.cookie) {
-          const match = document.cookie.match("(?:^|; )access-token=([^;]+)");
-          if (match && match[1]) {
-            const token = decodeURIComponent(match[1]);
-            headers["Authorization"] = `Bearer ${token}`;
-          }
-        }
-      } catch (e) {
-        // ignore cookie read errors
-        console.debug("No se pudo leer cookie access-token", e);
-      }
-
-      const response = await fetch(teamEvalEndpoint, {
-        method: "POST",
-        credentials: "include",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
+    setDownloading(true);
+    toast("Preparando exportación de los resultados filtrados...");
+    try {
+      const query = new URLSearchParams({ final: "true", sortBy, sortOrder });
+      if (selectedFair) query.set("editionId", selectedFair);
+      if (selectedNRC) query.set("nrcId", selectedNRC);
+      if (filterSearch.trim()) query.set("search", filterSearch.trim());
+      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/download-grading-report-grouped?${query}`;
+      const response = await customFetch(endpoint, { method: "GET", credentials: "include" });
       toast.dismiss();
-
-      // Try to parse JSON body safely; backend may return empty body on 204 or on errors
-      let parsed: any = null;
-      try {
-        parsed = await response.json();
-      } catch (e) {
-        // ignore parse errors — we'll rely on status code and fallback messages
-        parsed = null;
-      }
-
       if (!response.ok) {
-        const msg =
-          parsed?.message || `Error ${response.status} al guardar calificación`;
-        throw new Error(msg);
+        let message = `Error ${response.status} al exportar a Excel`;
+        try {
+          const body = await response.json();
+          message = Array.isArray(body?.message) ? body.message.join(", ") : body?.message || message;
+        } catch { /* La respuesta puede no incluir JSON. */ }
+        throw new Error(message);
       }
 
-      toast.success(`Calificación guardada: ${gradeValue}`);
-      // After saving the senior grade we prefer to reload the authoritative
-      // data for the current page from the backend instead of trying to
-      // patch the local cache. This avoids sync issues when backend alters
-      // shapes or computes derived fields.
-      const cacheKey = selectedNRC
-        ? `${selectedNRC}-${currentPage}`
-        : `${selectedSubject}-${currentPage}`;
-
-      if (selectedNRC) {
-        // Remove cached page and re-fetch from backend
-        setFetchedStudentsByNRC((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
-        });
-        // Await refetch so UI updates immediately with server data
-        await fetchStudentsByNRC(selectedNRC, currentPage);
-      } else {
-        setFetchedStudentsBySubject((prev) => {
-          const updated = { ...prev };
-          delete updated[cacheKey];
-          return updated;
-        });
-        await fetchStudentsBySubject(selectedSubject, currentPage);
-      }
-
-      // Reset editing state
-      cancelEditing();
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error(
-        `Error: ${error instanceof Error ? error.message : "No se pudo guardar la calificación"}`,
-      );
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const utf8Filename = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+      const plainFilename = /filename="([^"]+)"/i.exec(disposition)?.[1];
+      const filename = utf8Filename
+        ? decodeURIComponent(utf8Filename)
+        : plainFilename || `calificaciones_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Reporte de resultados filtrados exportado correctamente");
+    } catch (exportError) {
+      toast.dismiss();
+      console.error("Error:", exportError);
+      toast.error(exportError instanceof Error ? exportError.message : "No se pudo completar la exportación");
     } finally {
-      setSavingGrade(false);
+      setDownloading(false);
     }
   };
 
-  // Export Button
-  const ExportButton = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="cursor-pointer"
-          onClick={exportToExcel}
-          aria-label="Exportar todas las calificaciones"
-          disabled={downloading}
-        >
-          {downloading ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" />
-          )}
-          <span className="hidden sm:inline">
-            {downloading ? "Exportando..." : "Exportar"}
-          </span>
-          <span className="sm:hidden">Excel</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Exportar todas las calificaciones a Excel
-      </TooltipContent>
-    </Tooltip>
-  );
+  const changeTab = (historical: boolean) => {
+    if (historical === showHistorical) return;
+    if (isEditingGrades) {
+      if (hasUnsavedChanges && !window.confirm("Tienes cambios sin guardar. ¿Quieres descartarlos?")) return;
+      cancelEditMode(true);
+    }
+    setShowHistorical(historical);
+  };
 
-  // Download Template Button
-  const DownloadTemplateButton = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          className="cursor-pointer"
-          onClick={downloadGradingTemplate}
-          aria-label="Descargar plantilla de calificaciones"
-          disabled={downloadingTemplate}
-        >
-          {downloadingTemplate ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-1.5" />
-          )}
-          {downloadingTemplate ? "Descargando..." : "Plantilla"}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Descargar plantilla de calificaciones
-      </TooltipContent>
-    </Tooltip>
-  );
+  const enterEditMode = () => {
+    const drafts: Record<string, string> = {};
+    teams.filter((team: GradeTeam) => team.canEdit).forEach((team: GradeTeam) => { drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : String(team.calificacionDocente); });
+    setEditedGrades(drafts);
+    setEditedTeams(Object.fromEntries(teams.filter((team: GradeTeam) => team.canEdit).map((team) => [gradeKey(team), team])));
+    setIsEditingGrades(true);
+  };
+  const cancelEditMode = (force = false) => {
+    if (!force && hasUnsavedChanges && !window.confirm("Tienes cambios sin guardar. ¿Quieres descartarlos?")) return;
+    setIsEditingGrades(false);
+    setEditedGrades({});
+    setEditedTeams({});
+    setGradeResults({});
+  };
 
-  // Upload Grades Button
-  const UploadGradesButton = (
-    <div className="relative">
-      <Input
-        id="upload-grades"
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={uploadGradingFile}
-        disabled={uploadingGrades}
-        className="hidden"
-      />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Label htmlFor="upload-grades">
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              disabled={uploadingGrades}
-              asChild
-            >
-              <span>
-                {uploadingGrades ? (
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-1.5" />
-                )}
-                {uploadingGrades ? "Subiendo..." : "Subir"}
-              </span>
-            </Button>
-          </Label>
-        </TooltipTrigger>
-        <TooltipContent side="top">Subir calificaciones (Excel)</TooltipContent>
-      </Tooltip>
-    </div>
-  );
+  const saveGrades = async () => {
+    const changed = editableTeams.filter((team: GradeTeam) => {
+      if (!team.canEdit) return false;
+      const raw = (editedGrades[gradeKey(team)] ?? "").trim();
+      const original = team.calificacionDocente;
+      return raw === "" ? original != null : !Number.isFinite(Number(raw)) || original == null || Number(raw) !== original;
+    });
+    if (changed.length === 0) { toast.info("No hay cambios para guardar"); return; }
+    const valid: GradeTeam[] = [];
+    const nextResults: Record<string, { ok: boolean; message: string }> = {};
+    for (const team of changed) {
+      const key = gradeKey(team);
+      const value = editedGrades[gradeKey(team)]?.trim() ?? "";
+      const score = Number(value);
+      if (!/^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(value) || !Number.isFinite(score) || score < 0 || score > 5) {
+        nextResults[key] = { ok: false, message: "Ingresa una nota entre 0 y 5, con máximo 2 decimales." };
+      } else if (!team.videogameId) {
+        nextResults[key] = { ok: false, message: "No se encontró el identificador del videojuego." };
+      } else {
+        valid.push(team);
+      }
+    }
+    setGradeResults(nextResults);
+    if (valid.length === 0) { toast.error("Corrige las filas señaladas para poder guardarlas."); return; }
+    setSavingGrade(true);
+    toast("Guardando notas...");
+    try {
+      const response = await customFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/professors/team-evaluation/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evaluations: valid.map((team) => ({ videogameId: Number(team.videogameId), score: Number(editedGrades[gradeKey(team)]) })) }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { /* Report a useful error for non-JSON responses. */ }
+      if (!response.ok) throw new Error(payload?.message || `Error ${response.status} al guardar las notas`);
+      const results = Array.isArray(payload?.results) ? payload.results : [];
+      for (const team of valid) {
+        const key = gradeKey(team);
+        const rowResult = results.find((item: any) => Number(item.videogameId) === Number(team.videogameId));
+        if (rowResult?.success === true) nextResults[key] = { ok: true, message: "Guardada" };
+        else nextResults[key] = { ok: false, message: rowResult?.message || rowResult?.error || "No se pudo guardar. Puedes corregir e intentar de nuevo." };
+      }
+      setGradeResults(nextResults);
+      setEditedTeams((previous) => {
+        const updated = { ...previous };
+        valid.forEach((team) => {
+          const key = gradeKey(team);
+          if (nextResults[key]?.ok) updated[key] = { ...team, calificacionDocente: Number(editedGrades[key]) };
+        });
+        return updated;
+      });
+      toast.dismiss();
+      const savedCount = Object.values(nextResults).filter((result) => result.ok).length;
+      const failedCount = Object.values(nextResults).filter((result) => !result.ok).length;
+      if (savedCount > 0) toast.success(`Se guardaron ${savedCount} nota(s)`);
+      if (failedCount > 0) toast.error(`${failedCount} fila(s) requieren corrección o reintento.`);
+      reloadProjects();
+    } catch (saveError) {
+      toast.dismiss();
+      const message = saveError instanceof Error ? saveError.message : "No se pudieron guardar las notas";
+      setGradeResults((previous) => {
+        const updated = { ...previous };
+        valid.forEach((team) => { updated[gradeKey(team)] = { ok: false, message: `No se confirmó el guardado: ${message}. Conserva la nota y vuelve a intentar.` }; });
+        return updated;
+      });
+      toast.error(`No se pudo confirmar el guardado. Tus notas siguen en pantalla para reintentarlo. ${message}`);
+    } finally { setSavingGrade(false); }
+  };
 
-  // Unified table view (used for both mobile and desktop)
-  return (
-    <div className="bg-background text-foreground min-h-screen p-4">
-      {/* Header */}
-      <div className="mb-6 px-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-medium">Panel de Calificaciones</h1>
-            <p className="opacity-70 text-sm mt-1">
-              Gestiona y visualiza las calificaciones de tus estudiantes
-            </p>
-          </div>
-          <div className="flex items-start sm:items-center">
-            {/* Export button in the top-right corner of the header */}
-            <div className="ml-2">{ExportButton}</div>
-          </div>
-        </div>
-      </div>
+  const updateDraftGrades = (update: (previous: Record<string, string>) => Record<string, string>) => {
+    const next = update(editedGrades);
+    setEditedGrades(next);
+    setGradeResults((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => next[key] === editedGrades[key])));
+  };
 
-      {/* Barra de Filtros y Acciones */}
-      <Card className="rounded-lg overflow-hidden bg-card mb-6">
-        <div className="p-5 space-y-4">
-          {/* Gestión de Calificaciones Jurado Senior*/}
-          {/* Mostrar siempre cuando hay una materia seleccionada: las acciones son globales y no dependen de que haya proyectos */}
-          {selectedSubject && (
-            <div className="pt-0 pb-4 border-b border-border">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">
-                      Calificación Jurado Senior
-                    </h3>
-                    <p className="text-xs opacity-70 mt-0.5">
-                      Descarga una plantilla, completa las notas y súbelas, o
-                      edita directamente en la tabla
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {DownloadTemplateButton}
-                  {UploadGradesButton}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Fila única: Materia | Filtrar por NRC (pills) */}
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-            {/* Materia */}
-            <div className="w-full lg:w-1/3">
-              <label className="block text-xs font-medium mb-1.5 opacity-70">
-                Materia
-              </label>
-              <Select
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
-              >
-                <SelectTrigger className="cursor-pointer h-9">
-                  <SelectValue placeholder="Selecciona Materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSubjects.map((subject) => (
-                    <SelectItem
-                      key={subject.name}
-                      value={subject.name}
-                      className="cursor-pointer"
-                    >
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* NRC pills + label */}
-            <div className="w-full lg:w-1/3">
-              {selectedSubject && availableNRCs.length > 0 && (
-                <>
-                  <div className="flex items-center justify-start gap-3 mb-2">
-                    <label className="block text-xs font-medium opacity-70">
-                      Filtrar por NRC
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableNRCs.length > 1 && (
-                      <Button
-                        variant={selectedNRC === "" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedNRC("")}
-                        className="cursor-pointer"
-                      >
-                        Todos los NRCs
-                      </Button>
-                    )}
-                    {availableNRCs.map((nrc) => (
-                      <Button
-                        key={nrc.code}
-                        variant={
-                          selectedNRC === nrc.code ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => setSelectedNRC(nrc.code)}
-                        className="cursor-pointer"
-                      >
-                        {nrc.code}
-                      </Button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="w-full lg:w-1/3" />
-          </div>
-        </div>
-      </Card>
-
-      {/* [MODIFICACIÓN]: La tabla siempre se renderiza para no dejar la pantalla vacía. */}
-      <div className="rounded-md border bg-[var(--card)] shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-[var(--color-primary)] [&_th]:!text-white dark:bg-blue-900/30 dark:text-[var(--card-foreground)] border-b border-border">
-            <TableRow>
-              <TableHead>Team Code</TableHead>
-              <TableHead>NRC</TableHead>
-              <TableHead>Equipo</TableHead>
-              <TableHead>Integrantes</TableHead>
-              <TableHead>Videojuego</TableHead>
-              <TableHead className="text-center">Calificación Feria</TableHead>
-              <TableHead className="text-center">
-                Calificación Docente
-              </TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {/* [APRENDIZAJE]: Renderizado Condicional Triple. 1: Si carga = Skeleton. 2: Si está vacío = Mensaje. 3: Si hay datos = Filas. */}
-            {initialLoading || isLoading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-12" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-48" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-12 mx-auto" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-12 mx-auto" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-8 w-8 mx-auto rounded-full" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : noStudents || teams.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-48 text-center">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-4 mx-auto">
-                      <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <p className="font-semibold text-lg mb-1">
-                      No hay proyectos registrados
-                    </p>
-                    <p className="text-sm opacity-70">
-                      Verifica que tus estudiantes hayan inscrito sus
-                      videojuegos
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              teams.map((t: any, i: number) => (
-                <TableRow
-                  key={t.teamCode}
-                  className="hover:bg-muted/50 transition-colors"
-                >
-                  <TableCell className="font-medium">{t.teamCode}</TableCell>
-                  <TableCell>{t.nrc}</TableCell>
-                  <TableCell>{t.teamName}</TableCell>
-                  <TableCell>
-                    <div className="text-sm opacity-80">
-                      {Array.isArray(t.integrantes)
-                        ? t.integrantes.join(", ")
-                        : t.integrantes || "-"}
-                    </div>
-                  </TableCell>
-                  <TableCell>{t.videogame}</TableCell>
-                  <TableCell
-                    className={`text-center ${getGradeStatus(t.calificacionFeria ?? 0)}`}
-                  >
-                    {t.calificacionFeria != null ? (
-                      t.calificacionFeria.toFixed(1)
-                    ) : (
-                      <span className="text-orange-600 font-medium">
-                        Pendiente
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {editingRowIndex === i ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="5"
-                          step="0.1"
-                          value={editedGrade}
-                          onChange={(e) => setEditedGrade(e.target.value)}
-                          className="w-20 h-8 text-center"
-                          autoFocus
-                          disabled={savingGrade}
-                        />
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-100"
-                            onClick={() => saveGrade(t)}
-                            disabled={savingGrade}
-                          >
-                            {savingGrade ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Save className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-100"
-                            onClick={cancelEditing}
-                            disabled={savingGrade}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <span
-                        className={
-                          t.calificacionDocente != null
-                            ? ""
-                            : "text-orange-600 font-medium"
-                        }
-                      >
-                        {t.calificacionDocente != null ? (
-                          <span>{t.calificacionDocente.toFixed(1)}</span>
-                        ) : (
-                          <span>Pendiente</span>
-                        )}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center items-center">
-                      {editingRowIndex !== i && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                              onClick={() =>
-                                startEditing(i, t.calificacionDocente)
-                              }
-                              disabled={savingGrade || editingRowIndex !== null}
-                            >
-                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            Editar calificación docente
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Paginación (solo se muestra si no está cargando y hay equipos) */}
-      {!initialLoading && !isLoading && teams.length > 0 && (
-        <div className="flex items-center justify-between px-2 text-sm opacity-70">
-          <div>
-            Mostrando {teams.length} equipo(s) de la página{" "}
-            {paginationMetadata ? paginationMetadata.currentPage : 1}
-          </div>
-          <div className="flex items-center gap-4">
-            <span>
-              Página {paginationMetadata ? paginationMetadata.currentPage : 0}{" "}
-              de {paginationMetadata ? paginationMetadata.totalPages : 0}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="outline"
-                className="h-8 w-8"
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className="h-8 w-8"
-                onClick={handleNextPage}
-                disabled={
-                  !paginationMetadata ||
-                  currentPage === paginationMetadata.totalPages
-                }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="bg-background text-foreground min-h-screen p-4">
+    <div className="mb-6 px-4"><div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><div><h1 className="text-xl font-medium">Panel de Calificaciones</h1><p className="opacity-70 text-sm mt-1">Gestiona y visualiza las calificaciones de tus estudiantes</p></div><div className="flex items-start sm:items-center">{isEditingGrades ? <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => cancelEditMode()} disabled={savingGrade}><X className="h-4 w-4 mr-1.5" /> Cancelar</Button><Button size="sm" onClick={saveGrades} disabled={savingGrade}>{savingGrade ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{savingGrade ? "Guardando..." : "Guardar todo"}</Button></div> : <Button variant="outline" size="sm" onClick={enterEditMode} disabled={showHistorical || !selectedNRC || !teams.some((team: GradeTeam) => team.canEdit) || isLoading || initialLoading} title={showHistorical ? "Los históricos son de solo lectura" : !selectedNRC ? "Selecciona una feria y un NRC para editar sus notas" : undefined}><Edit className="h-4 w-4 mr-1.5" />{selectedNRC ? "Editar notas" : "Selecciona un NRC"}</Button>}<div className="ml-2"><Tooltip><TooltipTrigger asChild><Button variant="outline" size="sm" className="cursor-pointer" onClick={exportToExcel} aria-label="Exportar resultados filtrados" title={showHistorical ? "La exportación solo incluye la feria activa" : undefined} disabled={downloading || showHistorical}>{downloading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1.5" />}<span className="hidden sm:inline">{downloading ? "Exportando..." : "Exportar"}</span><span className="sm:hidden">Excel</span></Button></TooltipTrigger><TooltipContent side="top">Exportar los resultados filtrados a Excel</TooltipContent></Tooltip></div></div></div></div>
+    {error && <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"><div><strong>Error al actualizar el listado.</strong> La tabla conserva el último resultado válido y puede corresponder a los filtros anteriores. {error}</div><Button variant="outline" size="sm" className="cursor-pointer self-start sm:self-auto" onClick={retryLoad}>Reintentar</Button></div>}
+    <div role="tablist" aria-label="Vista del panel" className="mb-4 flex gap-2"><Button role="tab" aria-selected={!showHistorical} variant={showHistorical ? "outline" : "default"} size="sm" className="cursor-pointer" onClick={() => changeTab(false)} disabled={savingGrade}>Feria activa</Button><Button role="tab" aria-selected={showHistorical} variant={showHistorical ? "default" : "outline"} size="sm" className="cursor-pointer" onClick={() => changeTab(true)} disabled={savingGrade}>Históricos</Button></div>
+    <StudentGradeFilters selectedFair={selectedFair} setSelectedFair={setSelectedFair} setSelectedNRC={setSelectedNRC} availableFairs={availableFairs} selectedEdition={selectedEdition} availableNRCs={availableNRCs} selectedNRC={selectedNRC} initialLoading={initialLoading} filterSearch={filterSearch} setFilterSearch={setFilterSearch} sortBy={sortBy} setSortBy={setSortBy} sortOrder={sortOrder} setSortOrder={setSortOrder} onClear={clearFilters} disabled={isEditingGrades || savingGrade} />
+    <StudentGradeTableView teams={teams} filteredTeams={filteredTeams} initialLoading={initialLoading} isLoading={isLoading} noStudents={noStudents} isEditingGrades={isEditingGrades} editedGrades={editedGrades} setEditedGrades={updateDraftGrades} gradeResults={gradeResults} savingGrade={savingGrade} gradeInputRefs={gradeInputRefs} currentPage={currentPage} totalPages={paginationMetadata?.totalPages ?? 0} handlePreviousPage={handlePreviousPage} handleNextPage={handleNextPage} />
+  </div>;
 }

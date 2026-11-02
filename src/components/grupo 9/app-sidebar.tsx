@@ -14,7 +14,11 @@ import {
   Settings,
   UniversityIcon,
   Trophy,
-  CalendarRange
+  CalendarRange,
+  IdCard,
+  House,
+  QrCode,
+  UserPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -56,6 +60,9 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Users },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
+        { name: "Escarapelas", url: "/escarapelas", icon: IdCard },
+        { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },
+        { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },
@@ -102,6 +109,12 @@ const MENU: Record<Role, MenuItem[]> = {
     {
       title: "Información",
       items: [
+        // HU-19: el inicio muestra el código de verificación que el estudiante le da al jurado
+        {
+          name: "Inicio",
+          url: "/inicio",
+          icon: House,
+        },
         {
           name: "Mis Calificaciones",
           url: "/mi-equipo",
@@ -129,6 +142,14 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/mi-equipo",
           icon: LibraryBig,
         },
+      ],
+    },
+  ],
+  Staff: [
+    {
+      title: "Mesa de escarapelas",
+      items: [
+        { name: "Registrar llegada", url: "/check-in-jurados", icon: QrCode },
       ],
     },
   ],

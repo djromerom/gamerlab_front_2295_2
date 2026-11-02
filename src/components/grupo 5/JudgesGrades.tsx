@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 "use client"
 
 import { useEffect, useState } from "react"
@@ -36,7 +37,7 @@ export default function JudgesGrades() {
   useEffect(() => {
     const fetchJudges = async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${import.meta.env.VITE_ENDPOINT_BACKEND}/students/my-judges`,
           {
             method: "GET",

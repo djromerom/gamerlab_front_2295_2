@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import type React from "react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import {useState} from "react";
@@ -19,7 +20,7 @@ const EventSetupCard: React.FC<{value: boolean, url: string, title: string, subt
         setLoading(true);
         
         try {
-        const res = await fetch(
+        const res = await apiFetch(
             `${import.meta.env.VITE_ENDPOINT_BACKEND}${url}`,
             {
             method: "PATCH",

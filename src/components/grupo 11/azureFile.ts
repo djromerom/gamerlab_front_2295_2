@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 // Frontend JavaScript/TypeScript
 // Frontend TypeScript helper for file upload and temporary URL retrieval
 export interface UploadResult {
@@ -28,19 +29,32 @@ interface videogameFetchResult {
 
 const BACKEND_BASE = (import.meta.env.VITE_ENDPOINT_BACKEND as string) || 'http://localhost:3000';
 
+// Convierte la respuesta de error de /upload en un mensaje legible para el usuario.
+// El backend limita las subidas por IP (429) y valida el contenido real del archivo (400) (BG-02).
+async function uploadErrorMessage(res: Response, maxSize: string): Promise<string> {
+  if (res.status === 429) {
+    return 'Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.';
+  }
+  if (res.status === 413) {
+    return `Uno de los archivos es demasiado grande. El tamaño máximo permitido es ${maxSize}.`;
+  }
+  const body = await res.json().catch(() => null);
+  const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+  return message || `No se pudo subir el archivo (error ${res.status}).`;
+}
+
 export async function uploadImage(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload`, {
+  const res = await apiFetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload`, {
     method: 'POST',
     body: formData,
     credentials: 'include', // include cookies for auth if backend relies on them
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`uploadImage failed: ${res.status} ${res.statusText} ${text}`);
+    throw new Error(await uploadErrorMessage(res, '1MB'));
   }
 
   const uploadResult = (await res.json()) as UploadResult;
@@ -51,7 +65,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload/zip`,
+  const res = await apiFetch(`${BACKEND_BASE.replace(/\/$/, '')}/upload/zip`,
     {
       method: 'POST',
       body: formData,
@@ -59,8 +73,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
     });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`uploadZip failed: ${res.status} ${res.statusText} ${text}`);
+    throw new Error(await uploadErrorMessage(res, '500MB'));
   }
 
   return (await res.json()) as UploadResult;
@@ -69,7 +82,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
 export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   if (!uploadId) throw new Error('getImageUrl: uploadId is required');
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${BACKEND_BASE.replace(/\/$/, '')}/upload/${encodeURIComponent(uploadId)}/url?
     )}`,
     {
@@ -102,7 +115,7 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
 export async function getGameFileEntry(videogameID: number): Promise<videogameFetchResult> {
   const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/videogames/${videogameID}`;
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${endpoint}`,
     {
       method: 'GET',

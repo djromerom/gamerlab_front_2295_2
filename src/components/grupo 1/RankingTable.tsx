@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"; // Import Button
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"; // Adjust path
 import { TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For better error display
+import { AVERAGES_HIDDEN_MESSAGE, isRankingHidden } from "@/lib/averages";
 import { Loader2, AlertCircle, Trophy } from "lucide-react"; // Icons
 
 const TablaRanking = () => {
@@ -65,6 +66,18 @@ const TablaRanking = () => {
             Reintentar
           </Button>
         </Alert>
+      </TabsContent>
+    );
+  }
+
+  if (isRankingHidden(listaVideojuegosFiltrados ?? [])) {
+    return (
+      <TabsContent value="ranking">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground pb-6">{AVERAGES_HIDDEN_MESSAGE}</p>
+          </CardContent>
+        </Card>
       </TabsContent>
     );
   }

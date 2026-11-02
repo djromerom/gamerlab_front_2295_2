@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface VideogameDetails {
   videogameName: string;
   logoUrl: string;
   teamName: string;
+  teamId?: number; // HU-19: para verificar el grupo antes de calificar
   teamCode?: string;
   members: { fullName: string }[];
   nrc: string | null;
@@ -43,6 +45,7 @@ interface SearchResultItem {
   id: number;
   nombre: string;
   equipo: string;
+  teamId?: number;
   teamCode?: string;
   materia: string;
   nrc: string;
@@ -112,7 +115,7 @@ const PendingGradesPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/pending-games?page=${page}&limit=${limit}`,
         {
           method: "GET",
@@ -165,7 +168,7 @@ const PendingGradesPage: React.FC = () => {
 
     try {
       // URL CORREGIDA: usar pending-games/search en lugar de search-games
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/pending-games/search?q=${encodeURIComponent(query)}`,
         {
           method: "GET",
@@ -243,6 +246,7 @@ const PendingGradesPage: React.FC = () => {
           id: game.id,
           nombre: game.nombre,
           equipo: game.equipo,
+          teamId: game.teamId,
           teamCode: game.teamCode,
           materia: game.materia,
           nrc: game.nrc,
@@ -255,6 +259,7 @@ const PendingGradesPage: React.FC = () => {
           id: videogame.videogameId,
           nombre: videogame.videogameName,
           equipo: videogame.teamName,
+          teamId: videogame.teamId,
           teamCode: videogame.teamCode,
           materia: videogame.subject || "Sin materia",
           nrc: videogame.nrc || "Sin NRC",

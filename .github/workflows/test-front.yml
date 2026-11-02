@@ -13,8 +13,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: 'npm'
 
-      # Placeholder for testing steps, e.g., installing dependencies and running unit tests
+      - name: Install dependencies
+        run: npm ci
+
+      # El script build ya hace el chequeo de tipos (tsc -b) antes de vite build
+      - name: Build
+        run: npm run build
+
+      # TODO: la deuda actual de lint impide hacerlo bloqueante; quitar continue-on-error cuando se limpie.
+      - name: Lint
+        run: npx eslint .
+        continue-on-error: true
+
+      # Bloqueante: sin continue-on-error, una prueba en rojo deja el PR en rojo.
+      # --reporter=verbose lista cada prueba en el log para revisar que corrieron (no "0 tests").
+      - name: Run tests
+        run: npm run test:ci

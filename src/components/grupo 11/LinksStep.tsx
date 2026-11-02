@@ -108,7 +108,7 @@ export default function LinksStep() {
                 {...field}
                 value={field.value || ""}
                 placeholder="https://www.youtube.com/watch?v=..."
-                type="text"
+                type="url"
               />
             </FormControl>
             <FormDescription>
@@ -130,7 +130,7 @@ export default function LinksStep() {
                 {...field}
                 value={field.value || ""}
                 placeholder="https://github.com/usuario/proyecto"
-                type="text"
+                type="url"
               />
             </FormControl>
             <FormDescription>
@@ -169,7 +169,7 @@ export default function LinksStep() {
                     Haz clic para seleccionar fotos o arrastra aquí
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Máximo 5 imágenes • PNG, JPG, JPEG
+                    Máximo 5 imágenes de hasta 1 MB cada una • PNG, JPG, JPEG
                   </p>
                   <Input
                     ref={fileInputRef}
@@ -237,7 +237,9 @@ export default function LinksStep() {
                   ref={recaptchaRef}
                   className="cursor-pointer"
                   sitekey={SITE_KEY}
+                  hl="es"
                   onChange={handleRecaptchaChange}
+                  onExpired={() => setValue("recaptcha", "")}
                 />
               </div>
             </FormControl>

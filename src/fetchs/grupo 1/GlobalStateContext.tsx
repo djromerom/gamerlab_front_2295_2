@@ -1,5 +1,6 @@
 // src/contexts/GlobalStateContext.tsx
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import React, {
   createContext,
   useState,
@@ -7,6 +8,8 @@ import React, {
   ReactNode,
   useEffect,
   useMemo,
+  useCallback,
+  useRef,
 } from "react";
 
 // Tus interfaces (asegúrate que coincidan con los datos de tu BD)
@@ -17,8 +20,8 @@ export interface VideojuegoData {
   logoUrl?: string | null;
   materia?: string | null; // Nombre de la materia
   nrc?: number | string | null; // Código del NRC asociado
-  promedio: number; // Promedio general ya calculado
-  criterios: {
+  promedio?: number; // Promedio general; ausente con el ranking oculto
+  criterios?: {
     [nombreCriterio: string]: number; // ej: { "Jugabilidad": 4.5, "Diseño": 4.0 }
   };
   evaluacionesCompletadas?: number; // Número de evaluaciones recibidas
@@ -46,13 +49,13 @@ export interface NRCData {
   id: number; // Coincide con NRC.id
   codigo: number; // Coincide con NRC.code
   materiaNombre: string; // Nombre de la materia asociada
-  promedioxNRC?: number; // Promedio de NRC, si es necesario
+  promedioxNRC?: number | null; // null: ranking oculto. Promedio de NRC, si es necesario
 }
 
 // Para el gráfico de torta "Distribución por Materia"
 export interface DatosGraficoMateria {
   name: string; // Nombre de la materia
-  value: number; // Valor para el gráfico (promedio de videojuegos en esa materia)
+  value: number | null; // null: ranking oculto. Valor para el gráfico (promedio de videojuegos en esa materia)
   color?: string; // Color opcional para el segmento del gráfico
 }
 
@@ -88,6 +91,9 @@ export interface GlobalStateContextType {
   isLoading: boolean;
   error: Error | null;
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
+  fetchJurados: () => Promise<void>; // Recarga solo los jurados (requieren sesión)
+  clearJurados: () => void;
+  hasSessionRef: React.MutableRefObject<boolean>; // lo marca JuradosAuthSync
 
   // Permiso local para mostrar u ocultar calificaciones (frontend-only)
   canViewScores: boolean;
@@ -263,10 +269,41 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     fetchPermission();
   }, []);
 
+  // JuradosData exige sesión (BG-02): se carga aparte para que un 401 antes del login
+  // no tumbe el resto de datos, y se vuelve a pedir al iniciar sesión (ver JuradosAuthSync).
+  // El contador descarta respuestas viejas si se piden los jurados varias veces seguidas.
+  const juradosRequestRef = useRef(0);
+
+  const fetchJurados = useCallback(async () => {
+    const requestId = ++juradosRequestRef.current;
+    try {
+      const res = await apiFetch(`${API_ENDPOINT}/JuradosData`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = res.ok ? await res.json() : [];
+      if (requestId === juradosRequestRef.current) {
+        setListaJurados(Array.isArray(data) ? (data as Jurados[]) : []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch jurados:", e);
+      if (requestId === juradosRequestRef.current) setListaJurados([]);
+    }
+  }, [API_ENDPOINT]);
+
+  const clearJurados = useCallback(() => {
+    juradosRequestRef.current++;
+    setListaJurados([]);
+  }, []);
+
+  // Lo actualiza JuradosAuthSync; fetchGlobalData solo pide los jurados si hay sesión.
+  const hasSessionRef = useRef(false);
+
   // Función para cargar todos los datos globales
   const fetchGlobalData = async () => {
     setIsLoading(true);
     setError(null);
+    if (hasSessionRef.current) fetchJurados();
     try {
       // Cargamos todos los datos globales (videojuegos, materias, NRCs, etc.)
       // usando apiFetch para garantizar que la comunicación sea resiliente a errores 401.
@@ -284,10 +321,6 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
           headers: { "Content-Type": "application/json" },
         }),
         apiFetch(`${API_ENDPOINT}/DatosGraficoMateria`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }),
-        apiFetch(`${API_ENDPOINT}/JuradosData`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         }),
@@ -310,7 +343,6 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
         fetchedMaterias,
         fetchedNRCs,
         fetchedDatosGraficoMateria,
-        fetchedJurados,
       ] = await Promise.all(responses.map((res) => res.json()));
 
       // Ahora TypeScript sabrá los tipos si los endpoints devuelven los JSON correctos
@@ -320,7 +352,6 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       setDatosGraficoTortaMaterias(
         fetchedDatosGraficoMateria as DatosGraficoMateria[],
       ); // <-- CORRECCIÓN: Nombre del estado y setter consistentes
-      setListaJurados(fetchedJurados as Jurados[]);
 
       if (
         fetchedVideojuegos &&
@@ -420,6 +451,9 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       isLoading,
       error,
       fetchGlobalData,
+      fetchJurados,
+      clearJurados,
+      hasSessionRef,
     }),
     [
       // Dependencias: todos los estados que se incluyen en contextValue
@@ -438,6 +472,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       canViewScores,
       canViewRanking,
       canViewJudges,
+      fetchJurados,
+      clearJurados,
       // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
     ],
   );
@@ -450,6 +486,26 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       {children}
     </GlobalStateContext.Provider>
   );
+}
+
+// Vuelve a pedir los jurados cuando cambia la sesión. Va dentro de AuthProvider (App.tsx),
+// porque GlobalStateProvider está por fuera y no se entera del login (BG-02).
+export function JuradosAuthSync() {
+  const { user, loading } = useAuth();
+  const { fetchJurados, clearJurados, hasSessionRef } = useGlobalState();
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (loading) return;
+    hasSessionRef.current = Boolean(userId);
+    if (userId) {
+      fetchJurados();
+    } else {
+      clearJurados();
+    }
+  }, [userId, loading, fetchJurados, clearJurados, hasSessionRef]);
+
+  return null;
 }
 
 // 4. Custom Hook (sin cambios)

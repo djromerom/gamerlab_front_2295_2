@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import React, { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
@@ -67,7 +68,7 @@ export function VerifyEmailPage() {
     setCurrentToken(token);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/verify-token?token=${encodeURIComponent(token)}`,
         {
           method: "GET",
@@ -147,7 +148,7 @@ export function VerifyEmailPage() {
       setStatus("submitting_email");
       setMessage("Reenviando correo de verificación...");
       
-      const response = await fetch(
+      const response = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/resend-confirmation`,
         {
           method: "POST",
@@ -210,7 +211,7 @@ export function VerifyEmailPage() {
     setMessage("Estableciendo tu contraseña...");
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/set-password`,
         {
           method: "POST",
@@ -400,6 +401,7 @@ export function VerifyEmailPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
@@ -427,6 +429,7 @@ export function VerifyEmailPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirma tu contraseña"

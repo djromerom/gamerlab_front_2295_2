@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { formatEditionDate } from "@/lib/editionDate";
 import { useInfiniteCarousel } from "@/hooks/useInfiniteCarousel";
 import {
   fetchEditions,
@@ -394,7 +395,7 @@ export default function CompetitionInfo() {
               <div className="flex items-center gap-2 min-w-0">
                 <History className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF] shrink-0" />
                 <h2 className="text-lg md:text-2xl font-bold text-left truncate">
-                  Edición {edicionSeleccionada?.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada?.semester}</span>
+                  Edición {edicionSeleccionada?.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada?.semester === 10 ? '1' : edicionSeleccionada?.semester === 30 ? '2' : edicionSeleccionada?.semester}</span>
                 </h2>
               </div>
               <div className="relative shrink-0" ref={dropdownRef}>
@@ -453,22 +454,7 @@ export default function CompetitionInfo() {
                           <Calendar className="w-4 h-4 text-[#AC7CFF]" />
 
                           <span className="text-sm">
-                            {edicionSeleccionada.startsAt ?
-                              (() => {
-                                try {
-                                  const date = new Date(edicionSeleccionada.startsAt);
-                                  const formatted = new Intl.DateTimeFormat('es-ES', {
-                                    weekday: 'long',
-                                    day: 'numeric',
-                                    month: 'long',
-                                    year: 'numeric'
-                                  }).format(date);
-                                  return formatted.replace(',', '').replace(/^\w/, c => c.toUpperCase());
-                                } catch {
-                                  return "Fecha Inválida";
-                                }
-                              })()
-                              : "Por Definir"}
+                            {formatEditionDate(edicionSeleccionada.startsAt, { withYear: true })}
                           </span>
                         </div>
                       </div>

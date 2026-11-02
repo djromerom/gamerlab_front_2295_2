@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -171,7 +172,7 @@ export default function TeamWizardForm(props: any) {
         const body = buildMemberPayload(m);
         const url = `${apiBaseUrl}/teams/${teamId}/member`;
 
-        const res = await fetch(url, {
+        const res = await apiFetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -207,7 +208,7 @@ export default function TeamWizardForm(props: any) {
     if (internalIsLoading) return; // prevent multiple petitions
     setInternalIsLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/auth/resend-confirmation`, {
+      const res = await apiFetch(`${apiBaseUrl}/auth/resend-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -293,7 +294,7 @@ export default function TeamWizardForm(props: any) {
         }
         if (memberId) {
           const url = `${apiBaseUrl}/teams/${teamId}/members/${memberId}`;
-          const res = await fetch(url, {
+          const res = await apiFetch(url, {
             method: "DELETE",
             credentials: "include",
             headers: { "Content-Type": "application/json" },

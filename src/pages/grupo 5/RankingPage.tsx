@@ -1,5 +1,7 @@
 "use client";
 
+
+import { apiFetch } from "@/lib/api";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useState, useEffect } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
@@ -118,7 +120,7 @@ export default function PodioGamer() {
 
   const isRankingVisible = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/show-ranking`, {
+      const res = await apiFetch(`${API_BASE_URL}/settings/show-ranking`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -138,7 +140,7 @@ export default function PodioGamer() {
 
   const fetchData = async (n: string) => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/teams/final-score/by-n/${encodeURIComponent(n)}`,
       );
 

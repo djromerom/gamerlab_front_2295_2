@@ -331,7 +331,7 @@ export const fetchEditionVideogames = async (editionId: number): Promise<Videoga
 
 // Catálogo público global (aún usado por otros módulos)
 export const fetchAllVideogames = async (): Promise<Videogame[]> => {
-  const res = await fetch(`${API_URL}/videogames`);
+  const res = await apiFetch(`${API_URL}/videogames`);
   if (!res.ok) throw new Error(await extractErrorMessage(res));
   return res.json();
 };

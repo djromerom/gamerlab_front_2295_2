@@ -1,14 +1,17 @@
+import { apiFetch } from "@/lib/api";
 import { PaginatedJurors } from "@/components/grupo 12/utils";
 import { toast } from "sonner";
 
 const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const includeInactive = false;
+// Tope de `limit` que acepta el backend en GET /juror (MAX_PAGE_LIMIT).
+const MAX_PAGE_LIMIT = 100;
 
 export const juryManagement = {
     getJuries : async (page: number, limit: number) => {
 
-        const res = await fetch(`${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`, {
+        const res = await apiFetch(`${API_ENDPOINT}?includeInactive=${includeInactive}&limit=${limit}&page=${page}`, {
             method: "GET",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
@@ -29,9 +32,19 @@ export const juryManagement = {
         return dataRespond
     },
 
+    // Trae todos los jurados recorriendo las páginas, porque el backend no acepta más de 100 por página.
+    getAllJuries: async () => {
+        const all: PaginatedJurors["data"] = [];
+        for (let page = 1; ; page++) {
+            const { data, metadata } = await juryManagement.getJuries(page, MAX_PAGE_LIMIT);
+            all.push(...data);
+            if (data.length === 0 || page >= metadata.totalPages) return all;
+        }
+    },
+
     getTeams: async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/teams/?page=1&limit=null`, {
+            const res = await apiFetch(`${API_BASE_URL}/teams/?page=1&limit=null`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -48,7 +61,7 @@ export const juryManagement = {
 
     getTeamsByJuror: async (jurorId) => {
         try {
-            const res = await fetch(`${API_ENDPOINT}/${jurorId}/teams`, {
+            const res = await apiFetch(`${API_ENDPOINT}/${jurorId}/teams`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" }
@@ -70,7 +83,7 @@ export const juryManagement = {
 
     getIncompleteJurors: async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
+            const res = await apiFetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
                 method: 'GET',
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -86,7 +99,7 @@ export const juryManagement = {
     },
 
     automaticAssignment: async () => {
-        const res = await fetch(`${API_ENDPOINT}/evaluations-assignment`, {
+        const res = await apiFetch(`${API_ENDPOINT}/evaluations-assignment`, {
             method: 'GET',
             credentials: 'include',
             headers: { 
@@ -110,7 +123,7 @@ export const juryManagement = {
     },
 
     manualAssignment: async (jurorId, teamId) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'POST',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -131,7 +144,7 @@ export const juryManagement = {
     },
 
     deleteAllAssignments: async (setLoading) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments/all`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments/all`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -150,7 +163,7 @@ export const juryManagement = {
     },
 
     deleteAllAsignmentsByJury: async (juryId, setLoading) => {
-        const res = await fetch(`${API_ENDPOINT}/${juryId}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/${juryId}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
@@ -169,7 +182,7 @@ export const juryManagement = {
     },
 
     deleteAnAssignment: async (jurorId, teamId) => {
-        const res = await fetch(`${API_ENDPOINT}/assignments`, {
+        const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },

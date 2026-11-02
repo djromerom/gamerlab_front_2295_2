@@ -1,7 +1,7 @@
 import type React from "react";
 import Scoreboard from "@/components/grupo 5/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -25,9 +25,24 @@ const HomeStudentPage: React.FC = () => {
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-      <div className="">
-        <Scoreboard />
-      </div>
+      {isProfesor ? (
+        <div className="m-4 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-8 text-center">
+          <h2 className="text-lg font-medium text-foreground">Esta vista es para estudiantes</h2>
+          <p className="text-sm text-muted-foreground">
+            Las notas del equipo se muestran a cada estudiante. Para ver a tus estudiantes, vuelve a la lista.
+          </p>
+          <Link
+            to={nrc ? `/home-profesor?nrc=${nrc}` : "/home-profesor"}
+            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+          >
+            Ir a la lista
+          </Link>
+        </div>
+      ) : (
+        <div className="">
+          <Scoreboard />
+        </div>
+      )}
     </LayoutAplication>
   );
 };

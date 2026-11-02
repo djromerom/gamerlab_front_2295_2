@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 "use client"
 /**
  * EditBoard Component
@@ -74,7 +75,7 @@ export default function EditBoard() {
   //PATCH request to update NRC codes for a given student.
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
+      const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
         method: 'PATCH',
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -93,7 +94,7 @@ export default function EditBoard() {
 
   //PATCH request to update basic student information (email).
   const updateStudentBasics = async ({id, email}: { id: string; email: string }) => {
-    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}/members/${id}`, {
+    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}/members/${id}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -107,7 +108,7 @@ export default function EditBoard() {
 
   //Fetches full team data (including videogame details) from the backend.
   const getInfoEquipo = async () => {
-    const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
       method: 'GET',
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -168,7 +169,7 @@ export default function EditBoard() {
         }
       };
   
-      const response = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
+      const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${infoEquipo.id}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { "Content-Type": "application/json" },
@@ -224,12 +225,12 @@ export default function EditBoard() {
       setLoading(true);
 
       try {
-        const studentsRes = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
+        const studentsRes = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         })
-        const nrcsRes = await fetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`, {
+        const nrcsRes = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options`, {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
