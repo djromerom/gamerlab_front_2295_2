@@ -146,7 +146,7 @@ export default function CircularProgress({
                 ) : (
                     <div className="flex flex-col items-center">
                     <span className="font-semibold text-sm">{safeReceived}/{safeTotal}</span>
-                    <span className="text-xs text-gray-500">{`${percent}`}%</span>
+                    <span className="text-xs text-gray-500">{`${percent ?? 0}`}%</span>
                     </div>
                 )}
                 </div>
