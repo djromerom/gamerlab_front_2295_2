@@ -49,6 +49,7 @@ import {
   progressPercentage,
   useEvaluationProgress,
 } from "@/fetchs/evaluationProgress";
+import { downloadJurorsExport } from "@/fetchs/jurorsExport";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -886,37 +887,11 @@ export function JuradosAssignment() {
     }
   };
 
+  // Una sola petición: el back arma el nombre del archivo y el mensaje si no hay asignaciones
   const exportJurors = async () => {
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("/reports/exportJurados", {
-        method: "GET",
-      });
-
-      // apiRequest returns the parsed JSON by default or response based on implementation. 
-      // Let's verify how apiRequest works.
-      // Usually, if apiRequest returns the response or we can fetch directly:
-      // Let's fetch using direct fetch to get a Blob.
-      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
-      const response = await apiFetch(endpoint, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al exportar reporte de jurados");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `reporte_jurados_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadJurorsExport();
     } catch (error) {
       console.error(error);
       window.alert(
