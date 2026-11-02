@@ -89,7 +89,7 @@ export const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPanel />,
-    roles: ["Administrador"],
+    roles: ["Administrador", "Profesor"],
   },
   { path: "/jurado", element: <Navigate to="/inicio" replace />, roles: ["Jurado"] },
   {
