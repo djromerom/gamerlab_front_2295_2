@@ -73,11 +73,12 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       const endpoint = `${apiBaseUrl.replace(/\/$/, "")}/reports/exportJurados`;
       const res = await apiFetch(endpoint, { method: "GET", credentials: "include" });
       if (!res.ok) {
-        let msg = `Error ${res.status}: ${res.statusText}`;
+        let msg = "No se pudo exportar la asignación de jurados.";
         try {
           const body = await res.json();
           msg = body?.message || msg;
-        } catch { }
+        } catch {
+        }
         throw new Error(msg);
       }
 

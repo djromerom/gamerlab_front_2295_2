@@ -889,30 +889,40 @@ export function JuradosAssignment() {
   const exportJurors = async () => {
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("/reports/exportJurados", {
-        method: "GET",
-      });
-
-      // apiRequest returns the parsed JSON by default or response based on implementation. 
-      // Let's verify how apiRequest works.
-      // Usually, if apiRequest returns the response or we can fetch directly:
-      // Let's fetch using direct fetch to get a Blob.
       const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
       const response = await apiFetch(endpoint, {
         method: "GET",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
-        throw new Error("Error al exportar reporte de jurados");
+        let message = "No se pudo exportar la asignación de jurados.";
+        try {
+          const body = await response.json();
+          message = body?.message || message;
+        } catch {
+        }
+        throw new Error(message);
+      }
+
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const filenameMatch =
+        disposition.match(/filename\*=UTF-8''([^;\n\r]+)/i) ||
+        disposition.match(/filename="?([^";]+)"?/i);
+      let filename = "asignacion_jurados.xlsx";
+      if (filenameMatch) {
+        try {
+          filename = decodeURIComponent(filenameMatch[1]);
+        } catch {
+          filename = filenameMatch[1];
+        }
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `reporte_jurados_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
