@@ -19,6 +19,7 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
@@ -223,6 +224,11 @@ export const routes: RouteConfig[] = [
     path: "/tiebreaker",
     element: <TiebreakerPage />,
     roles: ["Administrador"],
+  },
+  {
+    path: "/ranking/mis-empates",
+    element: <ProfessorRankingTiesPage />,
+    roles: ["Profesor"],
   },
   {
     path: "/profesores",

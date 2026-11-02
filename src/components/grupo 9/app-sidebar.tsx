@@ -110,6 +110,12 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Avance por hora", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },
+    {
+      title: "Ranking",
+      items: [
+        { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
+      ],
+    },
   ],
   Estudiante: [
     {
