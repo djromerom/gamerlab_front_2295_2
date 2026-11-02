@@ -30,8 +30,9 @@ const RegistrationsToggleCard: React.FC = () => {
     setError(null);
     try {
       setOpen(await updateRegistrationsOpen(!open));
-    } catch {
-      setError("No se pudo actualizar las inscripciones.");
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? ` ${err.message}` : "";
+      setError(`No se pudo actualizar las inscripciones.${detail}`);
     } finally {
       setSaving(false);
     }
