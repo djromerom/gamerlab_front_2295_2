@@ -135,8 +135,8 @@ const JurorCheckInPage = () => {
 
   return (
     <LayoutAplication breadcrumbs={[{ label: "Check-in de jurados", href: "/check-in-jurados" }]}>
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-10">
-        <div className="border-b pb-5">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10">
+        <div>
           <h1 className="text-2xl font-bold">Registrar llegada</h1>
           <p className="text-muted-foreground">Escanea la escarapela o busca al jurado manualmente.</p>
         </div>
@@ -157,11 +157,11 @@ const JurorCheckInPage = () => {
         )}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-          <Card className="overflow-hidden">
-            <CardHeader className="pt-6">
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2"><QrCode /> Escanear QR</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5 px-6 pb-8 pt-5">
+            <CardContent className="space-y-4">
               <div id={SCANNER_ID} className="mx-auto aspect-square max-h-[420px] w-full max-w-[420px] overflow-hidden rounded-lg bg-muted" />
               <div className="flex justify-center">
                 <Button type="button" onClick={scanning ? () => void stopScanner() : () => void startScanner()} disabled={processing}>
@@ -172,11 +172,11 @@ const JurorCheckInPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="pt-6">
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2"><Search /> Registro manual</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 px-6 pb-8 pt-5">
+            <CardContent className="space-y-3">
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre (mínimo 2 letras)" />
               {searching && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" /> Buscando...</div>}
               {!searching && query.trim().length >= 2 && searchResults.length === 0 && (

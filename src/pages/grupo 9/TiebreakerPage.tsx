@@ -77,11 +77,17 @@ export default function TiebreakerPage() {
   };
 
   const submitResolution = async (tie: TieGroup) => {
+    setError("");
+    setNotice("");
+    if (!reason.trim()) {
+      setError("El motivo es obligatorio para registrar la decisión.");
+      return;
+    }
     try {
       await decideTie({
         tieKey: tie.tieKey,
         editionId: tie.editionId,
-        reason: reason.trim() || undefined,
+        reason: reason.trim(),
         useRegistration: useRegistration || undefined,
         orderedTeamIds: useRegistration ? undefined : order,
       });
@@ -95,6 +101,13 @@ export default function TiebreakerPage() {
 
   const finalize = async () => {
     if (!ranking) return;
+    if (ranking.pendingTies > 0) {
+      setError("Resuelve los empates pendientes antes de definir el ranking final.");
+      return;
+    }
+    if (!window.confirm("Definir el ranking final reemplazará el resultado guardado actualmente. ¿Deseas continuar?")) {
+      return;
+    }
     try {
       setError("");
       const result = await finalizeRanking(ranking.editionId);
@@ -126,7 +139,7 @@ export default function TiebreakerPage() {
               </select>
             </label>
             <button type="button" onClick={() => void load()} className="h-9 rounded-md border px-4 text-sm hover:bg-accent">Actualizar</button>
-            <button type="button" onClick={() => void finalize()} className="h-9 rounded-md bg-primary px-4 text-sm text-primary-foreground">Definir ranking final</button>
+            <button type="button" onClick={() => void finalize()} disabled={ranking !== null && ranking.pendingTies > 0} className="h-9 rounded-md bg-primary px-4 text-sm text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50">Definir ranking final</button>
           </div>
 
           {ranking && !ranking.weighting.configured && (
