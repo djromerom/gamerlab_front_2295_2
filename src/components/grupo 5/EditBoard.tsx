@@ -111,11 +111,11 @@ export default function EditBoard() {
     const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
       method: 'GET',
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
     })
 
     if (!response.ok) {
-      throw new Error("Error al obtener los datos del equipo")
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.message || "No se pudo cargar los datos del equipo.");
     }
     const data = await response.json()
     const dataInfoEquipo = {
@@ -219,12 +219,12 @@ export default function EditBoard() {
   //Fetches both team and member data when the component mounts.
   useEffect(() => {  
     const fetchData = async () => {
-      const dataEquipo = await getInfoEquipo()
-      setInfoEquipo(dataEquipo)
-      setInfoEditEquipo(dataEquipo)
-      setLoading(true);
-
       try {
+        const dataEquipo = await getInfoEquipo()
+        setInfoEquipo(dataEquipo)
+        setInfoEditEquipo(dataEquipo)
+        setLoading(true);
+
         const studentsRes = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
           method: "GET",
           credentials: "include",
@@ -258,6 +258,10 @@ export default function EditBoard() {
             studentCode: s.studentCode,
           }))
         )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "No se pudo cargar los datos del equipo.";
+        console.error(message, error);
+        toast.error(message);
       } finally {
         setLoading(false);
       }

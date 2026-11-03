@@ -30,7 +30,6 @@ export default function CircularProgress({
     const getNumberCalifications = async () => {
         const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
             method: 'GET',
-            headers: { "Content-Type": "application/json" },
             credentials: 'include',
         })
 
