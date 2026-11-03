@@ -50,6 +50,12 @@ import {
   useEvaluationProgress,
 } from "@/fetchs/evaluationProgress";
 import { downloadJurorsExport } from "@/fetchs/jurorsExport";
+import {
+  AssignmentWarningsError,
+  getAssignmentWarnings,
+} from "@/lib/assignmentWarnings";
+import { useAssignmentWarnings } from "@/hooks/useAssignmentWarnings";
+import { AssignmentWarningsDialog } from "@/components/jurados-modals/AssignmentWarningsDialog";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -129,6 +135,11 @@ async function apiRequest<T>(
         ? parsedBody
         : (parsedBody as { message?: string })?.message ||
         `Error ${response.status}`;
+
+    const warnings = getAssignmentWarnings(response.status, parsedBody);
+    if (warnings) {
+      throw new AssignmentWarningsError(errorMessage, warnings);
+    }
 
     throw new Error(errorMessage);
   }
@@ -471,6 +482,8 @@ export function JuradosAssignment() {
     tipo: "" as "" | JurorType,
   });
 
+  const assignmentWarnings = useAssignmentWarnings();
+
   const { progress: evaluationProgress, reload: reloadProgress } =
     useEvaluationProgress();
 
@@ -704,7 +717,12 @@ export function JuradosAssignment() {
     setShowJuradoModal(false);
   };
 
-  const addJuradoToTeam = async (teamId: number, jurado: Jurado) => {
+  // HU-08: el back avisa con 409 ASSIGNMENT_WARNINGS; "Continuar" repite la petición con confirmWarnings
+  const addJuradoToTeam = async (
+    teamId: number,
+    jurado: Jurado,
+    confirmWarnings = false
+  ) => {
     try {
       setIsSubmitting(true);
 
@@ -713,12 +731,20 @@ export function JuradosAssignment() {
         body: JSON.stringify({
           teamId,
           jurorId: jurado.id,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
       closeJuradoModal();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          addJuradoToTeam(teamId, jurado, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -733,7 +759,8 @@ export function JuradosAssignment() {
   const reassignJuradoOnTeam = async (
     teamId: number,
     currentJurorId: string,
-    newJuror: Jurado
+    newJuror: Jurado,
+    confirmWarnings = false
   ) => {
     try {
       setIsSubmitting(true);
@@ -744,12 +771,20 @@ export function JuradosAssignment() {
           teamId,
           currentJurorId,
           newJurorId: newJuror.id,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
       closeJuradoModal();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          reassignJuradoOnTeam(teamId, currentJurorId, newJuror, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -761,11 +796,18 @@ export function JuradosAssignment() {
     }
   };
 
-  const removeJuradoFromTeam = async (teamId: number, jurorId: string) => {
-    const confirmed = window.confirm(
-      "¿Seguro que deseas desasignar este jurado del equipo?"
-    );
-    if (!confirmed) return;
+  const removeJuradoFromTeam = async (
+    teamId: number,
+    jurorId: string,
+    confirmWarnings = false
+  ) => {
+    // Al confirmar advertencias el admin ya aceptó desasignar: no se pregunta dos veces
+    if (!confirmWarnings) {
+      const confirmed = window.confirm(
+        "¿Seguro que deseas desasignar este jurado del equipo?"
+      );
+      if (!confirmed) return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -775,11 +817,19 @@ export function JuradosAssignment() {
         body: JSON.stringify({
           teamId,
           jurorId,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          removeJuradoFromTeam(teamId, jurorId, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -1881,6 +1931,12 @@ export function JuradosAssignment() {
             onSubmit={handleEditJurorSubmit}
           />
         )}
+
+        <AssignmentWarningsDialog
+          warnings={assignmentWarnings.warnings}
+          onContinue={assignmentWarnings.continueWithWarnings}
+          onCancel={assignmentWarnings.cancel}
+        />
 
       </div>
     </LayoutAplication>
