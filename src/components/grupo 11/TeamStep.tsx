@@ -38,7 +38,7 @@ export default function TeamStep() {
       if (exists === true) {
         setError("teamName", {
           type: "manual",
-          message: "El equipo ya existe. Por favor elige otro nombre.",
+          message: "Ya existe un equipo con este nombre en esta edición. Por favor elige otro.",
         });
         return;
       }

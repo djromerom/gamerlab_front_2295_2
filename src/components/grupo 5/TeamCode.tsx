@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import { findMyTeam } from "@/lib/opaqueKeys";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import NotEnrolledNotice from "./NotEnrolledNotice";
 import { Team } from "@/types/Team";
 
 interface TeamCodeProps {
@@ -11,6 +12,8 @@ interface TeamCodeProps {
 export default function TeamCode({ variant = "default" }: TeamCodeProps) {
     const [team, setTeam] = useState<Team | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
+    // ARK-128: true cuando ya se sabe si el estudiante tiene equipo en la edición activa
+    const [loaded, setLoaded] = useState(false);
     const { user, userRole } = useAuth();
     const isStudent = userRole === "Estudiante";
 
@@ -32,6 +35,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
 
                 const data = await response.json();
                 setTeams(data); // guardas todos los equipos
+                setLoaded(true);
             } catch (error) {
                 console.error(error);
             }
@@ -66,6 +70,21 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
 
     if (!isStudent) {
         return null;
+    }
+
+    // ARK-128: la cuenta se conserva entre ediciones, pero el equipo es de una edición. Un
+    // estudiante de una edición anterior no tiene equipo en la activa hasta que se inscribe.
+    if (loaded && !team) {
+        return variant === "title" ? (
+            <div className="flex flex-col items-center gap-3 border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card">
+                <h1 className="text-4xl font-bold tracking-tighter border-b-2 border-border pb-2 w-full text-center">Equipo</h1>
+                <NotEnrolledNotice />
+            </div>
+        ) : (
+            <div className="flex items-center gap-3 ml-0 m-4 rounded-2xl border-2 border-border bg-card p-2 pl-4">
+                <NotEnrolledNotice />
+            </div>
+        );
     }
 
     if (variant === "default") {

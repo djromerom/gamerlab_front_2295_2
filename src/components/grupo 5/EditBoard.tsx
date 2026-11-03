@@ -19,6 +19,10 @@ import TeamMembers from "./TeamMembers"
 import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
+import NotEnrolledNotice from "./NotEnrolledNotice";
+
+/** ARK-128: el estudiante no tiene equipo en la edición activa (404 de /teams/:id/full). */
+class NotEnrolledError extends Error {}
 
 export default function EditBoard() {
   //context and refs
@@ -38,6 +42,7 @@ export default function EditBoard() {
 
   //Team videogame information
   const [loading, setLoading] = useState(false)
+  const [notEnrolled, setNotEnrolled] = useState(false)
   const [loadingForm, setLoadingForm] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
   const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', status: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
@@ -113,6 +118,10 @@ export default function EditBoard() {
       credentials: "include",
     })
 
+    // ARK-128: sin equipo en la edición activa (p. ej. participó en una edición anterior)
+    if (response.status === 404) {
+      throw new NotEnrolledError();
+    }
     if (!response.ok) {
       const body = await response.json().catch(() => null);
       throw new Error(body?.message || "No se pudo cargar los datos del equipo.");
@@ -259,6 +268,10 @@ export default function EditBoard() {
           }))
         )
       } catch (error) {
+        if (error instanceof NotEnrolledError) {
+          setNotEnrolled(true);
+          return;
+        }
         const message = error instanceof Error ? error.message : "No se pudo cargar los datos del equipo.";
         console.error(message, error);
         toast.error(message);
@@ -271,6 +284,17 @@ export default function EditBoard() {
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
+  }
+
+  if (notEnrolled) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-8 text-center">
+          <h2 className="text-lg font-medium text-foreground">No hay equipo para editar</h2>
+          <NotEnrolledNotice />
+        </div>
+      </div>
+    )
   }
 
   if (loadingForm) {
