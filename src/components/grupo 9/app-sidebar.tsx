@@ -19,6 +19,7 @@ import {
   House,
   QrCode,
   UserPlus,
+  UserCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -59,6 +60,7 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Users },
+        { name: "Jurados de la Edición", url: "/jurados-edicion", icon: UserCheck },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
         { name: "Escarapelas", url: "/escarapelas", icon: IdCard },
         { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },

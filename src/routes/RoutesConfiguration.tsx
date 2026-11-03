@@ -22,6 +22,7 @@ import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
+import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 
@@ -155,6 +156,11 @@ export const routes: RouteConfig[] = [
   {
     path: "/jurados",
     element: <JuryManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/jurados-edicion",
+    element: <EditionJurorsPage />,
     roles: ["Administrador"],
   },
   {
