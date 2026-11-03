@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
+import { fetchOwnTeamForEdition } from "@/lib/ownTeam";
 
 export default function CircularProgress({
     size = 120,
@@ -11,7 +12,7 @@ export default function CircularProgress({
     labelFormatter,
 }) {
     
-    const { user, userRole } = useAuth();
+    const { userRole } = useAuth();
     const startDate = new Date("2025-11-27T08:30:00");
     const [now, setNow] = useState(new Date())
     const [total, setTotal] = useState<number>(0);
@@ -28,7 +29,8 @@ export default function CircularProgress({
 
 
     const getNumberCalifications = async () => {
-        const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
+        const ownTeam = await fetchOwnTeamForEdition();
+        const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
             method: 'GET',
             credentials: 'include',
         })

@@ -8,8 +8,8 @@ import { ImageCropper } from "../grupo 11/ImageCropper"
 import { TeamVideogameProps } from "@/types/teamVideogames";
 import { useRef, useState, useEffect } from "react"
 import { TeamImages } from "./TeamImages"
-import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
+import { fetchOwnTeamForEdition } from "@/lib/ownTeam";
 
 export default function FormEditVideogame (
     {
@@ -29,7 +29,6 @@ export default function FormEditVideogame (
     const [isDragOver, setIsDragOver] = useState(false); 
     const fileInputRefImages = useRef<HTMLInputElement | null>(null);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
-    const { user } = useAuth();
     const [data, setData] = useState<any>();
     const [error, setError] = useState("");
     const [originalData, setOriginalData] = useState<any>(null);
@@ -75,7 +74,8 @@ export default function FormEditVideogame (
 
     const getImages = async () => {
         try {
-            const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+            const ownTeam = await fetchOwnTeamForEdition();
+            const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
                 method: 'GET',
                 credentials: "include",
             })
