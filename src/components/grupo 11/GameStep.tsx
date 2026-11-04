@@ -138,7 +138,7 @@ export default function GameStep() {
       if ((await res.json()) === true) {
         setError("gameName", {
           type: "manual",
-          message: "Ya existe un videojuego con este nombre. Por favor elige otro.",
+          message: "Ya existe un videojuego con este nombre en esta edición. Por favor elige otro.",
         });
         return;
       }

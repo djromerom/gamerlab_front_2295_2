@@ -95,7 +95,7 @@ export default function MultiStepWizard() {
         nameCheckUrl(import.meta.env.VITE_ENDPOINT_BACKEND, "videogame", data.gameName)
       );
       if (res.ok && (await res.json()) === true) {
-        throw new Error("El nombre del videojuego ya está en uso. Vuelve al paso 3 y cámbialo.");
+        throw new Error("El nombre del videojuego ya está en uso en esta edición. Vuelve al paso 3 y cámbialo.");
       }
 
       const files = [...(data.files ?? []), ...(data.additionalFiles ?? [])];
