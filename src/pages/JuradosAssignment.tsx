@@ -412,6 +412,8 @@ export function JuradosAssignment() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ARK-131: el motivo del bloqueo del back se muestra dentro del diálogo de asignación
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [jurorSearch, setJurorSearch] = useState("");
   const [openJurorMenuId, setOpenJurorMenuId] = useState<string | null>(null);
@@ -708,10 +710,12 @@ export function JuradosAssignment() {
       setReassignContext(null);
     }
 
+    setAssignError(null);
     setShowJuradoModal(true);
   };
 
   const closeJuradoModal = () => {
+    setAssignError(null);
     setSelectedTeam(null);
     setReassignContext(null);
     setShowJuradoModal(false);
@@ -725,6 +729,7 @@ export function JuradosAssignment() {
   ) => {
     try {
       setIsSubmitting(true);
+      setAssignError(null);
 
       await apiRequest("/juror/assignments", {
         method: "POST",
@@ -746,8 +751,8 @@ export function JuradosAssignment() {
         return;
       }
       console.error(error);
-      window.alert(
-        error instanceof Error
+      setAssignError(
+        error instanceof Error && error.message
           ? error.message
           : "No se pudo asignar el jurado."
       );
@@ -764,6 +769,7 @@ export function JuradosAssignment() {
   ) => {
     try {
       setIsSubmitting(true);
+      setAssignError(null);
 
       await apiRequest("/juror/assignments/reassign", {
         method: "PATCH",
@@ -786,8 +792,8 @@ export function JuradosAssignment() {
         return;
       }
       console.error(error);
-      window.alert(
-        error instanceof Error
+      setAssignError(
+        error instanceof Error && error.message
           ? error.message
           : "No se pudo reasignar el jurado."
       );
@@ -1885,6 +1891,7 @@ export function JuradosAssignment() {
             juradosDisponiblesParaModal={juradosDisponiblesParaModal}
             reassignContext={reassignContext}
             isSubmitting={isSubmitting}
+            errorMessage={assignError}
             onClose={closeJuradoModal}
             onAssign={addJuradoToTeam}
             onReassign={reassignJuradoOnTeam}
