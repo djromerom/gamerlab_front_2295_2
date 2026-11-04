@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
 import { TextSizeProvider } from "@/contexts/TextSizeContext";
 import LoginPage from "@/pages/grupo 9/LoginPage";
-import type { AuthContextType } from "@/types/auth";
+import type { AuthContextType, Role } from "@/types/auth";
 
 const auth: Partial<AuthContextType> = {};
 
@@ -39,6 +39,117 @@ const app = () => (
     </MemoryRouter>
   </TextSizeProvider>
 );
+
+// Muestra el state con el que se llegó al login, para comprobar que "Salir" no guarda ruta de origen
+function LoginWithState() {
+  const location = useLocation();
+  return (
+    <>
+      <LoginPage />
+      <output data-testid="login-state">
+        {JSON.stringify(location.state ?? null)}
+      </output>
+    </>
+  );
+}
+
+// Una pantalla protegida por rol, como en RoutesConfiguration
+const ROLE_SCREENS: Record<Role, string> = {
+  Jurado: "/pendientes-calificar/7",
+  Estudiante: "/mis-equipos",
+  Administrador: "/admin/usuarios",
+  Profesor: "/profesor/cursos",
+  Consultor: "/consultor/reportes",
+  Staff: "/staff/puntos",
+};
+
+const roleApp = (initialPath: string) => (
+  <TextSizeProvider>
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        {(Object.keys(ROLE_SCREENS) as Role[]).map((role) => (
+          <Route key={role} element={<ProtectedRoute roles={[role]} />}>
+            <Route
+              path={ROLE_SCREENS[role]}
+              element={<p>Pantalla de {role}</p>}
+            />
+          </Route>
+        ))}
+        <Route path="/login" element={<LoginWithState />} />
+        <Route path="/inicio" element={<p>Inicio</p>} />
+        <Route path="/unauthorized" element={<p>Acceso no autorizado</p>} />
+      </Routes>
+    </MemoryRouter>
+  </TextSizeProvider>
+);
+
+const signIn = (role: Role) =>
+  Object.assign(auth, {
+    user: { email: `${role.toLowerCase()}@test.co`, role: { name: role } },
+    userRole: role,
+    loading: false,
+    sessionExpired: false,
+    signedOut: false,
+    login: vi.fn(),
+  });
+
+describe("LoginPage: cambio de rol después de cerrar sesión (BG-08)", () => {
+  afterEach(cleanup);
+
+  it.each<[Role, Role]>([
+    ["Jurado", "Estudiante"],
+    ["Estudiante", "Jurado"],
+    ["Administrador", "Estudiante"],
+    ["Profesor", "Jurado"],
+  ])(
+    "%s cierra sesión con Salir y entra como %s: llega a /inicio sin ver Acceso no autorizado",
+    (fromRole, toRole) => {
+      signIn(fromRole);
+      const path = ROLE_SCREENS[fromRole];
+      const { rerender } = render(roleApp(path));
+      expect(screen.getByText(`Pantalla de ${fromRole}`)).toBeTruthy();
+
+      // Presiona "Salir": AuthContext marca el cierre voluntario
+      Object.assign(auth, { user: null, userRole: null, signedOut: true });
+      rerender(roleApp(path));
+
+      expect(screen.getByRole("button", { name: "Ingresar" })).toBeTruthy();
+      expect(screen.getByTestId("login-state").textContent).toBe("null");
+      expect(screen.queryByRole("alert")).toBeNull();
+
+      // Entra otra cuenta con otro rol en el mismo navegador
+      signIn(toRole);
+      rerender(roleApp(path));
+
+      expect(screen.getByText("Inicio")).toBeTruthy();
+      expect(screen.queryByText("Acceso no autorizado")).toBeNull();
+    },
+  );
+
+  it("si la sesión vence y entra otro rol sin permiso en la ruta de origen, va a /inicio", () => {
+    Object.assign(auth, {
+      user: null,
+      userRole: null,
+      loading: false,
+      sessionExpired: true,
+      signedOut: false,
+      login: vi.fn(),
+    });
+    const path = ROLE_SCREENS.Jurado;
+    const { rerender } = render(roleApp(path));
+
+    // La sesión vencida sí guarda la ruta de origen y los roles que la permiten
+    expect(
+      JSON.parse(screen.getByTestId("login-state").textContent!),
+    ).toMatchObject({ from: { pathname: path }, roles: ["Jurado"] });
+
+    signIn("Estudiante");
+    rerender(roleApp(path));
+
+    expect(screen.getByText("Inicio")).toBeTruthy();
+    expect(screen.queryByText("Acceso no autorizado")).toBeNull();
+  });
+});
 
 describe("LoginPage: sesión expirada (HU-05)", () => {
   afterEach(cleanup);

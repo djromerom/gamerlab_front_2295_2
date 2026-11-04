@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { type Location, useLocation, useNavigate } from "react-router-dom";
+import type { Role } from "@/types/auth";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -28,16 +29,20 @@ export default function LoginPage() {
     };
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, user, loading, sessionExpired } = useAuth();
+  const { login, user, userRole, loading, sessionExpired } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // Ruta protegida de la que venía el usuario (ProtectedRoute la envía en el state)
-  const from = (location.state as { from?: Location } | null)?.from;
+  // Ruta protegida de la que venía el usuario y los roles que la permiten
+  // (ProtectedRoute los envía en el state)
+  const { from, roles: fromRoles } =
+    (location.state as { from?: Location; roles?: Role[] } | null) ?? {};
 
   // Después de iniciar sesión se vuelve a la ruta de origen con su state,
-  // así el jurado retoma la calificación donde iba (HU-05)
+  // así el jurado retoma la calificación donde iba (HU-05).
+  // Si el rol que entra no tiene permiso en esa ruta, se va a /inicio en vez de /unauthorized (BG-08)
   const redirectAfterLogin = () => {
-    if (from) {
+    const allowed = !fromRoles || (!!userRole && fromRoles.includes(userRole));
+    if (from && allowed) {
       navigate(`${from.pathname}${from.search}${from.hash}`, {
         replace: true,
         state: from.state,
@@ -47,13 +52,15 @@ export default function LoginPage() {
     }
   };
 
-  // Redirect if user is already authenticated
+  // Redirige cuando hay usuario autenticado (ya tenía sesión o acaba de iniciarla).
+  // [MODIFICADO]: Es la única redirección tras el login, para leer el rol del usuario nuevo
+  // [ANTES]: handleLogIn también redirigía, con el rol todavía sin actualizar
   useEffect(() => {
     if (!loading && user) {
       redirectAfterLogin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, navigate]);
+  }, [user, userRole, loading, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +72,6 @@ export default function LoginPage() {
     setError(null);
     try {
       await login({ email, password });
-      redirectAfterLogin();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

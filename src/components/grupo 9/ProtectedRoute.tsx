@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
-  const { user, userRole, loading } = useAuth();
+  const { user, userRole, loading, signedOut } = useAuth();
   const location = useLocation();
 
   // Mientras carga perfil…
@@ -21,10 +21,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles }) => {
       </>
     );
 
-  // Si no hay usuario autenticado, vamos a /login recordando la ruta (y su state)
-  // para volver a ella después de iniciar sesión
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // [MODIFICADO]: Si el usuario cerró sesión con "Salir" va al login sin ruta de origen (BG-08)
+    // [ANTES]: Siempre se guardaba la ruta, y otra cuenta con otro rol terminaba en /unauthorized
+    if (signedOut) {
+      return <Navigate to="/login" replace />;
+    }
+    // Sesión vencida o enlace directo: se recuerda la ruta (y su state) y los roles que la
+    // permiten, para volver a ella después de iniciar sesión (HU-05)
+    return <Navigate to="/login" replace state={{ from: location, roles }} />;
   }
 
   // Si el rol no está permitido…

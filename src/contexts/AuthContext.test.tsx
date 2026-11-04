@@ -45,6 +45,9 @@ function createFakeBackend(accessTtlS = 900) {
       });
     }
 
+    if (url === `${API}/auth/login`) return json(201, {});
+    if (url === `${API}/auth/logout`) return json(201, {});
+
     const accessValid = Date.now() < state.accessExpiresAt;
     if (url === `${API}/auth/me`) {
       return accessValid ? json(200, PROFILE) : json(401, {});
@@ -64,19 +67,35 @@ function createFakeBackend(accessTtlS = 900) {
 }
 
 function SessionProbe() {
-  const { user, loading, sessionExpired } = useAuth();
+  const { user, loading, sessionExpired, signedOut, login, logout } =
+    useAuth();
   return (
     <>
       <span data-testid="user">
         {loading ? "loading" : (user?.email ?? "none")}
       </span>
       <span data-testid="expired">{String(sessionExpired)}</span>
+      <span data-testid="signed-out">{String(signedOut)}</span>
+      <button onClick={() => logout()}>Salir</button>
+      <button
+        onClick={() =>
+          login({ email: PROFILE.email, password: "secreto" }).catch(() => {})
+        }
+      >
+        Ingresar
+      </button>
     </>
   );
 }
 
 const currentUser = () => screen.getByTestId("user").textContent;
 const sessionExpired = () => screen.getByTestId("expired").textContent;
+const signedOut = () => screen.getByTestId("signed-out").textContent;
+const click = (name: string) =>
+  act(async () => {
+    screen.getByRole("button", { name }).click();
+    await vi.advanceTimersByTimeAsync(0);
+  });
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
 async function startSession() {
@@ -131,6 +150,29 @@ describe("AuthContext: sesión del jurado (HU-05)", () => {
 
     expect(currentUser()).toBe("none");
     expect(sessionExpired()).toBe("true");
+    expect(signedOut()).toBe("false");
+  });
+
+  it("al presionar Salir cierra la sesión como voluntaria, no como expirada (BG-08)", async () => {
+    createFakeBackend();
+    await startSession();
+
+    await click("Salir");
+
+    expect(currentUser()).toBe("none");
+    expect(signedOut()).toBe("true");
+    expect(sessionExpired()).toBe("false");
+  });
+
+  it("al iniciar sesión de nuevo después de Salir deja de marcar el cierre voluntario", async () => {
+    createFakeBackend();
+    await startSession();
+    await click("Salir");
+
+    await click("Ingresar");
+
+    expect(currentUser()).toBe(PROFILE.email);
+    expect(signedOut()).toBe("false");
   });
 
   it("si falla la red al renovar, conserva la sesión y reintenta", async () => {

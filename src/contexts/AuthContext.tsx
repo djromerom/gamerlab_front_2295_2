@@ -29,6 +29,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [sessionExpired, setSessionExpired] = useState<boolean>(false);
+  // Cierre de sesión voluntario (botón "Salir"): a diferencia de la sesión vencida,
+  // no se guarda la ruta de origen para volver a ella (BG-08)
+  const [signedOut, setSignedOut] = useState<boolean>(false);
 
   // [MODIFICACIÓN]: Temporizador de renovación programado según accessTokenExpiresIn (HU-05)
   // [ANTES]: setInterval fijo de 14 min, con solo 1 min de margen sobre el token de 15 min
@@ -135,6 +138,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (hasProfile) {
         hasSessionRef.current = true;
         setSessionExpired(false);
+        setSignedOut(false);
         scheduleRefresh(getRefreshDelayMs(data.accessTokenExpiresIn));
       }
       return data.accessToken;
@@ -202,6 +206,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       console.error("AuthContext: Logout API call failed:", error);
     }
+    // Se marca junto con setUser(null) para que ProtectedRoute lo vea en el mismo render
+    setSignedOut(true);
     setUser(null);
     setAccessToken(null);
     setLoading(false);
@@ -256,11 +262,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       userRole,
       loading,
       sessionExpired,
+      signedOut,
       login,
       refreshAccessToken: contextRefreshAccessToken,
       logout,
     }),
-    [user, userRole, loading, sessionExpired, accessToken],
+    [user, userRole, loading, sessionExpired, signedOut, accessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
