@@ -56,6 +56,11 @@ import {
 } from "@/lib/assignmentWarnings";
 import { useAssignmentWarnings } from "@/hooks/useAssignmentWarnings";
 import { AssignmentWarningsDialog } from "@/components/jurados-modals/AssignmentWarningsDialog";
+import { useWorkingEdition } from "@/hooks/useWorkingEdition";
+import {
+  confirmRemoveAllAssignmentsText,
+  confirmRemoveJurorAssignmentsText,
+} from "@/lib/workingEdition";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -412,6 +417,8 @@ export function JuradosAssignment() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ARK-133: «quitar todas» solo afecta a la edición de trabajo; los textos la nombran
+  const workingEdition = useWorkingEdition();
   // ARK-131: el motivo del bloqueo del back se muestra dentro del diálogo de asignación
   const [assignError, setAssignError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -849,16 +856,17 @@ export function JuradosAssignment() {
 
   const resetAllAssignments = async () => {
     const confirmed = window.confirm(
-      "¿Estás seguro de que quieres eliminar todas las asignaciones manuales?"
+      confirmRemoveAllAssignmentsText(workingEdition?.title)
     );
     if (!confirmed) return;
 
     try {
       setIsSubmitting(true);
 
-      await apiRequest("/juror/assignments/all", {
+      const result = await apiRequest<{ message?: string }>("/juror/assignments/all", {
         method: "DELETE",
       });
+      if (result?.message) toast.success(result.message);
 
       await loadData();
     } catch (error) {
@@ -1106,7 +1114,7 @@ export function JuradosAssignment() {
 
   const handleRemoveTeamsFromJuror = async (jurorId: string, jurorName: string) => {
     const confirmed = window.confirm(
-      `¿Seguro que deseas quitar todos los equipos asignados a ${jurorName}?`
+      confirmRemoveJurorAssignmentsText(jurorName, workingEdition?.title)
     );
     if (!confirmed) return;
 
@@ -1114,9 +1122,10 @@ export function JuradosAssignment() {
       setIsSubmitting(true);
       setOpenJurorMenuId(null);
 
-      await apiRequest(`/juror/${jurorId}/assignments`, {
+      const result = await apiRequest<{ message?: string }>(`/juror/${jurorId}/assignments`, {
         method: "DELETE",
       });
+      if (result?.message) toast.success(result.message);
 
       await loadData();
     } catch (error) {

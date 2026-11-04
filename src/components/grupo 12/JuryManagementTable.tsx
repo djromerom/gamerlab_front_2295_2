@@ -20,11 +20,18 @@ import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_CAT
 import { juryManagement } from "@/hooks/juryManagement";
 import { getJurorCategoryLabel, getJurorTypeLabel } from "@/types/jurados";
 import { JurorCategoryTypeFields } from "./JurorCategoryTypeFields";
+import { useWorkingEdition } from "@/hooks/useWorkingEdition";
+import {
+  confirmRemoveAllAssignmentsText,
+  confirmRemoveJurorAssignmentsText,
+} from "@/lib/workingEdition";
 
 export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
-  // 
+  //
   // <-- Recibe isLoading
   const customFetch = useFetch();
+  // ARK-133: «Desasignar todos» y «Quitar equipos» solo afectan a la edición de trabajo
+  const workingEdition = useWorkingEdition();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newJuror, setNewJuror] = useState<JurorFormData>(EMPTY_JUROR_FORM);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -659,7 +666,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               variant="destructive"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
               className="flex justify-center items-center cursor-pointer gap-1.5 px-2.5 lg:px-4"
-              onClick={() => { setLoading(true); juryManagement.deleteAllAssignments(setLoading) }}
+              onClick={() => {
+                if (!window.confirm(confirmRemoveAllAssignmentsText(workingEdition?.title))) return;
+                setLoading(true);
+                juryManagement.deleteAllAssignments(setLoading);
+              }}
             >
               <BadgeXIcon className="h-4 w-4" />
               <p className="hidden lg:block">
@@ -901,7 +912,12 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          onClick={() => { setLoading(true); juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading) }}
+                          onClick={() => {
+                            const name = `${juror.firstName} ${juror.lastName}`.trim();
+                            if (!window.confirm(confirmRemoveJurorAssignmentsText(name, workingEdition?.title))) return;
+                            setLoading(true);
+                            juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading);
+                          }}
                           disabled={internalIsLoading}
                           className="cursor-pointer"
                         >
