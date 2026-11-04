@@ -6,6 +6,11 @@ import type { Team } from "@/types/Team";
 let activeEditionPromise: Promise<number> | null = null;
 let teamsPromise: Promise<Team[]> | null = null;
 
+export function resetOwnTeamCacheForTests(): void {
+  activeEditionPromise = null;
+  teamsPromise = null;
+}
+
 export function resolveOwnTeamForEdition(
   teams: Team[],
   editionId: number,

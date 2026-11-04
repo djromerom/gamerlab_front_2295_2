@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/lib/api";
 import { fetchEditions } from "@/fetchs/editions";
-import { fetchOwnTeamForEdition, resolveOwnTeamForEdition } from "./ownTeam";
+import {
+  fetchOwnTeamForEdition,
+  resolveOwnTeamForEdition,
+  resetOwnTeamCacheForTests,
+} from "./ownTeam";
 import type { Team } from "@/types/Team";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));
@@ -32,6 +36,7 @@ describe("resolveOwnTeamForEdition", () => {
     beforeEach(() => {
       vi.resetModules();
       vi.clearAllMocks();
+      resetOwnTeamCacheForTests();
     });
 
     it("rechaza cuando no existe una edición activa", async () => {
@@ -52,7 +57,7 @@ describe("resolveOwnTeamForEdition", () => {
       } as unknown as Response);
 
       await expect(fetchOwnTeamForEdition()).rejects.toThrow(
-        "No se encontró un equipo propio en la edición seleccionada.",
+        "No tienes un equipo en la edición actual.",
       );
     });
   });
