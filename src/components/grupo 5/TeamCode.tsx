@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { findMyTeam } from "@/lib/opaqueKeys";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotEnrolledNotice from "./NotEnrolledNotice";
 import { Team } from "@/types/Team";
@@ -10,7 +10,6 @@ interface TeamCodeProps {
 }
 
 export default function TeamCode({ variant = "default" }: TeamCodeProps) {
-    const [team, setTeam] = useState<Team | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
     // ARK-128: true cuando ya se sabe si el estudiante tiene equipo en la edición activa
     const [loaded, setLoaded] = useState(false);
@@ -44,14 +43,13 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
         fetchData();
     }, [isStudent]);
 
-    //   2. Filtrar team cuando user.id YA EXISTE y teams YA ESTÁN CARGADOS
-    useEffect(() => {
-        if (!user?.id || teams.length === 0) return;
-
-        const userTeam = findMyTeam(teams);
-        setTeam(userTeam);
-
-    }, [user?.id, teams]);
+    // 2. El equipo propio se calcula en el render a partir de `teams` (no en un efecto posterior):
+    // así, cuando `loaded` pasa a true, `team` ya está resuelto y el aviso de "no inscrito" no
+    // parpadea para quien sí tiene equipo (ARK-128).
+    const team = useMemo<Team | null>(
+        () => (user?.id ? findMyTeam(teams) : null),
+        [user?.id, teams],
+    );
 
     // [MODIFICACIÓN]: Función para extraer y mostrar solo el tercer fragmento (XXX) del código
     // si el usuario pertenece a un equipo "NO colegio" (formato NY-AAA-XXX).
@@ -74,7 +72,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
 
     // ARK-128: la cuenta se conserva entre ediciones, pero el equipo es de una edición. Un
     // estudiante de una edición anterior no tiene equipo en la activa hasta que se inscribe.
-    if (loaded && !team) {
+    if (loaded && user?.id && !team) {
         return variant === "title" ? (
             <div className="flex flex-col items-center gap-3 border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card">
                 <h1 className="text-4xl font-bold tracking-tighter border-b-2 border-border pb-2 w-full text-center">Equipo</h1>

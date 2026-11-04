@@ -20,9 +20,7 @@ import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/te
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
 import NotEnrolledNotice from "./NotEnrolledNotice";
-
-/** ARK-128: el estudiante no tiene equipo en la edición activa (404 de /teams/:id/full). */
-class NotEnrolledError extends Error {}
+import { NotEnrolledError, isNotEnrolledError } from "@/lib/notEnrolled";
 
 export default function EditBoard() {
   //context and refs
@@ -268,7 +266,8 @@ export default function EditBoard() {
           }))
         )
       } catch (error) {
-        if (error instanceof NotEnrolledError) {
+        // ARK-128: sin equipo en la edición activa no es una falla; se muestra el aviso
+        if (isNotEnrolledError(error)) {
           setNotEnrolled(true);
           return;
         }
