@@ -24,6 +24,8 @@ interface JuradoAssignModalProps {
     currentJurorName: string;
   } | null;
   isSubmitting: boolean;
+  /** Mensaje del back cuando la asignación se bloquea (p. ej. equipo de otra edición, ARK-131). */
+  errorMessage?: string | null;
   onClose: () => void;
   onAssign: (teamId: number, jurado: Jurado) => void;
   onReassign: (teamId: number, currentJurorId: string, newJuror: Jurado) => void;
@@ -34,6 +36,7 @@ export function JuradoAssignModal({
   juradosDisponiblesParaModal,
   reassignContext,
   isSubmitting,
+  errorMessage = null,
   onClose,
   onAssign,
   onReassign,
@@ -89,6 +92,15 @@ export function JuradoAssignModal({
               </div>
             )}
           </div>
+
+          {errorMessage && (
+            <div
+              role="alert"
+              className="mb-4 whitespace-pre-line rounded-xl border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {errorMessage}
+            </div>
+          )}
 
           <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
             {juradosDisponiblesParaModal.map((jurado) => (
