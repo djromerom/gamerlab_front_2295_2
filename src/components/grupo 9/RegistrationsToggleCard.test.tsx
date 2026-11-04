@@ -92,4 +92,62 @@ describe("RegistrationsToggleCard", () => {
     expect(screen.queryByText("Cerradas")).toBeNull();
     expect((screen.getByRole("switch") as HTMLButtonElement).disabled).toBe(true);
   });
+  describe("ARK-136: aviso sin NRC al abrir", () => {
+    const readinessUrl = `${API}/nrcs/registration-readiness`;
+    const stub = (readiness: unknown, calls: { method?: string; body?: unknown }[]) =>
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          if (String(input) === readinessUrl) {
+            return new Response(JSON.stringify(readiness), { status: 200 });
+          }
+          if (String(input) !== url) return new Response("{}", { status: 404 });
+          calls.push({ method: init?.method, body: init?.body });
+          const open = init?.method === "PATCH";
+          return new Response(JSON.stringify({ registrationsOpen: open }), { status: 200 });
+        }),
+      );
+
+    it("muestra el orden recomendado", async () => {
+      stub({ edition: null, activeNrcCount: 0, hasActiveNrcs: false }, []);
+      render(<RegistrationsToggleCard />);
+      expect(await screen.findByText(/carga sus NRC y después abre las inscripciones/)).toBeTruthy();
+    });
+
+    it("sin NRC pide confirmación; Cancelar no envía el PATCH", async () => {
+      const calls: { method?: string }[] = [];
+      stub({ edition: { id: 5, title: "Feria 5" }, activeNrcCount: 0, hasActiveNrcs: false }, calls);
+      render(<RegistrationsToggleCard />);
+      await screen.findByText("Cerradas");
+      fireEvent.click(screen.getByRole("switch"));
+      expect(await screen.findByText("La edición no tiene NRC activos")).toBeTruthy();
+      expect(screen.getByText(/«Feria 5» todavía no tiene NRC activos/)).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+      await waitFor(() => expect(screen.queryByText("La edición no tiene NRC activos")).toBeNull());
+      expect(calls.some((c) => c.method === "PATCH")).toBe(false);
+      expect(screen.getByText("Cerradas")).toBeTruthy();
+    });
+
+    it("sin NRC, Abrir de todas formas envía el PATCH", async () => {
+      const calls: { method?: string; body?: unknown }[] = [];
+      stub({ edition: { id: 5, title: "Feria 5" }, activeNrcCount: 0, hasActiveNrcs: false }, calls);
+      render(<RegistrationsToggleCard />);
+      await screen.findByText("Cerradas");
+      fireEvent.click(screen.getByRole("switch"));
+      fireEvent.click(await screen.findByRole("button", { name: "Abrir de todas formas" }));
+      await screen.findByText("Abiertas");
+      const patch = calls.find((c) => c.method === "PATCH");
+      expect(JSON.parse(String(patch?.body))).toEqual({ open: true });
+    });
+
+    it("con NRC abre sin preguntar", async () => {
+      const calls: { method?: string }[] = [];
+      stub({ edition: { id: 5, title: "Feria 5" }, activeNrcCount: 3, hasActiveNrcs: true }, calls);
+      render(<RegistrationsToggleCard />);
+      await screen.findByText("Cerradas");
+      fireEvent.click(screen.getByRole("switch"));
+      await screen.findByText("Abiertas");
+      expect(screen.queryByText("La edición no tiene NRC activos")).toBeNull();
+    });
+  });
 });

@@ -5,6 +5,17 @@ import { NrcsTable } from "@/components/grupo 9/NrcsTable";
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { useFetch } from "@/hooks/useFetch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info, Lock } from "lucide-react";
+import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import type { ListEdition } from "@/fetchs/editionStudents";
+import { NRC_ORDER_HINT, nrcsUrl } from "@/fetchs/nrcs";
+
+const EDITION_STATUS_LABEL: Record<EditionStatus, string> = {
+  ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+  ARCHIVED: "Archivada",
+};
 
 interface Nrc {
   id: number;
@@ -38,6 +49,8 @@ interface PaginatedNrcs {
     itemsPerPage: number;
     totalPages: number;
   };
+  /** ARK-136: edición del listado (con `readOnly`); `null` si no hay edición activa. */
+  edition?: ListEdition | null;
 }
 
 const NrcsPage = () => {
@@ -51,6 +64,18 @@ const NrcsPage = () => {
   const [refreshFlag, setRefreshFlag] = useState(false);
   const customFecth = useFetch();
 
+  // ARK-136 (BG-23): edición elegida (undefined = la activa) y la que respondió el back
+  const [editions, setEditions] = useState<Edition[]>([]);
+  const [editionId, setEditionId] = useState<number | undefined>(undefined);
+  const edition = nrcsData?.edition ?? null;
+  const readOnly = edition?.readOnly ?? false;
+
+  useEffect(() => {
+    fetchEditions()
+      .then(setEditions)
+      .catch(() => setEditions([])); // sin la lista queda la edición activa por defecto
+  }, []);
+
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
   const fetchNrcs = async (page: number, limit: number) => {
@@ -59,7 +84,7 @@ const NrcsPage = () => {
 
     try {
       const res = await customFecth(
-        `${API_BASE_URL}/nrcs?page=${page}&limit=${limit}`,
+        nrcsUrl(API_BASE_URL, { page, limit, editionId }),
         {
           method: "GET",
           credentials: "include",
@@ -103,7 +128,12 @@ const NrcsPage = () => {
 
   useEffect(() => {
     fetchNrcs(pagination.page, pagination.limit);
-  }, [pagination.page, pagination.limit, refreshFlag]);
+  }, [pagination.page, pagination.limit, refreshFlag, editionId]);
+
+  const changeEdition = (value: string) => {
+    setEditionId(value ? Number(value) : undefined);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
 
   const handlePageChange = (page: number) => {
     setPagination((prev) => ({ ...prev, page }));
@@ -115,8 +145,59 @@ const NrcsPage = () => {
 
   const breadcrumbs = [{ label: "NRC's", href: "/nrcs" }];
 
+  const header = (
+    <div className="space-y-3 px-4 pt-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm opacity-80">{NRC_ORDER_HINT}</p>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="shrink-0">Edición</span>
+          <select
+            aria-label="Edición"
+            value={editionId ?? ""}
+            onChange={(e) => changeEdition(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-2 text-sm max-w-[260px]"
+          >
+            <option value="">Edición activa</option>
+            {editions.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.title} · {EDITION_STATUS_LABEL[e.status] ?? e.status}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {readOnly && edition && (
+        <Alert>
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Edición de solo lectura</AlertTitle>
+          <AlertDescription>
+            {edition.title} no es la edición activa: sus NRC se consultan como historial, pero no se agregan,
+            editan ni eliminan.
+          </AlertDescription>
+        </Alert>
+      )}
+      {!readOnly && edition && nrcsData?.metadata.totalItems === 0 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>{edition.title} todavía no tiene NRC</AlertTitle>
+          <AlertDescription>
+            Cada equipo debe elegir al menos un NRC: cárgalos antes de abrir las inscripciones.
+          </AlertDescription>
+        </Alert>
+      )}
+      {nrcsData && !edition && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>No hay una edición activa</AlertTitle>
+          <AlertDescription>Activa una edición en Ediciones para cargar sus NRC.</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
+      {header}
       {isPageLoading ? (
         <LoadingScreen text="Cargando NRCs..." />
       ) : (
@@ -139,16 +220,9 @@ const NrcsPage = () => {
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
               refreshData={refreshData}
+              readOnly={readOnly}
             />
           )}
-          {!isPageLoading &&
-            !error &&
-            nrcsData &&
-            nrcsData.data.length === 0 && (
-              <div className="p-4 text-center text-gray-500">
-                No se encontraron NRC's activos.
-              </div>
-            )}
         </>
       )}
     </LayoutAplication>
