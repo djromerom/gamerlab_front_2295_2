@@ -8,7 +8,20 @@ import { useState, useEffect, useCallback } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { PaginatedTeams, TeamConfirmationStatusResponse } from "@/components/grupo 9/teams-utils";
 import type { TeamRowData } from "@/components/grupo 9/teams-utils";
-import { set } from "react-hook-form";
+import { EditionStudentsPanel } from "@/components/grupo 9/EditionStudentsPanel";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Lock } from "lucide-react";
+import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import { teamsUrl, type ListEdition } from "@/fetchs/editionStudents";
+
+const EDITION_STATUS_LABEL: Record<EditionStatus, string> = {
+  ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+  ARCHIVED: "Archivada",
+};
+
+type View = "teams" | "students";
 
 const TeamsManagementPage = () => {
   const [allTeams, setAllTeams] = useState<TeamRowData[]>([]);
@@ -23,6 +36,19 @@ const TeamsManagementPage = () => {
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
   const [emailConfirmMap, setEmailConfirmMap] = useState<Record<number, TeamConfirmationStatusResponse | null>>({});
+
+  // ARK-129 (HU-26): edición elegida (undefined = la activa) y la que respondió el back
+  const [editions, setEditions] = useState<Edition[]>([]);
+  const [editionId, setEditionId] = useState<number | undefined>(undefined);
+  const [edition, setEdition] = useState<ListEdition | null>(null);
+  const [view, setView] = useState<View>("teams");
+  const readOnly = edition?.readOnly ?? false;
+
+  useEffect(() => {
+    fetchEditions()
+      .then(setEditions)
+      .catch(() => setEditions([])); // sin la lista queda la edición activa por defecto
+  }, []);
 
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 
@@ -193,7 +219,7 @@ const TeamsManagementPage = () => {
   const fetchAllTeams = async () => {
     try {
       const res = await apiFetch(
-        `${API_ENDPOINT}/teams`,
+        teamsUrl(API_ENDPOINT, { editionId }),
         {
           method: "GET",
           credentials: "include",
@@ -232,7 +258,7 @@ const TeamsManagementPage = () => {
 
     try {
       const res = await apiFetch(
-        `${API_ENDPOINT}/teams?page=${page}&limit=${limit}`,
+        teamsUrl(API_ENDPOINT, { page, limit, editionId }),
         {
           method: "GET",
           credentials: "include",
@@ -257,6 +283,7 @@ const TeamsManagementPage = () => {
       }
 
       const apiResponse = await res.json();
+      setEdition(apiResponse?.edition ?? null);
 
       let dataRespond: PaginatedTeams;
 
@@ -325,7 +352,12 @@ const TeamsManagementPage = () => {
   useEffect(() => {
     fetchTeams(pagination.page, pagination.limit);
     fetchAllTeams();
-  }, [pagination.page, pagination.limit, refreshFlag]);
+  }, [pagination.page, pagination.limit, refreshFlag, editionId]);
+
+  const changeEdition = (value: string) => {
+    setEditionId(value ? Number(value) : undefined);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
 
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
@@ -336,6 +368,59 @@ const TeamsManagementPage = () => {
   };
 
   const breadcrumbs = [{ label: "Equipos Inscritos", href: "/equipos-inscritos" }];
+
+  const header = (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="inline-flex rounded-md p-1 bg-muted/10 gap-1" role="tablist" aria-label="Vista">
+          <Button
+            size="sm"
+            role="tab"
+            aria-selected={view === "teams"}
+            variant={view === "teams" ? "default" : "ghost"}
+            onClick={() => setView("teams")}
+          >
+            Equipos
+          </Button>
+          <Button
+            size="sm"
+            role="tab"
+            aria-selected={view === "students"}
+            variant={view === "students" ? "default" : "ghost"}
+            onClick={() => setView("students")}
+          >
+            Estudiantes
+          </Button>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="shrink-0">Edición</span>
+          <select
+            aria-label="Edición"
+            value={editionId ?? ""}
+            onChange={(e) => changeEdition(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-2 text-sm max-w-[260px]"
+          >
+            <option value="">Edición activa</option>
+            {editions.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.title} · {EDITION_STATUS_LABEL[e.status] ?? e.status}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {readOnly && edition && (
+        <Alert>
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Edición de solo lectura</AlertTitle>
+          <AlertDescription>
+            {edition.title} no es la edición activa: se puede consultar como historial, pero no se agregan, editan ni
+            eliminan equipos.
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
@@ -352,7 +437,17 @@ const TeamsManagementPage = () => {
             </div>
           )}
 
-          {teamsData && (
+          {view === "students" && (
+            <div className="bg-background text-foreground min-h-screen p-4">
+              <div className="flex flex-col gap-4 mb-6 px-4">
+                <h1 className="text-lg md:text-xl font-medium">Equipos Inscritos</h1>
+                {header}
+              </div>
+              <EditionStudentsPanel editionId={editionId} />
+            </div>
+          )}
+
+          {view === "teams" && teamsData && (
             <TeamsManagementTable
               teams={teamsData.data}
               paginationMeta={teamsData.metadata}
@@ -362,6 +457,8 @@ const TeamsManagementPage = () => {
               onLimitChange={handleLimitChange}
               refreshData={refreshData}
               allTeams={allTeams}
+              readOnly={readOnly}
+              headerSlot={header}
               statusEmailLeader={(email: string) => {
                 const team = teamsData.data.find(t => t.integrantes?.[0]?.correo === email);
                 return team ? emailConfirmMap[team.id_equipo] ?? null : null;
@@ -369,7 +466,7 @@ const TeamsManagementPage = () => {
             />
           )}
 
-          {!isPageLoading && !error && ((teamsData?.metadata?.totalItems ?? teamsData?.data?.length ?? 0) === 0) && (
+          {view === "teams" && !isPageLoading && !error && ((teamsData?.metadata?.totalItems ?? teamsData?.data?.length ?? 0) === 0) && (
             <div className="p-4 text-center text-gray-500">
               No se encontraron equipos inscritos.
             </div>
