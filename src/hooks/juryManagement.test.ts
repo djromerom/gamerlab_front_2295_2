@@ -49,3 +49,42 @@ describe("juryManagement.getAllJuries (buscador de Personal → Jurados)", () =>
     await expect(juryManagement.getAllJuries()).rejects.toThrow("Error 400: Limit must be at most 100.");
   });
 });
+
+describe("juryManagement: quitar todas las asignaciones (ARK-133)", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("si el back responde error no muestra éxito ni recarga", async () => {
+    const { toast } = await import("sonner");
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    const reload = vi.spyOn(globalThis, "setTimeout");
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: "No hay asignaciones de evaluadores en «Feria 5» para eliminar." }), {
+        status: 400,
+      }),
+    );
+    const setLoading = vi.fn();
+
+    await juryManagement.deleteAllAssignments(setLoading);
+
+    expect(toast.error).toHaveBeenCalledWith("No hay asignaciones de evaluadores en «Feria 5» para eliminar.");
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    expect(setLoading).toHaveBeenCalledWith(false);
+    reload.mockRestore();
+  });
+
+  it("con éxito muestra el mensaje del back (con la edición y la cantidad)", async () => {
+    const { toast } = await import("sonner");
+    vi.mocked(toast.success).mockClear();
+    vi.useFakeTimers();
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: "Se quitaron 2 equipos de «Feria 5» al evaluador." }), { status: 200 }),
+    );
+
+    await juryManagement.deleteAllAsignmentsByJury("j-1", vi.fn());
+
+    expect(toast.success).toHaveBeenCalledWith("Se quitaron 2 equipos de «Feria 5» al evaluador.");
+    vi.useRealTimers();
+  });
+});

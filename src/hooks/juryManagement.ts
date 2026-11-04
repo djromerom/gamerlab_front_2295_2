@@ -151,15 +151,17 @@ export const juryManagement = {
         })
         const data = await res.json()
 
+        // ARK-133: con error (p. ej. 400 «no hay asignaciones») se avisa y no se recarga
         if (!res.ok) {
             setLoading(false)
             toast.error(data.message)
+            return
         }
         setLoading(false)
         toast.success(data.message)
         setTimeout(() => {
           window.location.reload();
-        }, 1000) 
+        }, 1000)
     },
 
     deleteAllAsignmentsByJury: async (juryId, setLoading) => {
@@ -173,6 +175,7 @@ export const juryManagement = {
         if (!res.ok) {
             setLoading(false)
             toast.error(data.message)
+            return
         }
         setLoading(false)
         toast.success(data.message)

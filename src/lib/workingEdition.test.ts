@@ -1,5 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { findWorkingEdition } from "./workingEdition";
+import {
+  confirmRemoveAllAssignmentsText,
+  confirmRemoveJurorAssignmentsText,
+  findWorkingEdition,
+} from "./workingEdition";
+
+describe("textos de quitar asignaciones (ARK-133)", () => {
+  it("«quitar todas» nombra la edición y aclara que el historial se conserva", () => {
+    const text = confirmRemoveAllAssignmentsText("Feria 5");
+    expect(text).toContain("«Feria 5»");
+    expect(text).toContain("ediciones anteriores se conservan");
+  });
+
+  it("«quitar los equipos de un jurado» nombra al jurado y la edición", () => {
+    const text = confirmRemoveJurorAssignmentsText("Ana Senior", "Feria 5");
+    expect(text).toContain("Ana Senior");
+    expect(text).toContain("«Feria 5»");
+  });
+
+  it("sin nombre de edición dice «la edición activa»", () => {
+    expect(confirmRemoveAllAssignmentsText(null)).toContain("de la edición activa");
+    expect(confirmRemoveJurorAssignmentsText("Ana", undefined)).toContain("en la edición activa");
+  });
+});
 
 describe("workingEdition (ARK-130)", () => {
   it("la edición de trabajo es la activa, no la de id más alto", () => {
