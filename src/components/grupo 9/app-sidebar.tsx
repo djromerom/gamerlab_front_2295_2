@@ -35,6 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/ui/logo";
 import ThemeToggleSwitch from "@/components/ui/theme-toggle-switch";
 import { Role } from "@/types/auth";
+import { WorkingEditionBadge } from "@/components/grupo 9/WorkingEditionBadge";
 
 const MENU: Record<Role, MenuItem[]> = {
   Administrador: [
@@ -180,6 +181,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <Link to="/">
           <Logo />
         </Link>
+        {/* ARK-130 (HU-27): la edición sobre la que trabaja el administrador */}
+        {userRole === "Administrador" && <WorkingEditionBadge />}
       </SidebarHeader>
       <SidebarContent>
         <NavContent menu={MENU[userRole]} />

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { interpretWeightsResponse } from "@/lib/weightsResponse";
 
 export default function GradeWeightsPage() {
 	const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
@@ -20,6 +21,8 @@ export default function GradeWeightsPage() {
 	const [juniorPercent, setJuniorPercent] = useState<string>("");
 	const [loading, setLoading] = useState(false);
 	const [editing, setEditing] = useState<boolean>(false);
+	// ARK-130: sin edición activa no hay ponderados que editar (el back responde 404 NO_ACTIVE_EDITION)
+	const [noEditionMessage, setNoEditionMessage] = useState<string | null>(null);
 
 	const breadcrumbs = [
 		{ label: "Configuración", href: "/configuracion-evento" },
@@ -35,19 +38,17 @@ export default function GradeWeightsPage() {
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
 			});
-			if (res.ok) {
-				const data = await res.json();
-				// If no config exists backend may return null
-				if (data) {
-					if (typeof data.seniorPct === "number") setSeniorPercent(String(data.seniorPct));
-					if (typeof data.juniorPct === "number") setJuniorPercent(String(data.juniorPct));
-				} else {
-					// no configuration for this edition — keep empty so admin can set
-					setSeniorPercent("");
-					setJuniorPercent("");
-				}
+			const body = await res.json().catch(() => null);
+			const result = interpretWeightsResponse(res.status, body);
+			setNoEditionMessage(result.kind === "no-active-edition" ? result.message : null);
+			if (result.kind === "loaded") {
+				setSeniorPercent(String(result.seniorPct));
+				setJuniorPercent(String(result.juniorPct));
 			} else {
-				console.warn(`Could not load weights (status ${res.status})`);
+				// Sin ponderados (o sin edición activa): campos vacíos para que el admin los defina
+				setSeniorPercent("");
+				setJuniorPercent("");
+				if (result.kind === "error") console.warn(result.message);
 			}
 		} catch (e) {
 			console.error("Error loading grade weights:", e);
@@ -143,6 +144,7 @@ export default function GradeWeightsPage() {
 						<Button
 							variant="outline"
 							onClick={() => setEditing(true)}
+							disabled={noEditionMessage !== null}
 						>
 							<Pencil className="mr-2 h-4 w-4" /> Editar
 						</Button>
@@ -159,6 +161,12 @@ export default function GradeWeightsPage() {
 						</Button>
 					)}
 				</div>
+					{noEditionMessage && (
+						<div role="alert" className="mb-4 p-3 bg-red-50 text-red-800 rounded-md border border-red-200 px-4">
+							<p className="font-medium">Sin edición activa</p>
+							<p>{noEditionMessage}</p>
+						</div>
+					)}
 					{/* Aviso estático: similar al de CriterionTable */}
 					<div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-md border border-yellow-200 px-4">
 						<div className="flex items-start">
