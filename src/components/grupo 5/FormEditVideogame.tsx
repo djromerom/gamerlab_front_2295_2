@@ -78,13 +78,14 @@ export default function FormEditVideogame (
             const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
                 method: 'GET',
                 credentials: "include",
-                headers: { "Content-Type": "application/json" },
             })
             
-            const data = await response.json();
             if (!response.ok) {
-                setError(`No fue posible obtener las imagenes: ${data.message}`)
+                const data = await response.json().catch(() => null);
+                setError(`No fue posible obtener las imagenes: ${data?.message || "Acceso denegado al equipo."}`);
+                return;
             }
+            const data = await response.json();
             setData(data);
             setOriginalData(data);
             setImageUrls(data.videogame.additionalImages);

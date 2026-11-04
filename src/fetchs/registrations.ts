@@ -19,6 +19,22 @@ export async function fetchRegistrationsOpen(): Promise<boolean> {
   }
 }
 
+/**
+ * Mensaje del back (`message`, texto o lista de validación) con el código HTTP. Sin cuerpo JSON
+ * o sin `message`, el texto de respaldo con el código. Así el administrador distingue un 404 de
+ * un 403 en vez de ver siempre el mismo aviso (ARK-123).
+ */
+async function errorDetail(res: Response, fallback: string): Promise<string> {
+  try {
+    const raw = (await res.json())?.message;
+    const message = Array.isArray(raw) ? raw.join(", ") : typeof raw === "string" ? raw : "";
+    if (message) return `${message} (${res.status})`;
+  } catch {
+    // Cuerpo vacío o que no es JSON: se usa el texto de respaldo.
+  }
+  return `${fallback} (${res.status})`;
+}
+
 /** Solo Administrador. Lanza si el back rechaza el cambio. */
 export async function updateRegistrationsOpen(open: boolean): Promise<boolean> {
   const res = await apiFetch(`${API_URL}/settings/registrations`, {
@@ -27,7 +43,7 @@ export async function updateRegistrationsOpen(open: boolean): Promise<boolean> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ open }),
   });
-  if (!res.ok) throw new Error("Error en la actualización");
+  if (!res.ok) throw new Error(await errorDetail(res, "Error en la actualización"));
   const data = (await res.json()) as { registrationsOpen: boolean };
   return data.registrationsOpen;
 }

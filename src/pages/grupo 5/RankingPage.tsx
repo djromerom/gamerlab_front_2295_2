@@ -14,6 +14,9 @@ type Team = {
   logo?: string;
   teamCode?: string;
   tieBreakerScore?: number | null;
+  position?: number | null;
+  levelPosition?: number | null;
+  tiePending?: boolean;
 };
 
 const glowStyles = `
@@ -176,6 +179,13 @@ export default function PodioGamer() {
           tieBreakerScore: normalizeNullableNumber(
             team.tieBreakerScore ?? team.tie_breaker_score,
           ),
+          position: normalizeNullableNumber(
+            team.position ?? team.levelPosition ?? team.level_position,
+          ),
+          levelPosition: normalizeNullableNumber(
+            team.levelPosition ?? team.level_position ?? team.position,
+          ),
+          tiePending: Boolean(team.tiePending ?? team.tie_pending),
         };
       });
 
@@ -197,20 +207,7 @@ export default function PodioGamer() {
     };
   }, []);
 
-  const sortedTeams = [...teams].sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-
-    const tieBreakerA = a.tieBreakerScore ?? a.score;
-    const tieBreakerB = b.tieBreakerScore ?? b.score;
-
-    if (tieBreakerB !== tieBreakerA) {
-      return tieBreakerB - tieBreakerA;
-    }
-
-    return a.name.localeCompare(b.name);
-  });
+  const sortedTeams = teams;
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -527,6 +524,11 @@ export default function PodioGamer() {
                                 <span className="text-gray-200">
                                   {team.name}
                                 </span>
+                                {team.tiePending && (
+                                  <span className="ml-2 rounded-full border border-amber-400/50 px-2 py-0.5 text-xs text-amber-300">
+                                    Empate pendiente
+                                  </span>
+                                )}
                               </div>
                             </td>
 

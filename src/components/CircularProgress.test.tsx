@@ -31,6 +31,45 @@ describe("CircularProgress: calificaciones recibidas (BG-04)", () => {
     },
   );
 
+  // ARK-111: evaluation-stats solo devuelve conteos; el componente no usa datos de los jurados
+  it("muestra las calificaciones recibidas del equipo del estudiante", async () => {
+    Object.assign(auth, {
+      user: { id: 1, role: { name: "Estudiante" } },
+      userRole: "Estudiante",
+    });
+    apiFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 100 }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ totalJurorsAssigned: 4, jurorsWhoEvaluated: 1 }),
+      });
+
+    const { findByText, getByText } = render(<CircularProgress labelFormatter={undefined} />);
+
+    expect(await findByText("1/4")).toBeTruthy();
+    expect(getByText("25%")).toBeTruthy();
+    expect(apiFetch).toHaveBeenLastCalledWith(
+      "http://api.test/juror/teams/100/evaluation-stats",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("no se rompe si evaluation-stats responde sin permiso (ARK-111)", async () => {
+    Object.assign(auth, {
+      user: { id: 1, role: { name: "Estudiante" } },
+      userRole: "Estudiante",
+    });
+    apiFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 100 }) })
+      .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) });
+
+    const { getByText } = render(<CircularProgress labelFormatter={undefined} />);
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(2));
+    expect(getByText("0/0")).toBeTruthy();
+    expect(getByText("0%")).toBeTruthy();
+  });
+
   it("captura los fallos de la consulta del estudiante", async () => {
     Object.assign(auth, {
       user: { id: 1, role: { name: "Estudiante" } },

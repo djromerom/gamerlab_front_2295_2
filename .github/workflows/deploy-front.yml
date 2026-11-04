@@ -79,15 +79,6 @@ jobs:
               exit 1
             fi
 
-        # BuildKit secrets are not part of the layer cache key: hash them so the build layer is invalidated when they change.
-        # Separate step: values written to GITHUB_ENV are only visible from the next step on.
-        - name: Hash VITE_secrets for the layer cache
-          run: |
-            set -euo pipefail
-            HASH=$(printf '%s|%s' "$VITE_ENDPOINT_BACKEND" "$VITE_SITE_KEY" | sha256sum | cut -d' ' -f1)
-            echo "VITE vars hash: $HASH"
-            echo "VITE_VARS_HASH=$HASH" >> "$GITHUB_ENV"
-
         - name: Build and push base image
           uses: docker/build-push-action@v6
           with:
@@ -95,11 +86,6 @@ jobs:
             file: ${{  env.DOCKERFILE_PATH  }}
             tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ steps.resolve-tag.outputs.tag }}
             push: true
-            build-args: |
-              VITE_VARS_HASH=${{ env.VITE_VARS_HASH }}
-            # Layer cache in GitHub Actions: unchanged layers (e.g. npm ci) are reused across deploys
-            cache-from: type=gha,scope=front-${{ steps.resolve-tag.outputs.branch }}
-            cache-to: type=gha,scope=front-${{ steps.resolve-tag.outputs.branch }},mode=max
             secrets: |
               "VITE_ENDPOINT_BACKEND=${{ env.VITE_ENDPOINT_BACKEND  }}"
               "VITE_SITE_KEY=${{ env.VITE_SITE_KEY  }}"      

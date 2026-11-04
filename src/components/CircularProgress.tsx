@@ -30,7 +30,6 @@ export default function CircularProgress({
     const getNumberCalifications = async () => {
         const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user.id}/full`, {
             method: 'GET',
-            headers: { "Content-Type": "application/json" },
             credentials: 'include',
         })
 
@@ -146,7 +145,7 @@ export default function CircularProgress({
                 ) : (
                     <div className="flex flex-col items-center">
                     <span className="font-semibold text-sm">{safeReceived}/{safeTotal}</span>
-                    <span className="text-xs text-gray-500">{`${percent}`}%</span>
+                    <span className="text-xs text-gray-500">{`${percent ?? 0}`}%</span>
                     </div>
                 )}
                 </div>

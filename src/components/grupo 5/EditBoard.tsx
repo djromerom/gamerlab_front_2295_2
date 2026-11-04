@@ -19,6 +19,8 @@ import TeamMembers from "./TeamMembers"
 import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
 import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
+import NotEnrolledNotice from "./NotEnrolledNotice";
+import { NotEnrolledError, isNotEnrolledError } from "@/lib/notEnrolled";
 
 export default function EditBoard() {
   //context and refs
@@ -38,6 +40,7 @@ export default function EditBoard() {
 
   //Team videogame information
   const [loading, setLoading] = useState(false)
+  const [notEnrolled, setNotEnrolled] = useState(false)
   const [loadingForm, setLoadingForm] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
   const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', status: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
@@ -111,11 +114,15 @@ export default function EditBoard() {
     const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
       method: 'GET',
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
     })
 
+    // ARK-128: sin equipo en la edición activa (p. ej. participó en una edición anterior)
+    if (response.status === 404) {
+      throw new NotEnrolledError();
+    }
     if (!response.ok) {
-      throw new Error("Error al obtener los datos del equipo")
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.message || "No se pudo cargar los datos del equipo.");
     }
     const data = await response.json()
     const dataInfoEquipo = {
@@ -219,12 +226,12 @@ export default function EditBoard() {
   //Fetches both team and member data when the component mounts.
   useEffect(() => {  
     const fetchData = async () => {
-      const dataEquipo = await getInfoEquipo()
-      setInfoEquipo(dataEquipo)
-      setInfoEditEquipo(dataEquipo)
-      setLoading(true);
-
       try {
+        const dataEquipo = await getInfoEquipo()
+        setInfoEquipo(dataEquipo)
+        setInfoEditEquipo(dataEquipo)
+        setLoading(true);
+
         const studentsRes = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members`, {
           method: "GET",
           credentials: "include",
@@ -258,6 +265,15 @@ export default function EditBoard() {
             studentCode: s.studentCode,
           }))
         )
+      } catch (error) {
+        // ARK-128: sin equipo en la edición activa no es una falla; se muestra el aviso
+        if (isNotEnrolledError(error)) {
+          setNotEnrolled(true);
+          return;
+        }
+        const message = error instanceof Error ? error.message : "No se pudo cargar los datos del equipo.";
+        console.error(message, error);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -267,6 +283,17 @@ export default function EditBoard() {
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
+  }
+
+  if (notEnrolled) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-8 text-center">
+          <h2 className="text-lg font-medium text-foreground">No hay equipo para editar</h2>
+          <NotEnrolledNotice />
+        </div>
+      </div>
+    )
   }
 
   if (loadingForm) {

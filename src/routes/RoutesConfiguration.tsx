@@ -19,8 +19,10 @@ import ResetPassword from "@/pages/grupo 9/ResetPassword";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
+import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
+import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 
@@ -89,7 +91,7 @@ export const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPanel />,
-    roles: ["Administrador"],
+    roles: ["Administrador", "Profesor"],
   },
   { path: "/jurado", element: <Navigate to="/inicio" replace />, roles: ["Jurado"] },
   {
@@ -154,6 +156,11 @@ export const routes: RouteConfig[] = [
   {
     path: "/jurados",
     element: <JuryManagementPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/jurados-edicion",
+    element: <EditionJurorsPage />,
     roles: ["Administrador"],
   },
   {
@@ -223,6 +230,11 @@ export const routes: RouteConfig[] = [
     path: "/tiebreaker",
     element: <TiebreakerPage />,
     roles: ["Administrador"],
+  },
+  {
+    path: "/ranking/mis-empates",
+    element: <ProfessorRankingTiesPage />,
+    roles: ["Profesor"],
   },
   {
     path: "/profesores",

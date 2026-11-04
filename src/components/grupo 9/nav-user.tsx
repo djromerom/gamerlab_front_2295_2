@@ -29,6 +29,14 @@ export const NavUser: React.FC<Props> = ({ user }) => {
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  // [MODIFICADO]: "Salir" lleva al login limpio, también desde pantallas no protegidas (BG-08)
+  // [ANTES]: Solo cerraba la sesión y dejaba al usuario en la misma página
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -91,7 +99,7 @@ export const NavUser: React.FC<Props> = ({ user }) => {
               <Home />
               Página Principal
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" onClick={logout}>
+            <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
               <LogOut />
               Salir
             </DropdownMenuItem>

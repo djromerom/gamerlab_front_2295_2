@@ -46,6 +46,45 @@ describe("RegistrationsToggleCard", () => {
     expect(screen.getByText("Cerradas")).toBeTruthy();
   });
 
+  it("si el back responde con un mensaje, lo muestra junto al código HTTP (ARK-123)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_i: RequestInfo | URL, init?: RequestInit) =>
+        init?.method === "PATCH"
+          ? new Response(
+              JSON.stringify({
+                statusCode: 404,
+                message: "A configuration for the active edition was not found",
+              }),
+              { status: 404 },
+            )
+          : new Response(JSON.stringify({ registrationsOpen: false }), { status: 200 }),
+      ),
+    );
+    render(<RegistrationsToggleCard />);
+    await screen.findByText("Cerradas");
+    fireEvent.click(screen.getByRole("switch"));
+    const alert = await screen.findByText(/No se pudo actualizar las inscripciones/);
+    expect(alert.textContent).toContain("A configuration for the active edition was not found");
+    expect(alert.textContent).toContain("404");
+  });
+
+  it("si el back no manda mensaje, muestra al menos el código HTTP (ARK-123)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_i: RequestInfo | URL, init?: RequestInit) =>
+        init?.method === "PATCH"
+          ? new Response("<html>Bad Gateway</html>", { status: 502 })
+          : new Response(JSON.stringify({ registrationsOpen: false }), { status: 200 }),
+      ),
+    );
+    render(<RegistrationsToggleCard />);
+    await screen.findByText("Cerradas");
+    fireEvent.click(screen.getByRole("switch"));
+    const alert = await screen.findByText(/No se pudo actualizar las inscripciones/);
+    expect(alert.textContent).toContain("502");
+  });
+
   it("si el GET falla, muestra error de carga y deshabilita el switch", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
     render(<RegistrationsToggleCard />);

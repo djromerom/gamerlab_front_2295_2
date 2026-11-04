@@ -49,6 +49,13 @@ import {
   progressPercentage,
   useEvaluationProgress,
 } from "@/fetchs/evaluationProgress";
+import { downloadJurorsExport } from "@/fetchs/jurorsExport";
+import {
+  AssignmentWarningsError,
+  getAssignmentWarnings,
+} from "@/lib/assignmentWarnings";
+import { useAssignmentWarnings } from "@/hooks/useAssignmentWarnings";
+import { AssignmentWarningsDialog } from "@/components/jurados-modals/AssignmentWarningsDialog";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -128,6 +135,11 @@ async function apiRequest<T>(
         ? parsedBody
         : (parsedBody as { message?: string })?.message ||
         `Error ${response.status}`;
+
+    const warnings = getAssignmentWarnings(response.status, parsedBody);
+    if (warnings) {
+      throw new AssignmentWarningsError(errorMessage, warnings);
+    }
 
     throw new Error(errorMessage);
   }
@@ -470,6 +482,8 @@ export function JuradosAssignment() {
     tipo: "" as "" | JurorType,
   });
 
+  const assignmentWarnings = useAssignmentWarnings();
+
   const { progress: evaluationProgress, reload: reloadProgress } =
     useEvaluationProgress();
 
@@ -703,7 +717,12 @@ export function JuradosAssignment() {
     setShowJuradoModal(false);
   };
 
-  const addJuradoToTeam = async (teamId: number, jurado: Jurado) => {
+  // HU-08: el back avisa con 409 ASSIGNMENT_WARNINGS; "Continuar" repite la petición con confirmWarnings
+  const addJuradoToTeam = async (
+    teamId: number,
+    jurado: Jurado,
+    confirmWarnings = false
+  ) => {
     try {
       setIsSubmitting(true);
 
@@ -712,12 +731,20 @@ export function JuradosAssignment() {
         body: JSON.stringify({
           teamId,
           jurorId: jurado.id,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
       closeJuradoModal();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          addJuradoToTeam(teamId, jurado, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -732,7 +759,8 @@ export function JuradosAssignment() {
   const reassignJuradoOnTeam = async (
     teamId: number,
     currentJurorId: string,
-    newJuror: Jurado
+    newJuror: Jurado,
+    confirmWarnings = false
   ) => {
     try {
       setIsSubmitting(true);
@@ -743,12 +771,20 @@ export function JuradosAssignment() {
           teamId,
           currentJurorId,
           newJurorId: newJuror.id,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
       closeJuradoModal();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          reassignJuradoOnTeam(teamId, currentJurorId, newJuror, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -760,11 +796,18 @@ export function JuradosAssignment() {
     }
   };
 
-  const removeJuradoFromTeam = async (teamId: number, jurorId: string) => {
-    const confirmed = window.confirm(
-      "¿Seguro que deseas desasignar este jurado del equipo?"
-    );
-    if (!confirmed) return;
+  const removeJuradoFromTeam = async (
+    teamId: number,
+    jurorId: string,
+    confirmWarnings = false
+  ) => {
+    // Al confirmar advertencias el admin ya aceptó desasignar: no se pregunta dos veces
+    if (!confirmWarnings) {
+      const confirmed = window.confirm(
+        "¿Seguro que deseas desasignar este jurado del equipo?"
+      );
+      if (!confirmed) return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -774,11 +817,19 @@ export function JuradosAssignment() {
         body: JSON.stringify({
           teamId,
           jurorId,
+          ...(confirmWarnings && { confirmWarnings: true }),
         }),
       });
 
       await loadData();
     } catch (error) {
+      if (
+        assignmentWarnings.askToConfirm(error, () =>
+          removeJuradoFromTeam(teamId, jurorId, true)
+        )
+      ) {
+        return;
+      }
       console.error(error);
       window.alert(
         error instanceof Error
@@ -886,37 +937,11 @@ export function JuradosAssignment() {
     }
   };
 
+  // Una sola petición: el back arma el nombre del archivo y el mensaje si no hay asignaciones
   const exportJurors = async () => {
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("/reports/exportJurados", {
-        method: "GET",
-      });
-
-      // apiRequest returns the parsed JSON by default or response based on implementation. 
-      // Let's verify how apiRequest works.
-      // Usually, if apiRequest returns the response or we can fetch directly:
-      // Let's fetch using direct fetch to get a Blob.
-      const endpoint = `${import.meta.env.VITE_ENDPOINT_BACKEND}/reports/exportJurados`;
-      const response = await apiFetch(endpoint, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al exportar reporte de jurados");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `reporte_jurados_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadJurorsExport();
     } catch (error) {
       console.error(error);
       window.alert(
@@ -1906,6 +1931,12 @@ export function JuradosAssignment() {
             onSubmit={handleEditJurorSubmit}
           />
         )}
+
+        <AssignmentWarningsDialog
+          warnings={assignmentWarnings.warnings}
+          onContinue={assignmentWarnings.continueWithWarnings}
+          onCancel={assignmentWarnings.cancel}
+        />
 
       </div>
     </LayoutAplication>

@@ -97,18 +97,19 @@ export default function MembersStep() {
 
     setIsValidatingEmails(true);
     try {
-      // Luego contra la API: correos y códigos ya registrados
+      // Luego contra la API: correos y códigos ya inscritos en la edición actual. Haber
+      // participado en una edición anterior no los ocupa (ARK-128).
       const emailsFree = await checkTaken(
         "validate-emails",
         "emails",
         "correo",
-        "Este correo ya está registrado",
+        "Este correo ya está inscrito en esta edición o pertenece a una cuenta que no es de estudiante",
       );
       const codesFree = await checkTaken(
         "validate-student-codes",
         "studentCodes",
         "codigoEstudiantil",
-        "Este código ya está registrado en otro equipo",
+        "Este código ya está inscrito en otro equipo de esta edición",
       );
       if (emailsFree && codesFree) next();
     } catch (error) {

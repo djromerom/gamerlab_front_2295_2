@@ -19,6 +19,7 @@ import {
   House,
   QrCode,
   UserPlus,
+  UserCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -34,6 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/ui/logo";
 import ThemeToggleSwitch from "@/components/ui/theme-toggle-switch";
 import { Role } from "@/types/auth";
+import { WorkingEditionBadge } from "@/components/grupo 9/WorkingEditionBadge";
 
 const MENU: Record<Role, MenuItem[]> = {
   Administrador: [
@@ -59,6 +61,7 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Profesores", url: "/profesores", icon: FileUser },
         { name: "Jurados", url: "/jurados", icon: Users },
+        { name: "Jurados de la Edición", url: "/jurados-edicion", icon: UserCheck },
         { name: "Asignación de Jurados", url: "/jurados-assignment", icon: Gavel },
         { name: "Escarapelas", url: "/escarapelas", icon: IdCard },
         { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },
@@ -103,6 +106,18 @@ const MENU: Record<Role, MenuItem[]> = {
         },
       ],
 
+    },
+    {
+      title: "Seguimiento",
+      items: [
+        { name: "Avance por hora", url: "/realtime-tracking-panel", icon: ChartLine },
+      ],
+    },
+    {
+      title: "Ranking",
+      items: [
+        { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
+      ],
     },
   ],
   Estudiante: [
@@ -166,6 +181,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <Link to="/">
           <Logo />
         </Link>
+        {/* ARK-130 (HU-27): la edición sobre la que trabaja el administrador */}
+        {userRole === "Administrador" && <WorkingEditionBadge />}
       </SidebarHeader>
       <SidebarContent>
         <NavContent menu={MENU[userRole]} />

@@ -33,6 +33,10 @@ export const TeamsManagementTable = ({
   refreshData,
   allTeams,
   statusEmailLeader,
+  // ARK-129 (HU-26): edición anterior → solo consulta (sin agregar, editar, eliminar ni cambiar estado)
+  readOnly = false,
+  // Selector de edición y pestañas que pone la página encima de los filtros
+  headerSlot = null,
 }) => {
 
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -553,6 +557,10 @@ export const TeamsManagementTable = ({
 
         const primaryEmail = team.integrantes?.[0]?.correo ?? "";
 
+        if (readOnly) {
+          return <div className="flex items-center gap-2">{getStatusBadge(idEstadoVideojuego)}</div>;
+        }
+
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -732,6 +740,7 @@ export const TeamsManagementTable = ({
         <div>
           <h1 className="text-lg md:text-xl font-medium">Equipos Inscritos</h1>
         </div>
+        {headerSlot}
 
         {/* Fila 2: Filtros, Buscador y Botones */}
         <div className="flex items-center justify-between gap-4 w-full">
@@ -808,15 +817,17 @@ export const TeamsManagementTable = ({
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <Button
-                variant="outline"
-                className="bg-card hover:bg-accent text-foreground whitespace-nowrap shrink-0 h-10 px-3 sm:px-4"
-                disabled={showLoader}
-                onClick={handleOpenAdd}
-              >
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Agregar</span>
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="outline"
+                  className="bg-card hover:bg-accent text-foreground whitespace-nowrap shrink-0 h-10 px-3 sm:px-4"
+                  disabled={showLoader}
+                  onClick={handleOpenAdd}
+                >
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Agregar</span>
+                </Button>
+              )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -910,6 +921,7 @@ export const TeamsManagementTable = ({
                       <TableCell key={key}>{renderCell(team)}</TableCell>
                     ))}
                     <TableCell className="text-right">
+                      {!readOnly && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -956,6 +968,7 @@ export const TeamsManagementTable = ({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ));
