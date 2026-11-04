@@ -12,7 +12,7 @@ export default function CircularProgress({
     labelFormatter,
 }) {
     
-    const { userRole } = useAuth();
+    const { user, userRole } = useAuth();
     const startDate = new Date("2025-11-27T08:30:00");
     const [now, setNow] = useState(new Date())
     const [total, setTotal] = useState<number>(0);
