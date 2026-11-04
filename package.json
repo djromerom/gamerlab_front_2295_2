@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:ci": "vitest run --reporter=verbose",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:env": "node scripts/check-env.mjs",
+    "check:env:test": "node --test scripts/check-env.selftest.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
