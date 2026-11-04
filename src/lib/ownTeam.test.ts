@@ -1,15 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/lib/api";
-import { fetchEditions } from "@/fetchs/editions";
-import {
-  fetchOwnTeamForEdition,
-  resolveOwnTeamForEdition,
-  resetOwnTeamCacheForTests,
-} from "./ownTeam";
+import { fetchOwnTeam, resetOwnTeamCacheForTests } from "./ownTeam";
 import type { Team } from "@/types/Team";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));
-vi.mock("@/fetchs/editions", () => ({ fetchEditions: vi.fn() }));
 
 const team = (id: number, editionId: number, isMine: boolean): Team => ({
   id,
@@ -22,52 +16,44 @@ const team = (id: number, editionId: number, isMine: boolean): Team => ({
   status: "CONFIRMADO",
 });
 
-describe("resolveOwnTeamForEdition", () => {
-  it("selecciona solo el equipo propio de la edición activa", () => {
-    const teams = [
-      team(11, 2025, true),
-      team(22, 2026, true),
-    ];
-
-    expect(resolveOwnTeamForEdition(teams, 2026)?.id).toBe(22);
-  });
-
-  describe("fetchOwnTeamForEdition", () => {
+describe("fetchOwnTeam", () => {
     beforeEach(() => {
-      vi.resetModules();
       vi.clearAllMocks();
       resetOwnTeamCacheForTests();
     });
 
-    it("rechaza cuando no existe una edición activa", async () => {
-      vi.mocked(fetchEditions).mockResolvedValue([
-        { id: 1, status: "INACTIVE" } as never,
-      ]);
+    it("resuelve el equipo marcado como propio", async () => {
+      vi.mocked(apiFetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue([team(11, 1, true)]),
+      } as unknown as Response);
 
-      await expect(fetchOwnTeamForEdition()).rejects.toThrow("No hay una edición activa.");
+      await expect(fetchOwnTeam("student-1")).resolves.toMatchObject({ id: 11 });
     });
 
     it("rechaza cuando el usuario no tiene equipo propio", async () => {
-      vi.mocked(fetchEditions).mockResolvedValue([
-        { id: 1, status: "ACTIVE" } as never,
-      ]);
       vi.mocked(apiFetch).mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue([team(11, 1, false)]),
       } as unknown as Response);
 
-      await expect(fetchOwnTeamForEdition()).rejects.toThrow(
+      await expect(fetchOwnTeam("student-1")).rejects.toThrow(
         "No tienes un equipo en la edición actual.",
       );
     });
-  });
 
-  it("permite resolver el equipo propio de una edición anterior como historial", () => {
-    const teams = [
-      team(11, 2025, true),
-      team(22, 2026, true),
-    ];
+    it("no reutiliza el equipo entre usuarios distintos", async () => {
+      vi.mocked(apiFetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue([team(11, 1, true)]),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: vi.fn().mockResolvedValue([team(22, 1, true)]),
+        } as unknown as Response);
 
-    expect(resolveOwnTeamForEdition(teams, 2025)?.id).toBe(11);
+      await fetchOwnTeam("student-1");
+      await expect(fetchOwnTeam("student-2")).resolves.toMatchObject({ id: 22 });
+    });
   });
-});

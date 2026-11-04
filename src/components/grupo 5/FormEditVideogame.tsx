@@ -9,7 +9,8 @@ import { TeamVideogameProps } from "@/types/teamVideogames";
 import { useRef, useState, useEffect } from "react"
 import { TeamImages } from "./TeamImages"
 import { toast } from "sonner"
-import { fetchOwnTeamForEdition } from "@/lib/ownTeam";
+import { fetchOwnTeam } from "@/lib/ownTeam";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function FormEditVideogame (
     {
@@ -24,6 +25,7 @@ export default function FormEditVideogame (
         additionalImages, setAdditionalImages,
         handleFileChange, handleDeleteFile, uploadInfoTeam, handleCroppedImage 
     } : TeamVideogameProps) {
+    const { user } = useAuth();
     
     const MAX_DESCRIPTION = 300;
     const [isDragOver, setIsDragOver] = useState(false); 
@@ -74,7 +76,7 @@ export default function FormEditVideogame (
 
     const getImages = async () => {
         try {
-            const ownTeam = await fetchOwnTeamForEdition();
+            const ownTeam = await fetchOwnTeam(user?.id ?? "");
             const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
                 method: 'GET',
                 credentials: "include",

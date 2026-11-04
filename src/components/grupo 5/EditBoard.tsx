@@ -20,9 +20,11 @@ import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
 import NotEnrolledNotice from "./NotEnrolledNotice";
 import { NotEnrolledError, isNotEnrolledError } from "@/lib/notEnrolled";
-import { fetchOwnTeamForEdition } from "@/lib/ownTeam";
+import { fetchOwnTeam } from "@/lib/ownTeam";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function EditBoard() {
+  const { user } = useAuth();
   //context and refs
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,7 +114,7 @@ export default function EditBoard() {
 
   //Fetches full team data (including videogame details) from the backend.
   const getInfoEquipo = async () => {
-    const ownTeam = await fetchOwnTeamForEdition();
+    const ownTeam = await fetchOwnTeam(user?.id ?? "");
     const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
       method: 'GET',
       credentials: "include",

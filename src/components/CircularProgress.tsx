@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { fetchOwnTeamForEdition } from "@/lib/ownTeam";
+import { fetchOwnTeam } from "@/lib/ownTeam";
 
 export default function CircularProgress({
     size = 120,
@@ -29,7 +29,7 @@ export default function CircularProgress({
 
 
     const getNumberCalifications = async () => {
-        const ownTeam = await fetchOwnTeamForEdition();
+        const ownTeam = await fetchOwnTeam(user?.id ?? "");
         const resTeam = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
             method: 'GET',
             credentials: 'include',
