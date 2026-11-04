@@ -17,6 +17,7 @@ import {
   Filter,
   ChevronDown,
   Info,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -42,6 +43,7 @@ import { JuradosListModal } from "@/components/jurados-modals/JuradosListModal";
 import { JuradoAssignModal } from "@/components/jurados-modals/JuradoAssignModal";
 import { AllTeamsModal } from "@/components/jurados-modals/AllTeamsModal";
 import { AuditModal } from "@/components/jurados-modals/AuditModal";
+import { AutomaticAssignmentModal } from "@/components/jurados-modals/AutomaticAssignmentModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
 import { toast } from "sonner";
@@ -413,6 +415,7 @@ export function JuradosAssignment() {
   const [showJuradosListModal, setShowJuradosListModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [showAllTeamsModal, setShowAllTeamsModal] = useState(false);
+  const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AssignmentAuditLog[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -881,24 +884,12 @@ export function JuradosAssignment() {
     }
   };
 
-  const assignAutomatically = async () => {
-    try {
-      setIsSubmitting(true);
-      await apiRequest("/juror/evaluations-assignment", {
-        method: "GET",
-      });
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "No se pudo asignar automaticamente a los jurados."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  // HU-07: la vista previa no guarda nada; el modal llama a esto solo después de confirmar
+  const handleAutoAssignConfirmed = async () => {
+    setShowAutoAssignModal(false);
+    await loadData();
+  };
+
   const sendAllJurorCerts = async () => {
     toast.message("Enviando correos, porfavor espere...")
     try {
@@ -1524,12 +1515,12 @@ export function JuradosAssignment() {
           </button>
 
           <button
-            onClick={assignAutomatically}
+            onClick={() => setShowAutoAssignModal(true)}
             disabled={isLoading || isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
           >
-            <Users className="w-4 h-4 flex-shrink-0" />
-            <span>Asignar todos</span>
+            <Sparkles className="w-4 h-4 flex-shrink-0" />
+            <span>Asignar automáticamente</span>
           </button>
         </div>
 
@@ -1911,6 +1902,13 @@ export function JuradosAssignment() {
           <AllTeamsModal
             teams={teams}
             onClose={() => setShowAllTeamsModal(false)}
+          />
+        )}
+
+        {showAutoAssignModal && (
+          <AutomaticAssignmentModal
+            onClose={() => setShowAutoAssignModal(false)}
+            onConfirmed={handleAutoAssignConfirmed}
           />
         )}
 

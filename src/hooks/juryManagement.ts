@@ -98,29 +98,7 @@ export const juryManagement = {
         }
     },
 
-    automaticAssignment: async () => {
-        const res = await apiFetch(`${API_ENDPOINT}/evaluations-assignment`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: { 
-                "Content-Type": "application/json" 
-            },
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-            return {
-                success: false,
-                message: data.message
-            }
-        }
-
-        return {
-            success: true,
-            message: 'Se asignaron los equipos a los jurados.'
-        }
-    },
+    // La asignación automática (HU-07) vive en `@/fetchs/automaticAssignment` (vista previa + confirmar).
 
     manualAssignment: async (jurorId, teamId) => {
         const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
