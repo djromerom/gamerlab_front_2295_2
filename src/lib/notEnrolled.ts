@@ -3,7 +3,7 @@
  * anterior y aún no se inscribe, o nunca se ha inscrito). No es un error de carga: las
  * pantallas lo muestran con el aviso de `NotEnrolledNotice` en vez de un mensaje de error.
  *
- * Cualquier función que busque "mi equipo" (por ejemplo `fetchOwnTeamForEdition`) debe lanzar
+ * Cualquier función que busque "mi equipo" (por ejemplo `fetchOwnTeam`) debe lanzar
  * este error cuando no lo encuentra, para que las pantallas lo distingan de una falla real.
  */
 export class NotEnrolledError extends Error {

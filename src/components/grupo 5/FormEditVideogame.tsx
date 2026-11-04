@@ -8,8 +8,9 @@ import { ImageCropper } from "../grupo 11/ImageCropper"
 import { TeamVideogameProps } from "@/types/teamVideogames";
 import { useRef, useState, useEffect } from "react"
 import { TeamImages } from "./TeamImages"
-import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
+import { fetchOwnTeam } from "@/lib/ownTeam";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function FormEditVideogame (
     {
@@ -24,12 +25,12 @@ export default function FormEditVideogame (
         additionalImages, setAdditionalImages,
         handleFileChange, handleDeleteFile, uploadInfoTeam, handleCroppedImage 
     } : TeamVideogameProps) {
+    const { user } = useAuth();
     
     const MAX_DESCRIPTION = 300;
     const [isDragOver, setIsDragOver] = useState(false); 
     const fileInputRefImages = useRef<HTMLInputElement | null>(null);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
-    const { user } = useAuth();
     const [data, setData] = useState<any>();
     const [error, setError] = useState("");
     const [originalData, setOriginalData] = useState<any>(null);
@@ -75,7 +76,8 @@ export default function FormEditVideogame (
 
     const getImages = async () => {
         try {
-            const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+            const ownTeam = await fetchOwnTeam(user?.id ?? "");
+            const response: any = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
                 method: 'GET',
                 credentials: "include",
             })
