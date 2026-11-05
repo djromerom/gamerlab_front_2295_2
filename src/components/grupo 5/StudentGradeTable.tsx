@@ -71,7 +71,7 @@ export default function StudentGradeTable() {
       const next = { ...previous };
       currentEditable.forEach((team) => {
         const key = gradeKey(team);
-        if (!(key in next)) next[key] = team.calificacionDocente == null ? "" : String(team.calificacionDocente);
+        if (!(key in next)) next[key] = team.calificacionDocente == null ? "" : team.calificacionDocente.toFixed(2);
       });
       return next;
     });
@@ -180,7 +180,7 @@ export default function StudentGradeTable() {
 
   const enterEditMode = () => {
     const drafts: Record<string, string> = {};
-    teams.filter((team: GradeTeam) => team.canEdit).forEach((team: GradeTeam) => { drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : String(team.calificacionDocente); });
+    teams.filter((team: GradeTeam) => team.canEdit).forEach((team: GradeTeam) => { drafts[gradeKey(team)] = team.calificacionDocente == null ? "" : team.calificacionDocente.toFixed(2); });
     setEditedGrades(drafts);
     setEditedTeams(Object.fromEntries(teams.filter((team: GradeTeam) => team.canEdit).map((team) => [gradeKey(team), team])));
     setIsEditingGrades(true);

@@ -438,7 +438,7 @@ export default function BatchRatePage() {
                               className="rounded-md bg-muted px-2 py-1 text-xs"
                             >
                               {d.name}:{" "}
-                              <span className="font-semibold">{d.score.toFixed(1)}</span>
+                              <span className="font-semibold">{d.score.toFixed(2)}</span>
                             </span>
                           ))}
                         </div>

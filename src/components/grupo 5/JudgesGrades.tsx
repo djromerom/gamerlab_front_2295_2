@@ -140,7 +140,7 @@ export default function JudgesGrades() {
                 }`}
               >
                 {judge.haEvaluado && judge.totalScore != null
-                  ? judge.totalScore.toFixed(1)
+                  ? judge.totalScore.toFixed(2)
                   : "NA"}
               </span>
             </div>

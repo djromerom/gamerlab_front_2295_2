@@ -107,7 +107,7 @@ const TablaResultados = () => {
                         const valor = getCriterionValue(criteriosDelVideojuego, columna);
                         return (
                           <TableCell key={columna.id}>
-                            {typeof valor === 'number' ? valor.toFixed(1) : 'N/A'}
+                            {typeof valor === 'number' ? valor.toFixed(2) : 'N/A'}
                           </TableCell>
                         );
                       })}
