@@ -53,6 +53,15 @@ export default tseslint.config({
 })
 ```
 
+## Variables de entorno
+
+`.env.example` es la referencia única: para cada variable dice qué es, si es obligatoria, de dónde sale y cómo se rota. Para desarrollo local se copia a `.env` (ignorado por git). Nunca contiene valores reales.
+
+- Todo lo que empieza por `VITE_` queda en el JavaScript público del navegador: **no poner secretos**, solo URLs y claves públicas.
+- En test/prod no hay `.env`: el pipeline toma los GitHub Secrets y los inyecta al construir la imagen (hoy solo `VITE_ENDPOINT_BACKEND` y `VITE_SITE_KEY`; una variable nueva también se agrega a los `Dockerfile` y a `deploy-front.yml`).
+- Si tu cambio lee una variable nueva: agrégala a `.env.example` con sus cuatro líneas (`Que`, `Obligatoria`, `Obtener`, `Rotar`) justo encima y corre `npm run check:env`. El workflow `Test-front` corre el mismo chequeo en cada PR.
+- Los accesos (servidor, administración) y quién los entrega están en la guía de accesos del proyecto (`variables-y-accesos`); no se piden ni se pasan por chat ni por documentos compartidos.
+
 ## Testing
 
 Las pruebas usan **Vitest** con **Testing Library** sobre `jsdom`. Cada archivo `*.test.ts(x)` vive junto al código que prueba, dentro de `src/`.
