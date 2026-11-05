@@ -53,7 +53,7 @@ export const EditionJurorsTable: React.FC<EditionJurorsTableProps> = ({
   rowErrors,
   writable,
 }) => {
-  // Los profesores (AUTOMATIC) no se seleccionan: entran por sus NRC
+  // Los profesores con NRC (AUTOMATIC) no se seleccionan; los inscritos por correo sí
   const selectable = writable ? jurors.filter((j) => j.status !== "AUTOMATIC") : [];
   const allSelected = selectable.length > 0 && selectable.every((j) => selectedIds.has(j.jurorId));
 

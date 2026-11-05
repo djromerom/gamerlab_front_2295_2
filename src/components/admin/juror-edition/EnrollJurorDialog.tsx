@@ -77,8 +77,8 @@ export const EnrollJurorDialog: React.FC<EnrollJurorDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Inscribir jurado por correo</DialogTitle>
           <DialogDescription>
-            Para un jurado con cuenta que no estuvo en la edición anterior. Queda inscrito como
-            Confirmado.
+            Para un jurado con cuenta que no estuvo en la edición anterior o un profesor senior sin
+            NRC en esta edición. Queda inscrito como Confirmado.
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
@@ -88,6 +88,7 @@ export const EnrollJurorDialog: React.FC<EnrollJurorDialogProps> = ({
               id="enroll-email"
               type="email"
               required
+              placeholder="Correo de un jurado o de un profesor senior"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
