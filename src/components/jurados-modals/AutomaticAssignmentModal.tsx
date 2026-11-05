@@ -222,8 +222,8 @@ export function AutomaticAssignmentModal({ onClose, onConfirmed }: AutomaticAssi
                   <>
                     {" · "}
                     {preview.backupJurorsExcluded === 1
-                      ? "1 remanente queda de reserva"
-                      : `${preview.backupJurorsExcluded} remanentes quedan de reserva`}
+                      ? "1 suplente queda de reserva"
+                      : `${preview.backupJurorsExcluded} suplentes quedan de reserva`}
                   </>
                 )}
               </p>

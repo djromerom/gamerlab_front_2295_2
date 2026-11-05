@@ -126,7 +126,7 @@ export function CreateJurorModal({
             >
               <option value="">Selecciona un tipo</option>
               <option value="OFFICIAL">Oficial</option>
-              <option value="BACKUP">Remanente</option>
+              <option value="BACKUP">Suplente</option>
             </select>
           </div>
 

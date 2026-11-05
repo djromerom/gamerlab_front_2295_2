@@ -118,7 +118,7 @@ describe("AutomaticAssignmentModal (HU-07, ARK-115)", () => {
 
     expect(preview).toHaveBeenCalledTimes(1);
     expect(preview).toHaveBeenCalledWith(undefined);
-    expect(screen.getByText("2 remanentes quedan de reserva", { exact: false })).toBeTruthy();
+    expect(screen.getByText("2 suplentes quedan de reserva", { exact: false })).toBeTruthy();
     expect((screen.getByText("Asignaciones nuevas").nextSibling)?.textContent).toContain("2");
     expect((confirmButton())?.textContent).toContain("Confirmar 2 asignaciones");
     expect(confirmButton().disabled).toBe(false);
