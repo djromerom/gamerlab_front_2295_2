@@ -5,12 +5,11 @@ import { findMyTeam } from "@/lib/opaqueKeys";
 
 
 
-import { useEffect, useRef, useState, useCallback, use } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HelpCircle } from "lucide-react"
 import LoadingScreen from "@/components/grupo 5/LoadingScreen"
-import Review from "@/components/grupo 5/Review"
 import JudgesGrades from "@/components/grupo 5/JudgesGrades"
 
 import TeamCode from "@/components/grupo 5/TeamCode.tsx"
@@ -18,19 +17,17 @@ import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Team } from "@/types/Team";
 
+const SCORE_PENDING_MESSAGE = "Nota en proceso";
+
 export default function Scoreboard() {
-  const [rawRatingsAll, setRawRatingsAll] = useState<number[]>([])
   // obtain permission for viewing student grades.
   const ratingsACRef = useRef<AbortController | null>(null)
   const { canViewScores } = useGlobalState()
   const [loading, setLoading] = useState(true)
-  const progressBarRef = useRef<HTMLDivElement | null>(null)
-  /*other portion of code to calculate the circle*/
 
-  const [generalGrade, setGeneralGrade] = useState<number>(0);
-  const [seniorGrade, setSeniorGrade] = useState<number>(0);
-  const [juniorGrade, setJuniorGrade] = useState<number>(0);
-  // true cuando el backend oculta el puntaje (ranking no publicado): 403 o sin las tres claves
+  // HU-30: el estudiante ve solo la nota final. null = el equipo todavía no tiene nota.
+  const [generalGrade, setGeneralGrade] = useState<number | null>(null);
+  // true cuando el backend oculta la nota porque el ranking no está publicado (responde 403)
   const [scoresHidden, setScoresHidden] = useState(false);
 
   const [team, setTeam] = useState<Team | null>(null);
@@ -81,9 +78,7 @@ export default function Scoreboard() {
 
   useEffect(() => {
     if (!team || !canViewScores) {
-      setGeneralGrade(0);
-      setJuniorGrade(0);
-      setSeniorGrade(0);
+      setGeneralGrade(null);
       setScoresHidden(false);
       setLoading(false);
       return;
@@ -109,35 +104,22 @@ export default function Scoreboard() {
 
         if (response.status === 403) {
           setScoresHidden(true);
-          setGeneralGrade(0);
-          setJuniorGrade(0);
-          setSeniorGrade(0);
+          setGeneralGrade(null);
           return;
         }
 
         if (!response.ok) {
           console.warn("Error fetching team scores:", response.status);
           setScoresHidden(false);
-          setGeneralGrade(0);
-          setJuniorGrade(0);
-          setSeniorGrade(0);
+          setGeneralGrade(null);
           return;
         }
 
         const data = await response.json().catch(() => null);
         const item = Array.isArray(data) && data.length > 0 ? data[0] : null;
 
-        setScoresHidden(
-          !!item && item.finalScore == null && item.avgJunior == null && item.avgSenior == null,
-        );
-        const finalScoreVar = item?.finalScore != null ? Number(item.finalScore.toFixed(2)) : 0;
-        const avgJuniorVar = item?.avgJunior != null ? Number(item.avgJunior.toFixed(2)) : 0;
-        const avgSeniorVar = item?.avgSenior != null ? Number(item.avgSenior.toFixed(2)) : 0;
-
-        setGeneralGrade(finalScoreVar);
-        setJuniorGrade(avgJuniorVar);
-        setSeniorGrade(avgSeniorVar);
-        console.log("Fetched team scores:", item);
+        setScoresHidden(false);
+        setGeneralGrade(item?.finalScore ?? null);
       } catch (err: any) {
         if (err.name === "AbortError") {
           // petición abortada intencionalmente — ignorar
@@ -145,9 +127,7 @@ export default function Scoreboard() {
         }
         console.error("Error fetching team scores:", err);
         setScoresHidden(false);
-        setGeneralGrade(0);
-        setJuniorGrade(0);
-        setSeniorGrade(0);
+        setGeneralGrade(null);
       } finally {
         setLoading(false);
       }
@@ -157,75 +137,6 @@ export default function Scoreboard() {
       controller.abort();
     };
   }, [team, canViewScores]);
-
-
-
-
-  /**
-   * Final portion of code to calculate the circle
-   */
-  // Obtain permission for viewing student grades from backend and poll for changes.
-  const fetchRatings = useCallback(async () => {
-    // si está deshabilitado, limpiar y salir
-    if (!canViewScores) {
-      ratingsACRef.current?.abort()
-      setRawRatingsAll([])
-      setLoading(false)
-      return
-    }
-
-    // cancelar llamada previa y crear nueva
-    // ratingsACRef.current?.abort()
-    // ratingsACRef.current = new AbortController()
-    setLoading(true)
-    try {
-      const res = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students`, {
-        method: "GET",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      })
-
-      if (!res.ok) {
-        console.warn("Error fetching ratings:", res.status)
-        setRawRatingsAll([])
-        return
-      }
-
-
-      const data = await res.json()
-      if (!data || !Array.isArray(data.data)) {
-        setRawRatingsAll([])
-        return
-      }
-
-      const raw: number[] = data.data.map((item: any) =>
-        typeof item.evaluationScore === "number" ? item.evaluationScore : 0
-      )
-      setRawRatingsAll(raw)
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        console.error("fetchRatings error:", err)
-        setRawRatingsAll([])
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [canViewScores])
-
-  // Ejecutar fetchRatings cuando cambie canViewScores
-  useEffect(() => {
-    fetchRatings()
-    return () => {
-      ratingsACRef.current?.abort()
-    }
-  }, [canViewScores, fetchRatings])
-
-
-
-
-
-  let averagePercent = Math.min(100, Math.max(0, (generalGrade / 5) * 100));
-  const progressPercent = Number.isFinite(averagePercent) ? averagePercent : 0
 
   const renderStars = (rating: number) => {
     const starSize = "w-5 h-8 sm:w-6 sm:h-10 md:w-7 md:h-12"
@@ -266,14 +177,6 @@ export default function Scoreboard() {
 
     return stars
   }
-  // Update progress bar width
-  // when progressPercent changes
-  useEffect(() => {
-    console.log("Updating progress bar to:", progressBarRef.current)
-    if (progressBarRef.current) {
-      progressBarRef.current.style.width = `${progressPercent.toFixed(0)}%`
-    }
-  }, [progressPercent])
 
   // Loading / permission states
   if (canViewScores === null) {
@@ -313,16 +216,18 @@ export default function Scoreboard() {
       <Card className="w-full shadow-sm border  ">
         <CardHeader className="p-4 sm:p-6 pb-2">
 
-          <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Retroalimentación del VideoJuego</CardTitle>
+          <CardTitle className="text-lg sm:text-xl font-medium text-foreground">Nota final del equipo</CardTitle>
           <CardDescription className="text-xs sm:text-sm text-foreground/50">
-            Las entregas son evaluadas según las especificaciones del proyecto. Revisa la retroalimentación de tu proyecto a continuación.
+            Las entregas son evaluadas según las especificaciones del proyecto. Esta es la nota general final de tu grupo, la misma del ranking.
           </CardDescription>
         </CardHeader>
         {/* circulo de calificacion */}
         <CardContent className="p-3 sm:p-6 pt-2 space-y-3 sm:space-y-4">
           {scoresHidden ? (
             <p className="text-center text-sm sm:text-base text-muted-foreground py-6">{AVERAGES_HIDDEN_MESSAGE}</p>
-          ) : (<>
+          ) : generalGrade === null ? (
+            <p className="text-center text-sm sm:text-base text-muted-foreground py-6">{SCORE_PENDING_MESSAGE}</p>
+          ) : (
           <div className="flex flex-col items-center mb-6 sm:mb-10">
             <div className="relative w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60">
               <svg className="absolute inset-0 w-full h-full border-accent rounded-full border-0" viewBox="0 0 100 100">
@@ -335,7 +240,7 @@ export default function Scoreboard() {
                   stroke="#facc15"
                   strokeWidth="6"
                   strokeDasharray="289.026"
-                  strokeDashoffset={289.026 - (289.026 * (isNaN(generalGrade) ? 0 : generalGrade) / 5)}
+                  strokeDashoffset={289.026 - (289.026 * generalGrade / 5)}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)"
                 />
@@ -343,13 +248,13 @@ export default function Scoreboard() {
               {/* tamaño de estrella */}
               <div className="absolute inset-0 flex flex-col items-center">
                 <span className="text-4xl sm:text-5xl md:text-6xl font-bold pt-8 sm:pt-10 md:pt-10">{generalGrade.toFixed(2)}</span>
-                <div className="flex mt-1 sm:mt-2">{renderStars(isNaN(generalGrade) ? 0 : generalGrade)}</div>
+                <div className="flex mt-1 sm:mt-2">{renderStars(generalGrade)}</div>
                 <span className="text-xs sm:text-sm md:text-base text-foreground mt-1">de 5.0</span>
               </div>
             </div>
 
             <div className="text-sm sm:text-base md:text-lg font-semibold text-foreground mt-3 sm:mt-4 flex items-center flex-wrap justify-center gap-1">
-              <span>Basado en {rawRatingsAll.length} calificaciones</span>
+              <span>Nota general final</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -364,47 +269,10 @@ export default function Scoreboard() {
               </TooltipProvider>
             </div>
           </div>
-
-
-
-          <div className="space-y-2">
-            {/* Progress Bars: Total, Junior, Senior */}
-            {[
-              {
-                label: "Junior",
-                percent: Math.min(100, Math.max(0, (juniorGrade / 5) * 100)),
-                color: "bg-green-400",
-                grade: juniorGrade,
-              },
-              {
-                label: "Senior",
-                percent: Math.min(100, Math.max(0, (seniorGrade / 5) * 100)),
-                color: "bg-blue-400",
-                grade: seniorGrade,
-              },
-            ].map((b) => (
-              <div key={b.label} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                <div className="w-16 sm:w-24 font-semibold text-right flex-shrink-0">{b.label}</div>
-                <div className="flex-1 relative h-3 sm:h-4 bg-gray-400 rounded-full overflow-hidden">
-                  <div
-                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${b.color}`}
-                    style={{ width: `${b.percent.toFixed(0)}%` }}
-                    aria-hidden
-                  />
-                </div>
-
-                <div className="w-20 sm:w-24 font-semibold text-foreground text-left flex-shrink-0">
-                  <span>{b.percent.toFixed(0)}% ({Number(b.grade).toFixed(2)})</span>
-                </div>
-              </div>
-            ))}
-            {/* *-------------------------------------* */}
-          </div>
-          </>)}
+          )}
         </CardContent>
       </Card>
       <JudgesGrades />
-      <Review />
     </div>
   )
 }
