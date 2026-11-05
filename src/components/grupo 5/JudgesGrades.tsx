@@ -11,7 +11,6 @@ interface JudgeInfo {
   id: string
   nombre: string
   categoria: string
-  totalScore: number | null
   haEvaluado: boolean
 }
 
@@ -131,17 +130,15 @@ export default function JudgesGrades() {
                 </Badge>
               </div>
 
-              {/* Score */}
+              {/* HU-30: solo si evaluó, nunca la nota que puso */}
               <span
-                className={`text-xs sm:text-sm font-semibold tabular-nums shrink-0 ${
+                className={`text-xs sm:text-sm font-semibold shrink-0 ${
                   judge.haEvaluado
                     ? "text-foreground"
                     : "text-foreground/40 italic"
                 }`}
               >
-                {judge.haEvaluado && judge.totalScore != null
-                  ? judge.totalScore.toFixed(2)
-                  : "NA"}
+                {judge.haEvaluado ? "Evaluó" : "Pendiente"}
               </span>
             </div>
           ))}
