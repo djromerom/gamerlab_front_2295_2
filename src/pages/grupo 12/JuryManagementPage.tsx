@@ -75,15 +75,6 @@ const JuryManagementPage = () => {
     setPagination({ page: 1, limit: newLimit });
   };
 
-  const automaticAssignment = async () => {
-    try {
-      const response = await juryManagement.automaticAssignment()
-      setError(response.message)
-    } catch (error) {
-      setError (error)
-    }
-  }
-
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   return (
