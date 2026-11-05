@@ -221,7 +221,7 @@ export function JuradosListModal({
                           className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                         >
                           {jurado.tipo === "OFFICIAL"
-                            ? "Marcar como remanente"
+                            ? "Marcar como suplente"
                             : "Marcar como oficial"}
                         </button>
 

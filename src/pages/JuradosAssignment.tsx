@@ -459,11 +459,11 @@ export function JuradosAssignment() {
       case "equipos-ok":
         return "Equipos completos";
       case "remanentes-uso":
-        return "Con remanentes en uso";
+        return "Con suplentes en uso";
       case "oficiales":
         return "Oficiales";
       case "remanentes":
-        return "Remanentes";
+        return "Suplentes";
       default:
         return "Todos los equipos";
     }
@@ -1373,7 +1373,7 @@ export function JuradosAssignment() {
                 className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl border border-border bg-background/50 hover:bg-accent text-xs font-medium text-foreground transition-colors"
               >
                 <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                <span>{juradosRemanentesDisponibles.length} Remanentes</span>
+                <span>{juradosRemanentesDisponibles.length} Suplentes</span>
               </button>
             </div>
           </div>
@@ -1417,11 +1417,11 @@ export function JuradosAssignment() {
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[10px] font-semibold"
                 >
                   <AlertTriangle className="w-2.5 h-2.5 flex-shrink-0" />
-                  <span>{remanentesEnUso} remanentes en uso</span>
+                  <span>{remanentesEnUso} suplentes en uso</span>
                 </div>
               ) : (
                 <span className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/30 text-muted-foreground">
-                  Sin remanentes
+                  Sin suplentes
                 </span>
               )}
             </div>
@@ -1594,7 +1594,7 @@ export function JuradosAssignment() {
                           }}
                           className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all ${dashboardFilter === "remanentes-uso" ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-accent"}`}
                         >
-                          Con remanentes en uso
+                          Con suplentes en uso
                         </button>
                       </div>
                     </>
@@ -1660,9 +1660,9 @@ export function JuradosAssignment() {
                               <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                                 <span className="hidden md:inline">
-                                  Con remanentes
+                                  Con suplentes
                                 </span>
-                                <span className="md:hidden">Remanente</span>
+                                <span className="md:hidden">Suplente</span>
                               </div>
                             )}
                           </div>
@@ -1817,7 +1817,7 @@ export function JuradosAssignment() {
               <div>
                 <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Remanentes</span>
+                  <span>Jurados Suplentes</span>
                 </h3>
 
                 <div className="bg-card border border-border rounded-xl p-3 mb-3">
@@ -1856,7 +1856,7 @@ export function JuradosAssignment() {
 
                   {juradosRemanentesDisponibles.length === 0 && (
                     <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados remanentes disponibles
+                      No hay jurados suplentes disponibles
                     </p>
                   )}
                 </div>

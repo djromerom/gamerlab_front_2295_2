@@ -109,7 +109,7 @@ describe("JuryManagementTable (Personal → Jurados)", () => {
     expect(screen.getByRole("columnheader", { name: "Categoría" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Tipo" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Senior" })).toBeTruthy();
-    expect(screen.getByRole("cell", { name: "Remanente" })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "Suplente" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Sin categoría" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Sin tipo" })).toBeTruthy();
   });

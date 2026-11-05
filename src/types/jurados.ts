@@ -67,7 +67,7 @@ export interface CurrentUser {
 
 export function getJurorTypeLabel(value?: JurorType | null): string {
   if (value === "OFFICIAL") return "Oficial";
-  if (value === "BACKUP") return "Remanente";
+  if (value === "BACKUP") return "Suplente";
   return "Sin tipo";
 }
 
