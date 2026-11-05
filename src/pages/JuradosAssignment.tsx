@@ -506,7 +506,10 @@ export function JuradosAssignment() {
       setLoadError(null);
 
       const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
-        apiRequest<any>("/juror?includeInactive=false&limit=100&page=1", {
+        // ARK-140: solo los jurados de la edición activa (HU-25: Confirmados y profesores
+        // con NRC activo), con su tipo Oficial/Suplente de la edición. Los líderes de los
+        // equipos llegan en `lider` del seguimiento.
+        apiRequest<any>("/juror?includeInactive=false&limit=100&page=1&participating=true", {
           method: "GET",
         }),
         apiRequest<any>("/juror/evaluation-tracking", {
