@@ -19,6 +19,7 @@ import {
   REFRESH_RETRY_DELAY_MS,
   SESSION_EXPIRED_EVENT,
 } from "@/lib/session";
+import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const nextRefreshAtRef = useRef<number | null>(null);
   // Indica si hay una sesión activa, para distinguir una expiración de la carga inicial sin sesión
   const hasSessionRef = useRef(false);
+  const ownTeamUserRef = useRef<string | null>(null);
 
   function stopHeartbeat() {
     if (refreshTimeoutRef.current) {
@@ -196,6 +198,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // [MODIFICADO]: Se detiene explícitamente el temporizador de refresco antes de limpiar la sesión
     // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
     stopHeartbeat();
+    resetOwnTeamCacheForTests();
     hasSessionRef.current = false;
     setSessionExpired(false);
 
@@ -212,6 +215,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setAccessToken(null);
     setLoading(false);
   };
+
+  useEffect(() => {
+    const userId = user?.id ?? null;
+    if (ownTeamUserRef.current !== userId) {
+      resetOwnTeamCacheForTests();
+      ownTeamUserRef.current = userId;
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     // 1. Ejecución inmediata al cargar la app para intentar recuperar la sesión

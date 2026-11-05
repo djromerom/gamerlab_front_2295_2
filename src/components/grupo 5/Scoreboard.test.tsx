@@ -11,12 +11,12 @@ vi.mock("@/fetchs/grupo 1/GlobalStateContext", () => ({
   useGlobalState: () => ({ canViewScores: true }),
 }));
 vi.mock("@/components/grupo 5/TeamCode.tsx", () => ({ default: () => null }));
-vi.mock("@/components/grupo 5/Review", () => ({ default: () => null }));
 vi.mock("@/components/grupo 5/JudgesGrades", () => ({ default: () => null }));
 
 import Scoreboard from "@/components/grupo 5/Scoreboard";
 
 const AVISO = "Disponible cuando se publique el ranking";
+const EN_PROCESO = "Nota en proceso";
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
@@ -32,7 +32,6 @@ function backend(scoreRes: () => Response) {
   apiFetch.mockImplementation(async (url: string) => {
     if (url.endsWith("/teams")) return json(200, teamsList);
     if (url.includes("/teams/final-score/team/")) return scoreRes();
-    if (url.endsWith("/students")) return json(200, { data: [] });
     return json(404, {});
   });
 }
@@ -58,25 +57,12 @@ describe("Scoreboard con ranking oculto", () => {
     expect(container.textContent).not.toMatch(/NaN|undefined/);
   });
 
-  it("200 sin las tres claves: muestra el aviso", async () => {
-    backend(() => json(200, [{ teamId: 7 }]));
-    render(<Scoreboard />);
-    await waitFor(() => expect(screen.getByText(AVISO)).toBeTruthy());
-  });
-
-  it("con números: igual que hoy", async () => {
-    backend(() => json(200, [{ finalScore: 4.2, avgJunior: 4, avgSenior: 4.5 }]));
-    render(<Scoreboard />);
-    await waitFor(() => expect(screen.getByText("4.2")).toBeTruthy());
-    expect(screen.queryByText(AVISO)).toBeNull();
-    expect(screen.getByText(/\(4\.50\)/)).toBeTruthy();
-  });
-
-  it("500: no se convierte en aviso (se trata como hoy)", async () => {
+  it("500: no se convierte en aviso ni muestra 0", async () => {
     backend(() => json(500, {}));
     render(<Scoreboard />);
-    await waitFor(() => expect(screen.getByText("Retroalimentación del VideoJuego")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(EN_PROCESO)).toBeTruthy());
     expect(screen.queryByText(AVISO)).toBeNull();
+    expect(screen.queryByText("0.00")).toBeNull();
   });
 
   it("403 y luego fallo de red al cambiar de equipo: no deja el aviso viejo", async () => {
@@ -92,5 +78,66 @@ describe("Scoreboard con ranking oculto", () => {
     rerender(<Scoreboard />);
     await waitFor(() => expect(calls).toBe(2));
     await waitFor(() => expect(screen.queryByText(AVISO)).toBeNull());
+  });
+});
+
+describe("Scoreboard: el estudiante ve solo la nota final (HU-30)", () => {
+  beforeEach(() => {
+    apiFetch.mockReset();
+    auth.id = "u1";
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("muestra la nota final con 2 decimales", async () => {
+    backend(() => json(200, [{ teamId: 7, finalScore: 4.8 }]));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText("4.80")).toBeTruthy());
+    expect(screen.queryByText(AVISO)).toBeNull();
+    expect(screen.queryByText(EN_PROCESO)).toBeNull();
+  });
+
+  it("no muestra el desglose aunque el back viejo todavía lo envíe", async () => {
+    backend(() => json(200, [{ finalScore: 3.54, avgJunior: 3.2, avgSenior: 4.05 }]));
+    const { container } = render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText("3.54")).toBeTruthy());
+    expect(screen.queryByText("Junior")).toBeNull();
+    expect(screen.queryByText("Senior")).toBeNull();
+    expect(container.textContent).not.toMatch(/3\.20|4\.05/);
+  });
+
+  it("no escribe la respuesta en la consola", async () => {
+    const log = vi.spyOn(console, "log");
+    backend(() => json(200, [{ finalScore: 3.54, avgJunior: 3.2, avgSenior: 4.05 }]));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText("3.54")).toBeTruthy());
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("no pide las evaluaciones individuales", async () => {
+    backend(() => json(200, [{ finalScore: 4.8 }]));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText("4.80")).toBeTruthy());
+    const urls = apiFetch.mock.calls.map(([url]) => String(url));
+    expect(urls.some((url) => /\/students(\?|$)/.test(url))).toBe(false);
+  });
+
+  it("finalScore null: muestra «Nota en proceso», no 0", async () => {
+    backend(() => json(200, [{ teamId: 7, finalScore: null }]));
+    const { container } = render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText(EN_PROCESO)).toBeTruthy());
+    expect(screen.queryByText(AVISO)).toBeNull();
+    expect(container.textContent).not.toMatch(/0\.00|NaN|undefined/);
+  });
+
+  it("sin filas para el equipo: muestra «Nota en proceso»", async () => {
+    backend(() => json(200, []));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText(EN_PROCESO)).toBeTruthy());
   });
 });

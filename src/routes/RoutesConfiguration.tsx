@@ -24,6 +24,7 @@ import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
+import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -176,6 +177,11 @@ export const routes: RouteConfig[] = [
   {
     path: "/check-in-jurados",
     element: <JurorCheckInPage />,
+    roles: ["Staff", "Administrador"],
+  },
+  {
+    path: "/asistencia-jurados",
+    element: <JurorAttendancePage />,
     roles: ["Staff", "Administrador"],
   },
   {

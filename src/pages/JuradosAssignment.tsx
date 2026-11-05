@@ -17,6 +17,7 @@ import {
   Filter,
   ChevronDown,
   Info,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -42,6 +43,7 @@ import { JuradosListModal } from "@/components/jurados-modals/JuradosListModal";
 import { JuradoAssignModal } from "@/components/jurados-modals/JuradoAssignModal";
 import { AllTeamsModal } from "@/components/jurados-modals/AllTeamsModal";
 import { AuditModal } from "@/components/jurados-modals/AuditModal";
+import { AutomaticAssignmentModal } from "@/components/jurados-modals/AutomaticAssignmentModal";
 import { CreateJurorModal } from "@/components/jurados-modals/CreateJurorModal";
 import { EditJurorModal } from "@/components/jurados-modals/EditJurorModal";
 import { toast } from "sonner";
@@ -56,6 +58,11 @@ import {
 } from "@/lib/assignmentWarnings";
 import { useAssignmentWarnings } from "@/hooks/useAssignmentWarnings";
 import { AssignmentWarningsDialog } from "@/components/jurados-modals/AssignmentWarningsDialog";
+import { useWorkingEdition } from "@/hooks/useWorkingEdition";
+import {
+  confirmRemoveAllAssignmentsText,
+  confirmRemoveJurorAssignmentsText,
+} from "@/lib/workingEdition";
 
 const API_BASE = import.meta.env.VITE_ENDPOINT_BACKEND;
 
@@ -408,10 +415,15 @@ export function JuradosAssignment() {
   const [showJuradosListModal, setShowJuradosListModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [showAllTeamsModal, setShowAllTeamsModal] = useState(false);
+  const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AssignmentAuditLog[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ARK-133: «quitar todas» solo afecta a la edición de trabajo; los textos la nombran
+  const workingEdition = useWorkingEdition();
+  // ARK-131: el motivo del bloqueo del back se muestra dentro del diálogo de asignación
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [jurorSearch, setJurorSearch] = useState("");
   const [openJurorMenuId, setOpenJurorMenuId] = useState<string | null>(null);
@@ -447,11 +459,11 @@ export function JuradosAssignment() {
       case "equipos-ok":
         return "Equipos completos";
       case "remanentes-uso":
-        return "Con remanentes en uso";
+        return "Con suplentes en uso";
       case "oficiales":
         return "Oficiales";
       case "remanentes":
-        return "Remanentes";
+        return "Suplentes";
       default:
         return "Todos los equipos";
     }
@@ -494,7 +506,10 @@ export function JuradosAssignment() {
       setLoadError(null);
 
       const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
-        apiRequest<any>("/juror?includeInactive=false&limit=300&page=1", {
+        // ARK-140: solo los jurados de la edición activa (HU-25: Confirmados y profesores
+        // con NRC activo), con su tipo Oficial/Suplente de la edición. Los líderes de los
+        // equipos llegan en `lider` del seguimiento. limit=300: hotfix de main (paginación).
+        apiRequest<any>("/juror?includeInactive=false&limit=300&page=1&participating=true", {
           method: "GET",
         }),
         apiRequest<any>("/juror/evaluation-tracking", {
@@ -708,10 +723,12 @@ export function JuradosAssignment() {
       setReassignContext(null);
     }
 
+    setAssignError(null);
     setShowJuradoModal(true);
   };
 
   const closeJuradoModal = () => {
+    setAssignError(null);
     setSelectedTeam(null);
     setReassignContext(null);
     setShowJuradoModal(false);
@@ -725,6 +742,7 @@ export function JuradosAssignment() {
   ) => {
     try {
       setIsSubmitting(true);
+      setAssignError(null);
 
       await apiRequest("/juror/assignments", {
         method: "POST",
@@ -746,8 +764,8 @@ export function JuradosAssignment() {
         return;
       }
       console.error(error);
-      window.alert(
-        error instanceof Error
+      setAssignError(
+        error instanceof Error && error.message
           ? error.message
           : "No se pudo asignar el jurado."
       );
@@ -764,6 +782,7 @@ export function JuradosAssignment() {
   ) => {
     try {
       setIsSubmitting(true);
+      setAssignError(null);
 
       await apiRequest("/juror/assignments/reassign", {
         method: "PATCH",
@@ -786,8 +805,8 @@ export function JuradosAssignment() {
         return;
       }
       console.error(error);
-      window.alert(
-        error instanceof Error
+      setAssignError(
+        error instanceof Error && error.message
           ? error.message
           : "No se pudo reasignar el jurado."
       );
@@ -843,16 +862,17 @@ export function JuradosAssignment() {
 
   const resetAllAssignments = async () => {
     const confirmed = window.confirm(
-      "¿Estás seguro de que quieres eliminar todas las asignaciones manuales?"
+      confirmRemoveAllAssignmentsText(workingEdition?.title)
     );
     if (!confirmed) return;
 
     try {
       setIsSubmitting(true);
 
-      await apiRequest("/juror/assignments/all", {
+      const result = await apiRequest<{ message?: string }>("/juror/assignments/all", {
         method: "DELETE",
       });
+      if (result?.message) toast.success(result.message);
 
       await loadData();
     } catch (error) {
@@ -867,24 +887,12 @@ export function JuradosAssignment() {
     }
   };
 
-  const assignAutomatically = async () => {
-    try {
-      setIsSubmitting(true);
-      await apiRequest("/juror/evaluations-assignment", {
-        method: "GET",
-      });
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "No se pudo asignar automaticamente a los jurados."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  // HU-07: la vista previa no guarda nada; el modal llama a esto solo después de confirmar
+  const handleAutoAssignConfirmed = async () => {
+    setShowAutoAssignModal(false);
+    await loadData();
+  };
+
   const sendAllJurorCerts = async () => {
     toast.message("Enviando correos, porfavor espere...")
     try {
@@ -1100,7 +1108,7 @@ export function JuradosAssignment() {
 
   const handleRemoveTeamsFromJuror = async (jurorId: string, jurorName: string) => {
     const confirmed = window.confirm(
-      `¿Seguro que deseas quitar todos los equipos asignados a ${jurorName}?`
+      confirmRemoveJurorAssignmentsText(jurorName, workingEdition?.title)
     );
     if (!confirmed) return;
 
@@ -1108,9 +1116,10 @@ export function JuradosAssignment() {
       setIsSubmitting(true);
       setOpenJurorMenuId(null);
 
-      await apiRequest(`/juror/${jurorId}/assignments`, {
+      const result = await apiRequest<{ message?: string }>(`/juror/${jurorId}/assignments`, {
         method: "DELETE",
       });
+      if (result?.message) toast.success(result.message);
 
       await loadData();
     } catch (error) {
@@ -1367,7 +1376,7 @@ export function JuradosAssignment() {
                 className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl border border-border bg-background/50 hover:bg-accent text-xs font-medium text-foreground transition-colors"
               >
                 <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                <span>{juradosRemanentesDisponibles.length} Remanentes</span>
+                <span>{juradosRemanentesDisponibles.length} Suplentes</span>
               </button>
             </div>
           </div>
@@ -1411,11 +1420,11 @@ export function JuradosAssignment() {
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[10px] font-semibold"
                 >
                   <AlertTriangle className="w-2.5 h-2.5 flex-shrink-0" />
-                  <span>{remanentesEnUso} remanentes en uso</span>
+                  <span>{remanentesEnUso} suplentes en uso</span>
                 </div>
               ) : (
                 <span className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/30 text-muted-foreground">
-                  Sin remanentes
+                  Sin suplentes
                 </span>
               )}
             </div>
@@ -1509,12 +1518,12 @@ export function JuradosAssignment() {
           </button>
 
           <button
-            onClick={assignAutomatically}
+            onClick={() => setShowAutoAssignModal(true)}
             disabled={isLoading || isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
           >
-            <Users className="w-4 h-4 flex-shrink-0" />
-            <span>Asignar todos</span>
+            <Sparkles className="w-4 h-4 flex-shrink-0" />
+            <span>Asignar automáticamente</span>
           </button>
         </div>
 
@@ -1588,7 +1597,7 @@ export function JuradosAssignment() {
                           }}
                           className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all ${dashboardFilter === "remanentes-uso" ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-accent"}`}
                         >
-                          Con remanentes en uso
+                          Con suplentes en uso
                         </button>
                       </div>
                     </>
@@ -1654,9 +1663,9 @@ export function JuradosAssignment() {
                               <div className="px-2 py-1 rounded-full text-xs border border-amber-500/30 text-amber-500 flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                                 <span className="hidden md:inline">
-                                  Con remanentes
+                                  Con suplentes
                                 </span>
-                                <span className="md:hidden">Remanente</span>
+                                <span className="md:hidden">Suplente</span>
                               </div>
                             )}
                           </div>
@@ -1811,7 +1820,7 @@ export function JuradosAssignment() {
               <div>
                 <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Remanentes</span>
+                  <span>Jurados Suplentes</span>
                 </h3>
 
                 <div className="bg-card border border-border rounded-xl p-3 mb-3">
@@ -1850,7 +1859,7 @@ export function JuradosAssignment() {
 
                   {juradosRemanentesDisponibles.length === 0 && (
                     <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados remanentes disponibles
+                      No hay jurados suplentes disponibles
                     </p>
                   )}
                 </div>
@@ -1885,6 +1894,7 @@ export function JuradosAssignment() {
             juradosDisponiblesParaModal={juradosDisponiblesParaModal}
             reassignContext={reassignContext}
             isSubmitting={isSubmitting}
+            errorMessage={assignError}
             onClose={closeJuradoModal}
             onAssign={addJuradoToTeam}
             onReassign={reassignJuradoOnTeam}
@@ -1895,6 +1905,13 @@ export function JuradosAssignment() {
           <AllTeamsModal
             teams={teams}
             onClose={() => setShowAllTeamsModal(false)}
+          />
+        )}
+
+        {showAutoAssignModal && (
+          <AutomaticAssignmentModal
+            onClose={() => setShowAutoAssignModal(false)}
+            onConfirmed={handleAutoAssignConfirmed}
           />
         )}
 

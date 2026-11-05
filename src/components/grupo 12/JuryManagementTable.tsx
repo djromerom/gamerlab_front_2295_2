@@ -16,15 +16,23 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_CATEGORY, DEFAULT_JUROR_TYPE, getApiErrorMessage } from "./utils"; // Adjust path if needed
+import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_TYPE, editableJurorCategory, getApiErrorMessage } from "./utils"; // Adjust path if needed
 import { juryManagement } from "@/hooks/juryManagement";
 import { getJurorCategoryLabel, getJurorTypeLabel } from "@/types/jurados";
 import { JurorCategoryTypeFields } from "./JurorCategoryTypeFields";
+import { useWorkingEdition } from "@/hooks/useWorkingEdition";
+import {
+  confirmRemoveAllAssignmentsText,
+  confirmRemoveJurorAssignmentsText,
+} from "@/lib/workingEdition";
+import { AutomaticAssignmentModal } from "@/components/jurados-modals/AutomaticAssignmentModal";
 
 export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
-  // 
+  //
   // <-- Recibe isLoading
   const customFetch = useFetch();
+  // ARK-133: «Desasignar todos» y «Quitar equipos» solo afectan a la edición de trabajo
+  const workingEdition = useWorkingEdition();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newJuror, setNewJuror] = useState<JurorFormData>(EMPTY_JUROR_FORM);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -33,6 +41,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
   const [loading, setLoading] = useState(false)
+  const [showAutoAssignModal, setShowAutoAssignModal] = useState(false)
   const [teams, setTeams] = useState(null)
   const [valueFormAssignTeam, setValueFormAssignTeam] = useState({ id: "", name: "", videogame: "" })
   const [teamsByJuror, setTeamsByJuror] = useState([{ id: "", name: "", videogame: "" }])
@@ -534,7 +543,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           body: JSON.stringify({
             firstName: editingJuror.firstName,
             lastName: editingJuror.lastName,
-            jurorCategory: editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY,
+            jurorCategory: editableJurorCategory(editingJuror),
             jurorType: editingJuror.jurorType ?? DEFAULT_JUROR_TYPE,
           }),
         }
@@ -610,26 +619,10 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     }
   };
 
-  const automaticAssignment = async () => {
-    try {
-      if (loading) {
-        toast.loading('Asignando equipos', { id: 111 })
-      }
-      const response = await juryManagement.automaticAssignment()
-      if (response.success) {
-        setLoading(false)
-        toast.success(response.message)
-        setTimeout(() => {
-          window.location.reload();
-        }, 500)
-      } else {
-        setLoading(false)
-        toast.error(response.message)
-      }
-    } catch (error) {
-      setLoading(false)
-      toast.error(error, { id: 111 })
-    }
+  // HU-07: la asignación automática se previsualiza y se confirma en el modal
+  const handleAutoAssignConfirmed = () => {
+    setShowAutoAssignModal(false)
+    refreshData()
   }
 
   return (
@@ -659,7 +652,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               variant="destructive"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
               className="flex justify-center items-center cursor-pointer gap-1.5 px-2.5 lg:px-4"
-              onClick={() => { setLoading(true); juryManagement.deleteAllAssignments(setLoading) }}
+              onClick={() => {
+                if (!window.confirm(confirmRemoveAllAssignmentsText(workingEdition?.title))) return;
+                setLoading(true);
+                juryManagement.deleteAllAssignments(setLoading);
+              }}
             >
               <BadgeXIcon className="h-4 w-4" />
               <p className="hidden lg:block">
@@ -670,11 +667,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               variant="default"
               disabled={loading} // <-- Deshabilitar si no hay data O si está cargando
               className="flex justify-center items-center cursor-pointer gap-1.5 px-2.5 lg:px-4"
-              onClick={() => { setLoading(true); automaticAssignment() }}
+              onClick={() => setShowAutoAssignModal(true)}
             >
               <UserPen className="h-4 w-4" />
               <p className="hidden lg:block">
-                Asignar todos
+                Asignar automáticamente
               </p>
             </Button>
 
@@ -901,7 +898,12 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          onClick={() => { setLoading(true); juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading) }}
+                          onClick={() => {
+                            const name = `${juror.firstName} ${juror.lastName}`.trim();
+                            if (!window.confirm(confirmRemoveJurorAssignmentsText(name, workingEdition?.title))) return;
+                            setLoading(true);
+                            juryManagement.deleteAllAsignmentsByJury(juror.id, setLoading);
+                          }}
                           disabled={internalIsLoading}
                           className="cursor-pointer"
                         >
@@ -1052,7 +1054,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                 </div>
                 <JurorCategoryTypeFields
                   idPrefix="edit"
-                  jurorCategory={editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY}
+                  jurorCategory={editableJurorCategory(editingJuror)}
+                  categoryLocked={editingJuror.isProfessor}
                   jurorType={editingJuror.jurorType ?? DEFAULT_JUROR_TYPE}
                   onCategoryChange={(jurorCategory) =>
                     setEditingJuror((prev) => (prev ? { ...prev, jurorCategory } : null))
@@ -1126,6 +1129,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {showAutoAssignModal && (
+        <AutomaticAssignmentModal
+          onClose={() => setShowAutoAssignModal(false)}
+          onConfirmed={handleAutoAssignConfirmed}
+        />
+      )}
     </div>
   );
 };

@@ -109,7 +109,7 @@ describe("JuryManagementTable (Personal → Jurados)", () => {
     expect(screen.getByRole("columnheader", { name: "Categoría" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Tipo" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Senior" })).toBeTruthy();
-    expect(screen.getByRole("cell", { name: "Remanente" })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "Suplente" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Sin categoría" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Sin tipo" })).toBeTruthy();
   });
@@ -218,6 +218,39 @@ describe("JuryManagementTable (Personal → Jurados)", () => {
 
     await waitFor(() => expect(refreshData).toHaveBeenCalled());
     expect(sentBody()).toMatchObject({ jurorCategory: "JUNIOR", jurorType: "OFFICIAL" });
+  });
+
+  it("ARK-139: al editar un profesor, la categoría queda fija en Senior y se puede cambiar el tipo", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: "p-1" }));
+    const professor: JurorRowData = {
+      ...legacyJuror,
+      id: "p-1",
+      firstName: "Rocío",
+      lastName: "Díaz",
+      email: "rocio@test.com",
+      isProfessor: true,
+    };
+    const { refreshData } = renderTable([professor]);
+
+    openEditDialog(0);
+    const category = screen.getByLabelText("Categoría") as HTMLSelectElement;
+    expect(category.value).toBe("SENIOR");
+    expect(category.disabled).toBe(true);
+    expect(screen.getByText("Los profesores siempre son Senior; solo se puede cambiar el tipo.")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Tipo"), { target: { value: "BACKUP" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Cambios" }));
+
+    await waitFor(() => expect(refreshData).toHaveBeenCalled());
+    expect(fetchMock).toHaveBeenCalledWith("http://api.test/juror/p-1", expect.objectContaining({ method: "PATCH" }));
+    expect(sentBody()).toMatchObject({ jurorCategory: "SENIOR", jurorType: "BACKUP" });
+  });
+
+  it("al editar un jurado que no es profesor, la categoría se puede cambiar", () => {
+    renderTable([{ ...baseJuror, isProfessor: false }]);
+
+    openEditDialog(0);
+    expect((screen.getByLabelText("Categoría") as HTMLSelectElement).disabled).toBe(false);
   });
 
   it("si el backend rechaza la edición, muestra su mensaje", async () => {

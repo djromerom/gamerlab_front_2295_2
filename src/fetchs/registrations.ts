@@ -47,3 +47,20 @@ export async function updateRegistrationsOpen(open: boolean): Promise<boolean> {
   const data = (await res.json()) as { registrationsOpen: boolean };
   return data.registrationsOpen;
 }
+
+/** ARK-136 (BG-23): si la edición activa ya tiene NRC activos. */
+export interface RegistrationReadiness {
+  edition: { id: number; title: string } | null;
+  activeNrcCount: number;
+  hasActiveNrcs: boolean;
+}
+
+/** Solo Administrador. Lanza si la petición falla. */
+export async function fetchRegistrationReadiness(): Promise<RegistrationReadiness> {
+  const res = await apiFetch(`${API_URL}/nrcs/registration-readiness`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(await errorDetail(res, "Error al revisar los NRC"));
+  return (await res.json()) as RegistrationReadiness;
+}

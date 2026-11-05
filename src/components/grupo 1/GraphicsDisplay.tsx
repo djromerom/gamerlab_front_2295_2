@@ -453,7 +453,7 @@ const GraphicDisplay = () => {
                                         <div key={criterio} className="space-y-1">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium capitalize">{criterio}</span>
-                                                <span className="text-sm font-medium">{formatNumber(valor, 1)}/5.0</span>
+                                                <span className="text-sm font-medium">{formatNumber(valor, 2)}/5.00</span>
                                             </div>
                                             <Progress value={(Math.max(0, Math.min(valor, 5)) / 5) * 100} className="h-2" aria-label={`Progreso de ${criterio}`} />
                                         </div>

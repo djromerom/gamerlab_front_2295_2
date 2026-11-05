@@ -206,4 +206,97 @@ describe("Página «Jurados de la edición» (ARK-126)", () => {
     expect(await within(dialog).findByText("El jurado ya está en esta edición como Pendiente")).toBeTruthy();
     expect(within(dialog).queryByRole("link")).toBeNull();
   });
+
+  describe("profesores senior sin NRC (ARK-151)", () => {
+    // Fila ENROLLED de un profesor: Senior, Confirmado y Oficial, como responde el back
+    const enrolledProfessor: EditionJurorItem = {
+      ...juror("p-2", "Carlos", "CONFIRMED"),
+      category: "Senior",
+    };
+
+    const enroll = async (email: string) => {
+      fireEvent.click(await screen.findByRole("button", { name: /Inscribir por correo/ }));
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.change(within(dialog).getByLabelText("Correo"), { target: { value: email } });
+      fireEvent.click(within(dialog).getByRole("button", { name: "Inscribir" }));
+      return dialog;
+    };
+
+    it("la ayuda explica que el profesor sin NRC se inscribe por correo", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      renderPage();
+
+      expect(await screen.findByText(/profesores senior sin NRC en esta edición se inscriben/)).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: /Inscribir por correo/ }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(/un profesor senior sin NRC en esta edición/)).toBeTruthy();
+    });
+
+    it("inscribe al profesor y recarga la lista", async () => {
+      fetchEditionJurors.mockResolvedValueOnce(listOf(JURORS));
+      fetchEditionJurors.mockResolvedValue(listOf([...JURORS, enrolledProfessor]));
+      enrollJurorByEmail.mockResolvedValue(enrolledProfessor);
+      renderPage();
+
+      await enroll("carlos@test.co");
+
+      expect(await screen.findByText("Carlos Test")).toBeTruthy();
+      expect(enrollJurorByEmail).toHaveBeenCalledWith({
+        email: "carlos@test.co",
+        editionId: 5,
+        type: "OFFICIAL",
+      });
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("lista al profesor con categoría, tipo y estado, y deja seleccionarlo", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf([...JURORS, enrolledProfessor]));
+      renderPage();
+
+      const row = (await screen.findByText("Carlos Test")).closest("tr") as HTMLElement;
+      expect(within(row).getByText("Senior")).toBeTruthy();
+      expect(within(row).getByText("Oficial")).toBeTruthy();
+      expect(within(row).getByText("Confirmado")).toBeTruthy();
+      expect(within(row).getByLabelText("Seleccionar Carlos Test")).toBeTruthy();
+    });
+
+    it("un profesor con NRC activo muestra el motivo del back (409) sin enlace al alta", async () => {
+      const message = "El profesor ya es jurado de esta edición porque tiene un NRC activo en ella";
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      enrollJurorByEmail.mockRejectedValue(new JurorEditionError(message, 409));
+      renderPage();
+
+      const dialog = await enroll("luis@test.co");
+
+      expect(await within(dialog).findByText(message)).toBeTruthy();
+      expect(within(dialog).queryByRole("link")).toBeNull();
+    });
+
+    it("una cuenta sin rol Jurado ni Profesor muestra el motivo del back (400)", async () => {
+      const message = "La cuenta no tiene el rol Jurado ni Profesor";
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      enrollJurorByEmail.mockRejectedValue(new JurorEditionError(message, 400));
+      renderPage();
+
+      const dialog = await enroll("estudiante@test.co");
+
+      expect(await within(dialog).findByText(message)).toBeTruthy();
+      expect(within(dialog).queryByRole("link")).toBeNull();
+    });
+
+    it("explica en la fila que el profesor automático no se edita (IS_PROFESSOR)", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      updateJurorStatuses.mockResolvedValue({
+        results: [{ jurorId: "j-1", ok: false, error: "IS_PROFESSOR" }],
+        declined: 0,
+      });
+      renderPage();
+
+      fireEvent.click(await screen.findByLabelText("Seleccionar Ana Test"));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+      expect(await screen.findByText("Profesor con NRC en la edición: es jurado automático")).toBeTruthy();
+    });
+  });
 });

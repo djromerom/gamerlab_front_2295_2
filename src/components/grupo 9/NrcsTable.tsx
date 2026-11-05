@@ -106,6 +106,8 @@ interface Props {
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   refreshData: () => void;
+  /** ARK-136: edición anterior (historial): sin agregar, editar ni eliminar. */
+  readOnly?: boolean;
 }
 
 export const NrcsTable: React.FC<Props> = ({
@@ -116,6 +118,7 @@ export const NrcsTable: React.FC<Props> = ({
   onPageChange,
   onLimitChange,
   refreshData,
+  readOnly = false,
 }) => {
   const customFetch = useFetch();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -329,6 +332,7 @@ export const NrcsTable: React.FC<Props> = ({
     >
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">NRC's</h1>
+        {!readOnly && (
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -468,6 +472,7 @@ export const NrcsTable: React.FC<Props> = ({
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <Card className="rounded-lg overflow-hidden bg-card">
@@ -509,6 +514,7 @@ export const NrcsTable: React.FC<Props> = ({
                   <TableCell>{nrc.subject.name}</TableCell>
                   <TableCell>{getProfessorName(nrc.professor)}</TableCell>
                   <TableCell>
+                    {!readOnly && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -543,6 +549,7 @@ export const NrcsTable: React.FC<Props> = ({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

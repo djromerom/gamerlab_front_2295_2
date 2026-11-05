@@ -13,7 +13,6 @@ import LoadingScreen from "@/components/grupo 5/LoadingScreen"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form";
 import type { CombinedFormValues } from "@/lib/schemas";
-import { useAuth } from "@/contexts/AuthContext";
 import { getImageUrl, uploadImage } from "../grupo 11/azureFile"
 import TeamMembers from "./TeamMembers"
 import { NRCOption, RawStudent, Student, UpdateStudentNrcsDto } from "@/types/teamMembers"
@@ -21,10 +20,12 @@ import { Team } from "@/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
 import NotEnrolledNotice from "./NotEnrolledNotice";
 import { NotEnrolledError, isNotEnrolledError } from "@/lib/notEnrolled";
+import { fetchOwnTeam } from "@/lib/ownTeam";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function EditBoard() {
-  //context and refs
   const { user } = useAuth();
+  //context and refs
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   //Member information
@@ -41,6 +42,8 @@ export default function EditBoard() {
   //Team videogame information
   const [loading, setLoading] = useState(false)
   const [notEnrolled, setNotEnrolled] = useState(false)
+  const [teamLoadError, setTeamLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadingForm, setLoadingForm] = useState(false)
   const [edit, setEdit] = useState < boolean | null >(false) //Switch to active the video game information editing form
   const [infoEquipo, setInfoEquipo] = useState< Team >({ id: '', teamName: '', videogameName: '', description: '', status: '', logoUrl: '', videoUrl: '', repoUrl: '', additionalImages: [] })
@@ -111,7 +114,8 @@ export default function EditBoard() {
 
   //Fetches full team data (including videogame details) from the backend.
   const getInfoEquipo = async () => {
-    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${user?.id}/full`, {
+    const ownTeam = await fetchOwnTeam(user?.id ?? "");
+    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/teams/${ownTeam.id}/full`, {
       method: 'GET',
       credentials: "include",
     })
@@ -122,7 +126,7 @@ export default function EditBoard() {
     }
     if (!response.ok) {
       const body = await response.json().catch(() => null);
-      throw new Error(body?.message || "No se pudo cargar los datos del equipo.");
+      throw new Error(body?.message || "No se pudieron cargar los datos del equipo.");
     }
     const data = await response.json()
     const dataInfoEquipo = {
@@ -227,6 +231,8 @@ export default function EditBoard() {
   useEffect(() => {  
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setTeamLoadError("");
         const dataEquipo = await getInfoEquipo()
         setInfoEquipo(dataEquipo)
         setInfoEditEquipo(dataEquipo)
@@ -271,15 +277,16 @@ export default function EditBoard() {
           setNotEnrolled(true);
           return;
         }
-        const message = error instanceof Error ? error.message : "No se pudo cargar los datos del equipo.";
+        const message = error instanceof Error ? error.message : "No se pudieron cargar los datos del equipo.";
         console.error(message, error);
+        setTeamLoadError(message);
         toast.error(message);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [loadAttempt]);
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
@@ -294,6 +301,23 @@ export default function EditBoard() {
         </div>
       </div>
     )
+  }
+
+  if (teamLoadError) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+          <p>{teamLoadError}</p>
+          <button
+            type="button"
+            className="mt-3 rounded-md bg-red-600 px-4 py-2 text-white"
+            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (loadingForm) {
