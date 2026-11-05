@@ -342,7 +342,7 @@ export default function Scoreboard() {
               </svg>
               {/* tamaño de estrella */}
               <div className="absolute inset-0 flex flex-col items-center">
-                <span className="text-4xl sm:text-5xl md:text-6xl font-bold pt-8 sm:pt-10 md:pt-10">{generalGrade}</span>
+                <span className="text-4xl sm:text-5xl md:text-6xl font-bold pt-8 sm:pt-10 md:pt-10">{generalGrade.toFixed(2)}</span>
                 <div className="flex mt-1 sm:mt-2">{renderStars(isNaN(generalGrade) ? 0 : generalGrade)}</div>
                 <span className="text-xs sm:text-sm md:text-base text-foreground mt-1">de 5.0</span>
               </div>

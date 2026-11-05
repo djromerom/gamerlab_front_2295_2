@@ -261,7 +261,7 @@ export default function HistoricalVideogamesPage() {
                           )}
                         </div>
                         <p className="text-center text-lg font-semibold">{podium[1].gameName}</p>
-                        <p className="text-center text-xl font-bold text-[#c0c0c0]">{podium[1].finalScore?.toFixed(3)}</p>
+                        <p className="text-center text-xl font-bold text-[#c0c0c0]">{podium[1].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
                         <div className="gradient-border-inner"></div>
@@ -284,7 +284,7 @@ export default function HistoricalVideogamesPage() {
                           )}
                         </div>
                         <p className="text-center text-xl font-semibold">{podium[0].gameName}</p>
-                        <p className="text-center text-2xl font-bold text-[#FFD700]">{podium[0].finalScore?.toFixed(3)}</p>
+                        <p className="text-center text-2xl font-bold text-[#FFD700]">{podium[0].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
                         <div className="gradient-border-inner"></div>
@@ -307,7 +307,7 @@ export default function HistoricalVideogamesPage() {
                           )}
                         </div>
                         <p className="text-center text-base font-semibold">{podium[2].gameName}</p>
-                        <p className="text-center text-lg font-bold text-[#CD7F32]">{podium[2].finalScore?.toFixed(3)}</p>
+                        <p className="text-center text-lg font-bold text-[#CD7F32]">{podium[2].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">
                         <div className="gradient-border-inner"></div>

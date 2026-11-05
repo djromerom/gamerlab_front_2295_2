@@ -381,7 +381,7 @@ export default function PodioGamer() {
                           {sortedTeams[1].name}
                         </p>
                         <p className="text-center text-xl font-bold text-[#c0c0c0]">
-                          {sortedTeams[1].score.toFixed(3)}
+                          {sortedTeams[1].score.toFixed(2)}
                         </p>
                       </div>
 
@@ -416,7 +416,7 @@ export default function PodioGamer() {
                           {sortedTeams[0].name}
                         </p>
                         <p className="text-center text-2xl font-bold text-[#FFD700]">
-                          {sortedTeams[0].score.toFixed(3)}
+                          {sortedTeams[0].score.toFixed(2)}
                         </p>
                       </div>
 
@@ -451,7 +451,7 @@ export default function PodioGamer() {
                           {sortedTeams[2].name}
                         </p>
                         <p className="text-center text-lg font-bold text-[#CD7F32]">
-                          {sortedTeams[2].score.toFixed(3)}
+                          {sortedTeams[2].score.toFixed(2)}
                         </p>
                       </div>
 
@@ -533,7 +533,7 @@ export default function PodioGamer() {
                             </td>
 
                             <td className="px-4 py-3 text-sm text-left font-medium text-gray-300">
-                              {Number(team.score.toFixed(2))}
+                              {team.score.toFixed(2)}
                             </td>
                           </tr>
                         ))}

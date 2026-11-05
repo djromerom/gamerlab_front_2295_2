@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { formatGrade, roundGrade } from "@/lib/grades";
 "use client"
 
 import { useState, useEffect } from "react"
@@ -106,7 +107,7 @@ const PromptItem = ({ id, rating, score, environment, date, onViewFeedback }: Pr
               variant={rating === "Excellent" ? "outline" : "secondary"}
               className={getRatingBadgeClasses(rating)}
             >
-              {rating} {score}
+              {rating} {formatGrade(score)}
             </Badge>
           </div>
 
@@ -259,8 +260,8 @@ export default function Review() {
         evaluationScore: number;
       }) => ({
         id: item.evaluationId,
-        rating: item.evaluationScore >= 3 ? "Excellent" : "Bad",
-        score: parseFloat(item.evaluationScore.toFixed(1)),
+        rating: roundGrade(item.evaluationScore) >= 3 ? "Excellent" : "Bad",
+        score: roundGrade(item.evaluationScore),
         date: item.evaluationDate.slice(0, 10),
         environment: `Jurado Anónimo`
       }));
@@ -273,12 +274,12 @@ export default function Review() {
         evaluationId: number;
         evaluationScore: number;
       }) => {
-        const roundedScore = parseFloat(item.evaluationScore.toFixed(1));
+        const roundedScore = roundGrade(item.evaluationScore);
 
         return {
           id: item.evaluationId,
           overallRating: roundedScore >= 3 ? "Excellent" : "Bad",
-          overallScore: `${roundedScore}/5`,
+          overallScore: `${roundedScore.toFixed(2)}/5`,
           details: item.evaluationDetails,
           comment: item.evaluationComment,
         };
@@ -360,7 +361,7 @@ export default function Review() {
                           />
                         ))}
                         <span className="ml-2 text-sm font-medium">
-                          {detail.score}/5
+                          {formatGrade(detail.score) ?? detail.score}/5
                         </span>
                       </div>
                     </div>

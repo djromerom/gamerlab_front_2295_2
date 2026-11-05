@@ -64,10 +64,10 @@ describe("Scoreboard con ranking oculto", () => {
     await waitFor(() => expect(screen.getByText(AVISO)).toBeTruthy());
   });
 
-  it("con números: igual que hoy", async () => {
+  it("con números: la nota general sale con 2 decimales (BG-30)", async () => {
     backend(() => json(200, [{ finalScore: 4.2, avgJunior: 4, avgSenior: 4.5 }]));
     render(<Scoreboard />);
-    await waitFor(() => expect(screen.getByText("4.2")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("4.20")).toBeTruthy());
     expect(screen.queryByText(AVISO)).toBeNull();
     expect(screen.getByText(/\(4\.50\)/)).toBeTruthy();
   });
