@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_CATEGORY, DEFAULT_JUROR_TYPE, getApiErrorMessage } from "./utils"; // Adjust path if needed
+import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_TYPE, editableJurorCategory, getApiErrorMessage } from "./utils"; // Adjust path if needed
 import { juryManagement } from "@/hooks/juryManagement";
 import { getJurorCategoryLabel, getJurorTypeLabel } from "@/types/jurados";
 import { JurorCategoryTypeFields } from "./JurorCategoryTypeFields";
@@ -543,7 +543,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           body: JSON.stringify({
             firstName: editingJuror.firstName,
             lastName: editingJuror.lastName,
-            jurorCategory: editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY,
+            jurorCategory: editableJurorCategory(editingJuror),
             jurorType: editingJuror.jurorType ?? DEFAULT_JUROR_TYPE,
           }),
         }
@@ -1054,7 +1054,8 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                 </div>
                 <JurorCategoryTypeFields
                   idPrefix="edit"
-                  jurorCategory={editingJuror.jurorCategory ?? DEFAULT_JUROR_CATEGORY}
+                  jurorCategory={editableJurorCategory(editingJuror)}
+                  categoryLocked={editingJuror.isProfessor}
                   jurorType={editingJuror.jurorType ?? DEFAULT_JUROR_TYPE}
                   onCategoryChange={(jurorCategory) =>
                     setEditingJuror((prev) => (prev ? { ...prev, jurorCategory } : null))

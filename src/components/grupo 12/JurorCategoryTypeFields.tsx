@@ -12,10 +12,12 @@ interface JurorCategoryTypeFieldsProps {
   onCategoryChange: (value: JurorCategory) => void;
   onTypeChange: (value: JurorType) => void;
   disabled?: boolean;
+  /** Fija la categoría (los profesores siempre son Senior, ARK-139). */
+  categoryLocked?: boolean;
 }
 
 // Categoría y tipo de jurado, compartidos por los formularios Agregar y Editar de Personal → Jurados.
-export const JurorCategoryTypeFields: React.FC<JurorCategoryTypeFieldsProps> = ({ idPrefix, jurorCategory, jurorType, onCategoryChange, onTypeChange, disabled }) => (
+export const JurorCategoryTypeFields: React.FC<JurorCategoryTypeFieldsProps> = ({ idPrefix, jurorCategory, jurorType, onCategoryChange, onTypeChange, disabled, categoryLocked }) => (
   <>
     <div className="flex flex-col gap-2">
       <Label htmlFor={`${idPrefix}-jurorCategory`} className="text-left font-medium">
@@ -26,13 +28,15 @@ export const JurorCategoryTypeFields: React.FC<JurorCategoryTypeFieldsProps> = (
         value={jurorCategory}
         onChange={(e) => onCategoryChange(e.target.value as JurorCategory)}
         className={selectClassName}
-        disabled={disabled}
+        disabled={disabled || categoryLocked}
       >
         <option value="JUNIOR" className={optionClassName}>{getJurorCategoryLabel("JUNIOR")}</option>
         <option value="SENIOR" className={optionClassName}>{getJurorCategoryLabel("SENIOR")}</option>
       </select>
       <p className="text-xs text-muted-foreground">
-        Senior es solo para profesores que participan como jurados.
+        {categoryLocked
+          ? "Los profesores siempre son Senior; solo se puede cambiar el tipo."
+          : "Senior es solo para profesores que participan como jurados."}
       </p>
     </div>
     <div className="flex flex-col gap-2">
