@@ -30,6 +30,8 @@ export interface JurorRowData {
   lastSignInAt: string | null;
   jurorCategory?: JurorCategory | null;
   jurorType?: JurorType | null;
+  /** Lo envía el back (ARK-139): un profesor siempre es Senior. */
+  isProfessor?: boolean;
   evaluatedCount: number;
   evaluatedGameNames: string[];
   unevaluatedCount: number;
@@ -47,6 +49,10 @@ export interface JurorFormData {
 // Junior y Oficial por defecto: Senior es solo para profesores que participan como jurados.
 export const DEFAULT_JUROR_CATEGORY: JurorCategory = "JUNIOR";
 export const DEFAULT_JUROR_TYPE: JurorType = "OFFICIAL";
+
+// Un profesor siempre es Senior (ARK-139); un jurado sin categoría se propone como Junior.
+export const editableJurorCategory = (juror: Pick<JurorRowData, "jurorCategory" | "isProfessor">): JurorCategory =>
+  juror.isProfessor ? "SENIOR" : (juror.jurorCategory ?? DEFAULT_JUROR_CATEGORY);
 
 export const EMPTY_JUROR_FORM: JurorFormData = {
   firstName: "",
