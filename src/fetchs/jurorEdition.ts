@@ -3,12 +3,14 @@ import type { EditionStatus, PaginatedResult } from '@/fetchs/editions';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';
 
-// ─── Tipos (contrato HU-25, docs/frontend/HU-25-jurados-por-edicion.md del back) ──
+// ─── Tipos (contratos HU-25 y HU-28, docs/frontend/ del back) ──────────────────
 
 export type JurorEditionStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED';
 // AUTOMATIC = profesor con NRC activo en la edición (no editable)
 export type JurorEditionListStatus = JurorEditionStatus | 'AUTOMATIC';
 export type JurorEditionType = 'OFFICIAL' | 'BACKUP';
+// ENROLLED = tiene fila en la edición: jurado externo o profesor sin NRC (HU-28)
+// PROFESSOR_NRC = profesor con NRC activo en la edición
 export type JurorEditionSource = 'ENROLLED' | 'PROFESSOR_NRC';
 export type JurorCategoryLabel = 'Junior' | 'Senior' | 'Sin categoría';
 
@@ -45,6 +47,8 @@ export interface ImportPreviousResult {
   fallback: boolean;
 }
 
+// NOT_ENROLLED = sin fila en la edición (un profesor sin NRC se inscribe por correo)
+// IS_PROFESSOR = profesor automático: tiene NRC activo en la edición
 export type StatusRowError = 'NOT_ENROLLED' | 'IS_PROFESSOR';
 
 export interface StatusItem {
@@ -74,7 +78,7 @@ export const TYPE_LABEL: Record<JurorEditionType, string> = {
 
 export const ROW_ERROR_MESSAGE: Record<StatusRowError, string> = {
   NOT_ENROLLED: 'No está en esta edición: inscríbalo por correo',
-  IS_PROFESSOR: 'Los profesores no se confirman: entran por sus NRC',
+  IS_PROFESSOR: 'Profesor con NRC en la edición: es jurado automático',
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

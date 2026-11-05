@@ -327,6 +327,7 @@ const EditionJurorsPage: React.FC = () => {
           <AlertDescription>
             <ul className="list-disc pl-4 space-y-1">
               <li>Cargue primero los NRC de la edición: los profesores con NRC activo quedan como jurados automáticamente.</li>
+              <li>Los profesores senior sin NRC en esta edición se inscriben por correo.</li>
               <li>Solo los jurados confirmados y los profesores con NRC tendrán escarapela, check-in y asignación.</li>
               <li>Si un jurado no tiene cuenta, créelo en Personal → Jurados y luego inscríbalo aquí.</li>
             </ul>
