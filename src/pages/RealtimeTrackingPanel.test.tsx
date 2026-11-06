@@ -97,8 +97,8 @@ describe("Ayuda del panel de seguimiento (ARK-143)", () => {
     ["Nivel", /tomado de su código/],
     ["Asignados", /Jurados asignados al grupo, incluidos los suplentes/],
     ["Presentes", /ya registraron su llegada/],
-    ["Recibidas", /aunque sean más de 3/],
-    ["Cuentan", /las 3 primeras enviadas \(máximo 3\)/],
+    ["Recibidas", /Evaluaciones enviadas para el grupo/],
+    ["Cuentan", /se tienen en cuenta en el seguimiento/],
   ])("la columna %s tiene su ayuda", async (label, help) => {
     await renderPanel();
 
@@ -129,7 +129,7 @@ describe("Ayuda del panel de seguimiento (ARK-143)", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     await renderPanel();
     openHelp("Cuentan");
-    await screen.findByText(/las 3 primeras enviadas/);
+    await screen.findByText(/se tienen en cuenta en el seguimiento/);
     const callsBefore = apiFetch.mock.calls.length;
 
     await act(async () => {
@@ -137,7 +137,7 @@ describe("Ayuda del panel de seguimiento (ARK-143)", () => {
     });
 
     await waitFor(() => expect(apiFetch.mock.calls.length).toBe(callsBefore + 1));
-    expect(screen.getByText(/las 3 primeras enviadas/)).toBeTruthy();
+    expect(screen.getByText(/se tienen en cuenta en el seguimiento/)).toBeTruthy();
   });
 
   it("al filtrar por nivel pide ese nivel al backend", async () => {

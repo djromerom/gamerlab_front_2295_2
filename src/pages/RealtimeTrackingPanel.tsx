@@ -23,8 +23,8 @@ const columnHelp = {
   level: "Nivel del grupo, tomado de su código (N0 a N4).",
   assigned: "Jurados asignados al grupo, incluidos los suplentes que se le sumen.",
   present: "De los jurados asignados, incluidos los suplentes, cuántos ya registraron su llegada a la feria.",
-  received: "Todas las evaluaciones enviadas para el grupo, aunque sean más de 3.",
-  counted: "Evaluaciones que cuentan para la nota: las 3 primeras enviadas (máximo 3). Las demás se guardan, pero no se promedian.",
+  received: "Evaluaciones enviadas para el grupo.",
+  counted: "Evaluaciones del grupo que se tienen en cuenta en el seguimiento.",
 };
 
 const hourHelp = (hour: number) =>
