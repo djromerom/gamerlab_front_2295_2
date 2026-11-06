@@ -1,12 +1,11 @@
 import { apiFetch } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { PaginatedJurors } from "@/components/grupo 12/utils";
 import { toast } from "sonner";
 
 const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const includeInactive = false;
-// Tope de `limit` que acepta el backend en GET /juror (MAX_PAGE_LIMIT).
-const MAX_PAGE_LIMIT = 100;
 
 export const juryManagement = {
     getJuries : async (page: number, limit: number) => {
@@ -34,12 +33,10 @@ export const juryManagement = {
 
     // Trae todos los jurados recorriendo las páginas, porque el backend no acepta más de 100 por página.
     getAllJuries: async () => {
-        const all: PaginatedJurors["data"] = [];
-        for (let page = 1; ; page++) {
-            const { data, metadata } = await juryManagement.getJuries(page, MAX_PAGE_LIMIT);
-            all.push(...data);
-            if (data.length === 0 || page >= metadata.totalPages) return all;
-        }
+        return fetchAllPages<PaginatedJurors["data"][number]>(async (page, limit) => {
+            const { data, metadata } = await juryManagement.getJuries(page, limit);
+            return { items: data, totalPages: metadata.totalPages };
+        });
     },
 
     getTeams: async () => {
