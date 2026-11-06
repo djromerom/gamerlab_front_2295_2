@@ -2,6 +2,7 @@
 
 
 import { apiFetch } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -508,9 +509,18 @@ export function JuradosAssignment() {
       const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
         // ARK-140: solo los jurados de la edición activa (HU-25: Confirmados y profesores
         // con NRC activo), con su tipo Oficial/Suplente de la edición. Los líderes de los
-        // equipos llegan en `lider` del seguimiento. limit=300: hotfix de main (paginación).
-        apiRequest<any>("/juror?includeInactive=false&limit=300&page=1&participating=true", {
-          method: "GET",
+        // equipos llegan en `lider` del seguimiento.
+        // ARK-156: se recorren las páginas; el backend acepta máximo 100 por página y la
+        // edición puede tener más jurados.
+        fetchAllPages(async (page, limit) => {
+          const response = await apiRequest<any>(
+            `/juror?includeInactive=false&limit=${limit}&page=${page}&participating=true`,
+            { method: "GET" }
+          );
+          return {
+            items: extractArray(response),
+            totalPages: safeNumber(response?.metadata?.totalPages, 1),
+          };
         }),
         apiRequest<any>("/juror/evaluation-tracking", {
           method: "GET",
@@ -518,7 +528,7 @@ export function JuradosAssignment() {
         apiRequest<any>("/auth/me", { method: "GET" }).catch(() => null),
       ]);
 
-      const incomingJurors = extractArray(jurorsResponse).map((raw) =>
+      const incomingJurors = jurorsResponse.map((raw) =>
         mapJurorFromApi(raw, jurados)
       );
 
