@@ -2413,3 +2413,47 @@ async function Pt(nt) {
     o.set(l, r), r += l.byteLength;
   return o.buffer;
 }
+
+self.addEventListener("push", (event) => {
+  let payload = { title: "ARKAD", body: "", url: "/" };
+  if (event.data) {
+    try {
+      payload = { ...payload, ...event.data.json() };
+    } catch {
+      payload.body = event.data.text();
+    }
+  }
+
+  const url = typeof payload.url === "string" && payload.url.startsWith("/") ? payload.url : "/";
+  event.waitUntil(self.registration.showNotification(payload.title || "ARKAD", {
+    body: payload.body || "",
+    data: { url },
+    icon: "/arkadLight.svg",
+    badge: "/arkadDark.svg",
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url;
+  const target = typeof url === "string" && url.startsWith("/") ? url : "/";
+
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const matching = clientsList.find((client) => new URL(client.url).pathname === target);
+    if (matching) {
+      await matching.focus();
+      return matching.navigate(target);
+    }
+    return self.clients.openWindow(target);
+  })());
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    if (clientsList[0]) {
+      clientsList[0].postMessage({ type: "PUSH_SUBSCRIPTION_CHANGED" });
+    }
+  })());
+});

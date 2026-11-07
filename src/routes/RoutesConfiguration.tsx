@@ -26,6 +26,7 @@ import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
 import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
+import PushNotificationsPage from "@/pages/PushNotificationsPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -77,6 +78,11 @@ interface RouteConfig {
 
 export const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
+  {
+    path: "/notificaciones",
+    element: <PushNotificationsPage />,
+    roles: ["Administrador", "Jurado", "Profesor"],
+  },
   { path: "/auth-error", element: <AuthErrorPage /> },
   // Pantallas de relleno retiradas: se redirigen al inicio de su rol
   {
