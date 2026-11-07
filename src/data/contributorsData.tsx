@@ -255,7 +255,7 @@ export const developers = [
 		name: "Daniel Romero Martínez",
 		role: "Software Architect",
 		department: ["sa"],
-		version: [1, 2, 3],
+		version: [1, 2, 3, 4],
 		github: "https://github.com/djromerom",
 		email: "djromero@uninorte.edu.co",
 	},
