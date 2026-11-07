@@ -82,6 +82,7 @@ export default function RatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [teamWasReassigned, setTeamWasReassigned] = useState(false);
   const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
   useEffect(() => {
@@ -264,6 +265,7 @@ export default function RatePage() {
     }
     setIsSubmitting(true);
     setSubmissionError(null);
+    setTeamWasReassigned(false);
 
     const parsedDetails: {
       criterionId: number;
@@ -369,6 +371,14 @@ export default function RatePage() {
             errorData.message || JSON.stringify(errorData) || errorText;
         } catch (e) {
           // no-op: no JSON body
+        }
+        if (
+          res.status === 403 &&
+          typeof errorText === "string" &&
+          errorText.includes("Este grupo no está asignado al evaluador")
+        ) {
+          setTeamWasReassigned(true);
+          throw new Error("Este grupo ya no está asignado a ti. Conservamos lo escrito; vuelve a pendientes para continuar.");
         }
         throw new Error(errorText);
       }
@@ -685,6 +695,11 @@ export default function RatePage() {
               </p>
             )}
             <AlertDialogFooter>
+              {teamWasReassigned && (
+                <Button type="button" variant="outline" onClick={() => navigate("/pendientes-calificar")}>
+                  Volver a pendientes
+                </Button>
+              )}
               <AlertDialogCancel
                 onClick={() => {
                   setConfirmDialogOpen(false);

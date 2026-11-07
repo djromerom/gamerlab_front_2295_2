@@ -69,6 +69,9 @@ async function renewAccessToken(auth: AuthHandlers): Promise<string | null> {
   if (response.status === 401 || response.status === 403) {
     throw new SessionRejectedError("Refresh token rejected");
   }
+  if (response.status >= 500 && response.status <= 599) {
+    throw new Error(`No pudimos renovar tu sesión por un problema del servidor (${response.status})`);
+  }
   if (!response.ok) return null;
   const data = await response.json();
   return typeof data?.accessToken === "string" ? data.accessToken : null;
