@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Clock3, RefreshCw } from "lucide-react";
+import { ChevronRight, CircleHelp, Clock3, RefreshCw } from "lucide-react";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  fetchEvaluationTracking,
+  type EvaluationTrackingLevel,
+  type EvaluationTrackingResult,
+} from "@/fetchs/evaluationTracking";
 import {
   fetchAbsenceAlert,
   fetchAbsencePanel,
@@ -19,6 +25,8 @@ import {
 } from "@/fetchs/absenceAlert";
 
 const REFRESH_SECONDS = 10;
+const levels: EvaluationTrackingLevel[] = ["N0", "N1", "N2", "N3", "N4"];
+type SortMode = "counted" | "received" | "present" | "name";
 const attendanceOptions: Array<{ value: "" | JurorAttendanceState; label: string }> = [
   { value: "", label: "Todos los estados" },
   { value: "NO_CHECK_IN", label: "Sin check-in" },
@@ -39,6 +47,57 @@ const formatBogotaTime = (value: string) =>
     timeZone: "America/Bogota",
   }).format(new Date(value));
 
+const isElevenOrLater = () => {
+  const colombiaHour = Number(new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    hourCycle: "h23",
+    timeZone: "America/Bogota",
+  }).format(new Date()));
+  return colombiaHour >= 11;
+};
+
+const shouldHighlightAtEleven = (selectedDate: string) => {
+  if (!selectedDate) return isElevenOrLater();
+  const todayParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const [month, day, year] = todayParts.split("/");
+  const todayInBogota = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  if (selectedDate < todayInBogota) return true;
+  if (selectedDate > todayInBogota) return false;
+  return isElevenOrLater();
+};
+
+const columnHelp = {
+  group: "Nombre del grupo, con su código y videojuego.",
+  level: "Nivel del grupo.",
+  assigned: "Jurados asignados al grupo.",
+  present: "Jurados asignados que ya llegaron.",
+  received: "Evaluaciones enviadas al grupo.",
+  counted: "Evaluaciones que cuentan para el seguimiento.",
+};
+
+function ColumnHeader({ label, help }: { label: string; help: string }) {
+  return (
+    <th scope="col" className="p-3 text-center">
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <Popover>
+          <PopoverTrigger aria-label={`Qué significa ${label}`} className="inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-accent">
+            <CircleHelp className="size-3.5" />
+          </PopoverTrigger>
+          <PopoverContent collisionPadding={16} className="w-64 max-w-[calc(100vw-2rem)] p-3 text-xs leading-relaxed">
+            {help}
+          </PopoverContent>
+        </Popover>
+      </span>
+    </th>
+  );
+}
+
 export function RealtimeTrackingPanel() {
   const { userRole } = useAuth();
   const isAdmin = userRole === "Administrador";
@@ -46,6 +105,10 @@ export function RealtimeTrackingPanel() {
   const [panel, setPanel] = useState<AbsencePanelResult | null>(null);
   const [attendance, setAttendance] = useState<"" | JurorAttendanceState>("");
   const [search, setSearch] = useState("");
+  const [tracking, setTracking] = useState<EvaluationTrackingResult | null>(null);
+  const [level, setLevel] = useState<EvaluationTrackingLevel | "">("");
+  const [date, setDate] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("counted");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -69,13 +132,15 @@ export function RealtimeTrackingPanel() {
       ]);
       setAlert(alertResult);
       setPanel(panelResult);
+      const trackingResult = await fetchEvaluationTracking(level || undefined, date || undefined);
+      setTracking(trackingResult);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar el seguimiento.");
     } finally {
       setIsLoading(false);
     }
-  }, [attendance]);
+  }, [attendance, date, level]);
 
   const openSchedule = useCallback(async () => {
     setScheduleError(null);
@@ -98,6 +163,12 @@ export function RealtimeTrackingPanel() {
     event.preventDefault();
     setScheduleError(null);
     setScheduleSaved(false);
+    if (!(schedule.startTime < schedule.alertTime &&
+      schedule.alertTime < schedule.controlTime &&
+      schedule.controlTime < schedule.closeTime)) {
+      setScheduleError("El orden debe ser: inicio < alerta < control < cierre.");
+      return;
+    }
     setIsSavingSchedule(true);
     try {
       const result = await updateFairSchedule({ ...schedule, editionId: alert?.edition.id });
@@ -115,8 +186,15 @@ export function RealtimeTrackingPanel() {
     const query = search.trim().toLowerCase();
     return [...(panel?.data ?? [])].filter((group) =>
       !query || `${group.teamCode} ${group.teamName} ${group.videogame}`.toLowerCase().includes(query),
-    );
-  }, [panel?.data, search]);
+    ).sort((first, second) => {
+      if (sortMode === "name") return first.teamName.localeCompare(second.teamName);
+      const firstTracking = tracking?.groups.find((group) => group.teamId === first.teamId);
+      const secondTracking = tracking?.groups.find((group) => group.teamId === second.teamId);
+      if (sortMode === "received") return (firstTracking?.evaluationsReceived ?? 0) - (secondTracking?.evaluationsReceived ?? 0) || first.teamName.localeCompare(second.teamName);
+      if (sortMode === "present") return first.presentJurors - second.presentJurors || first.teamName.localeCompare(second.teamName);
+      return (firstTracking?.evaluationsCounted ?? 0) - (secondTracking?.evaluationsCounted ?? 0) || first.teamName.localeCompare(second.teamName);
+    });
+  }, [panel?.data, search, sortMode, tracking?.groups]);
 
   const alertIsDefinitive = alert?.phase === "CONTROL" || alert?.phase === "CLOSED";
   const canConfigure = isAdmin && alert?.edition.writable !== false;
@@ -218,14 +296,29 @@ export function RealtimeTrackingPanel() {
             </div>
           )}
 
-          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(220px,1fr)_190px_auto]">
+          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(220px,1fr)_150px_190px_180px_180px_auto]">
             <Input aria-label="Buscar grupo" value={search} onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar grupo, código o videojuego" />
+            <select aria-label="Filtrar por nivel" value={level}
+              onChange={(event) => setLevel(event.target.value as EvaluationTrackingLevel | "")}
+              className="h-9 rounded-md border bg-background px-3 text-sm">
+              <option value="">Todos los niveles</option>
+              {levels.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <select aria-label="Ordenar grupos" value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              className="h-9 rounded-md border bg-background px-3 text-sm">
+              <option value="counted">Menos evaluaciones cuentan</option>
+              <option value="received">Menos recibidas</option>
+              <option value="present">Menos presentes</option>
+              <option value="name">Nombre del grupo</option>
+            </select>
             <select aria-label="Filtrar por asistencia" value={attendance}
               onChange={(event) => setAttendance(event.target.value as "" | JurorAttendanceState)}
               className="h-9 rounded-md border bg-background px-3 text-sm">
               {attendanceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
+            <Input aria-label="Fecha" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             <button type="button" onClick={() => void loadData()} disabled={isLoading}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md border bg-card px-4 text-sm hover:bg-accent disabled:opacity-50">
               <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} /> Actualizar
@@ -238,6 +331,13 @@ export function RealtimeTrackingPanel() {
               <span><strong>{panel.totals.missing}</strong> faltantes</span>
               <span><strong>{panel.totals.total}</strong> jurados</span>
               <span className="text-muted-foreground">Última actualización: {formatBogotaTime(panel.generatedAt)}</span>
+            </div>
+          )}
+
+          {tracking && (
+            <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="size-2 rounded-full bg-red-500" />
+              Menos de 3 evaluaciones al corte de las 11:00
             </div>
           )}
 
@@ -256,22 +356,32 @@ export function RealtimeTrackingPanel() {
               <table className="w-full min-w-[980px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-left">
-                    <th className="p-3">Grupo</th>
-                    <th className="p-3">Nivel</th>
-                    <th className="p-3 text-center">Presentes</th>
+                    <ColumnHeader label="Grupo" help={columnHelp.group} />
+                    <ColumnHeader label="Nivel" help={columnHelp.level} />
+                    <ColumnHeader label="Asignados" help={columnHelp.assigned} />
+                    <ColumnHeader label="Presentes" help={columnHelp.present} />
+                    <ColumnHeader label="Recibidas" help={columnHelp.received} />
+                    <ColumnHeader label="Cuentan" help={columnHelp.counted} />
                     <th className="p-3 text-center">Faltan evaluaciones</th>
                     <th className="p-3">Jurados y asistencia</th>
+                    {(tracking?.hours ?? []).map((hour) => <ColumnHeader key={hour} label={`${hour}:00`} help={`Evaluaciones acumuladas del grupo hasta las ${hour}:00.`} />)}
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleGroups.map((group) => (
-                    <tr key={group.teamId} className="border-b align-top last:border-0 hover:bg-muted/30">
+                  {visibleGroups.map((group) => {
+                    const tracked = tracking?.groups.find((item) => item.teamId === group.teamId);
+                    const highlight = shouldHighlightAtEleven(date) && tracked?.belowMinimumAt11;
+                    return (
+                    <tr key={group.teamId} className={`border-b align-top last:border-0 ${highlight ? "bg-red-500/10" : "hover:bg-muted/30"}`}>
                       <td className="p-3">
                         <div className="font-medium">{group.teamName}</div>
                         <div className="text-xs text-muted-foreground">{group.teamCode} · {group.videogame}</div>
                       </td>
                       <td className="p-3">{group.level ?? "Sin nivel"}</td>
-                      <td className="p-3 text-center">{group.presentJurors}/{group.assignedJurors}</td>
+                      <td className="p-3 text-center">{group.assignedJurors}</td>
+                      <td className="p-3 text-center">{group.presentJurors}</td>
+                      <td className="p-3 text-center">{tracking?.groups.find((item) => item.teamId === group.teamId)?.evaluationsReceived ?? 0}</td>
+                      <td className="p-3 text-center">{tracking?.groups.find((item) => item.teamId === group.teamId)?.evaluationsCounted ?? 0}</td>
                       <td className="p-3 text-center">{group.missingEvaluations}</td>
                       <td className="p-3">
                         <div className="space-y-1">
@@ -284,8 +394,13 @@ export function RealtimeTrackingPanel() {
                           {group.jurors?.length === 0 && <span className="text-muted-foreground">Sin jurados en este estado</span>}
                         </div>
                       </td>
+                      {(tracking?.hours ?? []).map((hour) => {
+                        const bucket = tracked?.byHour.find((item) => item.hour === hour);
+                        return <td key={hour} className="p-3 text-center">{bucket?.counted ?? 0} / {bucket?.received ?? 0}</td>;
+                      })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

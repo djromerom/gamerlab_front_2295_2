@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   fetchAbsencePanel: vi.fn(),
   fetchFairSchedule: vi.fn(),
   updateFairSchedule: vi.fn(),
+  fetchEvaluationTracking: vi.fn(),
   role: "Administrador",
 }));
 
@@ -20,6 +21,10 @@ vi.mock("@/fetchs/absenceAlert", () => ({
   fetchAbsencePanel: mocks.fetchAbsencePanel,
   fetchFairSchedule: mocks.fetchFairSchedule,
   updateFairSchedule: mocks.updateFairSchedule,
+}));
+
+vi.mock("@/fetchs/evaluationTracking", () => ({
+  fetchEvaluationTracking: mocks.fetchEvaluationTracking,
 }));
 
 vi.mock("@/components/grupo 9/app-sidebar", () => ({
@@ -55,6 +60,32 @@ const panel = {
   }],
 };
 
+const tracking = {
+  editionId: 5,
+  date: "2026-11-26",
+  generatedAt: alert.generatedAt,
+  hours: [8, 9, 10, 11, 12],
+  groups: [{
+    teamId: 41,
+    teamCode: "N2-AYP-07",
+    teamName: "Pixel Pioneers",
+    videogame: "Space Run",
+    level: "N2",
+    assignedJurors: 4,
+    presentJurors: 3,
+    evaluationsReceived: 1,
+    evaluationsCounted: 1,
+    byHour: [
+      { hour: 8, received: 0, counted: 0 },
+      { hour: 9, received: 0, counted: 0 },
+      { hour: 10, received: 1, counted: 1 },
+      { hour: 11, received: 1, counted: 1 },
+      { hour: 12, received: 1, counted: 1 },
+    ],
+    belowMinimumAt11: true,
+  }],
+};
+
 const renderPanel = () => render(
   <MemoryRouter>
     <RealtimeTrackingPanel />
@@ -68,6 +99,7 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     mocks.fetchAbsencePanel.mockReset().mockResolvedValue(panel);
     mocks.fetchFairSchedule.mockReset().mockResolvedValue({ edition: alert.edition, configured: true, schedule: alert.schedule });
     mocks.updateFairSchedule.mockReset().mockResolvedValue({ edition: alert.edition, configured: true, schedule: alert.schedule });
+    mocks.fetchEvaluationTracking.mockReset().mockResolvedValue(tracking);
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: false,
       media: query,

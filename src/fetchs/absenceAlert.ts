@@ -88,14 +88,16 @@ async function readError(response: Response, fallback: string) {
   return fallback;
 }
 
-async function request<T>(path: string, fallback: string): Promise<T> {
+async function request<T>(path: string, fallback: string, notFound?: string): Promise<T> {
   const response = await apiFetch(`${API_URL}${path}`, {
     credentials: "include",
     cache: "no-store",
     headers: { "Cache-Control": "no-cache" },
   });
   if (!response.ok) {
-    if (response.status === 404) throw new AbsenceAlertError("No hay una edición activa.", 404);
+    if (response.status === 404) {
+      throw new AbsenceAlertError(notFound ?? "No hay una edición activa.", 404);
+    }
     throw new AbsenceAlertError(await readError(response, fallback), response.status);
   }
   return response.json();
@@ -106,11 +108,11 @@ export function fetchAbsenceAlert(): Promise<AbsenceAlertResult> {
 
 export function fetchAbsencePanel(attendance?: JurorAttendanceState): Promise<AbsencePanelResult> {
   const query = attendance ? `?attendance=${attendance}` : "";
-  return request(`/absence-alert/panel${query}`, "No se pudo cargar el panel de seguimiento.");
+  return request(`/absence-alert/panel${query}`, "No se pudo cargar el panel de seguimiento.", "No se encontró el panel de seguimiento para esta edición.");
 }
 
 export function fetchFairSchedule(): Promise<FairScheduleResult> {
-  return request("/absence-alert/schedule", "No se pudo cargar el cronograma.");
+  return request("/absence-alert/schedule", "No se pudo cargar el cronograma.", "No hay un cronograma configurado para esta edición.");
 }
 
 export async function updateFairSchedule(schedule: FairSchedule & { editionId?: number }): Promise<FairScheduleResult> {
