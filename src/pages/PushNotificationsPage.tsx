@@ -82,6 +82,7 @@ export default function PushNotificationsPage() {
         setError("Las notificaciones no están configuradas");
         return;
       }
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
