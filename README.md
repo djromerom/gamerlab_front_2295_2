@@ -1,114 +1,70 @@
-# React + TypeScript + Vite
+# ARKAD · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz web de **ARKAD**, la plataforma de la feria de videojuegos de la Universidad del Norte: registro de equipos y videojuegos, galería pública, evaluación por jurados, ranking y paneles de administración, profesores, staff y estudiantes. Este repositorio es el frontend; la API vive en [`gamerlab_back_2295_2`](https://github.com/djromerom/gamerlab_back_2295_2).
 
-Currently, two official plugins are available:
+## Documentación
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Toda la documentación del proyecto está en [`docs/arkad/`](docs/arkad/README.md) (la misma carpeta se publica en el repositorio del backend).
 
-## Expanding the ESLint configuration
+| Soy… | Empiezo por |
+|---|---|
+| Frontend | [03-frontend](docs/arkad/03-frontend/README.md): rutas y pantallas, estado de sesión, consumo de API, deuda técnica |
+| Backend | [02-backend](docs/arkad/02-backend/README.md) y [reglas de negocio](docs/arkad/01-negocio/reglas-de-negocio.md) |
+| DevOps | [04-devops](docs/arkad/04-devops/README.md): pipeline, variables, runbooks |
+| Scrum Master | [05-scrum-y-proceso](docs/arkad/05-scrum-y-proceso/jira-y-flujo-de-trabajo.md) y [checklist de traspaso](docs/arkad/05-scrum-y-proceso/checklist-traspaso-v5.md) |
+| Recién llegado | [Qué es ARKAD](docs/arkad/00-inicio-rapido/que-es-arkad.md), [arquitectura](docs/arkad/00-inicio-rapido/arquitectura-general.md) y [onboarding por rol](docs/arkad/00-inicio-rapido/onboarding-por-rol.md) |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+React 19 · TypeScript · Vite 6 · Tailwind CSS 4 · React Router 7 · React Hook Form + Zod · Vitest. Se sirve con nginx en contenedor.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Cómo correrlo
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
-
-## Variables de entorno
-
-`.env.example` es la referencia única: para cada variable dice qué es, si es obligatoria, de dónde sale y cómo se rota. Para desarrollo local se copia a `.env` (ignorado por git). Nunca contiene valores reales.
-
-- Todo lo que empieza por `VITE_` queda en el JavaScript público del navegador: **no poner secretos**, solo URLs y claves públicas.
-- En test/prod no hay `.env`: el pipeline toma los GitHub Secrets y los inyecta al construir la imagen (hoy solo `VITE_ENDPOINT_BACKEND` y `VITE_SITE_KEY`; una variable nueva también se agrega a los `Dockerfile` y a `deploy-front.yml`).
-- Si tu cambio lee una variable nueva: agrégala a `.env.example` con sus cuatro líneas (`Que`, `Obligatoria`, `Obtener`, `Rotar`) justo encima y corre `npm run check:env`. El workflow `Test-front` corre el mismo chequeo en cada PR.
-- Los accesos (servidor, administración) y quién los entrega están en la guía de accesos del proyecto (`variables-y-accesos`); no se piden ni se pasan por chat ni por documentos compartidos.
-
-## Testing
-
-Las pruebas usan **Vitest** con **Testing Library** sobre `jsdom`. Cada archivo `*.test.ts(x)` vive junto al código que prueba, dentro de `src/`.
-
-No necesitan `.env` ni el backend levantado: `vite.config.ts` fija `VITE_ENDPOINT_BACKEND=http://api.test` para las pruebas, y las llamadas a la API (`fetch`, `apiFetch`, `useFetch`) se mockean en cada prueba. Una prueba nueva nunca debe llamar a la API real, a Supabase ni a otro servicio externo.
+Requisitos: Node.js 22 y el [backend](https://github.com/djromerom/gamerlab_back_2295_2) corriendo (por defecto en `http://localhost:3000`).
 
 ```bash
-# Todas las pruebas
-npm test
-
-# Modo watch mientras desarrollas
-npm run test:watch
-
-# Un solo archivo o una carpeta
-npx vitest run src/lib/session.test.ts
-npx vitest run src/hooks
-
-# Las pruebas cuyo nombre contenga un texto
-npx vitest run -t "renueva"
-
-# El mismo comando que corre CI (lista cada prueba)
-npm run test:ci
+npm ci
+cp .env.example .env     # completa las variables (ver abajo)
+npm run dev              # servidor de desarrollo con recarga en caliente
 ```
 
-### Un ejemplo por módulo
+### Variables de entorno
 
-| Módulo | Ejemplo |
+Todo lo que empieza por `VITE_` queda dentro del JavaScript público que descarga el navegador: **aquí nunca va un secreto**. `.env.example` explica cada variable (para qué sirve, si es obligatoria, de dónde sale su valor y cómo rotarla).
+
+| Variable | Uso |
 |---|---|
-| `components/` | `src/components/CircularProgress.test.tsx` |
-| `contexts/` | `src/contexts/AuthContext.test.tsx` |
-| `data/` | `src/data/contributorsData.test.ts` |
-| `fetchs/` | `src/fetchs/evaluationProgress.test.ts` |
-| `hooks/` | `src/hooks/useTeacherDashboard.test.tsx` |
-| `layouts/` | `src/layouts/LayoutAplication.test.tsx` |
-| `lib/` | `src/lib/api.test.ts` |
-| `pages/` | `src/pages/grupo 9/LoginPage.test.tsx` |
-| `routes/` | `src/routes/RoutesConfiguration.test.tsx` |
+| `VITE_ENDPOINT_BACKEND` | URL base de la API. Obligatoria (local: `http://localhost:3000`) |
+| `VITE_SITE_KEY` | Clave pública de reCAPTCHA v3 del registro de equipos |
+| `VITE_MAINTENANCE_*`, `VITE_SUPABASE_*` | Opcionales o heredadas; ver [deuda técnica](docs/arkad/03-frontend/deuda-tecnica.md) |
 
-`types/` solo tiene tipos y `assets/` y `styles/` no tienen código, así que no llevan pruebas.
+En test y producción no hay `.env`: el pipeline inyecta solo `VITE_ENDPOINT_BACKEND` y `VITE_SITE_KEY` al construir la imagen (`Dockerfile`, `Dockerfile.prod`). Los valores reales se piden al equipo, no están en el repositorio.
 
-### Integración continua
+### Scripts
 
-El workflow `.github/workflows/test-front.yml` (job `test-build`) corre en cada PR a `dev-deploy` y `main`:
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Comprueba tipos y construye en `dist/` |
+| `npm run preview` | Sirve el build local |
+| `npm test` / `npm run test:watch` | Pruebas con Vitest (una vez / en vivo) |
+| `npm run test:ci` | Las mismas pruebas con el reporte de CI |
+| `npm run lint` | ESLint (todavía no bloquea el CI) |
+| `npm run check:env` | Verifica que `.env.example` documente todas las variables usadas |
 
-1. `npm ci`
-2. `npm run build`: chequeo de tipos (`tsc -b`) y build de Vite. Bloquea.
-3. `npx eslint .`: todavía no bloquea por la deuda de lint actual.
-4. `npm run test:ci`: bloquea. Si una prueba falla, el PR queda en rojo.
+## Estructura
 
-Antes de aprobar un PR, revisa en el log del paso *Run tests* que las pruebas salgan en verde y que el total no sea 0.
+`src/` agrupa el código en `pages/` (pantallas), `components/`, `layouts/`, `routes/`, `contexts/` (sesión), `hooks/`, `fetchs/` (llamadas a la API), `lib/`, `types/` y `data/`. El detalle y los puntos de entrada están en [estructura del proyecto](docs/arkad/03-frontend/estructura-del-proyecto.md).
+
+## Contribuir
+
+- Las ramas siguen [`BRANCHING.md`](BRANCHING.md): `feat|fix|docs|chore/ARK-NN-descripcion-corta`, creadas desde **`dev-deploy`**, con PR a `dev-deploy` y merge **squash**. `dev-deploy` se promueve a `main` con un merge commit.
+- Todo PR necesita revisión y el workflow **Test-front** en verde (`npm run test:ci`).
+- Si un cambio altera una pantalla, una ruta o el consumo de la API, actualiza el archivo correspondiente en [`docs/arkad/`](docs/arkad/README.md) y su [changelog](docs/arkad/06-referencia/changelog-documentacion.md) en el mismo PR. Guía completa: [guía de contribución](docs/arkad/03-frontend/guia-de-contribucion.md).
+
+## CI/CD
+
+| Workflow | Cuándo | Qué hace |
+|---|---|---|
+| `test-front.yml` | PR a `dev-deploy` y `main` | Pruebas (bloqueante), lint y `check:env` (avisos) |
+| `deploy-front.yml` | Push a `dev-deploy` (test) y `main` (producción) | Construye la imagen y la despliega; ver [pipeline](docs/arkad/04-devops/pipeline-y-despliegue.md) |
