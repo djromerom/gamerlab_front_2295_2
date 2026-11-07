@@ -100,6 +100,19 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     expect(mocks.fetchFairSchedule).not.toHaveBeenCalled();
   });
 
+  it("mantiene la alerta activa cuando todos llegaron pero faltan evaluaciones", async () => {
+    mocks.fetchAbsenceAlert.mockResolvedValue({
+      ...alert,
+      totals: { present: 113, missing: 0, total: 113 },
+      missingJurors: [],
+    });
+    renderPanel();
+
+    expect(await screen.findByText("Alerta informativa de inasistencia")).toBeTruthy();
+    expect(screen.getByText("No hay jurados pendientes.")).toBeTruthy();
+    expect(screen.getAllByText(/Faltan 2/).length).toBeGreaterThan(0);
+  });
+
   it("filtra el panel por estado y pide el filtro al backend", async () => {
     renderPanel();
     await screen.findByText("Pixel Pioneers");
