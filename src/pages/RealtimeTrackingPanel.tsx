@@ -14,6 +14,13 @@ import {
   type EvaluationTrackingResult,
 } from "@/fetchs/evaluationTracking";
 import {
+  fetchAbsentJurorHistory,
+  recordAbsentJurorResponse,
+  AbsentJurorResponseError,
+  type AbsentJurorHistory,
+  type AbsentJurorResult,
+} from "@/fetchs/absentJurorResponses";
+import {
   fetchAbsenceAlert,
   fetchAbsencePanel,
   fetchFairSchedule,
@@ -38,6 +45,12 @@ const attendanceLabel: Record<JurorAttendanceState, string> = {
   NO_CHECK_IN: "Sin check-in",
   PRESENT: "Presente",
   ABSENT: "Ausente",
+};
+
+const absentResponseLabels: Record<AbsentJurorResult, string> = {
+  ON_THE_WAY: "Viene en camino",
+  CANNOT_ATTEND: "No podrá asistir",
+  NO_RESPONSE: "Sin respuesta",
 };
 
 const formatBogotaTime = (value: string) =>
@@ -122,6 +135,14 @@ export function RealtimeTrackingPanel() {
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSaved, setScheduleSaved] = useState(false);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [responseJuror, setResponseJuror] = useState<{ jurorId: string; name: string } | null>(null);
+  const [responseHistory, setResponseHistory] = useState<AbsentJurorHistory | null>(null);
+  const [responseResult, setResponseResult] = useState<AbsentJurorResult>("ON_THE_WAY");
+  const [estimatedArrival, setEstimatedArrival] = useState("");
+  const [responseError, setResponseError] = useState<string | null>(null);
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+  const [isSavingResponse, setIsSavingResponse] = useState(false);
+  const [responseSaved, setResponseSaved] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -179,6 +200,58 @@ export function RealtimeTrackingPanel() {
       setScheduleError(err instanceof Error ? err.message : "No se pudo guardar el cronograma.");
     } finally {
       setIsSavingSchedule(false);
+    }
+  };
+
+  const openResponses = async (juror: { jurorId: string; name: string }) => {
+    setResponseJuror(juror);
+    setResponseHistory(null);
+    setResponseResult("ON_THE_WAY");
+    setEstimatedArrival("");
+    setResponseError(null);
+    setResponseSaved(false);
+    setIsLoadingResponse(true);
+    try {
+      setResponseHistory(await fetchAbsentJurorHistory(juror.jurorId));
+    } catch (err) {
+      setResponseError(err instanceof Error ? err.message : "No se pudo cargar el historial.");
+    } finally {
+      setIsLoadingResponse(false);
+    }
+  };
+
+  const closeResponses = () => {
+    if (!isSavingResponse) setResponseJuror(null);
+  };
+
+  const saveAbsentJurorResponse = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!responseJuror) return;
+    setResponseError(null);
+    setResponseSaved(false);
+    setIsSavingResponse(true);
+    try {
+      const recorded = await recordAbsentJurorResponse({
+        jurorId: responseJuror.jurorId,
+        result: responseResult,
+        ...(responseResult === "ON_THE_WAY" && estimatedArrival
+          ? { estimatedArrivalAt: `${estimatedArrival}:00-05:00` }
+          : {}),
+      });
+      setResponseHistory((current) => ({
+        edition: current?.edition ?? { id: 0, title: "" },
+        juror: current?.juror ?? { id: responseJuror.jurorId, name: responseJuror.name, category: "Sin categoría" },
+        data: [recorded, ...(current?.data ?? [])],
+      }));
+      setResponseSaved(true);
+    } catch (err) {
+      setResponseError(err instanceof Error ? err.message : "No se pudo guardar la respuesta.");
+      if (err instanceof AbsentJurorResponseError && err.status === 409) {
+        await loadData();
+        setResponseJuror(null);
+      }
+    } finally {
+      setIsSavingResponse(false);
     }
   };
 
@@ -264,7 +337,15 @@ export function RealtimeTrackingPanel() {
                       {alert.missingJurors.map((juror) => (
                         <li key={juror.jurorId} className="flex justify-between gap-2 rounded px-2 py-1.5 hover:bg-muted/40">
                           <span>{juror.name}{juror.isProfessor ? " · Profesor NRC" : ""}</span>
-                          {juror.type === "BACKUP" && <span className="text-xs text-muted-foreground">Suplente</span>}
+                          <span className="flex items-center gap-2">
+                            {juror.type === "BACKUP" && <span className="text-xs text-muted-foreground">Suplente</span>}
+                            {isAdmin && (
+                              <button type="button" onClick={() => void openResponses(juror)}
+                                className="rounded border px-2 py-1 text-xs hover:bg-muted">
+                                Registrar respuesta
+                              </button>
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -435,6 +516,82 @@ export function RealtimeTrackingPanel() {
                     Guardar cronograma
                   </button>
                 </div>
+              </form>
+            </div>
+          )}
+          {responseJuror && isAdmin && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"
+              aria-label={`Registrar respuesta de ${responseJuror.name}`}>
+              <form onSubmit={saveAbsentJurorResponse} className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-background p-5 shadow-xl">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold">Respuesta sobre jurado ausente</h2>
+                    <p className="text-sm text-muted-foreground">{responseJuror.name}</p>
+                  </div>
+                  <button type="button" onClick={closeResponses} className="text-sm">Cerrar</button>
+                </div>
+
+                {isLoadingResponse ? (
+                  <p className="text-sm text-muted-foreground">Cargando historial...</p>
+                ) : (
+                  <>
+                    <fieldset className="grid gap-2">
+                      <legend className="mb-2 text-sm font-medium">Resultado</legend>
+                      {(Object.keys(absentResponseLabels) as AbsentJurorResult[]).map((result) => (
+                        <label key={result} className="flex items-center gap-2 rounded-md border p-3 text-sm">
+                          <input type="radio" name="absent-result" value={result} checked={responseResult === result}
+                            onChange={() => setResponseResult(result)} />
+                          {absentResponseLabels[result]}
+                        </label>
+                      ))}
+                    </fieldset>
+
+                    {responseResult === "ON_THE_WAY" && (
+                      <label className="mt-4 block text-sm">Hora estimada (opcional)
+                        <Input type="datetime-local" value={estimatedArrival}
+                          onChange={(event) => setEstimatedArrival(event.target.value)} />
+                      </label>
+                    )}
+
+                    {responseResult === "CANNOT_ATTEND" && (
+                      <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                        Se puede abrir la sugerencia de suplentes desde el flujo de suplentes.
+                      </div>
+                    )}
+
+                    {responseError && <p className="mt-3 text-sm text-red-600">{responseError}</p>}
+                    {responseSaved && <p className="mt-3 text-sm text-green-600">Respuesta registrada.</p>}
+                    <div className="mt-4 flex justify-end">
+                      <button type="submit" disabled={isSavingResponse}
+                        className="h-9 rounded-md bg-primary px-4 text-sm text-primary-foreground disabled:opacity-50">
+                        {isSavingResponse ? "Guardando..." : "Registrar respuesta"}
+                      </button>
+                    </div>
+
+                    <section className="mt-6 border-t pt-4">
+                      <h3 className="mb-2 text-sm font-medium">Historial</h3>
+                      {(responseHistory?.data.length ?? 0) === 0 ? (
+                        <p className="text-sm text-muted-foreground">Sin respuestas registradas</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {responseHistory?.data.map((item) => (
+                            <li key={item.id} className="rounded-md border p-3 text-sm">
+                              <div className="font-medium">{absentResponseLabels[item.result]}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatBogotaTime(item.recordedAt)} · {item.recordedBy.name}
+                              </div>
+                              {item.estimatedArrivalAt && (
+                                <div className="mt-1 text-xs">
+                                  Llegada estimada: {formatBogotaTime(item.estimatedArrivalAt)}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  </>
+                )}
               </form>
             </div>
           )}
