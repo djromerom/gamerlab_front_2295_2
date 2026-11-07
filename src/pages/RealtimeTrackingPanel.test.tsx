@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   fetchFairSchedule: vi.fn(),
   updateFairSchedule: vi.fn(),
   fetchEvaluationTracking: vi.fn(),
+  fetchAbsentJurorHistory: vi.fn(),
+  recordAbsentJurorResponse: vi.fn(),
   role: "Administrador",
 }));
 
@@ -25,6 +27,15 @@ vi.mock("@/fetchs/absenceAlert", () => ({
 
 vi.mock("@/fetchs/evaluationTracking", () => ({
   fetchEvaluationTracking: mocks.fetchEvaluationTracking,
+}));
+vi.mock("@/fetchs/absentJurorResponses", () => ({
+  fetchAbsentJurorHistory: mocks.fetchAbsentJurorHistory,
+  recordAbsentJurorResponse: mocks.recordAbsentJurorResponse,
+  AbsentJurorResponseError: class extends Error {
+    constructor(message: string, readonly status: number) {
+      super(message);
+    }
+  },
 }));
 
 vi.mock("@/components/grupo 9/app-sidebar", () => ({
@@ -100,6 +111,20 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     mocks.fetchFairSchedule.mockReset().mockResolvedValue({ edition: alert.edition, configured: true, schedule: alert.schedule });
     mocks.updateFairSchedule.mockReset().mockResolvedValue({ edition: alert.edition, configured: true, schedule: alert.schedule });
     mocks.fetchEvaluationTracking.mockReset().mockResolvedValue(tracking);
+    mocks.fetchAbsentJurorHistory.mockReset().mockResolvedValue({
+      edition: { id: 5, title: "ARKAD 2026" },
+      juror: { id: "j1", name: "Luis Gómez", category: "Junior" },
+      data: [],
+    });
+    mocks.recordAbsentJurorResponse.mockReset().mockImplementation(async (payload) => ({
+      id: 12,
+      jurorId: payload.jurorId,
+      result: payload.result,
+      estimatedArrivalAt: payload.estimatedArrivalAt ?? null,
+      recordedAt: "2026-11-26T15:02:41.000Z",
+      recordedBy: { id: "admin-1", name: "Admin Arkad" },
+    }));
+    mocks.fetchEvaluationTracking.mockReset().mockResolvedValue(tracking);
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: false,
       media: query,
@@ -143,6 +168,25 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     expect(await screen.findByText("Alerta informativa de inasistencia")).toBeTruthy();
     expect(screen.getByText("No hay jurados pendientes.")).toBeTruthy();
     expect(screen.getAllByText(/Faltan 2/).length).toBeGreaterThan(0);
+  });
+
+  it("el administrador registra una respuesta y conserva el historial del jurado", async () => {
+    renderPanel();
+    await screen.findByText("Alerta informativa de inasistencia");
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar respuesta" }));
+    const responseDialog = await screen.findByRole("dialog", { name: "Registrar respuesta de Luis Gómez" });
+
+    fireEvent.change(within(responseDialog).getByLabelText(/Hora estimada/), { target: { value: "2026-11-26T10:30" } });
+    fireEvent.click(within(responseDialog).getByRole("button", { name: "Registrar respuesta" }));
+
+    await screen.findByText("Respuesta registrada.");
+    expect(mocks.recordAbsentJurorResponse).toHaveBeenCalledWith({
+      jurorId: "j1",
+      result: "ON_THE_WAY",
+      estimatedArrivalAt: "2026-11-26T10:30:00-05:00",
+    });
+    expect(screen.getAllByText("Viene en camino").length).toBeGreaterThan(0);
   });
 
   it("filtra el panel por estado y pide el filtro al backend", async () => {
