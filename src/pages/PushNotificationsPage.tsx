@@ -168,7 +168,7 @@ export default function PushNotificationsPage() {
           <section className="space-y-4 rounded-lg border p-5">
             <h2 className="font-medium">Enviar avisos</h2>
             <p className="text-sm text-muted-foreground">
-              Los avisos aparecen en la pantalla bloqueada. No incluyas nombres, notas, teléfonos ni datos personales.
+              Envía recordatorios automáticos a los dispositivos suscritos.
             </p>
             <div className="flex flex-wrap gap-2 border-t pt-4">
               <Button variant="outline" onClick={() => send("arrival")} disabled={sending}>
