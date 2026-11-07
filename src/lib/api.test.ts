@@ -67,6 +67,18 @@ describe("apiFetch resilience policy", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("does not replace a 401 with a refresh-server 503", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }));
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const responsePromise = apiFetch("https://api.example.test/evaluations");
+    await expect(responsePromise).rejects.toThrow("No pudimos renovar tu sesión");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("does not retry a POST without an idempotency key", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
     vi.stubGlobal("fetch", fetchMock);

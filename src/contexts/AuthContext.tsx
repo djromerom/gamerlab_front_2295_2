@@ -94,14 +94,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         const data = (await res.json()) as UserProfile;
         setUser(data);
         ok = true;
-      } else {
+      } else if (res.status === 401) {
         setUser(null);
         setAccessToken(null);
       }
     } catch (error) {
       console.error("AuthContext: Failed to fetch profile:", error);
-      setUser(null);
-      setAccessToken(null);
     }
     setLoading(false);
     return ok;
@@ -152,7 +150,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
       // [MODIFICADO]: Un fallo de red o del servidor no cierra una sesión activa; el heartbeat reintenta
       // [ANTES]: Cualquier fallo cerraba la sesión
-      if (error instanceof SessionRejectedError || !hasSessionRef.current) {
+      if (error instanceof SessionRejectedError) {
         endSession();
       }
       throw error;
