@@ -17,12 +17,6 @@ export interface PushSubscribeResult {
   devices: number;
 }
 
-export interface PushNoticeBody {
-  title: string;
-  body: string;
-  url?: string;
-}
-
 export interface PushNoticeCounts {
   devices: number;
   sent: number;
@@ -82,11 +76,9 @@ export async function unsubscribeFromPush(endpoint: string) {
   return response.json() as Promise<PushSubscribeResult>;
 }
 
-async function sendNotice(path: string, body?: PushNoticeBody) {
+async function sendNotice(path: string) {
   const response = await apiFetch(`${API_URL}${path}`, {
     method: "POST",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
     if (response.status === 503) {
@@ -97,6 +89,5 @@ async function sendNotice(path: string, body?: PushNoticeBody) {
   return response.json() as Promise<PushNoticeResult>;
 }
 
-export const sendPushNotice = (body: PushNoticeBody) => sendNotice("/push/notices", body);
 export const sendArrivalReminder = () => sendNotice("/push/notices/arrival-reminder");
 export const sendPendingEvaluationsNotice = () => sendNotice("/push/notices/pending-evaluations");

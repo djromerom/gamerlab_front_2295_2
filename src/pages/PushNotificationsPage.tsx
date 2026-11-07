@@ -2,15 +2,12 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getPushPublicKey,
   getPushStatus,
   sendArrivalReminder,
   sendPendingEvaluationsNotice,
-  sendPushNotice,
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/fetchs/pushNotifications";
@@ -31,9 +28,6 @@ export default function PushNotificationsPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [url, setUrl] = useState("/");
   const [sending, setSending] = useState(false);
 
   const syncSubscription = async () => {
@@ -128,15 +122,13 @@ export default function PushNotificationsPage() {
     }
   };
 
-  const send = async (kind: "custom" | "arrival" | "pending") => {
+  const send = async (kind: "arrival" | "pending") => {
     if (sending) return;
     setError("");
     setMessage("");
     setSending(true);
     try {
-      const result = kind === "custom"
-        ? await sendPushNotice({ title, body, url: url || "/" })
-        : kind === "arrival"
+      const result = kind === "arrival"
           ? await sendArrivalReminder()
           : await sendPendingEvaluationsNotice();
       setMessage(`Aviso enviado a ${result.totals.sent} dispositivo(s).`);
@@ -178,14 +170,6 @@ export default function PushNotificationsPage() {
             <p className="text-sm text-muted-foreground">
               Los avisos aparecen en la pantalla bloqueada. No incluyas nombres, notas, teléfonos ni datos personales.
             </p>
-            <div className="space-y-3">
-              <Input maxLength={60} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Título (máximo 60 caracteres)" />
-              <Textarea maxLength={200} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Mensaje (máximo 200 caracteres)" />
-              <Input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Ruta interna, por ejemplo /pendientes-calificar" />
-              <Button onClick={() => send("custom")} disabled={sending || !title.trim() || !body.trim()}>
-                {sending ? "Enviando..." : "Enviar aviso a jurados"}
-              </Button>
-            </div>
             <div className="flex flex-wrap gap-2 border-t pt-4">
               <Button variant="outline" onClick={() => send("arrival")} disabled={sending}>
                 Recordar llegada
