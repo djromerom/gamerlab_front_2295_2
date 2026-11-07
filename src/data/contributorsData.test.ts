@@ -20,4 +20,12 @@ describe("contributorsData", () => {
     const stat = projectStats.find((s) => s.label === "Desarrolladores");
     expect(stat?.value).toBe(String(developers.length));
   });
+
+  it("Daniel Romero Martínez aparece como contribuidor de la versión 4", () => {
+    const daniel = developers.find((developer) => developer.name === "Daniel Romero Martínez");
+    expect(daniel?.role).toBe("Software Architect");
+    expect(daniel?.version).toContain(4);
+    expect(daniel?.github).toBe("https://github.com/djromerom");
+    expect(daniel?.email).toBe("djromero@uninorte.edu.co");
+  });
 });
