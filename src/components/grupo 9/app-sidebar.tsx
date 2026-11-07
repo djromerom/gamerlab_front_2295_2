@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   UserPlus,
   UserCheck,
+  Bell,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -71,6 +72,10 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
       ],
     },
+    {
+      title: "Cuenta",
+      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
+    },
   ],
   Jurado: [
     {
@@ -83,6 +88,10 @@ const MENU: Record<Role, MenuItem[]> = {
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
       ],
+    },
+    {
+      title: "Cuenta",
+      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },
   ],
   Profesor: [
@@ -120,6 +129,10 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
       ],
+    },
+    {
+      title: "Cuenta",
+      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },
   ],
   Estudiante: [

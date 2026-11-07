@@ -20,6 +20,7 @@ import {
   SESSION_EXPIRED_EVENT,
 } from "@/lib/session";
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
+import { unsubscribeFromPush } from "@/fetchs/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -201,6 +202,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setSessionExpired(false);
 
     try {
+      const registration = await navigator.serviceWorker?.getRegistration("/");
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await unsubscribeFromPush(subscription.endpoint);
+        await subscription.unsubscribe();
+      }
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
       });
