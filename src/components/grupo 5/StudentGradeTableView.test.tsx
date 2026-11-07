@@ -53,4 +53,9 @@ describe("StudentGradeTableView: notas con 2 decimales (BG-30)", () => {
     renderView([{ ...team, calificacionFeria: 4, calificacionDocente: null }]);
     expect(screen.getByText("4.00")).toBeTruthy();
   });
+
+  it("una nota final pendiente se muestra como Nota en proceso", () => {
+    renderView([{ ...team, calificacionFeria: null, calificacionDocente: null }]);
+    expect(screen.getByText("Nota en proceso")).toBeTruthy();
+  });
 });
