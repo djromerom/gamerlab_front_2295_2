@@ -76,7 +76,12 @@ export interface RankingSnapshot {
     teams: RankedTeam[];
     podium: RankedTeam[];
     ties: TieGroup[];
-    withoutScore: Array<{ teamId: number; teamCode: string; teamName: string | null }>;
+    withoutScore: Array<{
+      teamId: number;
+      teamCode: string;
+      teamName: string | null;
+      missing?: Array<"PROFESSOR" | "JUROR">;
+    }>;
   }>;
 }
 
