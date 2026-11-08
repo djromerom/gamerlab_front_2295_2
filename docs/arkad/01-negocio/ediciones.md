@@ -32,9 +32,9 @@ BG-18 asignación manual no valida edición activa · BG-19 listas mezclan edici
 ## Horas de las ediciones y zona horaria
 Hallazgo de BG-14 (ARK-119, Rafael, 2-nov; cerrado el 6-nov como investigación):
 - **Causa principal: dato mal guardado.** La hora de fin de «Feria Gamer 2025 - S2» quedó en 12:30 a. m. en vez de 12:30 p. m. (terminaba antes de empezar). Se corrigió en test el 2-nov a `2025-11-27T17:30:00.000Z`. > PENDIENTE: verificar el dato en producción.
-- **Agravante: el front usa la zona horaria del navegador** para guardar y mostrar las horas (`buildISODateTime`, `isoToDate`, `isoToTime`, `formatTime`). Un administrador o visitante con el navegador fuera de hora de Colombia ve y guarda horas corridas. El «05:30 AM» del reporte era esa misma hora vista desde un navegador en UTC.
+- **Agravante (ya corregido, ver abajo): el front usaba la zona horaria del navegador** para guardar y mostrar las horas (`buildISODateTime`, `isoToDate`, `isoToTime`, `formatTime`). Un administrador o visitante con el navegador fuera de hora de Colombia veía y guardaba horas corridas. El «05:30 AM» del reporte era esa misma hora vista desde un navegador en UTC.
 - **El back está bien:** guarda en UTC y, desde la validación de fechas, rechaza un fin anterior al inicio (400).
-- **Mientras no se arregle (BG-34, ARK-157):** quien edite horas de ediciones debe tener el navegador en hora de Colombia.
+- **Arreglado en el front (BG-34, ARK-157, 7-nov):** las horas de las ediciones se guardan y se muestran siempre en hora de Colombia (`America/Bogota`), sin importar la zona del navegador. Las funciones están en `src/lib/editionDate.ts` (`bogotaToISO`, `isoToBogotaDate`, `isoToBogotaTime`, `formatEditionDate`, `formatEditionTime`); `buildISODateTime`, `isoToDate` e `isoToTime` de `src/fetchs/editions.ts` las usan. Colombia está en UTC−5 todo el año, sin horario de verano.
 
 ## Históricos
 Tablas `*_historico` (v1 + v2 consolidados: 197 equipos / 723 integrantes / 197 juegos). Ver [04-devops/base-de-datos-operacion](../04-devops/base-de-datos-operacion.md).
