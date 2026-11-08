@@ -80,22 +80,24 @@ export default function EditBoard() {
 
   //PATCH request to update NRC codes for a given student.
   const updateStudentNrcs = async ({ id, nrcCodes }: UpdateStudentNrcsDto) => {
-    try {
-      const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
-        method: 'PATCH',
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nrcCodes }),
-      });
+    const response = await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/students/members/${id}/nrcs`, {
+      method: 'PATCH',
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nrcCodes }),
+    });
 
-      if (!response.ok) {
-        throw new Error('Error al actualizar los NRCs del estudiante');
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error en PATCH:', error);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const rawMessage = body?.message;
+      const message = Array.isArray(rawMessage)
+        ? rawMessage.join(", ")
+        : typeof rawMessage === "string"
+          ? rawMessage
+          : "Error al actualizar los NRCs del estudiante";
+      throw new Error(message);
     }
+    return response.json();
   };
 
   //PATCH request to update basic student information (email).
@@ -107,7 +109,14 @@ export default function EditBoard() {
       body: JSON.stringify({email: email}),
     });
     if (!response.ok) {
-      throw new Error("Error al actualizar los datos del estudiante");
+      const body = await response.json().catch(() => null);
+      const rawMessage = body?.message;
+      const message = Array.isArray(rawMessage)
+        ? rawMessage.join(", ")
+        : typeof rawMessage === "string"
+          ? rawMessage
+          : "Error al actualizar los datos del estudiante";
+      throw new Error(message);
     }
     return response.json();
   };
@@ -187,8 +196,15 @@ export default function EditBoard() {
         body: JSON.stringify(payload)
       })
       if (!response.ok) {
-        toast.error("Hubo un error al actualizar los datos.", { id: 777 })
-        throw new Error ('Error')
+        const body = await response.json().catch(() => null);
+        const rawMessage = body?.message;
+        const message = Array.isArray(rawMessage)
+          ? rawMessage.join(", ")
+          : typeof rawMessage === "string"
+            ? rawMessage
+            : "Hubo un error al actualizar los datos.";
+        toast.error(message, { id: 777 });
+        throw new Error(message);
       } else {
         const dataEquipo = await getInfoEquipo();
         setInfoEquipo(dataEquipo);
@@ -196,32 +212,28 @@ export default function EditBoard() {
         toast.success("El cambio se hizo de manera satisfactoria.", { id: 777 })
       }
     } catch (error) {
-      let description = '';
       if (error instanceof Error && error.message.includes("413")) {
-        description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.";
-      } else {
-        description = error instanceof Error ? error.message : String(error);
+        toast.error("Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1MB.", { id: 777 });
       }
-      toast.error(`Ocurrió un error: ${description}`, { id: 777 });
       console.error("Error al subir la información del equipo:", error);
     } finally {
       setLoadingForm(false)
     }
   }
 
-  function handleSaveNrcs(
+  async function handleSaveNrcs(
     editStudent: Student | null,
     editNrcs: string[],
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>,
     setEditStudent: (s: Student | null) => void
   ) {
     if (editStudent) {
+      await updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
       setStudents(students =>
         students.map(s =>
           s.id === editStudent.id ? { ...s, nrcs: editNrcs } : s
         )
       );
-      updateStudentNrcs({ id: editStudent.id, nrcCodes: editNrcs });
       toast.success("Datos actualizados", { style: { background: "#22c55e", color: "#fff" } });
       setEditStudent(null);
     }
