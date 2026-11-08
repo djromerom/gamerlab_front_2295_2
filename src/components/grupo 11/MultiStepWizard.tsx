@@ -59,6 +59,7 @@ export default function MultiStepWizard() {
   const uploadedUrls = useRef(new Map<File, string>());
   const submitted = useRef(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [nrcApiError, setNrcApiError] = useState<string | null>(null);
 
   const methods = useForm<CombinedFormValues>({
     resolver: zodResolver(CombinedSchema) as any, // Type assertion to bypass resolver type issue
@@ -87,6 +88,7 @@ export default function MultiStepWizard() {
 
   async function onSubmit(data: CombinedFormValues) {
     setIsLoading(true);
+    setNrcApiError(null);
     let uploadToastId: string | number | undefined;
 
     try {
@@ -137,9 +139,16 @@ export default function MultiStepWizard() {
 
       const errorData = await response.json().catch(() => null);
       const apiMessage = cleanApiMessage(errorData?.message) || `Error ${response.status}`;
-      if (errorData?.field === "nrc" || String(apiMessage).toLowerCase().includes("nrc")) {
-        methods.setError("members.0.nrc", { type: "server", message: apiMessage });
-        methods.setFocus("members.0.nrc");
+      const isNrcError = errorData?.field === "nrc"
+        || String(apiMessage).toLowerCase().includes("nrc");
+      if (isNrcError) {
+        const indexedMember = Number(errorData?.memberIndex ?? errorData?.member);
+        if (Number.isInteger(indexedMember) && indexedMember >= 0 && indexedMember < data.members.length) {
+          methods.setError(`members.${indexedMember}.nrc`, { type: "server", message: apiMessage });
+          methods.setFocus(`members.${indexedMember}.nrc`);
+        } else {
+          setNrcApiError(apiMessage);
+        }
       }
       throw new Error(apiMessage);
     } catch (e) {
@@ -197,6 +206,11 @@ export default function MultiStepWizard() {
               className="space-y-6"
               noValidate
             >
+              {nrcApiError && (
+                <div role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-100">
+                  {nrcApiError}
+                </div>
+              )}
               <StepRenderer />
             </form>
           )}

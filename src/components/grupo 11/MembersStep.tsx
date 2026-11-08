@@ -35,7 +35,7 @@ interface NrcOption {
 
 export default function MembersStep() {
   const { back, next } = useMultiForm();
-  const { control, trigger, getValues, setError, setFocus } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setValue, setError, setFocus } = useFormContext<CombinedFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "members",
@@ -98,12 +98,23 @@ export default function MembersStep() {
     const isValid = await trigger("members");
     if (!isValid) return;
     const optionsByCode = new Map(nrcActivos.map((option) => [String(option.code), option]));
+    let removedUnknownNrc = false;
+    getValues("members").forEach((member, index) => {
+      const knownCodes = member.nrc.filter((code) => optionsByCode.has(String(code)));
+      if (knownCodes.length !== member.nrc.length) {
+        removedUnknownNrc = true;
+        setValue(`members.${index}.nrc`, knownCodes, { shouldValidate: true });
+      }
+    });
     const invalidMember = getValues("members").findIndex((member) => {
       const subjectIds = member.nrc.map((code) =>
         String(optionsByCode.get(code)?.subjectId ?? optionsByCode.get(code)?.subject?.id ?? ""),
       );
       return new Set(subjectIds).size !== subjectIds.length;
     });
+    if (removedUnknownNrc && invalidMember < 0) {
+      toast.info("Se quitaron NRC que ya no están disponibles en esta edición.");
+    }
     if (invalidMember >= 0) {
       const message = "Elige un solo NRC por materia";
       setError(`members.${invalidMember}.nrc`, { type: "manual", message });
@@ -188,6 +199,14 @@ export default function MembersStep() {
           );
         }
         setNrcActivos(nrcOptionsArray);
+        const knownCodes = new Set(nrcOptionsArray.map((option) => String(option.code)));
+        getValues("members").forEach((member, index) => {
+          const currentCodes = member.nrc ?? [];
+          const validCodes = currentCodes.filter((code) => knownCodes.has(String(code)));
+          if (validCodes.length !== currentCodes.length) {
+            setValue(`members.${index}.nrc`, validCodes, { shouldValidate: true });
+          }
+        });
       } catch (err) {
         console.error("Error fetching subjects:", err);
         setNrcActivos([]);
@@ -196,7 +215,7 @@ export default function MembersStep() {
       }
     };
     fetchNrcs();
-  }, [API_ENDPOINT]);
+  }, [API_ENDPOINT, getValues, setValue]);
 
   return (
     <>
@@ -331,7 +350,7 @@ export default function MembersStep() {
                           )}
                           <div className="flex flex-wrap gap-2">
                             {subjects.map((subject) => {
-                              const key = `${idx}:${subject.id}`;
+                              const key = `${member.id}:${subject.id}`;
                               const active = Boolean(openSubjects[key]) || selectedNRCs.some(
                                 (code) => subjectByCode.get(code) === subject.id,
                               );
@@ -359,7 +378,7 @@ export default function MembersStep() {
                             })}
                           </div>
                           {subjects.filter((subject) => {
-                            const key = `${idx}:${subject.id}`;
+                            const key = `${member.id}:${subject.id}`;
                             return openSubjects[key] || selectedNRCs.some(
                               (code) => subjectByCode.get(code) === subject.id,
                             );
