@@ -136,7 +136,12 @@ export default function MultiStepWizard() {
       }
 
       const errorData = await response.json().catch(() => null);
-      throw new Error(cleanApiMessage(errorData?.message) || `Error ${response.status}`);
+      const apiMessage = cleanApiMessage(errorData?.message) || `Error ${response.status}`;
+      if (errorData?.field === "nrc" || String(apiMessage).toLowerCase().includes("nrc")) {
+        methods.setError("members.0.nrc", { type: "server", message: apiMessage });
+        methods.setFocus("members.0.nrc");
+      }
+      throw new Error(apiMessage);
     } catch (e) {
       if (uploadToastId !== undefined) toast.dismiss(uploadToastId);
       let description = e instanceof Error ? e.message : String(e);
