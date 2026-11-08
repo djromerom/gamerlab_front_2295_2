@@ -29,7 +29,7 @@
 | Cálculo | Se **unifican** los dos cálculos antiguos (vista del ranking: 50/50 por defecto y promedio ausente = 0; servicio: 60/40 y, si falta un grupo, usa solo el otro) en uno solo con la regla de arriba (SP-02, HU-04, HU-34) | §4.2 #6 |
 | Nota del profesor | Debe validarse 0–5 con 2 decimales en pantalla y backend (hoy solo `>= 0`) | HU-01 |
 | Nota visible al estudiante | Solo la **nota final** (sin desglose), liberada por el administrador **desde las 12:00** | HU-20, HU-30 |
-| Etiqueta de la nota | Decidida el 7-nov (BG-32): **Excelente** 4.50 a 5.00 · **Muy bueno** 4.00 a 4.49 · **Bueno** 3.50 a 3.99 · **Aceptable** 3.00 a 3.49 · **Insuficiente** 0.00 a 2.99. Límite inferior incluido; la nota se redondea a 2 decimales antes de elegir la etiqueta; acompaña solo a la nota final | BG-32 |
+| Etiqueta de la nota | Decidida el 7-nov (BG-32): **Excelente** 4.50 a 5.00 · **Muy bueno** 4.00 a 4.49 · **Bueno** 3.50 a 3.99 · **Aceptable** 3.00 a 3.49 · **Insuficiente** 0.00 a 2.99. Límite inferior incluido; la nota se redondea a 2 decimales antes de elegir la etiqueta; acompaña solo a la nota final. En el front: `gradeLabel` de `src/lib/grades.ts`, junto a la nota del panel del estudiante (`Scoreboard.tsx`) | BG-32 |
 
 ## 4. Ranking y desempate
 - **Ranking oficial por nivel (N0–N4).** El ranking general se conserva como vista informativa (P-03).

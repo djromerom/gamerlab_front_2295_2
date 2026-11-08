@@ -102,6 +102,21 @@ describe("Scoreboard: el estudiante ve solo la nota final (HU-30)", () => {
     expect(screen.queryByText(EN_PROCESO)).toBeNull();
   });
 
+  it("BG-32: una nota de 3.5 muestra «Bueno» y no «Excelente»", async () => {
+    backend(() => json(200, [{ teamId: 7, finalScore: 3.5 }]));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText("3.50")).toBeTruthy());
+    expect(screen.getByTestId("grade-label").textContent).toBe("Bueno");
+    expect(screen.queryByText("Excelente")).toBeNull();
+  });
+
+  it("BG-32: sin nota no muestra etiqueta", async () => {
+    backend(() => json(200, [{ teamId: 7, finalScore: null }]));
+    render(<Scoreboard />);
+    await waitFor(() => expect(screen.getByText(EN_PROCESO)).toBeTruthy());
+    expect(screen.queryByTestId("grade-label")).toBeNull();
+  });
+
   it("no muestra el desglose aunque el back viejo todavía lo envíe", async () => {
     backend(() => json(200, [{ finalScore: 3.54, avgJunior: 3.2, avgSenior: 4.05 }]));
     const { container } = render(<Scoreboard />);
