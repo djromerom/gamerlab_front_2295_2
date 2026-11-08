@@ -54,5 +54,5 @@ export interface TeamMembersProps {
     setSearchNrc: React.Dispatch<React.SetStateAction<string>>
 
     updateStudentBasics: (data: { id: string; email: string }) => Promise<any>
-    handleSaveNrcs: (editStudent: Student | null, editNrcs: string[], setStudents: React.Dispatch<React.SetStateAction<Student[]>>, setEditStudent: (s: Student | null) => void ) => void
+    handleSaveNrcs: (editStudent: Student | null, editNrcs: string[], setStudents: React.Dispatch<React.SetStateAction<Student[]>>, setEditStudent: (s: Student | null) => void ) => Promise<void>
 }
