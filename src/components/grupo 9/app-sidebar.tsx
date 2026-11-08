@@ -70,6 +70,7 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Asistencia de Jurados", url: "/asistencia-jurados", icon: ClipboardCheck },
         { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
+        { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
       ],
     },
     {
