@@ -79,6 +79,11 @@ describe("registro de equipos: mensajes y rutas", () => {
 
   it("muestra la materia en cada NRC", () => {
     expect(nrcLabel({ code: 3501, subject: { name: "Programación I" } })).toBe("3501 · Programación I");
+    expect(nrcLabel({
+      code: 3501,
+      subject: { name: "Programación I" },
+      professorName: "Ana Pérez",
+    })).toBe("3501 · Programación I · Ana Pérez");
     expect(nrcLabel({ code: 3501 })).toBe("3501");
   });
 });

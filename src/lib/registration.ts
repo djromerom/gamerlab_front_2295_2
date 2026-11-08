@@ -62,10 +62,12 @@ export function buildRegistrationPayload(
 export function nrcLabel(option: {
   code: number | string;
   name?: string;
+  professorName?: string;
   subject?: { name?: string } | null;
 }): string {
   const subject = option.subject?.name ?? option.name;
-  return subject ? `${option.code} · ${subject}` : String(option.code);
+  const label = subject ? `${option.code} · ${subject}` : String(option.code);
+  return option.professorName ? `${label} · ${option.professorName}` : label;
 }
 
 /* ---------- Borrador en sessionStorage (recargar borraba todo) ---------- */
