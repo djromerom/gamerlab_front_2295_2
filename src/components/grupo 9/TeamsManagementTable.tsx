@@ -612,12 +612,16 @@ export const TeamsManagementTable = ({
                 if (internalIsLoading) return;
                 setInternalIsLoading(true);
                 try {
-                  await updateTeamStatus(team.id_equipo, numericStatus);
+                  const updatedTeam = await updateTeamStatus(team.id_equipo, numericStatus);
                   toast.success(
                     `Estado cambiado a ${estadoOptions.find(
                       (o) => o.id_estado === numericStatus
                     )?.estado || numericStatus}.`
                   );
+                  // ARK-158: si el equipo tenía jurados, el backend los retira al rechazarlo y lo informa.
+                  if (updatedTeam?.avisoAsignacion) {
+                    toast.warning(updatedTeam.avisoAsignacion, { duration: 10000 });
+                  }
                   refreshData();
 
                   if (numericStatus === 1) {
