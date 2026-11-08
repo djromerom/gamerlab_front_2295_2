@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { AVERAGES_HIDDEN_MESSAGE } from "@/lib/averages";
 import { findMyTeam } from "@/lib/opaqueKeys";
+import { gradeLabel } from "@/lib/grades";
 "use client"
 
 
@@ -253,7 +254,14 @@ export default function Scoreboard() {
               </div>
             </div>
 
-            <div className="text-sm sm:text-base md:text-lg font-semibold text-foreground mt-3 sm:mt-4 flex items-center flex-wrap justify-center gap-1">
+            {/* BG-32 (ARK-148): etiqueta según los rangos definidos por Allison */}
+            <span
+              data-testid="grade-label"
+              className="mt-3 sm:mt-4 rounded-full bg-violet-100 px-3 py-1 text-sm sm:text-base font-semibold text-violet-800 dark:bg-violet-900/40 dark:text-violet-200"
+            >
+              {gradeLabel(generalGrade)}
+            </span>
+            <div className="text-sm sm:text-base md:text-lg font-semibold text-foreground mt-2 flex items-center flex-wrap justify-center gap-1">
               <span>Nota general final</span>
               <TooltipProvider>
                 <Tooltip>

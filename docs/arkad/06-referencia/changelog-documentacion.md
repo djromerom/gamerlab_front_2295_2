@@ -2,6 +2,9 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-07: etiqueta de la nota final en el front (BG-32, ARK-148)
+- `reglas-de-negocio`: dónde se aplica la etiqueta (`gradeLabel` en `src/lib/grades.ts`, panel del estudiante).
+
 ## 2026-11-07: zona horaria de las ediciones en el front (BG-34)
 - **BG-34 (ARK-157):** el front fija `America/Bogota` al guardar y mostrar las horas de las ediciones. Actualizados [ediciones](../01-negocio/ediciones.md#horas-de-las-ediciones-y-zona-horaria) y [deuda técnica del front](../03-frontend/deuda-tecnica.md). **Pendiente:** copiar estos cambios a `docs/arkad/` del backend para mantener las dos copias iguales.
 
