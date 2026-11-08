@@ -5,6 +5,9 @@
 ## 2026-11-07: etiqueta de la nota final en el front (BG-32, ARK-148)
 - `reglas-de-negocio`: dónde se aplica la etiqueta (`gradeLabel` en `src/lib/grades.ts`, panel del estudiante).
 
+## 2026-11-07: zona horaria de las ediciones en el front (BG-34)
+- **BG-34 (ARK-157):** el front fija `America/Bogota` al guardar y mostrar las horas de las ediciones. Actualizados [ediciones](../01-negocio/ediciones.md#horas-de-las-ediciones-y-zona-horaria) y [deuda técnica del front](../03-frontend/deuda-tecnica.md). **Pendiente:** copiar estos cambios a `docs/arkad/` del backend para mantener las dos copias iguales.
+
 ## 2026-11-07: decisiones de la reunión con profesores (6-nov) y aclaración de externos
 - **P-02 cerrada:** 60 % el promedio de los profesores que calificaron al grupo, 40 % el promedio de los jurados junior (HU-34); la nota incompleta queda en «Nota en proceso». Actualizados `glosario`, `reglas-de-negocio`, `decisiones-abiertas`, `que-es-arkad`, `evaluacion-y-ranking`, `estado-actual` y `calendario-feria`.
 - **Tres tipos de participante** aclarados en `glosario`, `reglas-de-negocio` y `roles-y-permisos`: equipo normal, colegio (N0, externo, sí se califica solo con seniors) y **presentador externo** (rol nuevo HU-33: lo registra solo el administrador y nunca se califica). La nota de los colegios (promedio de seniors al 100 %) es una propuesta del 7-nov a confirmar con los profesores.
