@@ -33,11 +33,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DraftConflictDialog,
+  DraftSaveIndicator,
+} from "@/components/grupo 8/EvaluationDrafts";
 import { useCriteria } from "@/hooks/use-criteria";
+import { loadInitialDraft, useDraftAutosave } from "@/hooks/useDraftAutosave";
 import LayoutAplication from "@/layouts/LayoutAplication";
+import {
+  formFromCriteria,
+  fromServerDraft,
+  type DraftForm,
+} from "@/lib/evaluationDrafts";
 import { UiCriterion } from "@/types/criterion";
 import { Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -72,17 +82,68 @@ export default function SchoolRate() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
+  // HU-18: borrador en el servidor (con copia local si no hay red)
+  const drafts = useDraftAutosave();
+  const [draftReady, setDraftReady] = useState(false);
+  const lastDraftKey = useRef<string | null>(null);
+
+  const applyDraftForm = (form: DraftForm | null) => {
+    const nextCriteria = apiCriteria.map((criterion) => ({
+      ...criterion,
+      score: form?.scores[criterion.id] ?? "",
+      maxScore: 5,
+    }));
+    const nextComments = form?.comments ?? "";
+    lastDraftKey.current = JSON.stringify(formFromCriteria(nextCriteria, nextComments));
+    setUiCriteria(nextCriteria);
+    setComments(nextComments);
+  };
+
   useEffect(() => {
-    if (apiCriteria.length > 0) {
-      setUiCriteria(
-        apiCriteria.map((criterion) => ({
-          ...criterion,
-          score: "",
-          maxScore: 5,
-        })),
-      );
+    if (apiCriteria.length === 0 || !game) return;
+    let cancelled = false;
+    setDraftReady(false);
+    loadInitialDraft(game.id)
+      .catch(() => null)
+      .then((initial) => {
+        if (cancelled) return;
+        applyDraftForm(initial?.form ?? null);
+        drafts.start(game.id, initial ?? { version: 0, form: null, needsSync: false });
+        setDraftReady(true);
+        if (initial?.form) {
+          toast.info(
+            initial.source === "local" ? "Borrador recuperado de este dispositivo" : "Borrador recuperado",
+            { duration: 2000 },
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiCriteria, game?.id]);
+
+  // Autoguardado: cada cambio del formulario programa un guardado (con espera) en el servidor
+  useEffect(() => {
+    if (!game || !draftReady) return;
+    const form = formFromCriteria(uiCriteria, comments);
+    const key = JSON.stringify(form);
+    if (key === lastDraftKey.current) return;
+    lastDraftKey.current = key;
+    drafts.schedule(game.id, form);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiCriteria, comments, draftReady]);
+
+  const draftState = game ? drafts.stateOf(game.id) : null;
+
+  const handleConflict = (choice: "overwrite" | "load") => {
+    if (!game) return;
+    const remote = drafts.resolveConflict(game.id, choice);
+    if (choice === "load" && remote) {
+      applyDraftForm(fromServerDraft(remote));
+      toast.info("Se cargó la versión guardada del borrador", { duration: 2000 });
     }
-  }, [apiCriteria]);
+  };
 
   useEffect(() => {
     if (!game) {
@@ -91,31 +152,18 @@ export default function SchoolRate() {
     }
   }, [game, navigate]);
 
-  // Recuperar borrador del localStorage al montar el componente
-  useEffect(() => {
-    if (!game) return;
-
-    try {
-      const saved = localStorage.getItem(`school-rate-draft-${game.id}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.criteria && Array.isArray(parsed.criteria)) {
-          setUiCriteria(parsed.criteria);
-        }
-        if (typeof parsed.comments === "string") {
-          setComments(parsed.comments);
-        }
-      }
-    } catch (e) {
-      console.warn("Error recuperando borrador de localStorage:", e);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game?.id]);
-
   if (isLoadingCriteria) {
     return (
       <LayoutAplication breadcrumbs={[]}>
         <LoadingScreen text="Cargando criterios de evaluación..." />
+      </LayoutAplication>
+    );
+  }
+
+  if (game && apiCriteria.length > 0 && !draftReady) {
+    return (
+      <LayoutAplication breadcrumbs={[]}>
+        <LoadingScreen text="Cargando borrador..." />
       </LayoutAplication>
     );
   }
@@ -154,8 +202,8 @@ export default function SchoolRate() {
   };
 
   const handleScoreInputChange = (criterionId: number, rawValue: string) => {
-    setUiCriteria((prev) => {
-      const updated = prev.map((c) => {
+    setUiCriteria((prev) =>
+      prev.map((c) => {
         if (c.id !== criterionId) {
           return c;
         }
@@ -172,22 +220,8 @@ export default function SchoolRate() {
         }
 
         return { ...c, score: sanitized };
-      });
-
-      // Auto-guardar en localStorage cada vez que cambia un criterio
-      if (game) {
-        try {
-          localStorage.setItem(
-            `school-rate-draft-${game.id}`,
-            JSON.stringify({ criteria: updated, comments }),
-          );
-        } catch (e) {
-          // Ignorar errores de almacenamiento
-        }
-      }
-
-      return updated;
-    });
+      }),
+    );
   };
 
   const parseScoreValue = (value: string, maxScore: number): number | null => {
@@ -340,12 +374,8 @@ export default function SchoolRate() {
       }
 
       setConfirmDialogOpen(false);
-      // Limpiar borrador de localStorage al enviar exitosamente
-      try {
-        localStorage.removeItem(`school-rate-draft-${game.id}`);
-      } catch (e) {
-        // Ignorar
-      }
+      // HU-18: el back cierra el borrador al enviar; aquí se detiene el autoguardado y se borra la copia local
+      drafts.stop(game.id);
       showSuccessToast(
         `Evaluación del juego "${game.nombre}" enviada exitosamente`,
       );
@@ -612,29 +642,16 @@ export default function SchoolRate() {
                   <h3 className="font-medium mb-2">Comentarios Adicionales</h3>
                   <Textarea
                     value={comments}
-                    onChange={(e) => {
-                      setComments(e.target.value);
-                      // Auto-guardar comentarios en localStorage
-                      if (game) {
-                        try {
-                          localStorage.setItem(
-                            `school-rate-draft-${game.id}`,
-                            JSON.stringify({
-                              criteria: uiCriteria,
-                              comments: e.target.value,
-                            }),
-                          );
-                        } catch (err) {
-                          // Ignorar
-                        }
-                      }
-                    }}
+                    onChange={(e) => setComments(e.target.value)}
                     className="w-full h-32 bg-sidebar text-foreground border rounded-md"
                     placeholder="Escribe tus comentarios sobre el juego..."
                   />
                 </div>
 
-                <div className="flex justify-end mt-6">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
+                  <div className="min-h-4">
+                    {draftState && <DraftSaveIndicator state={draftState} />}
+                  </div>
                   <Button
                     className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2 "
                     onClick={() => setConfirmDialogOpen(true)}
@@ -654,6 +671,13 @@ export default function SchoolRate() {
             </TeamVerificationGate>
           </div>
         </div>
+
+        <DraftConflictDialog
+          open={draftState?.status === "conflict"}
+          remote={draftState?.conflictDraft ?? null}
+          onLoad={() => handleConflict("load")}
+          onOverwrite={() => handleConflict("overwrite")}
+        />
 
         <AlertDialog
           open={confirmDialogOpen}
