@@ -3,6 +3,8 @@ import RoutesConfiguration from "@/routes/RoutesConfiguration"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { SocketProvider } from "@/contexts/SocketContext"
 import { JuradosAuthSync } from "@/fetchs/grupo 1/GlobalStateContext"
+import { JurorPresenceProvider } from "@/contexts/JurorPresenceContext"
+import { JurorPresencePrompt } from "@/components/juror-presence/JurorPresencePrompt"
 
 function App() {
   return (
@@ -10,7 +12,11 @@ function App() {
       <AuthProvider>
         <JuradosAuthSync />
         <SocketProvider>
-          <RoutesConfiguration />
+          {/* HU-23: "¿Sigues en la feria?" en todas las pantallas del jurado */}
+          <JurorPresenceProvider>
+            <RoutesConfiguration />
+            <JurorPresencePrompt />
+          </JurorPresenceProvider>
         </SocketProvider>
       </AuthProvider>
     </ThemeProvider>

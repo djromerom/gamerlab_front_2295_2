@@ -8,6 +8,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
+import { JurorPresenceSection } from "@/components/juror-presence/JurorPresenceSection";
 import {
   fetchEvaluationTracking,
   type EvaluationTrackingLevel,
@@ -376,6 +377,9 @@ export function RealtimeTrackingPanel() {
               <span className="text-2xl font-bold">{alert.totals.missing}</span>
             </div>
           )}
+
+          {/* HU-23: el back solo da la presencia al Administrador (HU-12 podrá abrirla a profesores senior) */}
+          {isAdmin && <JurorPresenceSection canConfigure={alert?.edition.writable !== false} />}
 
           <div className="mb-4 grid gap-3 md:grid-cols-[minmax(220px,1fr)_150px_190px_180px_180px_auto]">
             <Input aria-label="Buscar grupo" value={search} onChange={(event) => setSearch(event.target.value)}

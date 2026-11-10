@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import LayoutAplication from "@/layouts/LayoutAplication";
+import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -288,6 +289,7 @@ const PendingGradesPage: React.FC = () => {
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (
         <>
+          <JurorPresenceNotice className="mx-3 mb-3 sm:mx-6" />
           {error &&
             !gamesData &&
             error !==

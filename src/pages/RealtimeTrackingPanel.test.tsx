@@ -42,6 +42,13 @@ vi.mock("@/components/grupo 9/app-sidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 
+// La sección de presencia (HU-23) tiene sus propias pruebas y su propia consulta
+vi.mock("@/components/juror-presence/JurorPresenceSection", () => ({
+  JurorPresenceSection: ({ canConfigure }: { canConfigure?: boolean }) => (
+    <section>Presencia de los jurados{canConfigure ? " · configurable" : ""}</section>
+  ),
+}));
+
 const alert = {
   edition: { id: 5, title: "ARKAD 2026", status: "ACTIVE", writable: true },
   schedule: { fairDate: "2026-11-26", startTime: "08:00", alertTime: "10:00", controlTime: "11:00", closeTime: "12:00" },
@@ -155,6 +162,21 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     await screen.findByText("Alerta informativa de inasistencia");
     expect(screen.queryByRole("button", { name: /Configurar cronograma/ })).toBeNull();
     expect(mocks.fetchFairSchedule).not.toHaveBeenCalled();
+  });
+
+  it("el administrador ve la presencia de los jurados (HU-23)", async () => {
+    renderPanel();
+
+    await screen.findByText("Alerta informativa de inasistencia");
+    expect(screen.getByText("Presencia de los jurados · configurable")).toBeTruthy();
+  });
+
+  it("el profesor no ve la presencia de los jurados: el back solo se la da al administrador", async () => {
+    mocks.role = "Profesor";
+    renderPanel();
+
+    await screen.findByText("Alerta informativa de inasistencia");
+    expect(screen.queryByText(/Presencia de los jurados/)).toBeNull();
   });
 
   it("mantiene la alerta activa cuando todos llegaron pero faltan evaluaciones", async () => {
