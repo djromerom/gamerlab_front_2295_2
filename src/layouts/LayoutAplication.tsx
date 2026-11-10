@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/grupo 9/app-sidebar"
 import Breadcrumbs from "@/components/grupo 9/BreadCrums"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
+import PwaUpdateNotice from "@/components/pwa/PwaUpdateNotice"
 
 import type React from "react"
 
@@ -26,6 +27,7 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
             <Breadcrumbs items={breadcrumbs} />
           </div>
         </header>
+        <PwaUpdateNotice />
         {children}
 
         <Toaster

@@ -31,6 +31,7 @@ import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
 import ExternalPresentersPage from "@/pages/admin/ExternalPresentersPage";
 import MyRegistrationPage from "@/pages/external-presenter/MyRegistrationPage";
+import PwaInstallGuidePage from "@/pages/PwaInstallGuidePage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -79,6 +80,11 @@ export const routes: RouteConfig[] = [
     path: "/notificaciones",
     element: <PushNotificationsPage />,
     roles: ["Administrador", "Jurado", "Profesor"],
+  },
+  {
+    path: "/instalar-app",
+    element: <PwaInstallGuidePage />,
+    roles: ["Jurado"],
   },
   { path: "/auth-error", element: <AuthErrorPage /> },
   // Pantallas de relleno retiradas: se redirigen al inicio de su rol

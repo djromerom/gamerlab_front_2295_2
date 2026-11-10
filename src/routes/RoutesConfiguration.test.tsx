@@ -141,4 +141,9 @@ describe("routes", () => {
     // Entra a /inicio, que lo redirige a su panel
     expect(rolesOf("/inicio")).toContain("Presentador externo");
   });
+
+  it("restringe la guía de instalación al rol Jurado", () => {
+    const installGuide = routes.find((route) => route.path === "/instalar-app");
+    expect(installGuide?.roles).toEqual(["Jurado"]);
+  });
 });

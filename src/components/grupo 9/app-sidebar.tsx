@@ -24,6 +24,7 @@ import {
   Bell,
   MessageSquareHeart,
   Presentation,
+  Smartphone,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -96,7 +97,10 @@ const MENU: Record<Role, MenuItem[]> = {
     },
     {
       title: "Cuenta",
-      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
+      items: [
+        { name: "Instalar ARKAD", url: "/instalar-app", icon: Smartphone },
+        { name: "Notificaciones", url: "/notificaciones", icon: Bell },
+      ],
     },
   ],
   Profesor: [
