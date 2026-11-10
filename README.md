@@ -36,7 +36,6 @@ Todo lo que empieza por `VITE_` queda dentro del JavaScript público que descarg
 |---|---|
 | `VITE_ENDPOINT_BACKEND` | URL base de la API. Obligatoria (local: `http://localhost:3000`) |
 | `VITE_SITE_KEY` | Clave pública de reCAPTCHA v3 del registro de equipos |
-| `VITE_MAINTENANCE_*`, `VITE_SUPABASE_*` | Opcionales o heredadas; ver [deuda técnica](docs/arkad/03-frontend/deuda-tecnica.md) |
 
 En test y producción no hay `.env`: el pipeline inyecta solo `VITE_ENDPOINT_BACKEND` y `VITE_SITE_KEY` al construir la imagen (`Dockerfile`, `Dockerfile.prod`). Los valores reales se piden al equipo, no están en el repositorio.
 
