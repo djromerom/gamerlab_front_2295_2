@@ -93,3 +93,8 @@ export async function query(sql: string): Promise<string[][]> {
     .filter((line) => line.length > 0 && line !== "BEGIN" && line !== "ROLLBACK")
     .map((line) => line.split("|"));
 }
+
+/** Sentencia de escritura sobre datos e2e- (por ejemplo, quitarle un grupo al jurado en una prueba). */
+export async function execute(sql: string): Promise<void> {
+  await runPsql(`BEGIN;\n${sql};\nCOMMIT;`);
+}

@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { jurorPassword } from "./fixtures.ts";
 
 /** Inicia sesión con correo y contraseña (el login de Microsoft queda fuera de las pruebas). */
@@ -63,4 +63,11 @@ export async function submitEvaluation(page: Page): Promise<void> {
 export async function openPending(page: Page): Promise<void> {
   await page.goto("/pendientes-calificar");
   await expect(page.getByRole("heading", { level: 3 }).first()).toBeVisible();
+}
+
+/** Respuesta OK del autoguardado del borrador (PUT /evaluation/drafts/:id). Crearla ANTES de editar. */
+export function waitForDraftSave(page: Page): Promise<Response> {
+  return page.waitForResponse(
+    (r) => r.request().method() === "PUT" && /\/evaluation\/drafts\/\d+/.test(r.url()) && r.ok(),
+  );
 }
