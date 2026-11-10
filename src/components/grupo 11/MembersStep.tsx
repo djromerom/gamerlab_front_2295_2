@@ -19,9 +19,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { CombinedFormValues } from "@/lib/schemas";
-import { useEffect, useState } from "react";
+import { CombinedFormValues, NO_PASTE_MESSAGE } from "@/lib/schemas";
+import { useEffect, useState, type ClipboardEvent, type DragEvent } from "react";
 import { toast } from "sonner";
+
+/**
+ * Los dos campos de correo no aceptan texto pegado (teclado, menú contextual o el menú del
+ * celular, que también disparan `paste`) ni arrastrado (ARK-168).
+ */
+const blockPasteAndDrop = {
+  onPaste: (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    toast.info(NO_PASTE_MESSAGE, { id: "correo-sin-pegar" });
+  },
+  onDrop: (event: DragEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    toast.info(NO_PASTE_MESSAGE, { id: "correo-sin-pegar" });
+  },
+};
 
 // Define an interface for your NRC option objects
 interface NrcOption {
@@ -287,8 +302,30 @@ export default function MembersStep() {
                     <FormControl>
                       <Input
                         {...field}
+                        {...blockPasteAndDrop}
                         type="email"
                         placeholder="correo@ejemplo.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Repetir correo (ARK-168) */}
+              <FormField
+                control={control}
+                name={`members.${idx}.confirmarCorreo` as const}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repite tu correo</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        {...blockPasteAndDrop}
+                        type="email"
+                        autoComplete="off"
+                        placeholder="Escribe de nuevo el correo"
                       />
                     </FormControl>
                     <FormMessage />
@@ -437,6 +474,7 @@ export default function MembersStep() {
               nombre: "",
               apellido: "",
               correo: "",
+              confirmarCorreo: "",
               codigoEstudiantil: "",
               nrc: [],
             })

@@ -25,6 +25,7 @@ const EMPTY_MEMBER = {
   nombre: "",
   apellido: "",
   correo: "",
+  confirmarCorreo: "",
   codigoEstudiantil: "",
   nrc: [] as string[],
 };
