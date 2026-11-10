@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Edition } from "@/fetchs/editions";
 import { useFetch } from "@/hooks/useFetch";
+import { toFairGradeRule } from "@/components/grupo 5/student-grade-table-types";
 
 interface PaginationMetadata {
   totalItems: number;
@@ -221,6 +222,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
         nrcId: project.nrcId ?? null,
         canEdit: project.canEdit === true,
         source: project.source === "historical" ? "historical" as const : "current" as const,
+        fairGradeRule: toFairGradeRule(project.fairGradeRule, project.isExternal),
         _rows: [project],
       })),
     [projects, availableFairs],
