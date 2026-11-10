@@ -4,6 +4,11 @@ import { jurorPassword } from "./fixtures.ts";
 /** Inicia sesión con correo y contraseña (el login de Microsoft queda fuera de las pruebas). */
 export async function loginAs(page: Page, email: string): Promise<void> {
   await page.goto("/login");
+  await submitLoginForm(page, email);
+}
+
+/** Llena y envía el formulario de /login que ya está en pantalla (sin recargar, para conservar la ruta de origen). */
+export async function submitLoginForm(page: Page, email: string): Promise<void> {
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(jurorPassword());
   await page.locator('button[type="submit"]').click();

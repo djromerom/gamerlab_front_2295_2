@@ -98,3 +98,8 @@ export async function query(sql: string): Promise<string[][]> {
 export async function execute(sql: string): Promise<void> {
   await runPsql(`BEGIN;\n${sql};\nCOMMIT;`);
 }
+
+/** Hora actual del servidor de la BD, en ms desde epoch (para fijar el reloj de la página respecto a él). */
+export async function serverNowMs(): Promise<number> {
+  return Number((await query("SELECT (extract(epoch FROM now()) * 1000)::bigint"))[0][0]);
+}
