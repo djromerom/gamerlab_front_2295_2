@@ -11,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
+import { useAuth } from "@/contexts/AuthContext";
+import { jurorCategoryForViewer } from "@/lib/jurorLabel";
 import {
   checkInJurorManually,
   scanJurorBadge,
@@ -30,6 +32,9 @@ const formatTime = (iso: string) =>
 
 const JurorCheckInPage = () => {
   useLockViewportZoom();
+  // HU-35: el registro se hace frente al jurado; el Staff ve solo «Jurado», el administrador la categoría
+  const { userRole } = useAuth();
+  const categoryLabel = (category: string) => jurorCategoryForViewer(category, userRole);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerRunningRef = useRef(false);
   const lastTokenRef = useRef("");
@@ -194,7 +199,7 @@ const JurorCheckInPage = () => {
                       {juror.checkedInAt && <Badge variant="secondary">Ya llegó</Badge>}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
-                      {juror.category} · {juror.hasBadge ? "Tiene escarapela" : "Sin escarapela"}
+                      {categoryLabel(juror.category)} · {juror.hasBadge ? "Tiene escarapela" : "Sin escarapela"}
                     </div>
                   </button>
                 ))}
@@ -208,7 +213,7 @@ const JurorCheckInPage = () => {
             <UserCheck className="h-4 w-4" />
             <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya registrado" : "Llegada registrada"}</AlertTitle>
             <AlertDescription>
-              <strong>{result.juror.name}</strong> · {result.juror.category}
+              <strong>{result.juror.name}</strong> · {categoryLabel(result.juror.category)}
               <div>{result.status === "ALREADY_CHECKED_IN" ? "Registrado anteriormente: " : "Hora: "}{formatTime(result.checkedInAt)}</div>
               <div>{result.juror.teams.length ? `Grupos: ${result.juror.teams.map((team) => team.name).join(", ")}` : "Grupos: sin asignar"}</div>
             </AlertDescription>
