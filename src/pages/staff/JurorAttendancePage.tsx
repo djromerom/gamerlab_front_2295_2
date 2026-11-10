@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { JurorAttendanceTable } from "@/components/staff/JurorAttendanceTable";
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, type JurorAttendanceResult } from "@/fetchs/jurorAttendance";
 import { useJurorAttendance, type AttendanceTab } from "@/hooks/useJurorAttendance";
+import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
 
 const TABS: { value: AttendanceTab; label: string; count: (t: JurorAttendanceResult["totals"]) => number }[] = [
   { value: "ALL", label: "Todos", count: (t) => t.total },
@@ -28,6 +29,7 @@ function emptyMessage(result: JurorAttendanceResult, searching: boolean) {
  * La ven el Administrador y el Staff, en solo lectura (la llegada se registra en Check-in).
  */
 const JurorAttendancePage: React.FC = () => {
+  useLockViewportZoom();
   const { tab, setTab, search, setSearch, setPage, result, error, loading, updatedAt, reload } = useJurorAttendance();
   const searching = search.trim().length >= SEARCH_MIN_LENGTH;
   const metadata = result?.metadata;
@@ -90,7 +92,7 @@ const JurorAttendancePage: React.FC = () => {
               maxLength={SEARCH_MAX_LENGTH}
               placeholder="Buscar por nombre o apellido"
               aria-label="Buscar jurado por nombre o apellido"
-              className="pl-9"
+              className="pl-9 text-base"
             />
           </div>
         </div>
