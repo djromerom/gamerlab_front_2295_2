@@ -4,7 +4,9 @@ export type Role =
   | "Jurado"
   | "Estudiante"
   | "Consultor"
-  | "Staff";
+  | "Staff"
+  // HU-33: asiste a la feria, no se califica y solo recibe un certificado de asistencia
+  | "Presentador externo";
 
 export interface LoginCredentials {
   email: string;

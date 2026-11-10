@@ -61,6 +61,7 @@ const ROLE_SCREENS: Record<Role, string> = {
   Profesor: "/profesor/cursos",
   Consultor: "/consultor/reportes",
   Staff: "/staff/puntos",
+  "Presentador externo": "/mi-registro",
 };
 
 const roleApp = (initialPath: string) => (
@@ -101,6 +102,7 @@ describe("LoginPage: cambio de rol después de cerrar sesión (BG-08)", () => {
     ["Estudiante", "Jurado"],
     ["Administrador", "Estudiante"],
     ["Profesor", "Jurado"],
+    ["Administrador", "Presentador externo"],
   ])(
     "%s cierra sesión con Salir y entra como %s: llega a /inicio sin ver Acceso no autorizado",
     (fromRole, toRole) => {
