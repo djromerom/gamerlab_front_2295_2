@@ -7,6 +7,7 @@ import lightLogo from "@/assets/Arkad Light.svg";
 import TeamCode from "@/components/grupo 5/TeamCode";
 import VerificationCode from "@/components/grupo 5/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
+import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
 import { Navigate } from "react-router-dom";
 
 const HomePage: React.FC = () => {
@@ -39,6 +40,7 @@ const HomePage: React.FC = () => {
             <p className="mx-auto max-w-[700px] text-foreground md:text-xl">
               Estamos encantados de tenerte, {user?.firstName}
             </p>
+            <JurorPresenceNotice className="mx-auto max-w-[700px] text-left" />
           </div>
         </section>
         <section className="flex flex-col md:flex-row items-center gap-10 space-y-4">
