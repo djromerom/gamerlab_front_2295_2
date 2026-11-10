@@ -1,31 +1,16 @@
 import { apiFetch } from "@/lib/api";
-"use client"
-
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Users } from "lucide-react"
+import { JUROR_PUBLIC_LABEL } from "@/lib/jurorLabel"
 
+// HU-35 (ARK-172): el back todavía manda `categoria`, pero el estudiante solo ve «Jurado»
 interface JudgeInfo {
   id: string
   nombre: string
-  categoria: string
   haEvaluado: boolean
-}
-
-const categoryLabel: Record<string, string> = {
-  SENIOR: "Senior",
-  JUNIOR: "Junior",
-  PROFESOR: "Profesor",
-  SIN_CATEGORIA: "—",
-}
-
-const categoryColor: Record<string, string> = {
-  SENIOR: "bg-blue-100 text-blue-700 border-blue-200",
-  JUNIOR: "bg-green-100 text-green-700 border-green-200",
-  PROFESOR: "bg-purple-100 text-purple-700 border-purple-200",
-  SIN_CATEGORIA: "bg-gray-100 text-gray-500 border-gray-200",
 }
 
 export default function JudgesGrades() {
@@ -115,18 +100,16 @@ export default function JudgesGrades() {
               key={judge.id}
               className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-md bg-muted/40 hover:bg-muted/70 transition-colors"
             >
-              {/* Name + Category */}
+              {/* Name + «Jurado» (sin junior/senior, HU-35) */}
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <span className="text-xs sm:text-sm font-medium truncate">
-                  {judge.nombre || "Jurado"}
+                  {judge.nombre || "Nombre no disponible"}
                 </span>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] sm:text-xs px-1.5 py-0 leading-4 shrink-0 ${
-                    categoryColor[judge.categoria] ?? categoryColor.SIN_CATEGORIA
-                  }`}
+                  className="text-[10px] sm:text-xs px-1.5 py-0 leading-4 shrink-0 bg-gray-100 text-gray-600 border-gray-200"
                 >
-                  {categoryLabel[judge.categoria] ?? judge.categoria}
+                  {JUROR_PUBLIC_LABEL}
                 </Badge>
               </div>
 

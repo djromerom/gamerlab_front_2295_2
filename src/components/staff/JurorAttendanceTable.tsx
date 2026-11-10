@@ -8,14 +8,21 @@ import {
   formatArrival,
   type JurorAttendanceItem,
 } from "@/fetchs/jurorAttendance";
+import { JUROR_PUBLIC_LABEL } from "@/lib/jurorLabel";
 
 interface JurorAttendanceTableProps {
   jurors: JurorAttendanceItem[];
   emptyMessage: string;
+  /** HU-35: Junior/Senior solo para el administrador; el Staff ve «Jurado». */
+  showCategory?: boolean;
 }
 
 // Solo lectura: la llegada se registra en Check-in de jurados (HU-11).
-export const JurorAttendanceTable: React.FC<JurorAttendanceTableProps> = ({ jurors, emptyMessage }) => (
+export const JurorAttendanceTable: React.FC<JurorAttendanceTableProps> = ({
+  jurors,
+  emptyMessage,
+  showCategory = false,
+}) => (
   <Card className="rounded-lg overflow-hidden bg-card border-border shadow-none">
     <Table>
       <TableHeader className="bg-card border-b border-border">
@@ -42,7 +49,7 @@ export const JurorAttendanceTable: React.FC<JurorAttendanceTableProps> = ({ juro
                 <TableCell className="whitespace-normal">
                   <div className="font-medium">{juror.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {juror.category}
+                    {showCategory ? juror.category : JUROR_PUBLIC_LABEL}
                     {juror.isProfessor && " · Profesor"}
                     {!juror.hasBadge && " · Sin escarapela"}
                   </div>
