@@ -76,7 +76,8 @@ function runPsql(sql: string, tuplesOnly = false): Promise<PsqlResult> {
 
 /** Ejecuta e2e/sql/<file>.sql. El seed recibe el hash bcrypt como variable psql `pwhash`. */
 export async function runSql(file: SqlFile): Promise<PsqlResult> {
-  let sql = readFileSync(join(SQL_DIR, `${file}.sql`), "utf8");
+  // En Windows git puede dejar los .sql con CRLF; psql los recibe siempre con LF.
+  let sql = readFileSync(join(SQL_DIR, `${file}.sql`), "utf8").replace(/\r\n/g, "\n");
   if (file === "seed") {
     const hash = required("E2E_JUROR_PASSWORD_HASH").replace(/'/g, "''");
     sql = `\\set pwhash '${hash}'\n${sql}`;

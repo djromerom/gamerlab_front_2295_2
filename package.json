@@ -15,7 +15,8 @@
     "check:env:test": "node --test scripts/check-env.selftest.mjs",
     "e2e:cleanup": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts cleanup",
     "e2e:seed": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts seed",
-    "e2e:verify": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts verify"
+    "e2e:verify": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts verify",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "@playwright/test": "1.64.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^22.15.3",
