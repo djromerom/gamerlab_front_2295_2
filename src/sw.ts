@@ -15,10 +15,6 @@ const gameFiles = new Map<string, Map<string, ArrayBuffer>>();
 //el archivo 'sw.config.ts' le dice a Vite con qué configuración compilar el sw.
 //para funcionar, el sw transpilado tiene que estar en /public
 
-// magia para adueñarse de la pagina cuando sea necesario
-self.addEventListener('install', () => {
-    self.skipWaiting();
-});
 self.addEventListener('activate', (event: ExtendableEvent) => {
     event.waitUntil(self.clients.claim());
 });
@@ -101,6 +97,9 @@ self.addEventListener('message', async (event: ExtendableMessageEvent) => {
 self.addEventListener('fetch', (event: FetchEvent) => {
     //check if detected fetch is for a local game file
     const url = new URL(event.request.url);
+    if (event.request.method !== 'GET' || url.origin !== self.location.origin) {
+        return;
+    }
     const match = url.pathname.match(/\/play-game\/([^/]+)\/(.*)/);
     if (!match) {
         return
