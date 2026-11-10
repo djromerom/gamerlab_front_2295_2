@@ -20,7 +20,7 @@ import {
   SESSION_EXPIRED_EVENT,
 } from "@/lib/session";
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
-import { clearAllBackups } from "@/lib/evaluationDrafts";
+import { claimLocalDrafts, clearAllLocalDrafts } from "@/lib/localDraftsOwner";
 import { unsubscribeFromPush } from "@/fetchs/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,6 +94,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       if (res.ok) {
         const data = (await res.json()) as UserProfile;
+        // BG-27 (BG-08): lo que otro usuario dejó sin guardar en este navegador se borra
+        // antes de que se monten las pantallas de este usuario.
+        claimLocalDrafts(data.id);
         setUser(data);
         ok = true;
       } else if (res.status === 401) {
@@ -199,8 +202,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
     stopHeartbeat();
     resetOwnTeamCacheForTests();
-    // HU-18 (BG-08): las copias locales de borradores no pasan al siguiente usuario del navegador
-    clearAllBackups();
+    // HU-18 / BG-27 (BG-08): borradores del jurado y notas sin guardar del profesor
+    // no pasan al siguiente usuario del navegador
+    clearAllLocalDrafts();
     hasSessionRef.current = false;
     setSessionExpired(false);
 

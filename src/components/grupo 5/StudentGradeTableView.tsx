@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import type { RefObject } from "react";
 import { FAIR_GRADE_RULE_REASON, gradeKey, type GradeTeam } from "./student-grade-table-types";
+import { isGradeModified } from "@/lib/gradeDrafts";
 
 interface Props {
   teams: GradeTeam[];
@@ -40,9 +41,7 @@ export default function StudentGradeTableView({ teams, filteredTeams, initialLoa
             <TableRow><TableCell colSpan={8} className="h-24 text-center text-sm opacity-70">No se encontraron equipos con esos criterios de búsqueda.</TableCell></TableRow>
           ) : filteredTeams.map((team, index) => {
             const key = gradeKey(team);
-            const draft = (editedGrades[key] ?? "").trim();
-            const original = team.calificacionDocente;
-            const isDirty = team.canEdit && (draft === "" ? original != null : !Number.isFinite(Number(draft)) || original == null || Number(draft) !== original);
+            const isDirty = team.canEdit === true && isGradeModified(editedGrades[key], team.calificacionDocente);
             const result = gradeResults[key];
             return <TableRow key={`${team.editionId ?? "edition"}-${team.teamCode}-${team.videogameId ?? "game"}`} className={`hover:bg-muted/50 transition-colors ${isDirty ? "bg-amber-500/10" : ""}`}>
               <TableCell className="font-medium">{team.teamCode}</TableCell><TableCell>{team.editionLabel}</TableCell><TableCell>{team.source === "historical" && !team.nrc ? <span className="text-muted-foreground" title="Este snapshot histórico se creó antes de guardar los NRC asociados.">No registrado</span> : team.nrc || "-"}</TableCell><TableCell>{team.teamName}</TableCell>
