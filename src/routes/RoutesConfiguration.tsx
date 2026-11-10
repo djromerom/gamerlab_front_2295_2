@@ -28,6 +28,7 @@ import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 import PushNotificationsPage from "@/pages/PushNotificationsPage";
 import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
+import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -199,6 +200,11 @@ export const routes: RouteConfig[] = [
   {
     path: "/notas-finales",
     element: <FinalGradeReleasePage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/encuesta-jurados",
+    element: <JurorSurveyResultsPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },

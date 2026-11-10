@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { MyDraftsPanel } from "@/components/grupo 8/EvaluationDrafts";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -221,6 +222,8 @@ const PendingGradesPage: React.FC = () => {
     return (
       <LayoutAplication breadcrumbs={breadcrumbs}>
         <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          {/* HU-17: la encuesta se puede responder aunque ya se hayan cerrado las evaluaciones */}
+          <JurorSurveyAccess />
           <Card className="w-full shadow-sm border">
             <CardHeader className="p-4 sm:p-6 pb-2">
               <CardTitle className="text-lg sm:text-xl font-medium text-foreground">
@@ -285,6 +288,7 @@ const PendingGradesPage: React.FC = () => {
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
       <MyDraftsPanel ratePath="/pendientes-calificar" games={gamesToShow} />
+      <JurorSurveyAccess className="mb-4" />
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (

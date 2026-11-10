@@ -13,6 +13,7 @@ import {
   DraftConflictDialog,
   DraftSaveIndicator,
 } from "@/components/grupo 8/EvaluationDrafts";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
 import { useCriteria } from "@/hooks/use-criteria";
 import {
   loadInitialDrafts,
@@ -62,6 +63,8 @@ export default function BatchRatePage() {
   const fromPage = (location.state?.from || "jurado") as string;
   const { userRole } = useAuth();
   const backRoute = getBatchBackRoute(fromPage, userRole);
+  // HU-17: sube con cada envío exitoso para volver a consultar la encuesta
+  const [surveyCheck, setSurveyCheck] = useState(0);
 
   const { criteria: apiCriteria, isLoading: isLoadingCriteria } = useCriteria();
   // HU-19: cada grupo del lote se verifica con su código antes de calificarlo
@@ -328,6 +331,8 @@ export default function BatchRatePage() {
       toast.success(
         `${data.results.successful.length} evaluaciones guardadas correctamente`,
       );
+      // HU-17: si con este lote terminó de evaluar, se abre la encuesta
+      if (data.results.successful.length > 0) setSurveyCheck((n) => n + 1);
 
       if (data.results.failed.length > 0) {
         toast.error(`${data.results.failed.length} evaluaciones fallaron`);
@@ -403,6 +408,8 @@ export default function BatchRatePage() {
           Asigna puntajes a cada videojuego. Usa las pestañas para navegar entre
           ellos.
         </p>
+
+        <JurorSurveyAccess checkSignal={surveyCheck} className="mb-4 md:mb-6" />
 
         {result ? (
           <Card className="mb-6 py-6">

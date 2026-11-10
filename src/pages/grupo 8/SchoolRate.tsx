@@ -37,6 +37,7 @@ import {
   DraftConflictDialog,
   DraftSaveIndicator,
 } from "@/components/grupo 8/EvaluationDrafts";
+import { JUROR_SURVEY_CHECK_STATE } from "@/lib/jurorSurvey";
 import { useCriteria } from "@/hooks/use-criteria";
 import { loadInitialDraft, useDraftAutosave } from "@/hooks/useDraftAutosave";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -178,7 +179,8 @@ export default function SchoolRate() {
     setTimeout(() => {
       setShowSuccessLoading(true);
       setTimeout(() => {
-        navigate("/colegios-calificar");
+        // HU-17: pendientes consulta la encuesta y la abre si esta era la última evaluación
+        navigate("/colegios-calificar", { state: JUROR_SURVEY_CHECK_STATE });
       }, 1000);
     }, 2500);
   };
