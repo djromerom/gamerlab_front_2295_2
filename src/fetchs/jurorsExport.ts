@@ -48,7 +48,12 @@ export async function downloadJurorsExport(): Promise<string> {
     fileNameFromDisposition(response.headers.get('content-disposition')) ??
     JURORS_EXPORT_FALLBACK_NAME;
 
-  const blob = await response.blob();
+  saveBlobAsFile(await response.blob(), fileName);
+  return fileName;
+}
+
+/** Guarda un archivo descargado (por ejemplo un Excel) con el nombre dado. */
+export function saveBlobAsFile(blob: Blob, fileName: string): void {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -57,6 +62,4 @@ export async function downloadJurorsExport(): Promise<string> {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
-
-  return fileName;
 }

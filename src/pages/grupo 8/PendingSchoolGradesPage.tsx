@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import { MyDraftsPanel } from "@/components/grupo 8/EvaluationDrafts";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
 import { Button } from "@/components/ui/button";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import type React from "react";
@@ -245,6 +246,7 @@ const PendingSchoolGradesPage: React.FC = () => {
     <LayoutAplication breadcrumbs={breadcrumbs}>
       {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
       <MyDraftsPanel ratePath="/colegios-calificar" games={gamesToShow} />
+      <JurorSurveyAccess className="mb-4" />
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (

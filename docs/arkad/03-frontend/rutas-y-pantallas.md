@@ -22,7 +22,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | Rol | Rutas |
 |---|---|
 | **Todos con sesión** | `/inicio` (HomePage, con Staff incluido) |
-| **Administrador** | `/estadisticas`, `/jurados`, `/jurados-assignment`, `/jurados-edicion` (jurados de la edición), `/escarapelas`, `/cuentas-staff`, `/gestionar-ediciones`, `/materias`, `/nrcs`, `/criterios`, `/profesores`, `/equipos-inscritos`, `/tiebreaker`, `/ponderado-calificaciones`, `/configuracion-evento` |
+| **Administrador** | `/estadisticas`, `/jurados`, `/jurados-assignment`, `/jurados-edicion` (jurados de la edición), `/escarapelas`, `/cuentas-staff`, `/gestionar-ediciones`, `/materias`, `/nrcs`, `/criterios`, `/profesores`, `/equipos-inscritos`, `/tiebreaker`, `/ponderado-calificaciones`, `/configuracion-evento`, `/encuesta-jurados` (resultados de la encuesta de experiencia, HU-17) |
 | **Administrador + Staff** | `/check-in-jurados`, `/asistencia-jurados` |
 | **Administrador + Profesor** | `/profesor`, `/realtime-tracking-panel` (seguimiento) |
 | **Profesor** | `/home-profesor`, `/colegios-calificar`, `/colegios-calificar/:id`, `/colegios-evaluados`, `/ranking/mis-empates` |
@@ -33,6 +33,8 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | **Consultor** | `/consultor` → `/inicio` |
 
 Hay una ruta `NotFoundPage` para URLs desconocidas.
+
+**Encuesta de experiencia del jurado (HU-17)**: no tiene ruta propia. Es un diálogo (`components/juror-survey`) que se abre solo cuando el jurado (o profesor jurado) envía su última evaluación (`/pendientes-calificar`, `/colegios-calificar` o `/calificar-lote`). Si la omite, queda el acceso «Responder encuesta» en `/inicio` y en las páginas de pendientes mientras `GET /juror-survey/status` diga `available: true`.
 
 ## Reglas al agregar una pantalla
 1. Añadirla a `routes` con sus `roles`.
