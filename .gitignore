@@ -141,3 +141,7 @@ dist
 
 # PWA export directory
 /dev-dist
+# ARK-42: pruebas funcionales (Playwright)
+e2e/.env.e2e
+test-results/
+playwright-report/

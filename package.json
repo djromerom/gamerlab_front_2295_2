@@ -12,7 +12,10 @@
     "test:ci": "vitest run --reporter=verbose",
     "test:watch": "vitest",
     "check:env": "node scripts/check-env.mjs",
-    "check:env:test": "node --test scripts/check-env.selftest.mjs"
+    "check:env:test": "node --test scripts/check-env.selftest.mjs",
+    "e2e:cleanup": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts cleanup",
+    "e2e:seed": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts seed",
+    "e2e:verify": "node --experimental-strip-types --no-warnings e2e/support/db-cli.ts verify"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
