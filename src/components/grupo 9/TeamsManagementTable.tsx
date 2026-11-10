@@ -18,6 +18,7 @@ import { isCollegeTeamCode } from "@/fetchs/teamVerification";
 import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { batchErrors, batchFailureMessage, downloadCertificatePdf, runInBatches } from "@/lib/certificates";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -74,7 +75,10 @@ export const TeamsManagementTable = ({
 
   const [certSelectedTeamIds, setCertSelectedTeamIds] = useState<string[]>([]);
   const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
-  const filteredCertTeams = (teams ?? []).filter((t) =>
+  // ARK-170: todos los equipos de la edición, no solo los de la página visible, y solo confirmados
+  const certTeams = allTeams?.length ? allTeams : teams ?? [];
+  const filteredCertTeams = certTeams.filter((t) =>
+    t.videojuego?.id_estado_videojuego === 1 &&
     (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
 
@@ -244,43 +248,32 @@ export const TeamsManagementTable = ({
     setInternalIsLoading(true);
     try {
       const targets = certSelectedTeamIds.map((teamCode) => {
-        const team = teams?.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
+        const team = certTeams.find((t) => String(t.teamCode ?? t.id_equipo) === teamCode);
         const email = team?.integrantes?.[0]?.correo ?? "";
         return { teamCode, email };
       });
 
-      const sendPromises = targets.map(({ teamCode, email }) => (async () => {
-        if (!email) return { ok: false, email: "(sin correo)", teamCode, error: "No hay correo del líder" };
-        try {
-          const body: any = { email, typeOfEmail: certType, certificate: "" };
-          const res = await apiFetch(`${apiBaseUrl}/email/resend-certificate-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(body),
-          });
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            return { ok: false, email, teamCode, error: err?.message || `Error ${res.status}` };
-          }
-
-          return { ok: true, email, teamCode };
-        } catch (e: any) {
-          return { ok: false, email, teamCode, error: e?.message || "Error de red" };
+      // ARK-170: por tandas. Todos a la vez saturan la generación de PDF y agotan el tiempo.
+      const results = await runInBatches(targets, async ({ email }) => {
+        if (!email) throw new Error("No hay correo del líder");
+        const res = await apiFetch(`${apiBaseUrl}/email/resend-certificate-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, typeOfEmail: certType, certificate: "" }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message || `Error ${res.status}`);
         }
-      })());
-
-      // Run in parallel and wait for results
-      const settled = await Promise.allSettled(sendPromises as Promise<any>[]);
-      const results = settled.map((s) => (s.status === "fulfilled" ? s.value : { ok: false, email: "(unknown)", error: s.reason }));
+      });
 
       const successCount = results.filter((r) => r.ok).length;
-      const failItems = results.filter((r) => !r.ok);
+      const failItems = batchErrors(results);
 
       if (successCount > 0) toast.success(`Certificados enviados: ${successCount}`);
       if (failItems.length > 0) {
-        toast.error(`Fallaron ${failItems.length} envíos. Revise la consola para más detalles.`);
+        toast.error(batchFailureMessage(failItems));
         console.error("Errores envío certificados:", failItems);
       }
 
@@ -291,6 +284,23 @@ export const TeamsManagementTable = ({
       setCertSearchTerm("");
     } catch (e: any) {
       toast.error(e?.message || "Error enviando certificados.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
+  // ARK-170: la descarga es de un equipo a la vez, con el tipo elegido en el diálogo
+  const downloadSelectedCertificate = async () => {
+    const team = certTeams.find((t) => String(t.teamCode ?? t.id_equipo) === certSelectedTeamIds[0]);
+    if (!team || internalIsLoading) return;
+    setInternalIsLoading(true);
+    try {
+      await downloadCertificatePdf(
+        `/certificates/team/${team.id_equipo}?type=${certType}`,
+        `certificado-${team.teamCode ?? team.id_equipo}.pdf`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo descargar el certificado.");
     } finally {
       setInternalIsLoading(false);
     }
@@ -1198,6 +1208,14 @@ export const TeamsManagementTable = ({
 
           <DialogFooter className="pt-0 pb-0 mt-auto">
             <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={downloadSelectedCertificate}
+              disabled={internalIsLoading || certSelectedTeamIds.length !== 1}
+              title="Seleccione un solo equipo para descargar su certificado"
+            >
+              Descargar PDF
+            </Button>
             <Button onClick={sendCertificateEmails} disabled={internalIsLoading || certSelectedTeamIds.length === 0}>
               {internalIsLoading ? "Enviando..." : "Enviar certificados"}
             </Button>

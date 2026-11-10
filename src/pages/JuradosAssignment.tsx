@@ -3,6 +3,7 @@
 
 import { apiFetch } from "@/lib/api";
 import { fetchAllPages } from "@/lib/pagination";
+import { batchErrors, batchFailureMessage, downloadCertificatePdf, runInBatches } from "@/lib/certificates";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -907,19 +908,17 @@ export function JuradosAssignment() {
     toast.message("Enviando correos, porfavor espere...")
     try {
       setIsSubmitting(true);
-      jurados.forEach(async (j) => {
-        try {
-          await apiRequest('/certificates/juror', {
-            method: "POST",
-            body: JSON.stringify({
-              userId: j.id
-            })
-          })
-          toast.success(`Correo enviado a: ${j.email}`)
-        } catch (error) {
-          toast.error(`No se pudo enviar el correo a: ${j.email}`);
-        }
-      });
+      // ARK-170: por tandas. Todos a la vez saturan la generación de PDF y agotan el tiempo.
+      const results = await runInBatches(jurados, (j) =>
+        apiRequest('/certificates/juror', {
+          method: "POST",
+          body: JSON.stringify({ userId: j.id }),
+        })
+      );
+      const failed = batchErrors(results);
+      const sent = results.length - failed.length;
+      if (sent > 0) toast.success(`Certificados enviados: ${sent}`);
+      if (failed.length > 0) toast.error(batchFailureMessage(failed));
     } catch (error) {
       console.error(error);
       window.alert(
@@ -1092,6 +1091,18 @@ export function JuradosAssignment() {
       toast.dismiss(lid);
     }
   }
+
+  const handleDownloadJurorCert = async (jurado: Jurado) => {
+    setOpenJurorMenuId(null);
+    try {
+      await downloadCertificatePdf(
+        `/certificates/juror/${jurado.id}`,
+        `certificado-jurado-${jurado.name}.pdf`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo descargar el certificado.");
+    }
+  };
 
   const handleResendConfirmation = async (email: string) => {
     try {
@@ -1892,6 +1903,7 @@ export function JuradosAssignment() {
             onEditJuror={handleEditJuror}
             onResendConfirmation={handleResendConfirmation}
             onSendJuradoCert={handleSendJurorCert}
+            onDownloadJuradoCert={handleDownloadJurorCert}
             onRemoveTeamsFromJuror={handleRemoveTeamsFromJuror}
             onToggleJurorType={toggleJurorType}
             onDeleteJuror={handleDeleteJuror}
