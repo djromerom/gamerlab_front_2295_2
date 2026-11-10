@@ -16,6 +16,10 @@ const HomePage: React.FC = () => {
   if (userRole === "Staff") {
     return <Navigate to="/check-in-jurados" replace />;
   }
+  // HU-33: el presentador externo solo tiene su panel (el back le niega todo lo demás)
+  if (userRole === "Presentador externo") {
+    return <Navigate to="/mi-registro" replace />;
+  }
   return (
     <LayoutAplication breadcrumbs={[]}>
       <section className="flex flex-col justify-evenly items-center w-full h-full min-w-[250px]">

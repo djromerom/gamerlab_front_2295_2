@@ -133,4 +133,12 @@ describe("routes", () => {
     expect(duplicated).toEqual([]);
     expect(paths.filter((p) => p === "/materias")).toHaveLength(1);
   });
+
+  it("HU-33: la pantalla de presentadores es del administrador y /mi-registro del presentador", () => {
+    const rolesOf = (path: string) => routes.find((r) => r.path === path)?.roles;
+    expect(rolesOf("/presentadores-externos")).toEqual(["Administrador"]);
+    expect(rolesOf("/mi-registro")).toEqual(["Presentador externo"]);
+    // Entra a /inicio, que lo redirige a su panel
+    expect(rolesOf("/inicio")).toContain("Presentador externo");
+  });
 });

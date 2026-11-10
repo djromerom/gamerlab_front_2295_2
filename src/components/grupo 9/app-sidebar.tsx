@@ -23,6 +23,7 @@ import {
   UserCheck,
   Bell,
   MessageSquareHeart,
+  Presentation,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -70,6 +71,7 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },
         { name: "Asistencia de Jurados", url: "/asistencia-jurados", icon: ClipboardCheck },
         { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
+        { name: "Presentadores externos", url: "/presentadores-externos", icon: Presentation },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
         { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
         { name: "Encuesta de Jurados", url: "/encuesta-jurados", icon: MessageSquareHeart },
@@ -185,6 +187,13 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Registrar llegada", url: "/check-in-jurados", icon: QrCode },
         { name: "Asistencia de jurados", url: "/asistencia-jurados", icon: ClipboardCheck },
       ],
+    },
+  ],
+  // HU-33: solo su registro; el back le responde 403 en todo lo demás
+  "Presentador externo": [
+    {
+      title: "Feria",
+      items: [{ name: "Mi registro", url: "/mi-registro", icon: Presentation }],
     },
   ],
 };

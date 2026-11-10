@@ -29,6 +29,8 @@ import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
 import PushNotificationsPage from "@/pages/PushNotificationsPage";
 import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
+import ExternalPresentersPage from "@/pages/admin/ExternalPresentersPage";
+import MyRegistrationPage from "@/pages/external-presenter/MyRegistrationPage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -63,14 +65,7 @@ import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
 
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
 import { JuradosAssignment } from "@/pages/JuradosAssignment";
-
-type Role =
-  | "Profesor"
-  | "Administrador"
-  | "Jurado"
-  | "Consultor"
-  | "Estudiante"
-  | "Staff";
+import type { Role } from "@/types/auth";
 
 interface RouteConfig {
   path: string;
@@ -155,7 +150,16 @@ export const routes: RouteConfig[] = [
   {
     path: "/inicio",
     element: <HomePage />,
-    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado", "Staff"],
+    roles: [
+      "Profesor",
+      "Administrador",
+      "Estudiante",
+      "Consultor",
+      "Jurado",
+      "Staff",
+      // HomePage lo redirige a /mi-registro
+      "Presentador externo",
+    ],
   },
   {
     path: "/estadisticas",
@@ -196,6 +200,17 @@ export const routes: RouteConfig[] = [
     path: "/cuentas-staff",
     element: <StaffAccountsPage />,
     roles: ["Administrador"],
+  },
+  // HU-33 (ARK-195): presentadores externos
+  {
+    path: "/presentadores-externos",
+    element: <ExternalPresentersPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/mi-registro",
+    element: <MyRegistrationPage />,
+    roles: ["Presentador externo"],
   },
   {
     path: "/notas-finales",
