@@ -35,9 +35,9 @@ export async function verifyTeam(page: Page, code: string): Promise<void> {
   await expect(scoreInputs(page).first()).toBeVisible();
 }
 
-/** Casillas de puntaje de los criterios (placeholder «0 - N»). */
+/** Casillas de puntaje de los criterios (placeholder «0 - N» en la pantalla individual, «0-5» en la de lote). */
 export function scoreInputs(page: Page): Locator {
-  return page.getByPlaceholder(/^0 - \d+/);
+  return page.getByPlaceholder(/^0\s?-\s?\d+/);
 }
 
 /** Pone el mismo puntaje en todos los criterios visibles. */
