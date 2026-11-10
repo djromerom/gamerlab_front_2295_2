@@ -185,4 +185,19 @@ describe("Asistencia de jurados (HU-29)", () => {
     expect(within(table).queryAllByRole("button")).toHaveLength(0);
     expect(within(table).queryAllByRole("checkbox")).toHaveLength(0);
   });
+
+  it("en el celular no hace zoom (ARK-165): escala fija, buscador de 16 px y todo se restaura al salir", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing]));
+    const { unmount } = renderPage();
+    await flush();
+
+    const viewport = () => document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    expect(viewport()?.content).toContain("maximum-scale=1");
+    expect(document.documentElement.classList.contains("touch-manipulation")).toBe(true);
+    expect(screen.getByLabelText("Buscar jurado por nombre o apellido").className).toMatch(/(^|\s)text-base(\s|$)/);
+
+    unmount();
+    expect(viewport()?.content ?? "").not.toContain("maximum-scale");
+    expect(document.documentElement.classList.contains("touch-manipulation")).toBe(false);
+  });
 });
