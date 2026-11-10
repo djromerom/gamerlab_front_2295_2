@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const SQL_DIR = join(here, "..", "sql");
 const ENV_FILE = join(here, "..", ".env.e2e");
 
-export type SqlFile = "seed" | "cleanup" | "verify-cleanup";
+export type SqlFile = "seed" | "reset" | "cleanup" | "verify-cleanup";
 
 /** Lee e2e/.env.e2e (KEY=VALUE por línea) sin pisar variables que ya estén definidas. */
 export function loadEnv(): void {

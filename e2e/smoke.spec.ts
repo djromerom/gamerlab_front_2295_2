@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/test.ts";
 import { JUROR_A, TEAMS_OF_JUROR_A } from "./support/fixtures.ts";
 import { loginAs, openPending } from "./support/session.ts";
 
