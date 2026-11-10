@@ -52,10 +52,13 @@ interface PsqlResult {
 
 function runPsql(sql: string, tuplesOnly = false): Promise<PsqlResult> {
   const target = required("E2E_SSH_TARGET");
+  // Llave privada opcional (equivale a `ssh -i <llave>`); si no, ssh usa su configuración normal.
+  const key = process.env.E2E_SSH_KEY;
+  const keyArgs = key ? ["-i", key, "-o", "IdentitiesOnly=yes"] : [];
   return new Promise((resolve, reject) => {
     const child = spawn(
       "ssh",
-      ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", target, remoteCommand(tuplesOnly)],
+      ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", ...keyArgs, target, remoteCommand(tuplesOnly)],
       { stdio: ["pipe", "pipe", "pipe"] },
     );
     let stdout = "";
