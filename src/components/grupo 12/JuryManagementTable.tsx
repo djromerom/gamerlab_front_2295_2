@@ -26,6 +26,8 @@ import {
   confirmRemoveJurorAssignmentsText,
 } from "@/lib/workingEdition";
 import { AutomaticAssignmentModal } from "@/components/jurados-modals/AutomaticAssignmentModal";
+import { ManualAssignTeamDialog } from "./ManualAssignTeamDialog";
+import type { LevelTeam } from "./manualAssignment";
 
 export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
   //
@@ -42,29 +44,32 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [internalIsLoading, setInternalIsLoading] = useState(false); // For CRUD operations
   const [loading, setLoading] = useState(false)
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false)
-  const [teams, setTeams] = useState(null)
-  const [valueFormAssignTeam, setValueFormAssignTeam] = useState({ id: "", name: "", videogame: "" })
-  const [teamsByJuror, setTeamsByJuror] = useState([{ id: "", name: "", videogame: "" }])
-  const [valueDeleteTeam, setValueDeleteTeam] = useState({ id: "", name: "", videogame: "" })
+  // ARK-189: equipos del diálogo «Asignar equipo», con su nivel; null mientras cargan
+  const [teams, setTeams] = useState<LevelTeam[] | null>(null)
+  const [teamsByJuror, setTeamsByJuror] = useState<LevelTeam[]>([])
+  const [valueDeleteTeam, setValueDeleteTeam] = useState<LevelTeam | null>(null)
   const [searchTerm, setSearchTerm] = useState("");
   const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  useEffect(() => {
-
-    const arrayTeams = async () => {
-      try {
-        const data: any = await juryManagement.getIncompleteJurors();
-        const getTeams: [{ id: string, name: string, videogame: string }] | null = [data.map((team) => {
-          return { id: team.id, name: team.nombre, videogame: team.videojuego }
-        })]
-        setTeams(getTeams)
-      } catch (error) {
-        toast.error(error, { id: 111 })
-      }
+  const loadIncompleteTeams = async () => {
+    try {
+      setTeams(await juryManagement.getIncompleteJurors())
+    } catch (error) {
+      setTeams([])
+      toast.error(error instanceof Error && error.message ? error.message : "No se pudieron cargar los equipos.", { id: 111 })
     }
-    arrayTeams()
+  }
+
+  useEffect(() => {
+    void loadIncompleteTeams()
   }, []);
+
+  // Tras asignar: el equipo puede haber completado sus 3 jurados y cambian los conteos del jurado
+  const handleManualAssigned = () => {
+    void loadIncompleteTeams()
+    refreshData()
+  }
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isDataLoading || internalIsLoading;
 
@@ -303,85 +308,11 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       label: "Asignar equipo",
       align: "center",
       renderCell: (juror: JurorRowData) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant={"home"}
-              size="sm"
-            >
-              Asignar equipo
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Asignar equipo a {juror.firstName}
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-3 mt-2">
-              <div className="flex w-full relative">
-                <select
-                  className="
-                    w-full appearance-none rounded-lg 
-                    border border-gray-300
-                    bg-white dark:bg-transparent 
-                    text-gray-900 dark:text-gray-100
-                    px-4 py-2 pr-10 text-sm shadow-sm 
-                    transition 
-                    cursor-pointer
-                  "
-                  defaultValue={""}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    const result = teams?.[0].find(team => team.name === value);
-                    setValueFormAssignTeam(result)
-                  }}
-                >
-                  <option value="" disabled className="bg-white dark:bg-[#120e21]">
-                    Seleccione un equipo...
-                  </option>
-                  {teams ? teams[0].map((team, index) => (
-                    <option key={index} value={team.name} className="bg-white dark:bg-[#120e21]">
-                      {team.name}
-                    </option>
-                  )) || (
-                      <option value="opcion1" className="bg-white dark:bg-[#120e21]">
-                        No hay equipos
-                      </option>
-                    ) : []}
-                </select>
-                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
-                  ▼
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center w-full gap-2">
-                <Input
-                  placeholder="Nombre del videojuego"
-                  disabled
-                  value={valueFormAssignTeam?.videogame || ""}
-                />
-              </div>
-              <Button
-                variant={"home"}
-                onClick={async () => {
-                  const res = await juryManagement.manualAssignment(juror.id, valueFormAssignTeam.id)
-                  toast.message(res.message)
-                  if (res.success) {
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 500)
-                  }
-                }}
-                className="w-full"
-              >
-                Asignar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ManualAssignTeamDialog
+          juror={juror}
+          teams={teams}
+          onAssigned={handleManualAssigned}
+        />
       )
     },
     {
@@ -393,8 +324,13 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
           <DialogTrigger asChild>
             <Button
               onClick={async () => {
-                const teamsByJuror = await juryManagement.getTeamsByJuror(juror.id)
-                setTeamsByJuror(teamsByJuror)
+                setTeamsByJuror([])
+                setValueDeleteTeam(null)
+                try {
+                  setTeamsByJuror(await juryManagement.getTeamsByJuror(juror.id))
+                } catch (error) {
+                  toast.error(error instanceof Error && error.message ? error.message : "No se pudieron cargar los equipos del jurado.")
+                }
               }}
               variant={"destructive"}
               size="sm"
@@ -424,23 +360,18 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                   "
                   defaultValue={""}
                   onChange={(e) => {
-                    const value = e.target.value
-                    const result = teamsByJuror?.find(team => team.name === value);
-                    setValueDeleteTeam(result)
+                    const value = Number(e.target.value)
+                    setValueDeleteTeam(teamsByJuror.find(team => team.id === value) ?? null)
                   }}
                 >
                   <option value="" disabled className="bg-white dark:bg-[#120e21]">
                     Seleccione un equipo...
                   </option>
-                  {teamsByJuror ? teamsByJuror.map((team, index) => (
-                    <option key={index} value={team.name} className="bg-white dark:bg-[#120e21]">
-                      {team.name}
+                  {teamsByJuror.map((team) => (
+                    <option key={team.id} value={String(team.id)} className="bg-white dark:bg-[#120e21]">
+                      {`${team.name} · ${team.levelLabel}`}
                     </option>
-                  )) || (
-                      <option value="opcion1" className="bg-white dark:bg-[#120e21]">
-                        No hay equipos
-                      </option>
-                    ) : []}
+                  ))}
                 </select>
                 <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
                   ▼
@@ -456,7 +387,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               </div>
               <Button
                 variant={"destructive"}
+                disabled={!valueDeleteTeam}
                 onClick={async () => {
+                  if (!valueDeleteTeam) return
                   const res = await juryManagement.deleteAnAssignment(juror.id, valueDeleteTeam.id)
                   toast.message(res.message)
                   if (res.success) {
