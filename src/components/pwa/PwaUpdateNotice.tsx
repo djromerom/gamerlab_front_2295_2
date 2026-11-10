@@ -23,6 +23,18 @@ export default function PwaUpdateNotice() {
       installingWorker?.addEventListener("statechange", checkForWaitingWorker);
     };
 
+    const checkForUpdate = () => {
+      void registration?.update().catch((error: unknown) => {
+        console.error("No se pudo comprobar si hay una actualización de ARKAD:", error);
+      });
+    };
+
+    // La app instalada casi nunca se recarga: se revisa al volver a ella y cada hora
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkForUpdate();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     let intervalId: number | undefined;
     navigator.serviceWorker.getRegistration("/")
       .then((currentRegistration) => currentRegistration ?? navigator.serviceWorker.ready)
@@ -31,11 +43,7 @@ export default function PwaUpdateNotice() {
         registration = currentRegistration;
         checkForWaitingWorker();
         registration.addEventListener("updatefound", watchInstallingWorker);
-        intervalId = window.setInterval(() => {
-          void registration?.update().catch((error: unknown) => {
-            console.error("No se pudo comprobar si hay una actualización de ARKAD:", error);
-          });
-        }, 60 * 60 * 1000);
+        intervalId = window.setInterval(checkForUpdate, 60 * 60 * 1000);
       })
       .catch((error: unknown) => {
         console.error("No se pudo consultar la actualización de ARKAD:", error);
@@ -43,6 +51,7 @@ export default function PwaUpdateNotice() {
 
     return () => {
       active = false;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       if (intervalId !== undefined) window.clearInterval(intervalId);
       registration?.removeEventListener("updatefound", watchInstallingWorker);
       installingWorker?.removeEventListener("statechange", checkForWaitingWorker);
