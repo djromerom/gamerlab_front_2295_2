@@ -20,6 +20,7 @@ import {
   SESSION_EXPIRED_EVENT,
 } from "@/lib/session";
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
+import { clearAllBackups } from "@/lib/evaluationDrafts";
 import { unsubscribeFromPush } from "@/fetchs/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -198,6 +199,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
     stopHeartbeat();
     resetOwnTeamCacheForTests();
+    // HU-18 (BG-08): las copias locales de borradores no pasan al siguiente usuario del navegador
+    clearAllBackups();
     hasSessionRef.current = false;
     setSessionExpired(false);
 

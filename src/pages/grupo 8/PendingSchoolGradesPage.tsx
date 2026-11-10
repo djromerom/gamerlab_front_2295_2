@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { MyDraftsPanel } from "@/components/grupo 8/EvaluationDrafts";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { Button } from "@/components/ui/button";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -19,6 +20,8 @@ interface VideogameDetails {
   subject: string | null;
   description: string | null;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface PaginatedGames {
@@ -45,6 +48,8 @@ interface SearchResultItem {
   imagen?: string;
   descripcion: string;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface SearchResults {
@@ -217,6 +222,8 @@ const PendingSchoolGradesPage: React.FC = () => {
           imagen: game.imagen,
           descripcion: game.descripcion,
           isEvaluated: game.isEvaluated,
+          hasDraft: game.hasDraft,
+          draftUpdatedAt: game.draftUpdatedAt,
         }))
       : gamesData?.data.map((videogame) => ({
           id: videogame.videogameId,
@@ -230,10 +237,14 @@ const PendingSchoolGradesPage: React.FC = () => {
           imagen: videogame.logoUrl,
           descripcion: videogame.description || "Sin descripción",
           isEvaluated: videogame.isEvaluated,
+          hasDraft: videogame.hasDraft,
+          draftUpdatedAt: videogame.draftUpdatedAt,
         })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
+      {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
+      <MyDraftsPanel ratePath="/colegios-calificar" games={gamesToShow} />
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (

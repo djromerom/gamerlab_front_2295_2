@@ -26,4 +26,10 @@ Esas pantallas usan **sondeo (polling)**: `RealtimeTrackingPanel` recarga cada `
 
 ## Borradores y persistencia local
 - Registro de equipos: borrador en `sessionStorage` (BG-11).
-- Calificación por lote: los borradores se guardaban en el navegador solo en la pantalla por lote y la de colegios; **el autoguardado en servidor (HU-18, Sprint 3) y BG-27 (el progreso se pierde al recargar) siguen pendientes** según el plan.
+- **Borradores de calificación (HU-18, ARK-105; back ARK-104):** `RatePage`, `SchoolRate` y `BatchRatePage` guardan en el servidor (`/evaluation/drafts`).
+  - Al abrir: `GET /evaluation/drafts/:id` (individual) o un solo `GET /evaluation/drafts` (lote).
+  - Autoguardado (`lib/draftAutosaver.ts`, hook `useDraftAutosave`): `PUT` con el formulario completo y la `version` tras 2,5 s sin cambios; una petición a la vez por juego. Indicador «Guardando… / Guardado hace X».
+  - 409 `DRAFT_VERSION_CONFLICT`: diálogo «Cargar la versión guardada / Sobrescribir». 409 ya enviada o 403: deja de autoguardar y muestra el mensaje.
+  - `localStorage` (`evaluation-draft-<id>`) solo guarda lo que no se pudo sincronizar (sin red o 5xx); reintenta cada 15 s y al volver la red. Al abrir, gana el servidor salvo que la copia local sea más nueva. Las claves antiguas (`rate-draft-`, `batch-rate-draft-`, `school-rate-draft-`) se leen una vez y se borran.
+  - Al enviar, el back cierra el borrador; el front detiene el autoguardado y borra la copia local. Al cerrar sesión se borran todas las copias locales (BG-08).
+  - Pendientes (`/pendientes-calificar`, `/colegios-calificar`): etiqueta «Borrador · guardado hace X» con `hasDraft`/`draftUpdatedAt`, y panel «Mis borradores» (Continuar, o Descartar si ya se envió o se reasignó el grupo).

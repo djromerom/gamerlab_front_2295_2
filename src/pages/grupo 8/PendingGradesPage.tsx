@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { MyDraftsPanel } from "@/components/grupo 8/EvaluationDrafts";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,8 @@ interface VideogameDetails {
   subject: string | null;
   description: string | null;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface PaginatedGames {
@@ -53,6 +56,8 @@ interface SearchResultItem {
   imagen?: string;
   descripcion: string;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface SearchResults {
@@ -235,6 +240,8 @@ const PendingGradesPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+        {/* HU-18: la lista de borradores funciona aunque las evaluaciones estén cerradas */}
+        <MyDraftsPanel ratePath="/pendientes-calificar" />
       </LayoutAplication>
     );
   }
@@ -254,6 +261,8 @@ const PendingGradesPage: React.FC = () => {
           imagen: game.imagen,
           descripcion: game.descripcion,
           isEvaluated: game.isEvaluated,
+          hasDraft: game.hasDraft,
+          draftUpdatedAt: game.draftUpdatedAt,
         }))
       : gamesData?.data.map((videogame) => ({
           id: videogame.videogameId,
@@ -267,10 +276,14 @@ const PendingGradesPage: React.FC = () => {
           imagen: videogame.logoUrl,
           descripcion: videogame.description || "Sin descripción",
           isEvaluated: videogame.isEvaluated,
+          hasDraft: videogame.hasDraft,
+          draftUpdatedAt: videogame.draftUpdatedAt,
         })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
+      {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
+      <MyDraftsPanel ratePath="/pendientes-calificar" games={gamesToShow} />
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (

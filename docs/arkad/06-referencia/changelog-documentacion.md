@@ -2,6 +2,9 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-09: borradores de calificación en el servidor (HU-18, ARK-105)
+- `estado-auth-y-sockets`: la sección de borradores describe el autoguardado en el servidor, el respaldo local sin red, el conflicto de versión y la lista «Mis borradores». **Pendiente:** copiar el cambio a `docs/arkad/` del backend.
+
 ## 2026-11-07: etiqueta de la nota final en el front (BG-32, ARK-148)
 - `reglas-de-negocio`: dónde se aplica la etiqueta (`gradeLabel` en `src/lib/grades.ts`, panel del estudiante).
 
