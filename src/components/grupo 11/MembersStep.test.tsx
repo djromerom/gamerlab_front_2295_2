@@ -129,3 +129,142 @@ describe("MembersStep: repetir el correo sin pegar (ARK-168)", () => {
     expect(screen.queryByText(EMAIL_MISMATCH_MESSAGE)).toBeNull();
   });
 });
+
+const SUBJECT_OPTIONS = [
+  { code: "3031", subjectId: 3, subject: { id: 3, name: "Estructura de Datos I", abrevName: "EDI" }, professorName: "Ana Ruiz" },
+  { code: "3032", subjectId: 3, subject: { id: 3, name: "Estructura de Datos I", abrevName: "EDI" }, professorName: "Pedro Lara" },
+  { code: "3041", subjectId: 4, subject: { id: 4, name: "Programación Orientada a Objetos", abrevName: "POO" }, professorName: "Sofía Mejía" },
+];
+
+const member = (n: number, nrc: string[]) => ({
+  nombre: `Nombre${n}`,
+  apellido: `Apellido${n}`,
+  correo: `persona${n}@uninorte.edu.co`,
+  confirmarCorreo: `persona${n}@uninorte.edu.co`,
+  codigoEstudiantil: `20019060${n}`,
+  nrc,
+});
+
+function TeamHarness({ members }: { members: CombinedFormValues["members"] }) {
+  const methods = useForm<CombinedFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(CombinedSchema) as any,
+    defaultValues: { members },
+  });
+  return (
+    <Form {...methods}>
+      <MembersStep />
+    </Form>
+  );
+}
+
+const renderTeam = async (members: CombinedFormValues["members"]) => {
+  render(<TeamHarness members={members} />);
+  await waitFor(() => expect(screen.queryByText("Cargando NRCs...")).toBeNull());
+};
+
+const chip = (abrev: string, index = 0) => screen.getAllByRole("button", { name: abrev })[index];
+
+describe("MembersStep: materias como botones y un NRC por materia (HU-31, ARK-193)", () => {
+  beforeEach(() => {
+    vi.mocked(apiFetch).mockImplementation(async (url) =>
+      String(url).includes("/nrcs/") ? jsonResponse(SUBJECT_OPTIONS) : jsonResponse({}),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("muestra las materias como botones y ningún desplegable hasta marcar una", async () => {
+    await renderTeam([member(1, [])]);
+
+    expect(screen.getByText("¿Por qué materias participa?")).toBeTruthy();
+    expect(chip("EDI").getAttribute("aria-pressed")).toBe("false");
+    expect(chip("POO").getAttribute("title")).toBe("Programación Orientada a Objetos");
+    expect(screen.queryByText(/^NRC de/)).toBeNull();
+
+    fireEvent.click(chip("POO"));
+
+    expect(chip("POO").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("NRC de Programación Orientada a Objetos").textContent).toContain(
+      "Selecciona el NRC",
+    );
+  });
+
+  it("muestra el NRC elegido con su profesor", async () => {
+    await renderTeam([member(1, ["3032"])]);
+
+    expect(chip("EDI").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("NRC de Estructura de Datos I").textContent).toContain(
+      "3032 · Prof. Pedro Lara",
+    );
+  });
+
+  it("sin materias pide marcar una y no avanza", async () => {
+    await renderTeam([member(1, [])]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText("Marca al menos una materia y elige su NRC")).toBeTruthy();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("una materia marcada sin NRC pide su NRC y no avanza", async () => {
+    await renderTeam([member(1, ["3031"])]);
+    fireEvent.click(chip("POO"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText("Elige el NRC de Programación Orientada a Objetos")).toBeTruthy();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("al desmarcar una materia se quita su NRC", async () => {
+    await renderTeam([member(1, ["3031", "3041"])]);
+
+    fireEvent.click(chip("POO"));
+
+    expect(chip("POO").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByLabelText("NRC de Programación Orientada a Objetos")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    await waitFor(() => expect(next).toHaveBeenCalledTimes(1));
+  });
+
+  it.each([
+    ["1 materia, 1 integrante", [member(1, ["3031"])]],
+    ["2 materias, 1 integrante", [member(1, ["3031", "3041"])]],
+    [
+      "2 materias, 5 integrantes con NRC distintos",
+      [
+        member(1, ["3031", "3041"]),
+        member(2, ["3032", "3041"]),
+        member(3, ["3031"]),
+        member(4, ["3041"]),
+        member(5, ["3032", "3041"]),
+      ],
+    ],
+  ])("avanza con %s", async (_label, members) => {
+    await renderTeam(members);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    await waitFor(() => expect(next).toHaveBeenCalledTimes(1));
+    // Con 5 integrantes ya no se pueden agregar más
+    if (members.length === 5) expect(screen.queryByRole("button", { name: /Agregar integrante/ })).toBeNull();
+  });
+
+  it("copia las materias y NRC del integrante anterior", async () => {
+    await renderTeam([member(1, ["3032", "3041"]), member(2, [])]);
+
+    expect(chip("EDI", 1).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Copiar del integrante anterior" }));
+
+    expect(chip("EDI", 1).getAttribute("aria-pressed")).toBe("true");
+    expect(chip("POO", 1).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByLabelText("NRC de Estructura de Datos I")[1].textContent).toContain(
+      "3032 · Prof. Pedro Lara",
+    );
+  });
+});
