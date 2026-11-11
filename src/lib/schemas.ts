@@ -34,7 +34,7 @@ export const MemberSchema = z.object({
     .regex(/^\d+$/, { message: "El código estudiantil solo puede tener números" }),
   nrc: z
     .array(z.string())
-    .min(1, { message: "Debe seleccionar al menos un NRC" }),
+    .min(1, { message: "Marca al menos una materia y elige su NRC" }),
 });
 
 /**
