@@ -20,6 +20,36 @@ describe("materias y NRC del registro (HU-31, ARK-193)", () => {
     ]);
   });
 
+  it("distingue dos materias con la misma abreviatura sin depender del cursor", () => {
+    const options = [
+      { code: 3011, subjectId: 2, subject: { id: 2, name: "Algoritmia y Programación I", abrevName: "AYP" } },
+      { code: 3012, subjectId: 2, subject: { id: 2, name: "Algoritmia y Programación I", abrevName: "AYP" } },
+      { code: 3021, subjectId: 3, subject: { id: 3, name: "Algoritmia y Programación II", abrevName: "AYP" } },
+      { code: 3022, subjectId: 3, subject: { id: 3, name: "Algoritmia y Programación II", abrevName: "AYP" } },
+      OPTIONS[2],
+    ];
+    expect(subjectsFromOptions(options).map((s) => s.abrevName)).toEqual([
+      "AYP · I",
+      "AYP · II",
+      "POO",
+    ]);
+  });
+
+  it("usa el nombre completo si la última palabra no basta, y el id si el nombre también se repite", () => {
+    const sameEnding = subjectsFromOptions([
+      { code: 1, subjectId: 1, subject: { id: 1, name: "Cálculo de Ingeniería", abrevName: "CAL" } },
+      { code: 2, subjectId: 2, subject: { id: 2, name: "Química de Ingeniería", abrevName: "CAL" } },
+    ]);
+    expect(sameEnding.map((s) => s.abrevName)).toEqual(["Cálculo de Ingeniería", "Química de Ingeniería"]);
+
+    const sameName = subjectsFromOptions([
+      { code: 1, subjectId: 1, subject: { id: 1, name: "Física I", abrevName: "FIS" } },
+      { code: 2, subjectId: 2, subject: { id: 2, name: "Física I", abrevName: "FIS" } },
+    ]);
+    expect(sameName.map((s) => s.abrevName)).toEqual(["Física I (1)", "Física I (2)"]);
+    expect(new Set(sameName.map((s) => s.abrevName)).size).toBe(2);
+  });
+
   it("muestra el NRC con su profesor", () => {
     expect(nrcOptionText(OPTIONS[0])).toBe("3031 · Prof. Ana Ruiz");
     expect(nrcOptionText(OPTIONS[2])).toBe("3041");
