@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-10: limpieza de variables, secretos y código muerto (TA-18, ARK-175)
+- [riesgos-y-deuda](../04-devops/riesgos-y-deuda.md), [pipeline-y-despliegue](../04-devops/pipeline-y-despliegue.md), [runbook-incidentes](../04-devops/runbook-incidentes.md) y [checklist-traspaso-v5](../05-scrum-y-proceso/checklist-traspaso-v5.md): los `main.yml` legados de los receptores están deshabilitados (falta eliminarlos); el receptor del back es `openlabun/Arkad-Api` (antes «repo openlab»); dependencias retiradas y secretos de GitHub borrados.
+- [variables-y-accesos](../04-devops/variables-y-accesos.md) e [integraciones](../02-backend/integraciones.md): secretos que quedan en `Arkad-Api` y retiro de `AZURE_BLOB_SAS_URL` del `.env` de test y prod.
+- [endpoints](../02-backend/endpoints.md) y [arquitectura-modulos](../02-backend/arquitectura-modulos.md): `/teams/:teamId/members` no existe en la API (`MembersModule` no está montado).
+
 ## 2026-11-09: borradores de calificación en el servidor (HU-18, ARK-105)
 - `estado-auth-y-sockets`: la sección de borradores describe el autoguardado en el servidor, el respaldo local sin red, el conflicto de versión y la lista «Mis borradores». **Pendiente:** copiar el cambio a `docs/arkad/` del backend.
 
