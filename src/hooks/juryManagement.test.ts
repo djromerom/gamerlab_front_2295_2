@@ -50,6 +50,109 @@ describe("juryManagement.getAllJuries (buscador de Personal → Jurados)", () =>
   });
 });
 
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+
+describe("juryManagement: asignación manual con nivel (ARK-189)", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("getIncompleteJurors devuelve cada equipo con su nivel", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json([
+        {
+          id: 500,
+          nombre: "Equipo Epsilon Mock",
+          teamCode: "N0-ABC-001",
+          nivel: 0,
+          nivelEtiqueta: "Colegios",
+          videojuego: "Juego Epsilon",
+          cantidadJurados: 0,
+        },
+      ]),
+    );
+
+    expect(await juryManagement.getIncompleteJurors()).toEqual([
+      {
+        id: 500,
+        name: "Equipo Epsilon Mock",
+        videogame: "Juego Epsilon",
+        teamCode: "N0-ABC-001",
+        level: 0,
+        levelLabel: "Colegios",
+        jurorCount: 0,
+      },
+    ]);
+    expect(String(vi.mocked(apiFetch).mock.calls[0][0])).toBe("http://api.test/teams/incomplete-jurors");
+  });
+
+  it("getTeamsByJuror trae el nivel y lee el videojuego como objeto", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json([
+        {
+          id: 400,
+          nombre: "Equipo Delta Mock",
+          teamCode: "N2-ABC-201",
+          nivel: 2,
+          nivelEtiqueta: "Nivel 2",
+          videojuego: { id: 9, nombre: "Juego Delta", descripcion: "" },
+          cantidadJurados: 1,
+        },
+      ]),
+    );
+
+    const [team] = await juryManagement.getTeamsByJuror("j-1");
+
+    expect(team).toMatchObject({ id: 400, name: "Equipo Delta Mock", videogame: "Juego Delta", level: 2, levelLabel: "Nivel 2" });
+    expect(String(vi.mocked(apiFetch).mock.calls[0][0])).toBe("http://api.test/juror/j-1/teams");
+  });
+
+  it("getTeamsByJuror propaga el mensaje del back (p. ej. 400 con un profesor)", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "El usuario no es un jurado." }, 400));
+
+    await expect(juryManagement.getTeamsByJuror("p-1")).rejects.toThrow("El usuario no es un jurado.");
+  });
+
+  it("manualAssignment sin confirmar no envía confirmWarnings", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ ok: true }, 201));
+
+    expect(await juryManagement.manualAssignment("j-1", 400)).toEqual({ success: true, message: "Asignación exitosa" });
+    expect(JSON.parse(vi.mocked(apiFetch).mock.calls[0][1].body as string)).toEqual({ jurorId: "j-1", teamId: 400 });
+  });
+
+  it("manualAssignment al confirmar envía confirmWarnings: true", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ ok: true }, 201));
+
+    await juryManagement.manualAssignment("j-1", 400, true);
+
+    expect(JSON.parse(vi.mocked(apiFetch).mock.calls[0][1].body as string)).toEqual({
+      jurorId: "j-1",
+      teamId: 400,
+      confirmWarnings: true,
+    });
+  });
+
+  it("manualAssignment devuelve las advertencias de un 409 ASSIGNMENT_WARNINGS", async () => {
+    const warning = { code: "JUROR_MIXED_LEVELS", message: "Distintos niveles", jurorId: "j-1" };
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json({ code: "ASSIGNMENT_WARNINGS", message: "La asignación rompe reglas.", warnings: [warning] }, 409),
+    );
+
+    expect(await juryManagement.manualAssignment("j-1", 400)).toEqual({
+      success: false,
+      message: "La asignación rompe reglas.",
+      warnings: [warning],
+    });
+  });
+
+  it("manualAssignment con un bloqueo devuelve el mensaje sin advertencias", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "El jurado ya está asignado a este equipo." }, 409));
+
+    expect(await juryManagement.manualAssignment("j-1", 400)).toEqual({
+      success: false,
+      message: "El jurado ya está asignado a este equipo.",
+    });
+  });
+});
+
 describe("juryManagement: quitar todas las asignaciones (ARK-133)", () => {
   beforeEach(() => vi.mocked(apiFetch).mockReset());
 

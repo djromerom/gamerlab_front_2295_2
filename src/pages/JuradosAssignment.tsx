@@ -2,6 +2,8 @@
 
 
 import { apiFetch } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
+import { batchErrors, batchFailureMessage, downloadCertificatePdf, runInBatches } from "@/lib/certificates";
 import { useEffect, useMemo, useState } from "react";
 import {
   Users,
@@ -508,9 +510,18 @@ export function JuradosAssignment() {
       const [jurorsResponse, teamsResponse, meResponse] = await Promise.all([
         // ARK-140: solo los jurados de la edición activa (HU-25: Confirmados y profesores
         // con NRC activo), con su tipo Oficial/Suplente de la edición. Los líderes de los
-        // equipos llegan en `lider` del seguimiento. limit=300: hotfix de main (paginación).
-        apiRequest<any>("/juror?includeInactive=false&limit=300&page=1&participating=true", {
-          method: "GET",
+        // equipos llegan en `lider` del seguimiento.
+        // ARK-156: se recorren las páginas; el backend acepta máximo 100 por página y la
+        // edición puede tener más jurados.
+        fetchAllPages(async (page, limit) => {
+          const response = await apiRequest<any>(
+            `/juror?includeInactive=false&limit=${limit}&page=${page}&participating=true`,
+            { method: "GET" }
+          );
+          return {
+            items: extractArray(response),
+            totalPages: safeNumber(response?.metadata?.totalPages, 1),
+          };
         }),
         apiRequest<any>("/juror/evaluation-tracking", {
           method: "GET",
@@ -518,7 +529,7 @@ export function JuradosAssignment() {
         apiRequest<any>("/auth/me", { method: "GET" }).catch(() => null),
       ]);
 
-      const incomingJurors = extractArray(jurorsResponse).map((raw) =>
+      const incomingJurors = jurorsResponse.map((raw) =>
         mapJurorFromApi(raw, jurados)
       );
 
@@ -897,19 +908,17 @@ export function JuradosAssignment() {
     toast.message("Enviando correos, porfavor espere...")
     try {
       setIsSubmitting(true);
-      jurados.forEach(async (j) => {
-        try {
-          await apiRequest('/certificates/juror', {
-            method: "POST",
-            body: JSON.stringify({
-              userId: j.id
-            })
-          })
-          toast.success(`Correo enviado a: ${j.email}`)
-        } catch (error) {
-          toast.error(`No se pudo enviar el correo a: ${j.email}`);
-        }
-      });
+      // ARK-170: por tandas. Todos a la vez saturan la generación de PDF y agotan el tiempo.
+      const results = await runInBatches(jurados, (j) =>
+        apiRequest('/certificates/juror', {
+          method: "POST",
+          body: JSON.stringify({ userId: j.id }),
+        })
+      );
+      const failed = batchErrors(results);
+      const sent = results.length - failed.length;
+      if (sent > 0) toast.success(`Certificados enviados: ${sent}`);
+      if (failed.length > 0) toast.error(batchFailureMessage(failed));
     } catch (error) {
       console.error(error);
       window.alert(
@@ -1082,6 +1091,18 @@ export function JuradosAssignment() {
       toast.dismiss(lid);
     }
   }
+
+  const handleDownloadJurorCert = async (jurado: Jurado) => {
+    setOpenJurorMenuId(null);
+    try {
+      await downloadCertificatePdf(
+        `/certificates/juror/${jurado.id}`,
+        `certificado-jurado-${jurado.name}.pdf`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo descargar el certificado.");
+    }
+  };
 
   const handleResendConfirmation = async (email: string) => {
     try {
@@ -1882,6 +1903,7 @@ export function JuradosAssignment() {
             onEditJuror={handleEditJuror}
             onResendConfirmation={handleResendConfirmation}
             onSendJuradoCert={handleSendJurorCert}
+            onDownloadJuradoCert={handleDownloadJurorCert}
             onRemoveTeamsFromJuror={handleRemoveTeamsFromJuror}
             onToggleJurorType={toggleJurorType}
             onDeleteJuror={handleDeleteJuror}

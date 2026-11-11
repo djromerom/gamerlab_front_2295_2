@@ -1,12 +1,13 @@
 import { apiFetch } from "@/lib/api";
-import { PaginatedJurors } from "@/components/grupo 12/utils";
+import { fetchAllPages } from "@/lib/pagination";
+import { PaginatedJurors, getApiErrorMessage } from "@/components/grupo 12/utils";
+import { type LevelTeam, toLevelTeam } from "@/components/grupo 12/manualAssignment";
+import { type AssignmentWarning, getAssignmentWarnings } from "@/lib/assignmentWarnings";
 import { toast } from "sonner";
 
 const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/juror`;
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const includeInactive = false;
-// Tope de `limit` que acepta el backend en GET /juror (MAX_PAGE_LIMIT).
-const MAX_PAGE_LIMIT = 100;
 
 export const juryManagement = {
     getJuries : async (page: number, limit: number) => {
@@ -34,12 +35,10 @@ export const juryManagement = {
 
     // Trae todos los jurados recorriendo las páginas, porque el backend no acepta más de 100 por página.
     getAllJuries: async () => {
-        const all: PaginatedJurors["data"] = [];
-        for (let page = 1; ; page++) {
-            const { data, metadata } = await juryManagement.getJuries(page, MAX_PAGE_LIMIT);
-            all.push(...data);
-            if (data.length === 0 || page >= metadata.totalPages) return all;
-        }
+        return fetchAllPages<PaginatedJurors["data"][number]>(async (page, limit) => {
+            const { data, metadata } = await juryManagement.getJuries(page, limit);
+            return { items: data, totalPages: metadata.totalPages };
+        });
     },
 
     getTeams: async () => {
@@ -59,61 +58,61 @@ export const juryManagement = {
         }
     },
 
-    getTeamsByJuror: async (jurorId) => {
-        try {
-            const res = await apiFetch(`${API_ENDPOINT}/${jurorId}/teams`, {
-                method: 'GET',
-                credentials: "include",
-                headers: { "Content-Type": "application/json" }
-            })
-            const data = await res.json()
-            if (!res.ok) {
-                throw new Error(data.message)
-            }
-            const getTeams:[[{ id: string, name:string, videogame: string }]] | null  = [data.map((team) => {
-            return { id: team.id, name: team.nombre, videogame: team.videojuego.nombre }
-            })]
-
-            const getListTeams = getTeams[0]
-            return getListTeams
-            }catch (error) {
-                throw new Error(error)
+    // ARK-189: cada equipo trae su nivel (ARK-188), ordenados por nivel y nombre
+    getTeamsByJuror: async (jurorId: string): Promise<LevelTeam[]> => {
+        const res = await apiFetch(`${API_ENDPOINT}/${jurorId}/teams`, {
+            method: 'GET',
+            credentials: "include",
+            headers: { "Content-Type": "application/json" }
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+            throw new Error(data?.message || `Error ${res.status}: no se pudieron cargar los equipos del jurado`)
         }
+        return Array.isArray(data) ? data.map(toLevelTeam) : []
     },
 
-    getIncompleteJurors: async () => {
-        try {
-            const res = await apiFetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
-                method: 'GET',
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-            })
-            const data = await res.json()
-            if (!res.ok) {
-                throw new Error(data.message)
-            }
-            return data
-            }catch (error) {
-                throw new Error(error)
+    // Equipos confirmados de la edición activa con menos de 3 jurados, con su nivel (ARK-188)
+    getIncompleteJurors: async (): Promise<LevelTeam[]> => {
+        const res = await apiFetch(`${API_BASE_URL}/teams/incomplete-jurors`, {
+            method: 'GET',
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+            throw new Error(data?.message || `Error ${res.status}: no se pudieron cargar los equipos`)
         }
+        return Array.isArray(data) ? data.map(toLevelTeam) : []
     },
 
     // La asignación automática (HU-07) vive en `@/fetchs/automaticAssignment` (vista previa + confirmar).
 
-    manualAssignment: async (jurorId, teamId) => {
+    // HU-08: si rompe reglas, el back responde 409 ASSIGNMENT_WARNINGS sin guardar nada;
+    // se devuelven las advertencias para repetir la petición con `confirmWarnings: true`.
+    manualAssignment: async (
+        jurorId: string,
+        teamId: number,
+        confirmWarnings = false
+    ): Promise<{ success: boolean; message: string; warnings?: AssignmentWarning[] }> => {
         const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'POST',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({jurorId: jurorId, teamId: teamId})
+            body: JSON.stringify({
+                jurorId: jurorId,
+                teamId: teamId,
+                ...(confirmWarnings && { confirmWarnings: true }),
+            })
         })
-        const data = await res.json()
+        const data = await res.json().catch(() => null)
 
         if (!res.ok) {
-            return {
-                success: false,
-                message: data.message
-            }
+            const message = getApiErrorMessage(data, 'No se pudo asignar el equipo.')
+            const warnings = getAssignmentWarnings(res.status, data)
+            return warnings
+                ? { success: false, message, warnings }
+                : { success: false, message }
         }
         return {
             success: true,

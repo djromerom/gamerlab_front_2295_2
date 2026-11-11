@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api';
+import { bogotaToISO, isoToBogotaDate, isoToBogotaTime } from '@/lib/editionDate';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';
 
@@ -69,36 +70,26 @@ export interface PaginatedResult<T> {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Combina una fecha (YYYY-MM-DD) y una hora (HH:mm) en un string ISO 8601.
- * Ejemplo: buildISODateTime("2024-11-27", "08:30") → "2024-11-27T08:30:00.000Z"
+ * Combina una fecha (YYYY-MM-DD) y una hora (HH:mm) de Bogotá en un string ISO 8601 (UTC).
+ * Ejemplo: buildISODateTime("2024-11-27", "08:30") → "2024-11-27T13:30:00.000Z"
+ * No depende de la zona horaria del navegador (ARK-157).
  */
 export function buildISODateTime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00`).toISOString();
+  return bogotaToISO(date, time);
 }
 
 /**
- * Extrae la parte de fecha (YYYY-MM-DD) de un string ISO interpretado en hora local.
+ * Extrae la parte de fecha (YYYY-MM-DD) de un string ISO, en hora de Bogotá.
  */
 export function isoToDate(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso.substring(0, 10);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return isoToBogotaDate(iso);
 }
 
 /**
- * Extrae la parte de hora (HH:mm) de un string ISO interpretado en hora local.
+ * Extrae la parte de hora (HH:mm) de un string ISO, en hora de Bogotá.
  */
 export function isoToTime(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso.substring(11, 16);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
+  return isoToBogotaTime(iso);
 }
 
 /**

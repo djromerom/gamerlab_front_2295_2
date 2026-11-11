@@ -9,10 +9,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DraftConflictDialog,
+  DraftSaveIndicator,
+} from "@/components/grupo 8/EvaluationDrafts";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
 import { useCriteria } from "@/hooks/use-criteria";
+import {
+  loadInitialDrafts,
+  useDraftAutosave,
+  type LoadedDraft,
+} from "@/hooks/useDraftAutosave";
 import { useTeamVerification } from "@/hooks/useTeamVerification";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
+import { fromServerDraft, type DraftForm } from "@/lib/evaluationDrafts";
 import { ArrowLeft, CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -52,6 +63,8 @@ export default function BatchRatePage() {
   const fromPage = (location.state?.from || "jurado") as string;
   const { userRole } = useAuth();
   const backRoute = getBatchBackRoute(fromPage, userRole);
+  // HU-17: sube con cada envío exitoso para volver a consultar la encuesta
+  const [surveyCheck, setSurveyCheck] = useState(0);
 
   const { criteria: apiCriteria, isLoading: isLoadingCriteria } = useCriteria();
   // HU-19: cada grupo del lote se verifica con su código antes de calificarlo
@@ -82,23 +95,6 @@ export default function BatchRatePage() {
     return `${parts[0]}.${parts.slice(1).join("")}`;
   };
 
-  const saveDraft = (
-    gameId: number,
-    scores: {
-      comments: string;
-      details: { criterionId: number; score: string }[];
-    },
-  ) => {
-    try {
-      localStorage.setItem(
-        `batch-rate-draft-${gameId}`,
-        JSON.stringify({ scores }),
-      );
-    } catch (e) {
-      // Ignorar
-    }
-  };
-
   useEffect(() => {
     if (!games || games.length === 0) {
       toast.error("No hay juegos seleccionados");
@@ -106,53 +102,90 @@ export default function BatchRatePage() {
     }
   }, [games, navigate, backRoute]);
 
-  // Inicializar scores: merge entre localStorage y defaults
+  // HU-18: borradores en el servidor; un autoguardado por juego
+  const drafts = useDraftAutosave();
+  const [draftsReady, setDraftsReady] = useState(false);
+  const lastDraftKeys = useRef(new Map<number, string>());
+
+  const toGameScore = (form: DraftForm | null): GameScores[number] => ({
+    comments: form?.comments ?? "",
+    details: apiCriteria.map((c) => ({
+      criterionId: c.id,
+      score: form?.scores[c.id] ?? "",
+    })),
+  });
+
+  const toForm = (scoreData: GameScores[number]): DraftForm => ({
+    comments: scoreData.comments,
+    scores: Object.fromEntries(
+      scoreData.details
+        .filter((d) => d.score !== "")
+        .map((d) => [d.criterionId, d.score]),
+    ),
+  });
+
+  // Inicializar scores: borradores del servidor (o la copia local sin sincronizar)
   useEffect(() => {
     if (apiCriteria.length === 0 || games.length === 0) return;
+    let cancelled = false;
+    setDraftsReady(false);
 
-    const initial: GameScores = {};
-    let hasDraft = false;
-
-    games.forEach((game) => {
-      let savedData: {
-        comments: string;
-        details: { criterionId: number; score: string }[];
-      } | null = null;
-      try {
-        const saved = localStorage.getItem(`batch-rate-draft-${game.id}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (
-            parsed.scores?.comments !== undefined &&
-            Array.isArray(parsed.scores?.details)
-          ) {
-            savedData = parsed.scores;
-            hasDraft = true;
-          }
+    loadInitialDrafts(games.map((game) => game.id))
+      .catch(() => new Map<number, LoadedDraft>())
+      .then((loaded) => {
+        if (cancelled) return;
+        const initial: GameScores = {};
+        let recovered = 0;
+        games.forEach((game) => {
+          const draft = loaded.get(game.id);
+          initial[game.id] = toGameScore(draft?.form ?? null);
+          lastDraftKeys.current.set(game.id, JSON.stringify(toForm(initial[game.id])));
+          drafts.start(game.id, draft ?? { version: 0, form: null, needsSync: false });
+          if (draft?.form) recovered += 1;
+        });
+        setGameScores(initial);
+        setDraftsReady(true);
+        if (recovered > 0) {
+          toast.info(
+            recovered === 1 ? "Borrador recuperado" : `${recovered} borradores recuperados`,
+            { duration: 2000 },
+          );
         }
-      } catch (e) {
-        /* Ignorar */
-      }
-
-      if (savedData) {
-        initial[game.id] = savedData;
-      } else {
-        initial[game.id] = {
-          comments: "",
-          details: apiCriteria.map((c) => ({
-            criterionId: c.id,
-            score: "",
-          })),
-        };
-      }
-    });
-
-    setGameScores(initial);
-    if (hasDraft) {
-      toast.info("Borradores recuperados", { duration: 2000 });
-    }
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiCriteria, games.length]);
+
+  // Autoguardado: solo los juegos que cambiaron mandan su PUT
+  useEffect(() => {
+    if (!draftsReady) return;
+    for (const game of games) {
+      const scoreData = gameScores[game.id];
+      if (!scoreData) continue;
+      const form = toForm(scoreData);
+      const key = JSON.stringify(form);
+      if (lastDraftKeys.current.get(game.id) === key) continue;
+      lastDraftKeys.current.set(game.id, key);
+      drafts.schedule(game.id, form);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameScores, draftsReady]);
+
+  // Si dos juegos chocan a la vez, se resuelve uno y luego el otro
+  const conflictGame = games.find((game) => drafts.stateOf(game.id).status === "conflict");
+
+  const handleConflict = (choice: "overwrite" | "load") => {
+    if (!conflictGame) return;
+    const remote = drafts.resolveConflict(conflictGame.id, choice);
+    if (choice === "load" && remote) {
+      const scoreData = toGameScore(fromServerDraft(remote));
+      lastDraftKeys.current.set(conflictGame.id, JSON.stringify(toForm(scoreData)));
+      setGameScores((prev) => ({ ...prev, [conflictGame.id]: scoreData }));
+      toast.info(`Se cargó la versión guardada de "${conflictGame.nombre}"`, { duration: 2000 });
+    }
+  };
 
   const parseScoreValue = (value: string, maxScore: number): number | null => {
     const raw = (value || "").toString().trim();
@@ -185,9 +218,7 @@ export default function BatchRatePage() {
         return { ...d, score: sanitized };
       });
 
-      const updated = { ...prev, [gameId]: { ...currentGame, details } };
-      saveDraft(gameId, updated[gameId]);
-      return updated;
+      return { ...prev, [gameId]: { ...currentGame, details } };
     });
   };
 
@@ -197,12 +228,10 @@ export default function BatchRatePage() {
         comments: "",
         details: apiCriteria.map((c) => ({ criterionId: c.id, score: "" })),
       };
-      const updated = {
+      return {
         ...prev,
         [gameId]: { ...currentGame, comments: value },
       };
-      saveDraft(gameId, updated[gameId]);
-      return updated;
     });
   };
 
@@ -294,19 +323,16 @@ export default function BatchRatePage() {
 
       setResult(data.results);
       pendingSubmission.current = null;
-      data.results.successful.forEach(
-        (item: { videogameId: number }) => {
-          try {
-            localStorage.removeItem(`batch-rate-draft-${item.videogameId}`);
-          } catch {
-            // Ignore storage failures; the in-memory form remains available.
-          }
-        },
+      // HU-18: el back cierra el borrador de cada juego enviado; aquí se detiene su autoguardado
+      data.results.successful.forEach((item: { videogameId: number }) =>
+        drafts.stop(item.videogameId),
       );
 
       toast.success(
         `${data.results.successful.length} evaluaciones guardadas correctamente`,
       );
+      // HU-17: si con este lote terminó de evaluar, se abre la encuesta
+      if (data.results.successful.length > 0) setSurveyCheck((n) => n + 1);
 
       if (data.results.failed.length > 0) {
         toast.error(`${data.results.failed.length} evaluaciones fallaron`);
@@ -347,11 +373,13 @@ export default function BatchRatePage() {
     };
   };
 
-  if (!currentGame) {
+  if (!currentGame || (apiCriteria.length > 0 && !draftsReady)) {
     return (
       <LayoutAplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-64">
-          <p className="text-lg">Cargando...</p>
+          <p className="text-lg">
+            {currentGame ? "Cargando borradores..." : "Cargando..."}
+          </p>
         </div>
       </LayoutAplication>
     );
@@ -380,6 +408,8 @@ export default function BatchRatePage() {
           Asigna puntajes a cada videojuego. Usa las pestañas para navegar entre
           ellos.
         </p>
+
+        <JurorSurveyAccess checkSignal={surveyCheck} className="mb-4 md:mb-6" />
 
         {result ? (
           <Card className="mb-6 py-6">
@@ -604,9 +634,24 @@ export default function BatchRatePage() {
                     placeholder="Comentarios para este videojuego..."
                   />
                 </div>
+                <div className="mt-3 min-h-4">
+                  <DraftSaveIndicator state={drafts.stateOf(currentGame.id)} />
+                </div>
               </CardContent>
               )}
             </Card>
+
+            <DraftConflictDialog
+              open={Boolean(conflictGame)}
+              gameName={conflictGame?.nombre}
+              remote={
+                conflictGame
+                  ? drafts.stateOf(conflictGame.id).conflictDraft
+                  : null
+              }
+              onLoad={() => handleConflict("load")}
+              onOverwrite={() => handleConflict("overwrite")}
+            />
 
             {/* Botones */}
             <div className="flex flex-col-reverse md:flex-row justify-end gap-3 md:gap-4 mt-4 md:mt-6">

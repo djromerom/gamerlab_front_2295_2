@@ -20,6 +20,13 @@ vi.mock("@/components/grupo 9/app-sidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 
+// HU-35: la categoría depende del rol de quien mira
+const auth = vi.hoisted(() => ({ userRole: "Administrador" as string | null }));
+vi.mock("@/contexts/AuthContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/contexts/AuthContext")>()),
+  useAuth: () => ({ userRole: auth.userRole }),
+}));
+
 const missing: JurorAttendanceItem = {
   jurorId: "j-1",
   name: "Luis Gómez",
@@ -76,6 +83,7 @@ describe("Asistencia de jurados (HU-29)", () => {
     }));
     vi.useFakeTimers({ shouldAdvanceTime: true });
     fetchJurorAttendance.mockReset();
+    auth.userRole = "Administrador";
   });
 
   afterEach(() => {
@@ -105,6 +113,18 @@ describe("Asistencia de jurados (HU-29)", () => {
     expect(ana.getByText("Presente")).toBeTruthy();
     expect(ana.getAllByText(/8:05/).length).toBeGreaterThan(0);
     expect(ana.getAllByText(/Staff Mesa 1/).length).toBeGreaterThan(0);
+  });
+
+  it("el Staff ve solo «Jurado», sin junior ni senior (HU-35)", async () => {
+    auth.userRole = "Staff";
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing, present]));
+    const { container } = renderPage();
+    await flush();
+
+    const rows = screen.getAllByRole("row");
+    expect(within(rows[1]).getByText("Jurado · Sin escarapela")).toBeTruthy();
+    expect(within(rows[2]).getByText("Jurado · Profesor")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/junior|senior/i);
   });
 
   it("filtrar por estado pide ese estado desde la página 1", async () => {
@@ -184,5 +204,20 @@ describe("Asistencia de jurados (HU-29)", () => {
     const table = screen.getByRole("table");
     expect(within(table).queryAllByRole("button")).toHaveLength(0);
     expect(within(table).queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("en el celular no hace zoom (ARK-165): escala fija, buscador de 16 px y todo se restaura al salir", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing]));
+    const { unmount } = renderPage();
+    await flush();
+
+    const viewport = () => document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    expect(viewport()?.content).toContain("maximum-scale=1");
+    expect(document.documentElement.classList.contains("touch-manipulation")).toBe(true);
+    expect(screen.getByLabelText("Buscar jurado por nombre o apellido").className).toMatch(/(^|\s)text-base(\s|$)/);
+
+    unmount();
+    expect(viewport()?.content ?? "").not.toContain("maximum-scale");
+    expect(document.documentElement.classList.contains("touch-manipulation")).toBe(false);
   });
 });

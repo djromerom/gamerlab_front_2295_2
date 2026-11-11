@@ -7,12 +7,19 @@ import lightLogo from "@/assets/Arkad Light.svg";
 import TeamCode from "@/components/grupo 5/TeamCode";
 import VerificationCode from "@/components/grupo 5/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
+import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
+import { PwaInstallNotice } from "@/components/pwa/PwaInstallNotice";
 import { Navigate } from "react-router-dom";
 
 const HomePage: React.FC = () => {
   const { user, userRole } = useAuth();
   if (userRole === "Staff") {
     return <Navigate to="/check-in-jurados" replace />;
+  }
+  // HU-33: el presentador externo solo tiene su panel (el back le niega todo lo demás)
+  if (userRole === "Presentador externo") {
+    return <Navigate to="/mi-registro" replace />;
   }
   return (
     <LayoutAplication breadcrumbs={[]}>
@@ -39,6 +46,15 @@ const HomePage: React.FC = () => {
             <p className="mx-auto max-w-[700px] text-foreground md:text-xl">
               Estamos encantados de tenerte, {user?.firstName}
             </p>
+            <JurorPresenceNotice className="mx-auto max-w-[700px] text-left" />
+            {/* ARK-198: invitar al jurado a instalar ARKAD en el celular */}
+            {userRole === "Jurado" && (
+              <PwaInstallNotice className="mx-auto w-full max-w-[700px] text-left" />
+            )}
+            {/* HU-17: acceso a la encuesta mientras el jurado no la haya respondido */}
+            {(userRole === "Jurado" || userRole === "Profesor") && (
+              <JurorSurveyAccess className="mx-auto w-full max-w-[700px] text-left" />
+            )}
           </div>
         </section>
         <section className="flex flex-col md:flex-row items-center gap-10 space-y-4">

@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
+import { useAuth } from "@/contexts/AuthContext";
+import { jurorCategoryForViewer } from "@/lib/jurorLabel";
 import {
   checkInJurorManually,
   scanJurorBadge,
@@ -28,6 +31,10 @@ const formatTime = (iso: string) =>
   }).format(new Date(iso));
 
 const JurorCheckInPage = () => {
+  useLockViewportZoom();
+  // HU-35: el registro se hace frente al jurado; el Staff ve solo «Jurado», el administrador la categoría
+  const { userRole } = useAuth();
+  const categoryLabel = (category: string) => jurorCategoryForViewer(category, userRole);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerRunningRef = useRef(false);
   const lastTokenRef = useRef("");
@@ -157,7 +164,7 @@ const JurorCheckInPage = () => {
         )}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><QrCode /> Escanear QR</CardTitle>
             </CardHeader>
@@ -172,12 +179,13 @@ const JurorCheckInPage = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Search /> Registro manual</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre (mínimo 2 letras)" />
+              {/* 16 px o más: con menos, iOS hace zoom al enfocar el campo */}
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre (mínimo 2 letras)" className="text-base" />
               {searching && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" /> Buscando...</div>}
               {!searching && query.trim().length >= 2 && searchResults.length === 0 && (
                 <p className="text-sm text-muted-foreground">No se encontraron jurados.</p>
@@ -185,13 +193,13 @@ const JurorCheckInPage = () => {
               <div className="space-y-2">
                 {searchResults.map((juror) => (
                   <button key={juror.id} type="button" onClick={() => void registerManually(juror)} disabled={processing}
-                    className="w-full rounded-md border p-3 text-left hover:bg-accent disabled:opacity-50">
+                    className="w-full touch-manipulation rounded-md border p-3 text-left hover:bg-accent disabled:opacity-50">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{juror.name}</span>
+                      <span className="min-w-0 break-words font-medium">{juror.name}</span>
                       {juror.checkedInAt && <Badge variant="secondary">Ya llegó</Badge>}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
-                      {juror.category} · {juror.hasBadge ? "Tiene escarapela" : "Sin escarapela"}
+                      {categoryLabel(juror.category)} · {juror.hasBadge ? "Tiene escarapela" : "Sin escarapela"}
                     </div>
                   </button>
                 ))}
@@ -205,7 +213,7 @@ const JurorCheckInPage = () => {
             <UserCheck className="h-4 w-4" />
             <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya registrado" : "Llegada registrada"}</AlertTitle>
             <AlertDescription>
-              <strong>{result.juror.name}</strong> · {result.juror.category}
+              <strong>{result.juror.name}</strong> · {categoryLabel(result.juror.category)}
               <div>{result.status === "ALREADY_CHECKED_IN" ? "Registrado anteriormente: " : "Hora: "}{formatTime(result.checkedInAt)}</div>
               <div>{result.juror.teams.length ? `Grupos: ${result.juror.teams.map((team) => team.name).join(", ")}` : "Grupos: sin asignar"}</div>
             </AlertDescription>

@@ -1,6 +1,8 @@
 import { apiFetch } from "@/lib/api";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import { MyDraftsPanel } from "@/components/grupo 8/EvaluationDrafts";
 import { PendingGamesGrid } from "@/components/grupo 8/PendingGradesGrid";
+import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 import LayoutAplication from "@/layouts/LayoutAplication";
+import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +30,8 @@ interface VideogameDetails {
   subject: string | null;
   description: string | null;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface PaginatedGames {
@@ -53,6 +58,8 @@ interface SearchResultItem {
   imagen?: string;
   descripcion: string;
   isEvaluated: boolean;
+  hasDraft?: boolean; // HU-18
+  draftUpdatedAt?: string | null;
 }
 
 interface SearchResults {
@@ -215,6 +222,8 @@ const PendingGradesPage: React.FC = () => {
     return (
       <LayoutAplication breadcrumbs={breadcrumbs}>
         <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          {/* HU-17: la encuesta se puede responder aunque ya se hayan cerrado las evaluaciones */}
+          <JurorSurveyAccess />
           <Card className="w-full shadow-sm border">
             <CardHeader className="p-4 sm:p-6 pb-2">
               <CardTitle className="text-lg sm:text-xl font-medium text-foreground">
@@ -235,6 +244,8 @@ const PendingGradesPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+        {/* HU-18: la lista de borradores funciona aunque las evaluaciones estén cerradas */}
+        <MyDraftsPanel ratePath="/pendientes-calificar" />
       </LayoutAplication>
     );
   }
@@ -254,6 +265,8 @@ const PendingGradesPage: React.FC = () => {
           imagen: game.imagen,
           descripcion: game.descripcion,
           isEvaluated: game.isEvaluated,
+          hasDraft: game.hasDraft,
+          draftUpdatedAt: game.draftUpdatedAt,
         }))
       : gamesData?.data.map((videogame) => ({
           id: videogame.videogameId,
@@ -267,14 +280,20 @@ const PendingGradesPage: React.FC = () => {
           imagen: videogame.logoUrl,
           descripcion: videogame.description || "Sin descripción",
           isEvaluated: videogame.isEvaluated,
+          hasDraft: videogame.hasDraft,
+          draftUpdatedAt: videogame.draftUpdatedAt,
         })) || [];
 
   return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
+      {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
+      <MyDraftsPanel ratePath="/pendientes-calificar" games={gamesToShow} />
+      <JurorSurveyAccess className="mb-4" />
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos pendientes por calificar..." />
       ) : (
         <>
+          <JurorPresenceNotice className="mx-3 mb-3 sm:mx-6" />
           {error &&
             !gamesData &&
             error !==

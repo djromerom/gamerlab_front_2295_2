@@ -21,6 +21,10 @@ import {
   ClipboardCheck,
   UserPlus,
   UserCheck,
+  Bell,
+  MessageSquareHeart,
+  Presentation,
+  Smartphone,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/components/grupo 9/nav-user";
@@ -68,8 +72,15 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Check-in de Jurados", url: "/check-in-jurados", icon: QrCode },
         { name: "Asistencia de Jurados", url: "/asistencia-jurados", icon: ClipboardCheck },
         { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
+        { name: "Presentadores externos", url: "/presentadores-externos", icon: Presentation },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
+        { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
+        { name: "Encuesta de Jurados", url: "/encuesta-jurados", icon: MessageSquareHeart },
       ],
+    },
+    {
+      title: "Cuenta",
+      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },
   ],
   Jurado: [
@@ -82,6 +93,13 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
+      ],
+    },
+    {
+      title: "Cuenta",
+      items: [
+        { name: "Instalar ARKAD", url: "/instalar-app", icon: Smartphone },
+        { name: "Notificaciones", url: "/notificaciones", icon: Bell },
       ],
     },
   ],
@@ -120,6 +138,10 @@ const MENU: Record<Role, MenuItem[]> = {
       items: [
         { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
       ],
+    },
+    {
+      title: "Cuenta",
+      items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },
   ],
   Estudiante: [
@@ -169,6 +191,13 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Registrar llegada", url: "/check-in-jurados", icon: QrCode },
         { name: "Asistencia de jurados", url: "/asistencia-jurados", icon: ClipboardCheck },
       ],
+    },
+  ],
+  // HU-33: solo su registro; el back le responde 403 en todo lo demás
+  "Presentador externo": [
+    {
+      title: "Feria",
+      items: [{ name: "Mi registro", url: "/mi-registro", icon: Presentation }],
     },
   ],
 };

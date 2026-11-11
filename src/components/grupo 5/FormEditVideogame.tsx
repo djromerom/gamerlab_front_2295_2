@@ -11,6 +11,7 @@ import { TeamImages } from "./TeamImages"
 import { toast } from "sonner"
 import { fetchOwnTeam } from "@/lib/ownTeam";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchRegistrationsOpen } from "@/fetchs/registrations";
 
 export default function FormEditVideogame (
     {
@@ -35,6 +36,14 @@ export default function FormEditVideogame (
     const [error, setError] = useState("");
     const [originalData, setOriginalData] = useState<any>(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [registrationsOpen, setRegistrationsOpen] = useState(true);
+    const canEditGameName = user?.role?.name === "Administrador";
+    const protectedFieldHelp = "Para cambiar este dato, escríbele al administrador.";
+    const closedRegistrationsMessage = "Las inscripciones están cerradas: ya no puedes editar tu equipo. Para cambiar este dato, escríbele al administrador.";
+
+    useEffect(() => {
+        fetchRegistrationsOpen().then(setRegistrationsOpen);
+    }, []);
     // Procesar archivos (común para click y drag & drop) 
 
     const processFiles = (files: FileList | File[]) => { 
@@ -119,6 +128,10 @@ export default function FormEditVideogame (
 
     // Handle save button click
     const handleSave = async () => {
+        if (!registrationsOpen && !canEditGameName) {
+            toast.error(closedRegistrationsMessage);
+            return;
+        }
         if (!hasChanges()) {
             toast.info("No hay cambios para guardar");
             setEdit(false);
@@ -144,7 +157,7 @@ export default function FormEditVideogame (
             setEdit(false);
             setShowConfirmDialog(false);
         } catch (error) {
-            toast.error("Error al guardar los cambios");
+            toast.error(error instanceof Error ? error.message : "Error al guardar los cambios");
         }
     };
 
@@ -193,7 +206,11 @@ export default function FormEditVideogame (
                                 value={infoEditEquipo.videogameName}
                                 onChange={(e) => setInfoEditEquipo((prev) => ({...prev, videogameName: e.target.value}))}
                                 placeholder="Mi juego"
+                                disabled={!canEditGameName}
                                 />
+                                {!canEditGameName && (
+                                    <p className="text-xs text-muted-foreground">{protectedFieldHelp}</p>
+                                )}
                             </div>
                         </div>
                         <div className="flex flex-col gap-2">
@@ -211,6 +228,11 @@ export default function FormEditVideogame (
                             <div id="description-counter" aria-live="polite" className="flex justify-end mt-1 text-xs text-muted-foreground">
                                 {infoEditEquipo.description?.length || 0}/{MAX_DESCRIPTION} caracteres
                             </div>
+                            {!registrationsOpen && !canEditGameName && (
+                                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                                    {closedRegistrationsMessage}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -373,7 +395,7 @@ export default function FormEditVideogame (
                         >
                             Cancelar
                         </Button>
-                        <Button onClick={handleSave}>
+                        <Button onClick={handleSave} disabled={!registrationsOpen && !canEditGameName}>
                                 Guardar
                         </Button>
                     </DialogFooter>

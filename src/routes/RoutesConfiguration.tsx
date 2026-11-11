@@ -26,6 +26,12 @@ import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
 import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
 import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
+import PushNotificationsPage from "@/pages/PushNotificationsPage";
+import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
+import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
+import ExternalPresentersPage from "@/pages/admin/ExternalPresentersPage";
+import MyRegistrationPage from "@/pages/external-presenter/MyRegistrationPage";
+import PwaInstallGuidePage from "@/pages/PwaInstallGuidePage";
 
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -60,14 +66,7 @@ import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
 
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
 import { JuradosAssignment } from "@/pages/JuradosAssignment";
-
-type Role =
-  | "Profesor"
-  | "Administrador"
-  | "Jurado"
-  | "Consultor"
-  | "Estudiante"
-  | "Staff";
+import type { Role } from "@/types/auth";
 
 interface RouteConfig {
   path: string;
@@ -77,6 +76,16 @@ interface RouteConfig {
 
 export const routes: RouteConfig[] = [
   { path: "/unauthorized", element: <UnauthorizedPage /> },
+  {
+    path: "/notificaciones",
+    element: <PushNotificationsPage />,
+    roles: ["Administrador", "Jurado", "Profesor"],
+  },
+  {
+    path: "/instalar-app",
+    element: <PwaInstallGuidePage />,
+    roles: ["Jurado"],
+  },
   { path: "/auth-error", element: <AuthErrorPage /> },
   // Pantallas de relleno retiradas: se redirigen al inicio de su rol
   {
@@ -147,7 +156,16 @@ export const routes: RouteConfig[] = [
   {
     path: "/inicio",
     element: <HomePage />,
-    roles: ["Profesor", "Administrador", "Estudiante", "Consultor", "Jurado", "Staff"],
+    roles: [
+      "Profesor",
+      "Administrador",
+      "Estudiante",
+      "Consultor",
+      "Jurado",
+      "Staff",
+      // HomePage lo redirige a /mi-registro
+      "Presentador externo",
+    ],
   },
   {
     path: "/estadisticas",
@@ -187,6 +205,27 @@ export const routes: RouteConfig[] = [
   {
     path: "/cuentas-staff",
     element: <StaffAccountsPage />,
+    roles: ["Administrador"],
+  },
+  // HU-33 (ARK-195): presentadores externos
+  {
+    path: "/presentadores-externos",
+    element: <ExternalPresentersPage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/mi-registro",
+    element: <MyRegistrationPage />,
+    roles: ["Presentador externo"],
+  },
+  {
+    path: "/notas-finales",
+    element: <FinalGradeReleasePage />,
+    roles: ["Administrador"],
+  },
+  {
+    path: "/encuesta-jurados",
+    element: <JurorSurveyResultsPage />,
     roles: ["Administrador"],
   },
   { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },

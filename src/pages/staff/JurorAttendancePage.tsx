@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { JurorAttendanceTable } from "@/components/staff/JurorAttendanceTable";
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, type JurorAttendanceResult } from "@/fetchs/jurorAttendance";
 import { useJurorAttendance, type AttendanceTab } from "@/hooks/useJurorAttendance";
+import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
+import { useAuth } from "@/contexts/AuthContext";
+import { canSeeJurorCategory } from "@/lib/jurorLabel";
 
 const TABS: { value: AttendanceTab; label: string; count: (t: JurorAttendanceResult["totals"]) => number }[] = [
   { value: "ALL", label: "Todos", count: (t) => t.total },
@@ -28,7 +31,9 @@ function emptyMessage(result: JurorAttendanceResult, searching: boolean) {
  * La ven el Administrador y el Staff, en solo lectura (la llegada se registra en Check-in).
  */
 const JurorAttendancePage: React.FC = () => {
+  useLockViewportZoom();
   const { tab, setTab, search, setSearch, setPage, result, error, loading, updatedAt, reload } = useJurorAttendance();
+  const { userRole } = useAuth();
   const searching = search.trim().length >= SEARCH_MIN_LENGTH;
   const metadata = result?.metadata;
 
@@ -90,7 +95,7 @@ const JurorAttendancePage: React.FC = () => {
               maxLength={SEARCH_MAX_LENGTH}
               placeholder="Buscar por nombre o apellido"
               aria-label="Buscar jurado por nombre o apellido"
-              className="pl-9"
+              className="pl-9 text-base"
             />
           </div>
         </div>
@@ -101,7 +106,11 @@ const JurorAttendancePage: React.FC = () => {
           </div>
         ) : result ? (
           <>
-            <JurorAttendanceTable jurors={result.data} emptyMessage={emptyMessage(result, searching)} />
+            <JurorAttendanceTable
+              jurors={result.data}
+              emptyMessage={emptyMessage(result, searching)}
+              showCategory={canSeeJurorCategory(userRole)}
+            />
             <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-center gap-2">
                 {updatedAt && `Actualizado a las ${formatUpdated(updatedAt)}`}

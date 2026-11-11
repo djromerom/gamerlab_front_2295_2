@@ -9,12 +9,12 @@ import {
   saveRegistrationDraft,
   REGISTRATION_DRAFT_KEY,
 } from "./registration";
-import { CombinedSchema, type CombinedFormValues } from "./schemas";
+import { CombinedSchema, EMAIL_MISMATCH_MESSAGE, type CombinedFormValues } from "./schemas";
 
 const form = (overrides: Partial<CombinedFormValues> = {}): CombinedFormValues => ({
   teamName: "Equipo QA",
   members: [
-    { nombre: "Ana", apellido: "Pérez", correo: "ana@uninorte.edu.co", codigoEstudiantil: "200190601", nrc: ["3501"] },
+    { nombre: "Ana", apellido: "Pérez", correo: "ana@uninorte.edu.co", confirmarCorreo: "ana@uninorte.edu.co", codigoEstudiantil: "200190601", nrc: ["3501"] },
   ],
   gameName: "Juego QA",
   description: "Un juego",
@@ -42,7 +42,7 @@ describe("registro de equipos: envío", () => {
     const payload = buildRegistrationPayload(
       form({
         teamName: "  Equipo  ",
-        members: [{ nombre: " Ana ", apellido: " P ", correo: " Ana@Uninorte.edu.co ", codigoEstudiantil: " 1 ", nrc: ["1"] }],
+        members: [{ nombre: " Ana ", apellido: " P ", correo: " Ana@Uninorte.edu.co ", confirmarCorreo: " Ana@Uninorte.edu.co ", codigoEstudiantil: " 1 ", nrc: ["1"] }],
       }),
       { additionalImages: [] },
     );
@@ -79,6 +79,11 @@ describe("registro de equipos: mensajes y rutas", () => {
 
   it("muestra la materia en cada NRC", () => {
     expect(nrcLabel({ code: 3501, subject: { name: "Programación I" } })).toBe("3501 · Programación I");
+    expect(nrcLabel({
+      code: 3501,
+      subject: { name: "Programación I" },
+      professorName: "Ana Pérez",
+    })).toBe("3501 · Programación I · Ana Pérez");
     expect(nrcLabel({ code: 3501 })).toBe("3501");
   });
 });
@@ -99,7 +104,7 @@ describe("registro de equipos: esquema", () => {
 
   it("rechaza nombres de solo espacios y códigos con letras", () => {
     const errors = errorsOf(
-      form({ members: [{ nombre: "   ", apellido: "P", correo: "a@b.co", codigoEstudiantil: "abc!", nrc: ["1"] }] }),
+      form({ members: [{ nombre: "   ", apellido: "P", correo: "a@b.co", confirmarCorreo: "a@b.co", codigoEstudiantil: "abc!", nrc: ["1"] }] }),
     );
     expect(errors).toContain("members.0.nombre: El nombre es obligatorio");
     expect(errors).toContain("members.0.codigoEstudiantil: El código estudiantil solo puede tener números");
@@ -109,8 +114,8 @@ describe("registro de equipos: esquema", () => {
     const errors = errorsOf(
       form({
         members: [
-          { nombre: "A", apellido: "B", correo: "a@b.co", codigoEstudiantil: "1", nrc: ["1"] },
-          { nombre: "C", apellido: "D", correo: "A@B.co", codigoEstudiantil: "1", nrc: ["1"] },
+          { nombre: "A", apellido: "B", correo: "a@b.co", confirmarCorreo: "a@b.co", codigoEstudiantil: "1", nrc: ["1"] },
+          { nombre: "C", apellido: "D", correo: "A@B.co", confirmarCorreo: "A@B.co", codigoEstudiantil: "1", nrc: ["1"] },
         ],
       }),
     );
@@ -129,6 +134,58 @@ describe("registro de equipos: esquema", () => {
   });
 });
 
+describe("registro de equipos: repetir el correo (ARK-168)", () => {
+  const member = (correo: string, confirmarCorreo: string) => ({
+    nombre: "Ana",
+    apellido: "Pérez",
+    correo,
+    confirmarCorreo,
+    codigoEstudiantil: "200190601",
+    nrc: ["3501"],
+  });
+  const errorsOf = (members: CombinedFormValues["members"]) => {
+    const result = CombinedSchema.safeParse(form({ members }));
+    return result.success ? [] : result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+  };
+
+  it("rechaza un correo repetido distinto", () => {
+    expect(errorsOf([member("ana@uninorte.edu.co", "ana@uninrte.edu.co")])).toEqual([
+      `members.0.confirmarCorreo: ${EMAIL_MISMATCH_MESSAGE}`,
+    ]);
+  });
+
+  it("ignora mayúsculas y espacios al inicio y al final", () => {
+    expect(errorsOf([member("Ana@Uninorte.edu.co", "  ana@UNINORTE.edu.co ")])).toEqual([]);
+  });
+
+  it("no ignora espacios en medio del correo", () => {
+    expect(errorsOf([member("ana@uninorte.edu.co", "ana @uninorte.edu.co")])).toContain(
+      `members.0.confirmarCorreo: ${EMAIL_MISMATCH_MESSAGE}`,
+    );
+  });
+
+  it("exige repetir el correo de cada integrante", () => {
+    const errors = errorsOf([
+      member("ana@uninorte.edu.co", "ana@uninorte.edu.co"),
+      { ...member("luis@uninorte.edu.co", "   "), codigoEstudiantil: "200190602" },
+    ]);
+    expect(errors).toEqual(["members.1.confirmarCorreo: Repite el correo"]);
+  });
+
+  it("marca el error solo en el integrante cuyo correo no coincide", () => {
+    const errors = errorsOf([
+      member("ana@uninorte.edu.co", "ana@uninorte.edu.co"),
+      { ...member("luis@uninorte.edu.co", "luis@uninorte.edu"), codigoEstudiantil: "200190602" },
+    ]);
+    expect(errors).toEqual([`members.1.confirmarCorreo: ${EMAIL_MISMATCH_MESSAGE}`]);
+  });
+
+  it("no envía el correo repetido al backend", () => {
+    const payload = buildRegistrationPayload(form(), { additionalImages: [] });
+    expect(payload.members[0]).not.toHaveProperty("confirmarCorreo");
+  });
+});
+
 describe("registro de equipos: borrador", () => {
   beforeEach(() => sessionStorage.clear());
 
@@ -141,6 +198,24 @@ describe("registro de equipos: borrador", () => {
     expect(draft?.step).toBe(1);
     expect(draft?.values.teamName).toBe("Equipo QA");
     expect(draft?.values.members[0].codigoEstudiantil).toBe("200190601");
+    expect(draft?.values.members[0].confirmarCorreo).toBe("ana@uninorte.edu.co");
+  });
+
+  it("un borrador sin el correo repetido vuelve al paso de integrantes", () => {
+    // Borrador guardado antes de ARK-168: los integrantes no traen confirmarCorreo
+    sessionStorage.setItem(
+      REGISTRATION_DRAFT_KEY,
+      JSON.stringify({
+        step: 2,
+        values: {
+          teamName: "Equipo QA",
+          members: [{ nombre: "Ana", apellido: "Pérez", correo: "ana@uninorte.edu.co", codigoEstudiantil: "1", nrc: ["1"] }],
+        },
+      }),
+    );
+    const draft = loadRegistrationDraft();
+    expect(draft?.step).toBe(1);
+    expect(draft?.values.members[0].confirmarCorreo).toBe("");
   });
 
   it("no vuelve directo al paso 4 (captcha y archivos)", () => {

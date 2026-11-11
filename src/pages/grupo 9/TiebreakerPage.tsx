@@ -13,9 +13,17 @@ import {
   type RankingSnapshot,
   type TieGroup,
 } from "@/fetchs/ranking";
+import { formatFinalGradeWeighting } from "@/lib/finalGradeWeights";
 
 const score = (value: number | null | undefined) =>
   value === null || value === undefined ? "Sin nota" : value.toFixed(2);
+
+const missingScoreMessage = (missing?: Array<"PROFESSOR" | "JUROR">) => {
+  if (missing?.length === 2) return "Faltan las dos notas";
+  if (missing?.includes("PROFESSOR")) return "Falta la nota de profesores";
+  if (missing?.includes("JUROR")) return "Falta la nota de jurados";
+  return "Nota en proceso";
+};
 
 export default function TiebreakerPage() {
   const [ranking, setRanking] = useState<RankingSnapshot | null>(null);
@@ -144,7 +152,12 @@ export default function TiebreakerPage() {
 
           {ranking && !ranking.weighting.configured && (
             <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-              La edición no tiene ponderación configurada; se usó 50/50.
+              La edición no tiene ponderación configurada; no se mostrará la fórmula vigente.
+            </div>
+          )}
+          {ranking?.weighting.configured && (
+            <div className="mb-4 text-sm text-muted-foreground">
+              {formatFinalGradeWeighting(ranking.weighting.seniorPct, ranking.weighting.juniorPct)}
             </div>
           )}
           {ranking?.finalized && (
@@ -181,7 +194,9 @@ export default function TiebreakerPage() {
                     ) : <p className="p-4 text-sm text-muted-foreground">No hay grupos con nota en este nivel.</p>}
                     {item.withoutScore.length > 0 && (
                       <p className="border-t px-4 py-2 text-xs text-muted-foreground">
-                        Sin nota: {item.withoutScore.map((team) => team.teamCode).join(", ")}
+                        Sin nota: {item.withoutScore.map((team) =>
+                          `${team.teamCode} (${missingScoreMessage(team.missing)})`
+                        ).join(", ")}
                       </p>
                     )}
                   </div>

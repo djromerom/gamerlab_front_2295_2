@@ -7,6 +7,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   FormControl,
@@ -18,28 +19,45 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { CombinedFormValues } from "@/lib/schemas";
-import { useEffect, useState } from "react";
+import { CombinedFormValues, NO_PASTE_MESSAGE } from "@/lib/schemas";
+import { useEffect, useState, type ClipboardEvent, type DragEvent } from "react";
 import { toast } from "sonner";
-import { nrcLabel } from "@/lib/registration";
+
+/**
+ * Los dos campos de correo no aceptan texto pegado (teclado, menú contextual o el menú del
+ * celular, que también disparan `paste`) ni arrastrado (ARK-168).
+ */
+const blockPasteAndDrop = {
+  onPaste: (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    toast.info(NO_PASTE_MESSAGE, { id: "correo-sin-pegar" });
+  },
+  onDrop: (event: DragEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    toast.info(NO_PASTE_MESSAGE, { id: "correo-sin-pegar" });
+  },
+};
 
 // Define an interface for your NRC option objects
 interface NrcOption {
   code: number | string;
   name?: string;
-  subject?: { id?: number; name?: string } | null;
+  subjectId?: number;
+  professorName?: string;
+  subject?: { id?: number; name?: string; abrevName?: string } | null;
   [key: string]: unknown;
 }
 
 export default function MembersStep() {
   const { back, next } = useMultiForm();
-  const { control, trigger, getValues, setError, setFocus } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setValue, setError, setFocus } = useFormContext<CombinedFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "members",
   });
 
   const [isValidatingEmails, setIsValidatingEmails] = useState(false);
+  const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
 
   /**
    * Revisa contra la API una lista de valores (correos o códigos) y marca el campo de cada
@@ -94,6 +112,31 @@ export default function MembersStep() {
     // Primero las reglas del formulario (vacíos, formato, repetidos dentro del equipo)
     const isValid = await trigger("members");
     if (!isValid) return;
+    const optionsByCode = new Map(nrcActivos.map((option) => [String(option.code), option]));
+    let removedUnknownNrc = false;
+    getValues("members").forEach((member, index) => {
+      const knownCodes = member.nrc.filter((code) => optionsByCode.has(String(code)));
+      if (knownCodes.length !== member.nrc.length) {
+        removedUnknownNrc = true;
+        setValue(`members.${index}.nrc`, knownCodes, { shouldValidate: true });
+      }
+    });
+    const invalidMember = getValues("members").findIndex((member) => {
+      const subjectIds = member.nrc.map((code) =>
+        String(optionsByCode.get(code)?.subjectId ?? optionsByCode.get(code)?.subject?.id ?? ""),
+      );
+      return new Set(subjectIds).size !== subjectIds.length;
+    });
+    if (removedUnknownNrc && invalidMember < 0) {
+      toast.info("Se quitaron NRC que ya no están disponibles en esta edición.");
+    }
+    if (invalidMember >= 0) {
+      const message = "Elige un solo NRC por materia";
+      setError(`members.${invalidMember}.nrc`, { type: "manual", message });
+      setFocus(`members.${invalidMember}.nrc`);
+      toast.error(`Integrante ${invalidMember + 1}: ${message}`);
+      return;
+    }
 
     setIsValidatingEmails(true);
     try {
@@ -171,6 +214,14 @@ export default function MembersStep() {
           );
         }
         setNrcActivos(nrcOptionsArray);
+        const knownCodes = new Set(nrcOptionsArray.map((option) => String(option.code)));
+        getValues("members").forEach((member, index) => {
+          const currentCodes = member.nrc ?? [];
+          const validCodes = currentCodes.filter((code) => knownCodes.has(String(code)));
+          if (validCodes.length !== currentCodes.length) {
+            setValue(`members.${index}.nrc`, validCodes, { shouldValidate: true });
+          }
+        });
       } catch (err) {
         console.error("Error fetching subjects:", err);
         setNrcActivos([]);
@@ -179,7 +230,7 @@ export default function MembersStep() {
       }
     };
     fetchNrcs();
-  }, [API_ENDPOINT]);
+  }, [API_ENDPOINT, getValues, setValue]);
 
   return (
     <>
@@ -251,8 +302,30 @@ export default function MembersStep() {
                     <FormControl>
                       <Input
                         {...field}
+                        {...blockPasteAndDrop}
                         type="email"
                         placeholder="correo@ejemplo.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Repetir correo (ARK-168) */}
+              <FormField
+                control={control}
+                name={`members.${idx}.confirmarCorreo` as const}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repite tu correo</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        {...blockPasteAndDrop}
+                        type="email"
+                        autoComplete="off"
+                        placeholder="Escribe de nuevo el correo"
                       />
                     </FormControl>
                     <FormMessage />
@@ -282,99 +355,103 @@ export default function MembersStep() {
                 render={({ field }) => {
                   const selectedNRCs: string[] = field.value || [];
                   const allNrcOptionsFromState: NrcOption[] = nrcActivos;
-
-                  // Solo evitar duplicados dentro del mismo miembro
-                  // Diferentes miembros SÍ pueden tener el mismo NRC
-                  const availableNrcOptionsToSelect =
-                    allNrcOptionsFromState.filter(
-                      (nrcOption) =>
-                        !selectedNRCs.includes(String(nrcOption.code))
-                    );
-
-                  let triggerText = "Selecciona TODOS los NRCs del integrante";
-                  if (isPageLoading) {
-                    triggerText = "Cargando NRCs...";
-                  } else if (allNrcOptionsFromState.length === 0) {
-                    triggerText = "No hay NRCs disponibles";
-                  }
+                  const subjects = Array.from(
+                    new Map(
+                      allNrcOptionsFromState
+                        .filter((option) => option.subject)
+                        .map((option) => {
+                          const subjectId = String(option.subjectId ?? option.subject?.id ?? "");
+                          return [subjectId, {
+                            id: subjectId,
+                            name: option.subject?.name ?? option.name ?? "",
+                            abrevName: option.subject?.abrevName ?? option.subject?.name ?? "",
+                          }];
+                        }),
+                    ).values(),
+                  );
+                  const subjectByCode = new Map(
+                    allNrcOptionsFromState.map((option) => [
+                      String(option.code),
+                      String(option.subjectId ?? option.subject?.id ?? ""),
+                    ]),
+                  );
 
                   return (
                     <FormItem>
                       <FormLabel>NRC</FormLabel>
                       <FormControl>
-                        <div className="space-y-2">
-                          <Select
-                            key={selectedNRCs.join(",")} // Fuerza re-render cuando cambian los NRCs
-                            value="" // Siempre vacio para permitir nueva selección
-                            onValueChange={(selectedCodeValue) => {
-                              if (selectedCodeValue && !selectedNRCs.includes(selectedCodeValue)) {
-                                field.onChange([...selectedNRCs, selectedCodeValue]);
-                              }
-                            }}
-                            disabled={
-                              isPageLoading ||
-                              (allNrcOptionsFromState.length === 0 &&
-                                !isPageLoading)
-                            }
-                          >
-                            <SelectTrigger
-                              className="cursor-pointer"
-                              style={{ width: "100%" }}
-                            >
-                              <span className="text-muted-foreground">
-                                {triggerText}
-                              </span>
-                            </SelectTrigger>
-                            <SelectContent style={{ width: "100%" }}>
-                              {!isPageLoading &&
-                              allNrcOptionsFromState.length > 0 ? (
-                                availableNrcOptionsToSelect.map((nrcOption) => (
-                                  <SelectItem
-                                    className="cursor-pointer"
-                                    key={String(nrcOption.code)}
-                                    value={String(nrcOption.code)}
-                                  >
-                                    {nrcLabel(nrcOption)}
-                                  </SelectItem>
-                                ))
-                              ) : !isPageLoading &&
-                                allNrcOptionsFromState.length === 0 ? (
-                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                  No hay NRCs disponibles.
-                                </div>
-                              ) : null}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedNRCs.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-2">
-                              {selectedNRCs.map((val) => (
-                                <div
-                                  key={val}
-                                  className="flex items-center space-x-1 rounded-full border border-input bg-muted px-3 py-1 text-sm hover:bg-muted/70 cursor-pointer transition"
-                                >
-                                  <span>
-                                    {nrcLabel(
-                                      allNrcOptionsFromState.find((o) => String(o.code) === val) ?? { code: val },
-                                    )}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-4 w-4 p-0 text-destructive hover:bg-destructive/10 cursor-pointer"
-                                    onClick={() =>
-                                      field.onChange(
-                                        selectedNRCs.filter((n) => n !== val)
-                                      )
-                                    }
-                                  >
-                                    ✕
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
+                        <div className="space-y-3">
+                          {isPageLoading && <p className="text-sm text-muted-foreground">Cargando NRCs...</p>}
+                          {!isPageLoading && subjects.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No hay NRCs disponibles.</p>
                           )}
+                          <div className="flex flex-wrap gap-2">
+                            {subjects.map((subject) => {
+                              const key = `${member.id}:${subject.id}`;
+                              const active = Boolean(openSubjects[key]) || selectedNRCs.some(
+                                (code) => subjectByCode.get(code) === subject.id,
+                              );
+                              return (
+                                <Button
+                                  type="button"
+                                  variant={active ? "default" : "outline"}
+                                  size="sm"
+                                  key={subject.id}
+                                  title={subject.name}
+                                  aria-pressed={active}
+                                  onClick={() => {
+                                    const nextOpen = !active;
+                                    setOpenSubjects((current) => ({ ...current, [key]: nextOpen }));
+                                    if (!nextOpen) {
+                                      field.onChange(selectedNRCs.filter(
+                                        (code) => subjectByCode.get(code) !== subject.id,
+                                      ));
+                                    }
+                                  }}
+                                >
+                                  {subject.abrevName}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          {subjects.filter((subject) => {
+                            const key = `${member.id}:${subject.id}`;
+                            return openSubjects[key] || selectedNRCs.some(
+                              (code) => subjectByCode.get(code) === subject.id,
+                            );
+                          }).map((subject) => {
+                            const currentCode = selectedNRCs.find(
+                              (code) => subjectByCode.get(code) === subject.id,
+                            );
+                            const options = allNrcOptionsFromState.filter(
+                              (option) => String(option.subjectId ?? option.subject?.id) === subject.id,
+                            );
+                            return (
+                              <div key={subject.id} className="space-y-1">
+                                <label className="text-sm font-medium" title={subject.name}>{subject.name}</label>
+                                <Select
+                                  value={currentCode}
+                                  onValueChange={(code) => {
+                                    field.onChange([
+                                      ...selectedNRCs.filter(
+                                        (selectedCode) => subjectByCode.get(selectedCode) !== subject.id,
+                                      ),
+                                      code,
+                                    ]);
+                                  }}
+                                >
+                                  <SelectTrigger><SelectValue placeholder={`Selecciona el NRC de ${subject.abrevName}`} /></SelectTrigger>
+                                  <SelectContent>
+                                    {options.map((option) => (
+                                      <SelectItem key={String(option.code)} value={String(option.code)}>
+                                        {String(option.code)}{option.professorName ? ` · ${option.professorName}` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          })}
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -397,6 +474,7 @@ export default function MembersStep() {
               nombre: "",
               apellido: "",
               correo: "",
+              confirmarCorreo: "",
               codigoEstudiantil: "",
               nrc: [],
             })

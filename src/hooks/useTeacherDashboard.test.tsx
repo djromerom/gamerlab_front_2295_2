@@ -43,6 +43,42 @@ describe("useTeacherDashboard", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("conserva fairGradeRule de cada fila y lo deduce de isExternal si no llega (ARK-203)", async () => {
+    const row = { teamCode: "N1-AYP-01", team: "A", videogame: "J", calificacionFeria: null, editionId: 3 };
+    const data = [
+      { ...row, fairGradeRule: "EXTERNAL", isExternal: true },
+      { ...row, teamCode: "N0-COL-01", fairGradeRule: "SCHOOL", isExternal: true },
+      { ...row, teamCode: "N1-AYP-02", fairGradeRule: "STANDARD", isExternal: false },
+      { ...row, teamCode: "N1-AYP-03", isExternal: true },
+      { ...row, teamCode: "N1-AYP-04" },
+    ];
+    fetchMock.mockImplementation(async (input: string) =>
+      String(input).includes("filter-options")
+        ? json(200, FILTERS)
+        : json(200, { ...LIST, data, metadata: { ...LIST.metadata, totalItems: 5, itemsOnCurrentPage: 5, totalPages: 1 } }));
+    const { result } = renderHook(() => useTeacherDashboard());
+    await waitFor(() => expect(result.current.teams).toHaveLength(5));
+    expect(result.current.teams.map((t) => t.fairGradeRule)).toEqual(["EXTERNAL", "SCHOOL", "STANDARD", "EXTERNAL", "STANDARD"]);
+  });
+
+  it("abre con la feria y el NRC iniciales y los pide al backend (BG-27)", async () => {
+    const { result, rerender } = renderHook(
+      ({ historical }) => useTeacherDashboard({ includeHistorical: historical, initialFair: "3", initialNRC: "7" }),
+      { initialProps: { historical: false } },
+    );
+    await waitFor(() => expect(urls("/grading-games").length).toBeGreaterThan(0));
+    expect(result.current.selectedFair).toBe("3");
+    expect(result.current.selectedNRC).toBe("7");
+    const list = urls("/grading-games").at(-1)!;
+    expect(list.searchParams.get("editionId")).toBe("3");
+    expect(list.searchParams.get("nrcId")).toBe("7");
+
+    // Cambiar de pestaña sí reinicia los filtros
+    rerender({ historical: true });
+    await waitFor(() => expect(result.current.selectedNRC).toBe(""));
+    expect(result.current.selectedFair).toBe("");
+  });
+
   it("ante 404 por nrcId ajeno limpia el NRC y recarga sin mostrar error", async () => {
     fetchMock.mockImplementation(async (input: string) => {
       const url = new URL(String(input));

@@ -31,9 +31,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DraftConflictDialog,
+  DraftSaveIndicator,
+} from "@/components/grupo 8/EvaluationDrafts";
+import { JUROR_SURVEY_CHECK_STATE } from "@/lib/jurorSurvey";
 import { useCriteria } from "@/hooks/use-criteria";
+import { loadInitialDraft, useDraftAutosave } from "@/hooks/useDraftAutosave";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
+import {
+  formFromCriteria,
+  fromServerDraft,
+  type DraftForm,
+} from "@/lib/evaluationDrafts";
 import { UiCriterion } from "@/types/criterion";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -52,14 +63,6 @@ interface Game {
   participantes?: string[];
   descripcion?: string;
 }
-
-// Borrador local de la calificación: si la sesión expira, lo escrito se recupera al volver (HU-05)
-interface RateDraft {
-  scores: Record<number, string | number>;
-  comments: string;
-}
-
-const getDraftKey = (gameId: number) => `rate-draft-${gameId}`;
 
 export default function RatePage() {
   const pendingSubmission = useRef<{
@@ -82,60 +85,71 @@ export default function RatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [teamWasReassigned, setTeamWasReassigned] = useState(false);
   const [showSuccessLoading, setShowSuccessLoading] = useState(false);
 
-  useEffect(() => {
-    if (apiCriteria.length > 0) {
-      // Recuperar borrador del localStorage al cargar los criterios
-      let draft: RateDraft | null = null;
-      if (game) {
-        try {
-          const saved = localStorage.getItem(getDraftKey(game.id));
-          if (saved) draft = JSON.parse(saved) as RateDraft;
-        } catch (e) {
-          console.warn("Error recuperando borrador de localStorage:", e);
-        }
-      }
+  // HU-18: borrador en el servidor (con copia local si no hay red)
+  const drafts = useDraftAutosave();
+  const [draftReady, setDraftReady] = useState(false);
+  const lastDraftKey = useRef<string | null>(null);
 
-      setUiCriteria(
-        apiCriteria.map((criterion) => ({
-          ...criterion,
-          score: draft?.scores?.[criterion.id] ?? "",
-          maxScore: 5,
-        })),
-      );
-      if (typeof draft?.comments === "string") {
-        setComments(draft.comments);
-      }
-      if (draft) {
-        toast.info("Borrador recuperado", { duration: 2000 });
-      }
-    }
+  const applyDraftForm = (form: DraftForm | null) => {
+    const nextCriteria = apiCriteria.map((criterion) => ({
+      ...criterion,
+      score: form?.scores[criterion.id] ?? "",
+      maxScore: 5,
+    }));
+    const nextComments = form?.comments ?? "";
+    lastDraftKey.current = JSON.stringify(formFromCriteria(nextCriteria, nextComments));
+    setUiCriteria(nextCriteria);
+    setComments(nextComments);
+  };
+
+  useEffect(() => {
+    if (apiCriteria.length === 0 || !game) return;
+    let cancelled = false;
+    setDraftReady(false);
+    loadInitialDraft(game.id)
+      .catch(() => null)
+      .then((initial) => {
+        if (cancelled) return;
+        applyDraftForm(initial?.form ?? null);
+        drafts.start(game.id, initial ?? { version: 0, form: null, needsSync: false });
+        setDraftReady(true);
+        if (initial?.form) {
+          toast.info(
+            initial.source === "local" ? "Borrador recuperado de este dispositivo" : "Borrador recuperado",
+            { duration: 2000 },
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiCriteria, game?.id]);
 
-  // Auto-guardar en localStorage cada vez que cambia un puntaje o el comentario
+  // Autoguardado: cada cambio del formulario programa un guardado (con espera) en el servidor
   useEffect(() => {
-    if (!game || uiCriteria.length === 0) return;
+    if (!game || !draftReady) return;
+    const form = formFromCriteria(uiCriteria, comments);
+    const key = JSON.stringify(form);
+    if (key === lastDraftKey.current) return;
+    lastDraftKey.current = key;
+    drafts.schedule(game.id, form);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiCriteria, comments, draftReady]);
 
-    const scores: RateDraft["scores"] = {};
-    for (const criterion of uiCriteria) {
-      if (criterion.score !== "") scores[criterion.id] = criterion.score;
-    }
+  const draftState = game ? drafts.stateOf(game.id) : null;
 
-    try {
-      if (Object.keys(scores).length === 0 && !comments) {
-        localStorage.removeItem(getDraftKey(game.id));
-      } else {
-        localStorage.setItem(
-          getDraftKey(game.id),
-          JSON.stringify({ scores, comments } satisfies RateDraft),
-        );
-      }
-    } catch {
-      // Ignorar errores de almacenamiento
+  const handleConflict = (choice: "overwrite" | "load") => {
+    if (!game) return;
+    const remote = drafts.resolveConflict(game.id, choice);
+    if (choice === "load" && remote) {
+      applyDraftForm(fromServerDraft(remote));
+      toast.info("Se cargó la versión guardada del borrador", { duration: 2000 });
     }
-  }, [uiCriteria, comments, game]);
+  };
 
   useEffect(() => {
     if (!game) {
@@ -152,6 +166,14 @@ export default function RatePage() {
     );
   }
 
+  if (game && apiCriteria.length > 0 && !draftReady) {
+    return (
+      <LayoutAplication breadcrumbs={[]}>
+        <LoadingScreen text="Cargando borrador..." />
+      </LayoutAplication>
+    );
+  }
+
   const showErrorToast = (errorMessage: string) => {
     toast.error(errorMessage);
     setSubmissionError(errorMessage);
@@ -162,7 +184,8 @@ export default function RatePage() {
     setTimeout(() => {
       setShowSuccessLoading(true);
       setTimeout(() => {
-        navigate("/pendientes-calificar");
+        // HU-17: pendientes consulta la encuesta y la abre si esta era la última evaluación
+        navigate("/pendientes-calificar", { state: JUROR_SURVEY_CHECK_STATE });
       }, 1000);
     }, 2500);
   };
@@ -264,6 +287,7 @@ export default function RatePage() {
     }
     setIsSubmitting(true);
     setSubmissionError(null);
+    setTeamWasReassigned(false);
 
     const parsedDetails: {
       criterionId: number;
@@ -370,15 +394,19 @@ export default function RatePage() {
         } catch (e) {
           // no-op: no JSON body
         }
+        if (
+          res.status === 403 &&
+          typeof errorText === "string" &&
+          errorText.includes("Este grupo no está asignado al evaluador")
+        ) {
+          setTeamWasReassigned(true);
+          throw new Error("Este grupo ya no está asignado a ti. Conservamos lo escrito; vuelve a pendientes para continuar.");
+        }
         throw new Error(errorText);
       }
 
-      // Limpiar borrador de localStorage al enviar exitosamente
-      try {
-        localStorage.removeItem(getDraftKey(game.id));
-      } catch {
-        // Ignorar errores de almacenamiento
-      }
+      // HU-18: el back cierra el borrador al enviar; aquí se detiene el autoguardado y se borra la copia local
+      drafts.stop(game.id);
 
       setConfirmDialogOpen(false);
       pendingSubmission.current = null;
@@ -646,7 +674,10 @@ export default function RatePage() {
                   />
                 </div>
 
-                <div className="flex justify-end mt-6">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
+                  <div className="min-h-4">
+                    {draftState && <DraftSaveIndicator state={draftState} />}
+                  </div>
                   <Button
                     className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2 "
                     onClick={() => setConfirmDialogOpen(true)}
@@ -667,6 +698,13 @@ export default function RatePage() {
           </div>
         </div>
 
+        <DraftConflictDialog
+          open={draftState?.status === "conflict"}
+          remote={draftState?.conflictDraft ?? null}
+          onLoad={() => handleConflict("load")}
+          onOverwrite={() => handleConflict("overwrite")}
+        />
+
         <AlertDialog
           open={confirmDialogOpen}
           onOpenChange={setConfirmDialogOpen}
@@ -685,6 +723,11 @@ export default function RatePage() {
               </p>
             )}
             <AlertDialogFooter>
+              {teamWasReassigned && (
+                <Button type="button" variant="outline" onClick={() => navigate("/pendientes-calificar")}>
+                  Volver a pendientes
+                </Button>
+              )}
               <AlertDialogCancel
                 onClick={() => {
                   setConfirmDialogOpen(false);

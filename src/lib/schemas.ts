@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+/** Correo comparable: sin espacios en los extremos y en minúsculas. */
+export const normalizeEmail = (value: string | undefined | null): string =>
+  (value ?? "").trim().toLowerCase();
+
+export const EMAIL_MISMATCH_MESSAGE = "Los correos no coinciden";
+export const NO_PASTE_MESSAGE = "Escribe el correo a mano: aquí no se puede pegar ni arrastrar texto.";
+
 export const MemberSchema = z.object({
   nombre: z
     .string()
@@ -17,6 +24,8 @@ export const MemberSchema = z.object({
     .toLowerCase()
     .min(1, { message: "El correo es obligatorio" })
     .email({ message: "El correo debe ser válido" }),
+  // Se escribe dos veces, sin pegar, para evitar errores de digitación (ARK-168). No se envía.
+  confirmarCorreo: z.string().trim().min(1, { message: "Repite el correo" }),
   codigoEstudiantil: z
     .string()
     .trim()
@@ -28,7 +37,10 @@ export const MemberSchema = z.object({
     .min(1, { message: "Debe seleccionar al menos un NRC" }),
 });
 
-/** Dos integrantes no pueden compartir correo ni código estudiantil. */
+/**
+ * Cada integrante repite su correo igual (sin importar mayúsculas ni espacios en los extremos),
+ * y dos integrantes no pueden compartir correo ni código estudiantil.
+ */
 export const MembersSchema = z
   .array(MemberSchema)
   .min(1, { message: "El equipo debe tener al menos un integrante" })
@@ -36,7 +48,15 @@ export const MembersSchema = z
     const emails = new Map<string, number>();
     const codes = new Map<string, number>();
     members.forEach((member, index) => {
-      const email = member.correo.trim().toLowerCase();
+      const email = normalizeEmail(member.correo);
+      const confirmation = normalizeEmail(member.confirmarCorreo);
+      if (confirmation && confirmation !== email) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, "confirmarCorreo"],
+          message: EMAIL_MISMATCH_MESSAGE,
+        });
+      }
       if (email) {
         if (emails.has(email)) {
           ctx.addIssue({
@@ -108,6 +128,7 @@ export type CombinedFormValues = {
     nombre: string;
     apellido: string;
     correo: string;
+    confirmarCorreo: string;
     codigoEstudiantil: string;
     nrc: string[];
   }[];

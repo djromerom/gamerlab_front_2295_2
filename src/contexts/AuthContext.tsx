@@ -20,6 +20,8 @@ import {
   SESSION_EXPIRED_EVENT,
 } from "@/lib/session";
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
+import { claimLocalDrafts, clearAllLocalDrafts } from "@/lib/localDraftsOwner";
+import { unsubscribeFromPush } from "@/fetchs/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -92,16 +94,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       if (res.ok) {
         const data = (await res.json()) as UserProfile;
+        // BG-27 (BG-08): lo que otro usuario dejó sin guardar en este navegador se borra
+        // antes de que se monten las pantallas de este usuario.
+        claimLocalDrafts(data.id);
         setUser(data);
         ok = true;
-      } else {
+      } else if (res.status === 401) {
         setUser(null);
         setAccessToken(null);
       }
     } catch (error) {
       console.error("AuthContext: Failed to fetch profile:", error);
-      setUser(null);
-      setAccessToken(null);
     }
     setLoading(false);
     return ok;
@@ -152,7 +155,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
       // [MODIFICADO]: Un fallo de red o del servidor no cierra una sesión activa; el heartbeat reintenta
       // [ANTES]: Cualquier fallo cerraba la sesión
-      if (error instanceof SessionRejectedError || !hasSessionRef.current) {
+      if (error instanceof SessionRejectedError) {
         endSession();
       }
       throw error;
@@ -199,10 +202,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // [ANTES]: No se detenía el intervalo, por lo que la sesión podía revivir
     stopHeartbeat();
     resetOwnTeamCacheForTests();
+    // HU-18 / BG-27 (BG-08): borradores del jurado y notas sin guardar del profesor
+    // no pasan al siguiente usuario del navegador
+    clearAllLocalDrafts();
     hasSessionRef.current = false;
     setSessionExpired(false);
 
     try {
+      const registration = await navigator.serviceWorker?.getRegistration("/");
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await unsubscribeFromPush(subscription.endpoint);
+        await subscription.unsubscribe();
+      }
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
       });

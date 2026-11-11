@@ -21,13 +21,17 @@ export default function FormEditMembers ({
     handleSaveNrcs
  }: TeamMembersProps) {
     const { user } = useAuth();
+    const canEditProtectedMemberData = user?.role?.name === "Administrador";
+    const protectedFieldHelp = "Para cambiar este dato, escríbele al administrador.";
     return (
         <Dialog open={!!editStudent} onOpenChange={open => !open && setEditStudent(null)}>
             <DialogContent className="max-w-md w-full">
                 <DialogHeader>
                     <DialogTitle>Editar datos de {editStudent?.firstName}</DialogTitle>
                     <DialogDescription>
-                        Edita los datos del estudiante y sus NRCs asignados.
+                        {canEditProtectedMemberData
+                            ? "Edita los datos del estudiante y sus NRCs asignados."
+                            : "Los datos protegidos se muestran en solo lectura."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -60,9 +64,11 @@ export default function FormEditMembers ({
                             value={editEmail}
                             onChange={(e) => setEditEmail(e.target.value)}
                             placeholder="usuario@ejemplo.com"
-                            // Si este estudiante es el principal y debe bloquearse:
-                            disabled={user?.email === editStudent?.email}
+                            disabled={!canEditProtectedMemberData || user?.email === editStudent?.email}
                         />
+                        {!canEditProtectedMemberData && (
+                            <p className="text-xs text-muted-foreground">{protectedFieldHelp}</p>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -96,6 +102,7 @@ export default function FormEditMembers ({
                                         style={{ lineHeight: 1, height: '1.5em', width: '1.5em' }}
                                         onClick={() => setEditNrcs(prev => prev.filter(code => code !== nrc))}
                                         aria-label="Eliminar NRC"
+                                        disabled={!canEditProtectedMemberData}
                                     >
                                         <span className="text-lg leading-none">×</span>
                                     </Button>
@@ -104,6 +111,8 @@ export default function FormEditMembers ({
                         })}
                     </div>
 
+                    {canEditProtectedMemberData && (
+                    <>
                     <label className="block text-sm font-medium">Agregar NRC</label>
                     <div>
                         <input
@@ -131,7 +140,12 @@ export default function FormEditMembers ({
                             )}
                         </div>
                     </div>
+                    </>
+                    )}
                 </div>
+                {!canEditProtectedMemberData && (
+                    <p className="text-xs text-muted-foreground">{protectedFieldHelp}</p>
+                )}
 
                 <DialogFooter>
                     <Button
@@ -140,6 +154,7 @@ export default function FormEditMembers ({
                     >
                         Cancelar
                     </Button>
+                    {canEditProtectedMemberData && (
                     <Button
                         onClick={async () => {
                             // Validaciones mínimas
@@ -192,7 +207,7 @@ export default function FormEditMembers ({
                                         : s));
                                     }
                                     // 2) Actualiza NRCs
-                                handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
+                                await handleSaveNrcs(editStudent, editNrcs, setStudents, setEditStudent);
                             } catch (err: any) {
                                 console.error(err);
                                 toast.error(err?.message || "No se pudo actualizar el estudiante");
@@ -201,6 +216,7 @@ export default function FormEditMembers ({
                     >
                         Guardar
                     </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

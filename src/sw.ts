@@ -15,12 +15,53 @@ const gameFiles = new Map<string, Map<string, ArrayBuffer>>();
 //el archivo 'sw.config.ts' le dice a Vite con qué configuración compilar el sw.
 //para funcionar, el sw transpilado tiene que estar en /public
 
-// magia para adueñarse de la pagina cuando sea necesario
-self.addEventListener('install', () => {
-    self.skipWaiting();
-});
 self.addEventListener('activate', (event: ExtendableEvent) => {
     event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('push', (event: PushEvent) => {
+    let payload = { title: 'ARKAD', body: '', url: '/' };
+
+    if (event.data) {
+        try {
+            payload = { ...payload, ...event.data.json() };
+        } catch {
+            payload.body = event.data.text();
+        }
+    }
+
+    const url = typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/';
+    event.waitUntil(self.registration.showNotification(payload.title || 'ARKAD', {
+        body: payload.body || '',
+        data: { url },
+        icon: '/arkadLight.svg',
+        badge: '/arkadDark.svg',
+    }));
+});
+
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+    event.notification.close();
+    const url = event.notification.data?.url;
+    const target = typeof url === 'string' && url.startsWith('/') ? url : '/';
+
+    event.waitUntil((async () => {
+        const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        const matching = clientsList.find((client) => new URL(client.url).pathname === target);
+        if (matching) {
+            await matching.focus();
+            return matching.navigate(target);
+        }
+        return self.clients.openWindow(target);
+    })());
+});
+
+self.addEventListener('pushsubscriptionchange', (event: ExtendableEvent) => {
+    event.waitUntil((async () => {
+        const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        if (clientsList[0]) {
+            clientsList[0].postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED' });
+        }
+    })());
 });
 
 // listeners para cuando sea hora de adueñarse de la pagina o cuando toque descomprimir el ZIP del juego
@@ -56,6 +97,9 @@ self.addEventListener('message', async (event: ExtendableMessageEvent) => {
 self.addEventListener('fetch', (event: FetchEvent) => {
     //check if detected fetch is for a local game file
     const url = new URL(event.request.url);
+    if (event.request.method !== 'GET' || url.origin !== self.location.origin) {
+        return;
+    }
     const match = url.pathname.match(/\/play-game\/([^/]+)\/(.*)/);
     if (!match) {
         return

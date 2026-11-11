@@ -30,6 +30,7 @@ interface JuradosListModalProps {
   onEditJuror: (jurado: Jurado) => void;
   onResendConfirmation: (email: string) => void;
   onSendJuradoCert: (jurado: Jurado) => void;
+  onDownloadJuradoCert: (jurado: Jurado) => void;
   onRemoveTeamsFromJuror: (jurorId: string, jurorName: string) => void;
   onToggleJurorType: (jurado: Jurado) => void;
   onDeleteJuror: (jurorId: string, jurorName: string) => void;
@@ -48,6 +49,7 @@ export function JuradosListModal({
   onEditJuror,
   onResendConfirmation,
   onSendJuradoCert,
+  onDownloadJuradoCert,
   onRemoveTeamsFromJuror,
   onToggleJurorType,
   onDeleteJuror,
@@ -205,6 +207,13 @@ export function JuradosListModal({
                           className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
                         >
                           Enviar certificado de jurado
+                        </button>
+
+                        <button
+                          onClick={() => void onDownloadJuradoCert(jurado)}
+                          className="w-full text-left rounded-xl px-3 py-3 hover:bg-accent text-sm"
+                        >
+                          Descargar certificado de jurado
                         </button>
 
                         <button

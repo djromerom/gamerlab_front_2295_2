@@ -1,5 +1,6 @@
 "use client";
 
+import { DraftBadge } from "@/components/grupo 8/EvaluationDrafts";
 import GameModal from "@/components/grupo 8/GameModal";
 import { Input } from "@/components/grupo 8/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,8 @@ interface Game {
   isEvaluated: boolean;
   totalScore?: number;
   comments?: string;
+  hasDraft?: boolean; // HU-18: el jurado tiene un borrador guardado de este juego
+  draftUpdatedAt?: string | null;
 }
 
 interface PendingGamesGridProps {
@@ -167,6 +170,9 @@ export const PendingGamesGrid: React.FC<
                 />
                 <div className="flex flex-col gap-1">
                   <h3 className="text-lg font-semibold">{game.nombre}</h3>
+                  {game.hasDraft && !game.isEvaluated && (
+                    <DraftBadge updatedAt={game.draftUpdatedAt} />
+                  )}
                   <p className="text-sm">
                     <span className="text-muted-foreground">Equipo:</span>{" "}
                     {game.equipo}
@@ -233,7 +239,11 @@ export const PendingGamesGrid: React.FC<
                   }
                   disabled={game.isEvaluated}
                 >
-                  {game.isEvaluated ? "Calificado" : "Calificar"}
+                  {game.isEvaluated
+                    ? "Calificado"
+                    : game.hasDraft
+                      ? "Continuar"
+                      : "Calificar"}
                 </Button>
               </div>
             </div>

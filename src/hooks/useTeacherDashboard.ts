@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Edition } from "@/fetchs/editions";
 import { useFetch } from "@/hooks/useFetch";
+import { toFairGradeRule } from "@/components/grupo 5/student-grade-table-types";
 
 interface PaginationMetadata {
   totalItems: number;
@@ -17,15 +18,19 @@ interface UseTeacherDashboardProps {
   includeHistorical?: boolean;
   sortBy?: "student" | "team";
   sortOrder?: "asc" | "desc";
+  /** Feria y NRC con que abre la tabla (p. ej. al retomar notas sin guardar, BG-27). */
+  initialFair?: string;
+  initialNRC?: string;
 }
 
-export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHistorical = false, sortBy = "team", sortOrder = "asc" }: UseTeacherDashboardProps = {}) {
+export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHistorical = false, sortBy = "team", sortOrder = "asc", initialFair = "", initialNRC = "" }: UseTeacherDashboardProps = {}) {
   const customFetch = useFetch();
   const [availableFairs, setAvailableFairs] = useState<Edition[]>([]);
   const [allNRCs, setAllNRCs] = useState<any[]>([]);
   // Empty edition means all fairs. Empty NRC means all NRCs in the selected scope.
-  const [selectedFair, setSelectedFairState] = useState("");
-  const [selectedNRC, setSelectedNRCState] = useState("");
+  const [selectedFair, setSelectedFairState] = useState(initialFair);
+  const [selectedNRC, setSelectedNRCState] = useState(initialNRC);
+  const previousHistorical = useRef(includeHistorical);
   const [currentPage, setCurrentPage] = useState(1);
   const [projects, setProjects] = useState<any[]>([]);
   const [paginationMetadata, setPaginationMetadata] = useState<PaginationMetadata>({
@@ -42,7 +47,10 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
   }, []);
 
   // Cambiar de pestaña (feria activa / históricos) cambia las opciones válidas: se reinician los filtros.
+  // Solo al cambiar de pestaña, no al montar: así se respetan initialFair/initialNRC.
   useEffect(() => {
+    if (previousHistorical.current === includeHistorical) return;
+    previousHistorical.current = includeHistorical;
     setSelectedFairState("");
     setSelectedNRCState("");
     setCurrentPage(1);
@@ -221,6 +229,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
         nrcId: project.nrcId ?? null,
         canEdit: project.canEdit === true,
         source: project.source === "historical" ? "historical" as const : "current" as const,
+        fairGradeRule: toFairGradeRule(project.fairGradeRule, project.isExternal),
         _rows: [project],
       })),
     [projects, availableFairs],

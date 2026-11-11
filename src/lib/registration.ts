@@ -1,4 +1,4 @@
-import type { CombinedFormValues } from "@/lib/schemas";
+import { normalizeEmail, type CombinedFormValues } from "@/lib/schemas";
 
 /**
  * Utilidades del registro de equipos (chore registro-equipos-validaciones, a partir del beta-test
@@ -62,10 +62,12 @@ export function buildRegistrationPayload(
 export function nrcLabel(option: {
   code: number | string;
   name?: string;
+  professorName?: string;
   subject?: { name?: string } | null;
 }): string {
   const subject = option.subject?.name ?? option.name;
-  return subject ? `${option.code} · ${subject}` : String(option.code);
+  const label = subject ? `${option.code} · ${subject}` : String(option.code);
+  return option.professorName ? `${label} · ${option.professorName}` : label;
 }
 
 /* ---------- Borrador en sessionStorage (recargar borraba todo) ---------- */
@@ -90,6 +92,7 @@ export function saveRegistrationDraft(step: number, values: CombinedFormValues):
         nombre: m.nombre ?? "",
         apellido: m.apellido ?? "",
         correo: m.correo ?? "",
+        confirmarCorreo: m.confirmarCorreo ?? "",
         codigoEstudiantil: m.codigoEstudiantil ?? "",
         nrc: m.nrc ?? [],
       })),
@@ -112,19 +115,27 @@ export function loadRegistrationDraft(): RegistrationDraft | null {
     if (!raw) return null;
     const draft = JSON.parse(raw) as RegistrationDraft;
     if (!draft || typeof draft !== "object" || !draft.values) return null;
-    const members = Array.isArray(draft.values.members) ? draft.values.members : [];
+    const rawMembers = Array.isArray(draft.values.members) ? draft.values.members : [];
+    const members = rawMembers.slice(0, 5).map((m) => ({
+      nombre: String(m?.nombre ?? ""),
+      apellido: String(m?.apellido ?? ""),
+      correo: String(m?.correo ?? ""),
+      confirmarCorreo: String(m?.confirmarCorreo ?? ""),
+      codigoEstudiantil: String(m?.codigoEstudiantil ?? ""),
+      nrc: Array.isArray(m?.nrc) ? m.nrc.map(String) : [],
+    }));
+    // el paso 4 tiene el captcha y los archivos: se vuelve como máximo al paso 3
+    let step = Math.min(Math.max(Number(draft.step) || 0, 0), 2);
+    // Un correo sin repetir (borrador de antes de ARK-168) se corrige en el paso de integrantes:
+    // más adelante el error quedaría en un campo que no se ve
+    if (members.some((m) => normalizeEmail(m.correo) !== normalizeEmail(m.confirmarCorreo))) {
+      step = Math.min(step, 1);
+    }
     return {
-      // el paso 4 tiene el captcha y los archivos: se vuelve como máximo al paso 3
-      step: Math.min(Math.max(Number(draft.step) || 0, 0), 2),
+      step,
       values: {
         teamName: String(draft.values.teamName ?? ""),
-        members: members.slice(0, 5).map((m) => ({
-          nombre: String(m?.nombre ?? ""),
-          apellido: String(m?.apellido ?? ""),
-          correo: String(m?.correo ?? ""),
-          codigoEstudiantil: String(m?.codigoEstudiantil ?? ""),
-          nrc: Array.isArray(m?.nrc) ? m.nrc.map(String) : [],
-        })),
+        members,
         gameName: String(draft.values.gameName ?? ""),
         description: String(draft.values.description ?? ""),
         YoutubeUrl: String(draft.values.YoutubeUrl ?? ""),
