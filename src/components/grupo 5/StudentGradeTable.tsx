@@ -10,13 +10,18 @@ import { useFetch } from "@/hooks/useFetch";
 import StudentGradeFilters from "./StudentGradeFilters";
 import StudentGradeTableView from "./StudentGradeTableView";
 import { gradeKey, type GradeTeam } from "./student-grade-table-types";
+import { clearGradeDraft, isGradeModified, readGradeDraft, writeGradeDraft } from "@/lib/gradeDrafts";
 
 export default function StudentGradeTable() {
   const customFetch = useFetch();
   const [downloading, setDownloading] = useState(false);
-  const [isEditingGrades, setIsEditingGrades] = useState(false);
-  const [editedGrades, setEditedGrades] = useState<Record<string, string>>({});
-  const [editedTeams, setEditedTeams] = useState<Record<string, GradeTeam>>({});
+  // BG-27: notas sin guardar de una visita anterior (recarga, pestaña cerrada o sesión vencida)
+  const [restoredDraft] = useState(readGradeDraft);
+  const [isEditingGrades, setIsEditingGrades] = useState(restoredDraft !== null);
+  const [editedGrades, setEditedGrades] = useState<Record<string, string>>(() => restoredDraft?.grades ?? {});
+  const [editedTeams, setEditedTeams] = useState<Record<string, GradeTeam>>(() => restoredDraft?.teams ?? {});
+  // false si el navegador no pudo guardar las notas: entonces sí se avisa al recargar
+  const draftPersisted = useRef(false);
   const [gradeResults, setGradeResults] = useState<Record<string, { ok: boolean; message: string }>>({});
   const [savingGrade, setSavingGrade] = useState(false);
   const gradeInputRefs = useRef(new Map<string, HTMLInputElement>());
@@ -24,7 +29,10 @@ export default function StudentGradeTable() {
   const [showHistorical, setShowHistorical] = useState(false);
   const [sortBy, setSortBy] = useState<"student" | "team">("team");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const dashboard = useTeacherDashboard({ search: filterSearch, includeHistorical: showHistorical, sortBy, sortOrder });
+  const dashboard = useTeacherDashboard({
+    search: filterSearch, includeHistorical: showHistorical, sortBy, sortOrder,
+    initialFair: restoredDraft?.fair, initialNRC: restoredDraft?.nrc,
+  });
   const {
     selectedNRC, setSelectedNRC, selectedFair, setSelectedFair, selectedEdition,
     availableFairs, currentPage, setCurrentPage, paginationMetadata, availableNRCs, isLoading,
@@ -49,22 +57,30 @@ export default function StudentGradeTable() {
     return [...byKey.values()];
   }, [teams, editedTeams]);
 
-  const hasUnsavedChanges = useMemo(() => editableTeams.some((team: GradeTeam) => {
-    if (!team.canEdit) return false;
-    const value = (editedGrades[gradeKey(team)] ?? "").trim();
-    const original = team.calificacionDocente;
-    if (value === "") return original != null;
-    const numericValue = Number(value);
-    return !Number.isFinite(numericValue) || original == null || numericValue !== original;
-  }), [editableTeams, editedGrades]);
+  const hasUnsavedChanges = useMemo(() => editableTeams.some((team: GradeTeam) =>
+    team.canEdit === true && isGradeModified(editedGrades[gradeKey(team)], team.calificacionDocente),
+  ), [editableTeams, editedGrades]);
+
+  useEffect(() => {
+    if (restoredDraft) {
+      const count = Object.keys(restoredDraft.grades).length;
+      toast.info(
+        count === 1 ? "Recuperamos 1 nota que no habías guardado" : `Recuperamos ${count} notas que no habías guardado`,
+        { id: "grade-draft-restored" },
+      );
+    }
+  }, [restoredDraft]);
 
   useEffect(() => {
     if (!isEditingGrades) return;
     const currentEditable = teams.filter((team: GradeTeam) => team.canEdit);
-    if (currentEditable.length === 0) return;
+    // Filas que ya no se pueden editar (p. ej. se cerró la feria): se descarta lo que se traía de antes.
+    const lockedKeys = teams.filter((team: GradeTeam) => !team.canEdit).map(gradeKey);
+    if (currentEditable.length === 0 && lockedKeys.length === 0) return;
     setEditedTeams((previous) => {
       const next = { ...previous };
       currentEditable.forEach((team) => { next[gradeKey(team)] = team; });
+      lockedKeys.forEach((key) => { delete next[key]; });
       return next;
     });
     setEditedGrades((previous) => {
@@ -73,13 +89,41 @@ export default function StudentGradeTable() {
         const key = gradeKey(team);
         if (!(key in next)) next[key] = team.calificacionDocente == null ? "" : team.calificacionDocente.toFixed(2);
       });
+      lockedKeys.forEach((key) => { delete next[key]; });
       return next;
     });
   }, [isEditingGrades, teams]);
 
+  // BG-27: lo modificado y sin guardar queda en el navegador; se borra al guardarlo o descartarlo.
+  useEffect(() => {
+    if (!isEditingGrades) {
+      clearGradeDraft();
+      draftPersisted.current = false;
+      return;
+    }
+    const grades: Record<string, string> = {};
+    const snapshot: Record<string, GradeTeam> = {};
+    editableTeams.forEach((team: GradeTeam) => {
+      const key = gradeKey(team);
+      const raw = editedGrades[key];
+      if (team.canEdit && raw !== undefined && isGradeModified(raw, team.calificacionDocente)) {
+        grades[key] = raw;
+        snapshot[key] = team;
+      }
+    });
+    if (Object.keys(grades).length === 0) {
+      clearGradeDraft();
+      draftPersisted.current = true;
+      return;
+    }
+    draftPersisted.current = writeGradeDraft({ fair: selectedFair, nrc: selectedNRC, grades, teams: snapshot });
+  }, [isEditingGrades, editableTeams, editedGrades, selectedFair, selectedNRC]);
+
   useEffect(() => {
     if (!isEditingGrades || !hasUnsavedChanges) return;
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Las notas quedaron en el navegador y se recuperan al volver: no hace falta frenar la recarga.
+      if (draftPersisted.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -194,12 +238,9 @@ export default function StudentGradeTable() {
   };
 
   const saveGrades = async () => {
-    const changed = editableTeams.filter((team: GradeTeam) => {
-      if (!team.canEdit) return false;
-      const raw = (editedGrades[gradeKey(team)] ?? "").trim();
-      const original = team.calificacionDocente;
-      return raw === "" ? original != null : !Number.isFinite(Number(raw)) || original == null || Number(raw) !== original;
-    });
+    const changed = editableTeams.filter((team: GradeTeam) =>
+      team.canEdit === true && isGradeModified(editedGrades[gradeKey(team)], team.calificacionDocente),
+    );
     if (changed.length === 0) { toast.info("No hay cambios para guardar"); return; }
     const valid: GradeTeam[] = [];
     const nextResults: Record<string, { ok: boolean; message: string }> = {};
