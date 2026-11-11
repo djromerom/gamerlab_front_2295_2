@@ -3,13 +3,6 @@ import { apiFetch } from "@/lib/api";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   FormControl,
   FormField,
   FormItem,
@@ -18,10 +11,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useMultiForm } from "@/contexts/MultiFormContext";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { CombinedFormValues, NO_PASTE_MESSAGE } from "@/lib/schemas";
-import { useEffect, useState, type ClipboardEvent, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ClipboardEvent, type DragEvent } from "react";
 import { toast } from "sonner";
+import SubjectNrcPicker from "./SubjectNrcPicker";
+import {
+  subjectIdOf,
+  subjectsFromOptions,
+  subjectsMissingNrc,
+  type NrcOption,
+} from "@/lib/nrcSubjects";
 
 /**
  * Los dos campos de correo no aceptan texto pegado (teclado, menú contextual o el menú del
@@ -38,26 +38,23 @@ const blockPasteAndDrop = {
   },
 };
 
-// Define an interface for your NRC option objects
-interface NrcOption {
-  code: number | string;
-  name?: string;
-  subjectId?: number;
-  professorName?: string;
-  subject?: { id?: number; name?: string; abrevName?: string } | null;
-  [key: string]: unknown;
-}
-
 export default function MembersStep() {
   const { back, next } = useMultiForm();
-  const { control, trigger, getValues, setValue, setError, setFocus } = useFormContext<CombinedFormValues>();
+  const { control, trigger, getValues, setValue, setError, setFocus, clearErrors } =
+    useFormContext<CombinedFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "members",
   });
 
   const [isValidatingEmails, setIsValidatingEmails] = useState(false);
-  const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
+  // Materias marcadas que aún no tienen NRC, por integrante (id del field array). Las que ya
+  // tienen NRC salen del valor del formulario.
+  const [pendingSubjects, setPendingSubjects] = useState<Record<string, string[]>>({});
+  const setPendingFor = useCallback((memberId: string, subjectIds: string[]) => {
+    setPendingSubjects((current) => ({ ...current, [memberId]: subjectIds }));
+  }, []);
+  const watchedMembers = useWatch({ control, name: "members" });
 
   /**
    * Revisa contra la API una lista de valores (correos o códigos) y marca el campo de cada
@@ -111,6 +108,22 @@ export default function MembersStep() {
   const handleNext = async () => {
     // Primero las reglas del formulario (vacíos, formato, repetidos dentro del equipo)
     const isValid = await trigger("members");
+    // Una materia marcada sin NRC no se ignora: se pide su NRC (propuesta A)
+    const missingByMember = getValues("members").map((member, index) =>
+      subjectsMissingNrc(subjects, nrcActivos, member.nrc ?? [], pendingSubjects[fields[index]?.id] ?? []),
+    );
+    missingByMember.forEach((missing, index) => {
+      if (missing.length === 0) return;
+      setError(`members.${index}.nrc`, {
+        type: "manual",
+        message: `Elige el NRC de ${missing.map((subject) => subject.name).join(" y de ")}`,
+      });
+    });
+    const firstMissing = missingByMember.findIndex((missing) => missing.length > 0);
+    if (firstMissing >= 0) {
+      setFocus(`members.${firstMissing}.nrc`);
+      return;
+    }
     if (!isValid) return;
     const optionsByCode = new Map(nrcActivos.map((option) => [String(option.code), option]));
     let removedUnknownNrc = false;
@@ -122,9 +135,7 @@ export default function MembersStep() {
       }
     });
     const invalidMember = getValues("members").findIndex((member) => {
-      const subjectIds = member.nrc.map((code) =>
-        String(optionsByCode.get(code)?.subjectId ?? optionsByCode.get(code)?.subject?.id ?? ""),
-      );
+      const subjectIds = member.nrc.map((code) => subjectIdOf(optionsByCode.get(String(code))));
       return new Set(subjectIds).size !== subjectIds.length;
     });
     if (removedUnknownNrc && invalidMember < 0) {
@@ -137,6 +148,8 @@ export default function MembersStep() {
       toast.error(`Integrante ${invalidMember + 1}: ${message}`);
       return;
     }
+    // Si se quitaron NRC desconocidos, el integrante puede haber quedado sin ninguno
+    if (removedUnknownNrc && !(await trigger("members"))) return;
 
     setIsValidatingEmails(true);
     try {
@@ -170,6 +183,7 @@ export default function MembersStep() {
   const API_ENDPOINT = `${import.meta.env.VITE_ENDPOINT_BACKEND}/nrcs/select-options?includeSubjects=true`;
 
   const [nrcActivos, setNrcActivos] = useState<NrcOption[]>([]);
+  const subjects = useMemo(() => subjectsFromOptions(nrcActivos), [nrcActivos]);
 
   useEffect(() => {
     const fetchNrcs = async () => {
@@ -348,112 +362,50 @@ export default function MembersStep() {
                 )}
               />
 
-              {/* NRC */}
+              {/* Materias y NRC: propuesta A del «Selector de NRC de Arkad» (HU-31, ARK-193) */}
               <FormField
                 control={control}
                 name={`members.${idx}.nrc` as const}
-                render={({ field }) => {
-                  const selectedNRCs: string[] = field.value || [];
-                  const allNrcOptionsFromState: NrcOption[] = nrcActivos;
-                  const subjects = Array.from(
-                    new Map(
-                      allNrcOptionsFromState
-                        .filter((option) => option.subject)
-                        .map((option) => {
-                          const subjectId = String(option.subjectId ?? option.subject?.id ?? "");
-                          return [subjectId, {
-                            id: subjectId,
-                            name: option.subject?.name ?? option.name ?? "",
-                            abrevName: option.subject?.abrevName ?? option.subject?.name ?? "",
-                          }];
-                        }),
-                    ).values(),
-                  );
-                  const subjectByCode = new Map(
-                    allNrcOptionsFromState.map((option) => [
-                      String(option.code),
-                      String(option.subjectId ?? option.subject?.id ?? ""),
-                    ]),
-                  );
-
+                render={({ field, fieldState }) => {
+                  const previous = idx > 0 ? watchedMembers?.[idx - 1] : undefined;
+                  const canCopy = !isPageLoading && subjects.length > 0 && (previous?.nrc?.length ?? 0) > 0;
                   return (
-                    <FormItem>
-                      <FormLabel>NRC</FormLabel>
-                      <FormControl>
-                        <div className="space-y-3">
-                          {isPageLoading && <p className="text-sm text-muted-foreground">Cargando NRCs...</p>}
-                          {!isPageLoading && subjects.length === 0 && (
-                            <p className="text-sm text-muted-foreground">No hay NRCs disponibles.</p>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            {subjects.map((subject) => {
-                              const key = `${member.id}:${subject.id}`;
-                              const active = Boolean(openSubjects[key]) || selectedNRCs.some(
-                                (code) => subjectByCode.get(code) === subject.id,
-                              );
-                              return (
-                                <Button
-                                  type="button"
-                                  variant={active ? "default" : "outline"}
-                                  size="sm"
-                                  key={subject.id}
-                                  title={subject.name}
-                                  aria-pressed={active}
-                                  onClick={() => {
-                                    const nextOpen = !active;
-                                    setOpenSubjects((current) => ({ ...current, [key]: nextOpen }));
-                                    if (!nextOpen) {
-                                      field.onChange(selectedNRCs.filter(
-                                        (code) => subjectByCode.get(code) !== subject.id,
-                                      ));
-                                    }
-                                  }}
-                                >
-                                  {subject.abrevName}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                          {subjects.filter((subject) => {
-                            const key = `${member.id}:${subject.id}`;
-                            return openSubjects[key] || selectedNRCs.some(
-                              (code) => subjectByCode.get(code) === subject.id,
-                            );
-                          }).map((subject) => {
-                            const currentCode = selectedNRCs.find(
-                              (code) => subjectByCode.get(code) === subject.id,
-                            );
-                            const options = allNrcOptionsFromState.filter(
-                              (option) => String(option.subjectId ?? option.subject?.id) === subject.id,
-                            );
-                            return (
-                              <div key={subject.id} className="space-y-1">
-                                <label className="text-sm font-medium" title={subject.name}>{subject.name}</label>
-                                <Select
-                                  value={currentCode}
-                                  onValueChange={(code) => {
-                                    field.onChange([
-                                      ...selectedNRCs.filter(
-                                        (selectedCode) => subjectByCode.get(selectedCode) !== subject.id,
-                                      ),
-                                      code,
-                                    ]);
-                                  }}
-                                >
-                                  <SelectTrigger><SelectValue placeholder={`Selecciona el NRC de ${subject.abrevName}`} /></SelectTrigger>
-                                  <SelectContent>
-                                    {options.map((option) => (
-                                      <SelectItem key={String(option.code)} value={String(option.code)}>
-                                        {String(option.code)}{option.professorName ? ` · ${option.professorName}` : ""}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </FormControl>
+                    <FormItem className="md:col-span-2">
+                      {isPageLoading ? (
+                        <p className="text-sm text-muted-foreground">Cargando NRCs...</p>
+                      ) : subjects.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No hay NRCs disponibles.</p>
+                      ) : (
+                        <SubjectNrcPicker
+                          ref={field.ref}
+                          options={nrcActivos}
+                          subjects={subjects}
+                          value={field.value ?? []}
+                          onChange={(codes) => {
+                            field.onChange(codes);
+                            clearErrors(`members.${idx}.nrc`);
+                          }}
+                          pending={pendingSubjects[member.id] ?? []}
+                          onPendingChange={(subjectIds) => {
+                            setPendingFor(member.id, subjectIds);
+                            clearErrors(`members.${idx}.nrc`);
+                          }}
+                          invalid={Boolean(fieldState.error)}
+                        />
+                      )}
+                      {canCopy && (
+                        <button
+                          type="button"
+                          className="justify-self-start cursor-pointer text-xs text-[#B3C7FF] underline underline-offset-2"
+                          onClick={() => {
+                            field.onChange([...(previous?.nrc ?? [])]);
+                            setPendingFor(member.id, pendingSubjects[fields[idx - 1].id] ?? []);
+                            clearErrors(`members.${idx}.nrc`);
+                          }}
+                        >
+                          Copiar del integrante anterior
+                        </button>
+                      )}
                       <FormMessage />
                     </FormItem>
                   );
