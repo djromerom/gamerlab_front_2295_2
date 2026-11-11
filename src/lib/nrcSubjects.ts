@@ -23,6 +23,37 @@ export interface SubjectInfo {
 export const subjectIdOf = (option: NrcOption | undefined): string =>
   String(option?.subjectId ?? option?.subject?.id ?? "");
 
+/** Última palabra del nombre: «II» en «Algoritmia y Programación II». */
+const lastWord = (name: string): string => name.trim().split(/\s+/).pop() ?? "";
+
+/** Agrupa las materias por un texto y devuelve las que lo comparten con otra. */
+function repeatedBy(subjects: SubjectInfo[], key: (subject: SubjectInfo) => string): Set<SubjectInfo> {
+  const groups = new Map<string, SubjectInfo[]>();
+  subjects.forEach((subject) => {
+    const k = key(subject).toLocaleLowerCase();
+    groups.set(k, [...(groups.get(k) ?? []), subject]);
+  });
+  return new Set([...groups.values()].filter((group) => group.length > 1).flat());
+}
+
+/**
+ * Evita que dos botones muestren el mismo texto (ARK-193): si dos materias comparten
+ * abreviatura, se le agrega la última palabra del nombre («AYP · I», «AYP · II»); si aun así
+ * coinciden, se muestra el nombre completo y, como último recurso, el id de la materia.
+ */
+function disambiguateAbrevNames(subjects: SubjectInfo[]): SubjectInfo[] {
+  const repeatedAbrev = repeatedBy(subjects, (s) => s.abrevName);
+  let result = subjects.map((s) =>
+    repeatedAbrev.has(s) && lastWord(s.name) && lastWord(s.name) !== s.abrevName
+      ? { ...s, abrevName: `${s.abrevName} · ${lastWord(s.name)}` }
+      : s,
+  );
+  const stillRepeated = repeatedBy(result, (s) => s.abrevName);
+  result = result.map((s) => (stillRepeated.has(s) ? { ...s, abrevName: s.name } : s));
+  const sameName = repeatedBy(result, (s) => s.abrevName);
+  return result.map((s) => (sameName.has(s) ? { ...s, abrevName: `${s.abrevName} (${s.id})` } : s));
+}
+
 /** Materias de los NRC de la edición activa, sin repetir y en el orden que llegan. */
 export function subjectsFromOptions(options: NrcOption[]): SubjectInfo[] {
   const subjects = new Map<string, SubjectInfo>();
@@ -32,7 +63,7 @@ export function subjectsFromOptions(options: NrcOption[]): SubjectInfo[] {
     const name = option.subject?.name ?? option.name ?? `Materia ${id}`;
     subjects.set(id, { id, name, abrevName: option.subject?.abrevName || name });
   });
-  return [...subjects.values()];
+  return disambiguateAbrevNames([...subjects.values()]);
 }
 
 /** Texto de cada NRC en el desplegable: "3031 · Prof. Ana Ruiz". */
