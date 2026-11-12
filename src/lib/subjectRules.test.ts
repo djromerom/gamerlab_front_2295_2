@@ -3,7 +3,7 @@ import {
   blockedReason,
   canCombine,
   invalidCombination,
-  membersWithoutSharedNrc,
+  membersWithoutSharedSubject,
   subjectFamilies,
 } from "@/lib/subjectRules";
 
@@ -83,17 +83,18 @@ describe("materias que un integrante puede marcar juntas (ARK-193)", () => {
   });
 });
 
-describe("cada integrante comparte un NRC con los anteriores (ARK-193)", () => {
-  it("acepta un equipo encadenado por NRC", () => {
+describe("cada integrante comparte una materia con los anteriores (ARK-193)", () => {
+  it("acepta un equipo encadenado por materia", () => {
     // 1: EDD I + POO · 2: solo POO · 3: POO + EDD II
-    expect(membersWithoutSharedNrc([["5001", "4001"], ["4001"], ["4001", "1001"]])).toEqual([]);
+    expect(membersWithoutSharedSubject([["5", "4"], ["4"], ["4", "1"]])).toEqual([]);
   });
 
-  it("señala a quien no comparte ninguno", () => {
-    expect(membersWithoutSharedNrc([["4001"], ["4002"], ["4001"]])).toEqual([1]);
+  it("señala a quien no comparte ninguna", () => {
+    // 1: POO · 2: EDD II · 3: POO
+    expect(membersWithoutSharedSubject([["4"], ["1"], ["4"]])).toEqual([1]);
   });
 
-  it("no exige nada a quien todavía no tiene NRC", () => {
-    expect(membersWithoutSharedNrc([["4001"], []])).toEqual([]);
+  it("no exige nada a quien todavía no tiene materias", () => {
+    expect(membersWithoutSharedSubject([["4"], []])).toEqual([]);
   });
 });

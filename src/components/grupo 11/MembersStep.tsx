@@ -26,8 +26,8 @@ import {
 import {
   COMBINATION_HINT,
   invalidCombination,
-  membersWithoutSharedNrc,
-  SHARED_NRC_MESSAGE,
+  membersWithoutSharedSubject,
+  SHARED_SUBJECT_MESSAGE,
   subjectFamilies,
 } from "@/lib/subjectRules";
 
@@ -134,13 +134,12 @@ export default function MembersStep() {
     }
     // ARK-193: materias que no se pueden combinar (por ejemplo, al volver de un borrador)
     const families = subjectFamilies(nrcActivos);
-    const combinationByMember = getValues("members").map((member, index) =>
+    const markedByMember = getValues("members").map((member, index) =>
+      markedSubjectIds(subjects, nrcActivos, member.nrc ?? [], pendingSubjects[fields[index]?.id] ?? []),
+    );
+    const combinationByMember = markedByMember.map((marked) =>
       invalidCombination(
-        subjects.filter((subject) =>
-          markedSubjectIds(subjects, nrcActivos, member.nrc ?? [], pendingSubjects[fields[index]?.id] ?? []).includes(
-            subject.id,
-          ),
-        ),
+        subjects.filter((subject) => marked.includes(subject.id)),
         families,
       ),
     );
@@ -153,14 +152,15 @@ export default function MembersStep() {
       toast.error(`Integrante ${badCombination + 1}: ${message}`);
       return;
     }
-    // ARK-193: desde el segundo integrante, cada uno comparte un NRC con alguno de los anteriores
-    const lonely = membersWithoutSharedNrc(getValues("members").map((member) => member.nrc ?? []));
+    // ARK-193: desde el segundo integrante, cada uno comparte una materia con alguno de los
+    // anteriores; el NRC puede ser distinto (mismo curso, otro grupo)
+    const lonely = membersWithoutSharedSubject(markedByMember);
     if (lonely.length > 0) {
       lonely.forEach((index) => {
-        setError(`members.${index}.nrc`, { type: "manual", message: SHARED_NRC_MESSAGE });
+        setError(`members.${index}.nrc`, { type: "manual", message: SHARED_SUBJECT_MESSAGE });
       });
       setFocus(`members.${lonely[0]}.nrc`);
-      toast.error(`Integrante ${lonely.map((i) => i + 1).join(", ")}: ${SHARED_NRC_MESSAGE}`);
+      toast.error(`Integrante ${lonely.map((i) => i + 1).join(", ")}: ${SHARED_SUBJECT_MESSAGE}`);
       return;
     }
     if (!isValid) return;

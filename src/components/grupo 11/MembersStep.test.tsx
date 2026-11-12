@@ -278,7 +278,7 @@ const CHAIN_OPTIONS = [
   { code: "3061", subjectId: 1, subject: { id: 1, name: "Estructuras de Datos II", abrevName: "EDD" } },
 ];
 
-describe("MembersStep: prerrequisitos y NRC compartido (ARK-193)", () => {
+describe("MembersStep: prerrequisitos y materia compartida (ARK-193)", () => {
   beforeEach(() => {
     vi.mocked(apiFetch).mockImplementation(async (url) =>
       String(url).includes("/nrcs/") ? jsonResponse(CHAIN_OPTIONS) : jsonResponse({}),
@@ -333,16 +333,26 @@ describe("MembersStep: prerrequisitos y NRC compartido (ARK-193)", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("no avanza si un integrante no comparte ningún NRC con los anteriores", async () => {
+  it("no avanza si un integrante no comparte ninguna materia con los anteriores", async () => {
+    // 1: POO · 2: EDD II
+    await renderTeam([member(1, ["3041"]), member(2, ["3061"])]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText(/Debe compartir al menos una materia/)).toBeTruthy();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("avanza si comparten la materia aunque tengan NRC distintos", async () => {
+    // los dos en POO, uno en el NRC 3041 y otro en el 3042
     await renderTeam([member(1, ["3041"]), member(2, ["3042"])]);
 
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
 
-    expect(await screen.findByText(/Debe compartir al menos un NRC/)).toBeTruthy();
-    expect(next).not.toHaveBeenCalled();
+    await waitFor(() => expect(next).toHaveBeenCalledTimes(1));
   });
 
-  it("avanza con un equipo encadenado por NRC", async () => {
+  it("avanza con un equipo encadenado por materia", async () => {
     // 1: EDD I + POO · 2: solo POO · 3: POO + EDD II
     await renderTeam([member(1, ["3051", "3041"]), member(2, ["3041"]), member(3, ["3041", "3061"])]);
 

@@ -7,7 +7,8 @@ import { subjectIdOf, type NrcOption, type SubjectInfo } from "@/lib/nrcSubjects
  *    (Algoritmia I → Algoritmia II → POO y Estructuras de Datos I → Estructuras de Datos II).
  *    Lo único que se puede marcar junto es POO con una de las Estructuras de Datos.
  *    Cualquier otra materia (Algoritmia, Colegios, Proyecto Final...) va sola.
- * 2. Desde el segundo integrante, cada uno comparte al menos un NRC con alguno de los anteriores.
+ * 2. Desde el segundo integrante, cada uno comparte al menos una materia con alguno de los
+ *    anteriores. El NRC puede ser distinto: dos integrantes de AYP I en grupos diferentes sirven.
  *
  * La materia se reconoce por su abreviatura del catálogo (POO, EDD), que es la misma en todos los
  * ambientes aunque el nombre cambie («Estructuras de Datos I», «Estructura de Datos 1»). Si la
@@ -83,21 +84,22 @@ export function invalidCombination(
 }
 
 /**
- * Integrantes (índices) que no comparten ningún NRC con los anteriores. Se omiten los que aún
- * no tienen NRC: ese caso ya lo informa el formulario.
+ * Integrantes (índices) que no comparten ninguna materia con los anteriores. Recibe los ids de
+ * materia de cada integrante; el NRC no importa. Se omiten los que aún no tienen materias: ese
+ * caso ya lo informa el formulario.
  */
-export function membersWithoutSharedNrc(nrcByMember: string[][]): number[] {
+export function membersWithoutSharedSubject(subjectIdsByMember: string[][]): number[] {
   const seen = new Set<string>();
   const lonely: number[] = [];
-  nrcByMember.forEach((codes, index) => {
-    const own = codes.map(String);
-    if (index > 0 && own.length > 0 && seen.size > 0 && !own.some((code) => seen.has(code))) {
+  subjectIdsByMember.forEach((ids, index) => {
+    const own = ids.map(String);
+    if (index > 0 && own.length > 0 && seen.size > 0 && !own.some((id) => seen.has(id))) {
       lonely.push(index);
     }
-    own.forEach((code) => seen.add(code));
+    own.forEach((id) => seen.add(id));
   });
   return lonely;
 }
 
-export const SHARED_NRC_MESSAGE =
-  "Debe compartir al menos un NRC con un integrante anterior: el equipo es de una misma clase.";
+export const SHARED_SUBJECT_MESSAGE =
+  "Debe compartir al menos una materia con un integrante anterior (el NRC puede ser distinto).";
