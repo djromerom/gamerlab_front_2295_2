@@ -17,11 +17,19 @@ import { useCallback, useEffect, useMemo, useState, type ClipboardEvent, type Dr
 import { toast } from "sonner";
 import SubjectNrcPicker from "./SubjectNrcPicker";
 import {
+  markedSubjectIds,
   subjectIdOf,
   subjectsFromOptions,
   subjectsMissingNrc,
   type NrcOption,
 } from "@/lib/nrcSubjects";
+import {
+  COMBINATION_HINT,
+  invalidCombination,
+  membersWithoutSharedNrc,
+  SHARED_NRC_MESSAGE,
+  subjectFamilies,
+} from "@/lib/subjectRules";
 
 /**
  * Los dos campos de correo no aceptan texto pegado (teclado, menú contextual o el menú del
@@ -122,6 +130,37 @@ export default function MembersStep() {
     const firstMissing = missingByMember.findIndex((missing) => missing.length > 0);
     if (firstMissing >= 0) {
       setFocus(`members.${firstMissing}.nrc`);
+      return;
+    }
+    // ARK-193: materias que no se pueden combinar (por ejemplo, al volver de un borrador)
+    const families = subjectFamilies(nrcActivos);
+    const combinationByMember = getValues("members").map((member, index) =>
+      invalidCombination(
+        subjects.filter((subject) =>
+          markedSubjectIds(subjects, nrcActivos, member.nrc ?? [], pendingSubjects[fields[index]?.id] ?? []).includes(
+            subject.id,
+          ),
+        ),
+        families,
+      ),
+    );
+    const badCombination = combinationByMember.findIndex((pair) => pair !== null);
+    if (badCombination >= 0) {
+      const [first, second] = combinationByMember[badCombination]!;
+      const message = `${first.name} y ${second.name} no se pueden marcar juntas. ${COMBINATION_HINT}`;
+      setError(`members.${badCombination}.nrc`, { type: "manual", message });
+      setFocus(`members.${badCombination}.nrc`);
+      toast.error(`Integrante ${badCombination + 1}: ${message}`);
+      return;
+    }
+    // ARK-193: desde el segundo integrante, cada uno comparte un NRC con alguno de los anteriores
+    const lonely = membersWithoutSharedNrc(getValues("members").map((member) => member.nrc ?? []));
+    if (lonely.length > 0) {
+      lonely.forEach((index) => {
+        setError(`members.${index}.nrc`, { type: "manual", message: SHARED_NRC_MESSAGE });
+      });
+      setFocus(`members.${lonely[0]}.nrc`);
+      toast.error(`Integrante ${lonely.map((i) => i + 1).join(", ")}: ${SHARED_NRC_MESSAGE}`);
       return;
     }
     if (!isValid) return;
@@ -250,14 +289,8 @@ export default function MembersStep() {
     <>
       <h2 className="text-xl font-medium">Integrantes</h2>
 
-      <div className=" overflow-y-auto
-  [&::-webkit-scrollbar]:w-2 pr-5
-  [&::-webkit-scrollbar-track]:rounded-full
-  [&::-webkit-scrollbar-track]:bg-gray-100
-  [&::-webkit-scrollbar-thumb]:rounded-full
-  [&::-webkit-scrollbar-thumb]:bg-gray-300
-  dark:[&::-webkit-scrollbar-track]:bg-neutral-700
-  dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500" style={{ maxHeight: 400, overflowY: "auto" }}>
+      {/* ARK-193: sin altura fija ni scroll propio; la lista crece y se desplaza la página */}
+      <div data-testid="members-list">
         {fields.map((member, idx) => (
           <div key={member.id} className="border-b border-gray-200 pb-4 mb-4">
             <div className="flex justify-between items-start mb-3">

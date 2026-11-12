@@ -14,6 +14,7 @@ import {
   type NrcOption,
   type SubjectInfo,
 } from "@/lib/nrcSubjects";
+import { blockedReason, COMBINATION_HINT, subjectFamilies } from "@/lib/subjectRules";
 
 interface SubjectNrcPickerProps {
   options: NrcOption[];
@@ -31,6 +32,7 @@ interface SubjectNrcPickerProps {
  * Paso «Inscripción de Miembros», propuesta A del documento «Selector de NRC de Arkad»
  * (HU-31, ARK-193): las materias van como botones y cada materia marcada abre un desplegable
  * con sus NRC y el profesor de cada uno. Un solo NRC por materia; una o más materias.
+ * Las materias que no se pueden combinar con las marcadas quedan deshabilitadas (ARK-193).
  */
 const SubjectNrcPicker = forwardRef<HTMLButtonElement, SubjectNrcPickerProps>(function SubjectNrcPicker(
   { options, subjects, value, onChange, pending, onPendingChange, invalid },
@@ -40,6 +42,11 @@ const SubjectNrcPicker = forwardRef<HTMLButtonElement, SubjectNrcPickerProps>(fu
   const baseId = useId();
   const subjectByCode = new Map(options.map((option) => [String(option.code), subjectIdOf(option)]));
   const marked = markedSubjectIds(subjects, options, value, pending);
+  const markedSubjects = subjects.filter((subject) => marked.includes(subject.id));
+  const families = subjectFamilies(options);
+  const someBlocked = subjects.some(
+    (subject) => !marked.includes(subject.id) && blockedReason(markedSubjects, subject, families),
+  );
 
   const toggle = (subjectId: string) => {
     if (marked.includes(subjectId)) {
@@ -63,21 +70,25 @@ const SubjectNrcPicker = forwardRef<HTMLButtonElement, SubjectNrcPickerProps>(fu
       <div className="flex flex-wrap gap-1.5">
         {subjects.map((subject, index) => {
           const on = marked.includes(subject.id);
+          const blocked = on ? null : blockedReason(markedSubjects, subject, families);
           return (
             <button
               key={subject.id}
               ref={index === 0 ? firstChipRef : undefined}
               type="button"
-              title={subject.name}
+              title={blocked ?? subject.name}
               aria-pressed={on}
+              aria-disabled={blocked ? true : undefined}
               aria-invalid={invalid && !on ? true : undefined}
-              onClick={() => toggle(subject.id)}
+              onClick={() => !blocked && toggle(subject.id)}
               className={cn(
-                "cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors outline-none",
+                "rounded-full border px-3 py-1 text-sm transition-colors outline-none",
                 "focus-visible:ring-[3px] focus-visible:ring-[#B3C7FF]/60",
                 on
-                  ? "border-[#8a70ff] bg-[#8a70ff] font-semibold text-white"
-                  : "border-white/25 bg-input/30 hover:bg-input/60",
+                  ? "cursor-pointer border-[#8a70ff] bg-[#8a70ff] font-semibold text-white"
+                  : blocked
+                    ? "cursor-not-allowed border-white/10 bg-input/10 text-muted-foreground opacity-50 line-through"
+                    : "cursor-pointer border-white/25 bg-input/30 hover:bg-input/60",
                 invalid && !on && marked.length === 0 && "border-destructive",
               )}
             >
@@ -86,6 +97,8 @@ const SubjectNrcPicker = forwardRef<HTMLButtonElement, SubjectNrcPickerProps>(fu
           );
         })}
       </div>
+
+      {someBlocked && <p className="text-muted-foreground text-xs">{COMBINATION_HINT}</p>}
 
       {marked.length === 0 ? (
         <p className="text-muted-foreground text-xs">

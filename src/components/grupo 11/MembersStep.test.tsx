@@ -268,3 +268,94 @@ describe("MembersStep: materias como botones y un NRC por materia (HU-31, ARK-19
     );
   });
 });
+
+const CHAIN_OPTIONS = [
+  { code: "3011", subjectId: 2, subject: { id: 2, name: "Algoritmia y Programación I", abrevName: "AYP" } },
+  { code: "3021", subjectId: 3, subject: { id: 3, name: "Algoritmia y Programación II", abrevName: "AYP" } },
+  { code: "3041", subjectId: 4, subject: { id: 4, name: "Programación Orientada a Objetos", abrevName: "POO" } },
+  { code: "3042", subjectId: 4, subject: { id: 4, name: "Programación Orientada a Objetos", abrevName: "POO" } },
+  { code: "3051", subjectId: 5, subject: { id: 5, name: "Estructuras de Datos I", abrevName: "EDD" } },
+  { code: "3061", subjectId: 1, subject: { id: 1, name: "Estructuras de Datos II", abrevName: "EDD" } },
+];
+
+describe("MembersStep: prerrequisitos y NRC compartido (ARK-193)", () => {
+  beforeEach(() => {
+    vi.mocked(apiFetch).mockImplementation(async (url) =>
+      String(url).includes("/nrcs/") ? jsonResponse(CHAIN_OPTIONS) : jsonResponse({}),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  const pressed = (abrev: string) => chip(abrev).getAttribute("aria-pressed");
+  const blocked = (abrev: string) => chip(abrev).getAttribute("aria-disabled") === "true";
+
+  it("con Algoritmia I marcada no deja marcar ninguna otra", async () => {
+    await renderTeam([member(1, [])]);
+    fireEvent.click(chip("AYP · I"));
+
+    for (const other of ["AYP · II", "POO", "EDD · I", "EDD · II"]) {
+      expect(blocked(other)).toBe(true);
+      fireEvent.click(chip(other));
+      expect(pressed(other)).toBe("false");
+    }
+    expect(chip("POO").getAttribute("title")).toContain("Algoritmia y Programación I");
+  });
+
+  it("deja POO con una Estructura de Datos, pero no las dos Estructuras juntas", async () => {
+    await renderTeam([member(1, [])]);
+    fireEvent.click(chip("POO"));
+    expect(blocked("EDD · I")).toBe(false);
+    expect(blocked("EDD · II")).toBe(false);
+    expect(blocked("AYP · II")).toBe(true);
+
+    fireEvent.click(chip("EDD · II"));
+    expect(pressed("EDD · II")).toBe("true");
+    expect(blocked("EDD · I")).toBe(true);
+  });
+
+  it("al desmarcar se vuelven a habilitar las demás", async () => {
+    await renderTeam([member(1, [])]);
+    fireEvent.click(chip("AYP · I"));
+    fireEvent.click(chip("AYP · I"));
+    expect(blocked("POO")).toBe(false);
+  });
+
+  it("no avanza si una combinación inválida llega ya guardada", async () => {
+    await renderTeam([member(1, ["3051", "3061"])]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText(/no se pueden marcar juntas/)).toBeTruthy();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("no avanza si un integrante no comparte ningún NRC con los anteriores", async () => {
+    await renderTeam([member(1, ["3041"]), member(2, ["3042"])]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText(/Debe compartir al menos un NRC/)).toBeTruthy();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("avanza con un equipo encadenado por NRC", async () => {
+    // 1: EDD I + POO · 2: solo POO · 3: POO + EDD II
+    await renderTeam([member(1, ["3051", "3041"]), member(2, ["3041"]), member(3, ["3041", "3061"])]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    await waitFor(() => expect(next).toHaveBeenCalledTimes(1));
+  });
+
+  it("la lista de integrantes no tiene un scroll propio", async () => {
+    await renderTeam([member(1, [])]);
+    const list = screen.getByTestId("members-list");
+    expect(list.style.maxHeight).toBe("");
+    expect(list.style.overflowY).toBe("");
+    expect(list.className).not.toContain("overflow");
+  });
+});
