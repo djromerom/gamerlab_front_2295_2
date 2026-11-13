@@ -118,7 +118,7 @@ export const PendingGamesGrid: React.FC<
   };
 
   return (
-    <div className="flex flex-col w-full bg-background text-foreground">
+    <div className="flex flex-col w-full md:bg-background text-foreground">
       {/* Barra de búsqueda y botón de buscar */}
       <div className="flex items-center justify-end mb-4 px-5 ">
         <div className="flex gap-3">
@@ -208,7 +208,7 @@ export const PendingGamesGrid: React.FC<
                   )}
                 </div>
               </div>
-              <div className="w-32 h-32 bg-gray-300 rounded-full flex-shrink-0 mr-6 mt-4">
+              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex-shrink-0 ml-2 md:ml-0 md:mr-6 md:mt-4">
                 {game.imagen ? (
                   <img
                     src={game.imagen || "/placeholder.svg"}
@@ -226,7 +226,7 @@ export const PendingGamesGrid: React.FC<
               >
                 <InfoIcon />
               </button>
-              <div className="flex justify-end mt-auto pt-2 px-8">
+              <div className="flex justify-end mt-auto pt-2 md:px-8">
                 <Button
                   size="sm"
                   className={`px-7 py-2 text-sm rounded-md ${

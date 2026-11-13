@@ -33,7 +33,7 @@ const StaffAccountsPage = () => {
   return (
     <LayoutAplication breadcrumbs={[{ label: "Cuentas Staff", href: "/cuentas-staff" }]}>
       <main className="mx-auto w-full max-w-2xl px-4 pb-10">
-        <Card>
+        <Card className="py-6">
           <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Crear cuenta Staff</CardTitle></CardHeader>
           <CardContent>
             <form className="space-y-5" onSubmit={submit}>

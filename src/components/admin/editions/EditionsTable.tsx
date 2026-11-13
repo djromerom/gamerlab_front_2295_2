@@ -33,7 +33,7 @@ export const EditionsTable: React.FC<EditionsListProps> = ({
   onCreateNew,
 }) => {
   return (
-    <div className="bg-background text-foreground min-h-[calc(100vh-10rem)] -mx-6 px-6 -mt-6 pt-6">
+    <div className="md:bg-background text-foreground min-h-[calc(100vh-10rem)] -mx-6 px-6 -mt-6 pt-6">
       <div className="flex flex-col gap-4 mb-6">
         {/* Fila 1: Título */}
         <div>

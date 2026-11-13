@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Trophy, ArrowLeft } from "lucide-react";
 import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
 import { Filters } from "@/components/videogamePage/Filters";
 import { motion } from "framer-motion";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 const glowStyles = `
   @property --angle{
@@ -199,13 +200,8 @@ export default function HistoricalVideogamesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-        style={{ backgroundImage: "url('/background.webp')" }}
-      >
-        <div className="absolute inset-0"></div>
-      </div>
+    <div className="relative min-h-screen overflow-hidden">
+      <FondoArkad modo="lento" estiloNuevo />
 
       <NavBar />
 

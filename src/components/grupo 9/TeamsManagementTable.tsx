@@ -790,7 +790,7 @@ export const TeamsManagementTable = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}
+      className={`md:bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}
     >
       <div className="flex flex-col gap-4 mb-6 px-4">
         {/* Fila 1: Título */}

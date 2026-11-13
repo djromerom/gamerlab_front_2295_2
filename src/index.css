@@ -3,6 +3,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ARK-222: tipografías del diseño nuevo (se cargan en index.html) */
+@theme {
+  --font-unbounded: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+  --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -215,4 +221,108 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* ==========================================================================
+   ARK-222 · Estilo visual nuevo de las páginas públicas (mockup aprobado).
+   Se activa con <body data-estilo="nuevo">, que pone <FondoArkad estiloNuevo />.
+   Solo cambia el aspecto (tipografía, colores, tarjetas, botones y campos); no mueve ni agrega elementos.
+   Va fuera de @layer a propósito: así tiene prioridad sobre las utilidades de Tailwind de cada página.
+   ========================================================================== */
+[data-estilo="nuevo"] {
+  --n-ice: #C9D6FF; --n-peri: #A9C4FF; --n-muted: #D5DDFA; --n-linea: rgba(201, 214, 255, 0.18);
+  --n-vidrio: rgba(8, 15, 48, 0.8); --n-navy: #0B1A6B;
+  font-family: var(--font-inter);
+}
+
+/* Tipografía: títulos en Unbounded, como la landing */
+[data-estilo="nuevo"] :is(h1, h2, h3, [data-slot="card-title"], .stats-number) { font-family: var(--font-unbounded); letter-spacing: -0.01em; }
+[data-estilo="nuevo"] h1 { font-weight: 800; text-shadow: 0 0 34px rgba(110, 145, 255, 0.45); }
+
+/* Colores: el morado pasa al azul periwinkle y los grises a tonos azulados */
+[data-estilo="nuevo"] :is(.text-\[\#AC7CFF\], .text-purple-400, .text-violet-500) { color: var(--n-peri); }
+[data-estilo="nuevo"] .text-\[\#B3C7FF\] { color: var(--n-ice); }
+[data-estilo="nuevo"] .hover\:text-\[\#8a70ff\]:hover { color: #fff; }
+[data-estilo="nuevo"] .text-gray-300 { color: var(--n-muted); }
+[data-estilo="nuevo"] .text-gray-400 { color: #AEB8D8; }
+[data-estilo="nuevo"] .text-\[\#060312\] { color: var(--n-navy); }
+[data-estilo="nuevo"] .bg-purple-500 { background-color: var(--n-peri); }
+[data-estilo="nuevo"] .border-violet-500 { border-color: var(--n-peri); }
+[data-estilo="nuevo"] .border-gray-300 { border-color: rgba(201, 214, 255, 0.3); }
+[data-estilo="nuevo"] .bg-gray-300.h-0\.5 { background-color: rgba(201, 214, 255, 0.3); }
+[data-estilo="nuevo"] .border-\[\#AC7CFF\] { border-color: var(--n-peri); }
+[data-estilo="nuevo"] .border-\[\#AC7CFF\]\/30 { border-color: rgba(201, 214, 255, 0.3); }
+[data-estilo="nuevo"] :is(.border-\[\#AC7CFF\]\/50, .hover\:border-\[\#AC7CFF\]\/50:hover) { border-color: rgba(169, 196, 255, 0.55); }
+[data-estilo="nuevo"] .border-gray-700 { border-color: rgba(201, 214, 255, 0.16); }
+
+/* Fondos oscuros morados → azul marino */
+[data-estilo="nuevo"] .bg-\[\#110D20\] { background-color: rgba(11, 19, 56, 0.85); }
+[data-estilo="nuevo"] :is(.bg-\[\#1A1428\], .bg-gray-800) { background-color: #101B4A; }
+[data-estilo="nuevo"] .bg-\[\#0d0f14\] { background-color: #0B1338; }
+[data-estilo="nuevo"] :is(.hover\:bg-\[\#1A1428\]:hover, .hover\:bg-\[\#AC7CFF\]\/20:hover) { background-color: rgba(169, 196, 255, 0.16); }
+[data-estilo="nuevo"] :is(.hover\:bg-\[\#2A2438\]:hover, .hover\:bg-\[\#110D20\]:hover) { background-color: #16245E; }
+[data-estilo="nuevo"] .bg-\[\#060312\] { background-color: var(--n-vidrio); border-radius: 16px; }
+[data-estilo="nuevo"] .bg-gradient-to-br.from-\[\#AC7CFF\] { background-image: linear-gradient(135deg, #4C74FF, #0B1A6B); }
+
+/* Acentos sólidos (pestaña activa, círculos numerados, botones morados) → blanco con texto azul marino */
+[data-estilo="nuevo"] .bg-\[\#AC7CFF\] { background-color: #fff; color: var(--n-navy); }
+[data-estilo="nuevo"] :is(.hover\:bg-\[\#ba93fe\]:hover, .hover\:bg-\[\#8a70ff\]:hover) { background-color: #E3EAFF; }
+
+/* Tarjetas: vidrio azul con borde fino */
+[data-estilo="nuevo"] :is([data-slot="card"], .info-card, .feature-card, .game-card, .dev-card, .stats-card) {
+  background: var(--n-vidrio); border: 1px solid var(--n-linea); border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(2, 6, 30, 0.45);
+}
+[data-estilo="nuevo"] .game-card { border-left: 3px solid var(--n-peri); }
+[data-estilo="nuevo"] .game-card:hover { background: rgba(16, 27, 74, 0.75); }
+[data-estilo="nuevo"] :is(.feature-card, .dev-card, .stats-card):hover { box-shadow: 0 16px 40px rgba(76, 116, 255, 0.35); }
+[data-estilo="nuevo"] .dev-card::before { background: linear-gradient(90deg, var(--n-peri), #fff); }
+[data-estilo="nuevo"] .feature-icon { background-color: rgba(169, 196, 255, 0.12); }
+[data-estilo="nuevo"] .stats-number { color: #fff; }
+[data-estilo="nuevo"] .tech-pill { background-color: rgba(169, 196, 255, 0.1); border: 1px solid rgba(201, 214, 255, 0.25); }
+[data-estilo="nuevo"] .social-link { background-color: rgba(169, 196, 255, 0.1); border: 1px solid rgba(201, 214, 255, 0.25); color: var(--n-ice); }
+[data-estilo="nuevo"] .testimonial-card::before { color: rgba(169, 196, 255, 0.25); }
+[data-estilo="nuevo"] .carousel-control { background: rgba(5, 10, 36, 0.7); border-color: rgba(201, 214, 255, 0.3); }
+[data-estilo="nuevo"] .carousel-indicator.active { background: #fff; }
+/* Manchas decorativas de "Acceso no autorizado": del morado al azul de la paleta */
+[data-estilo="nuevo"] .blur-effect { background-color: rgba(76, 116, 255, 0.2); }
+
+/* Bordes animados de colores → borde fino estático; el podio conserva sus colores de medalla */
+[data-estilo="nuevo"] .gradient-border { border-radius: 16px; }
+[data-estilo="nuevo"] .gradient-border::before { display: none; }
+[data-estilo="nuevo"] .gradient-border::after { animation: none; background: transparent; border: 1px solid rgba(201, 214, 255, 0.22); border-radius: 16px; box-sizing: border-box; }
+[data-estilo="nuevo"] .gradient-border-inner { inset: 0; border-radius: 16px; background: var(--n-vidrio); }
+[data-estilo="nuevo"] .gradient-border-gold::after { border: 2px solid #FFD75E; }
+[data-estilo="nuevo"] .gradient-border-silver::after { border: 2px solid #D5DDFA; }
+[data-estilo="nuevo"] .gradient-border-bronze::after { border: 2px solid #E0A070; }
+
+/* Botones: principal blanco y secundario de contorno (variantes default/home y outline de components/ui/button) */
+[data-estilo="nuevo"] [data-slot="button"] { border-radius: 12px; }
+[data-estilo="nuevo"] [data-slot="button"]:is(.bg-primary, .bg-\[\#B3C7FF\], .bg-\[\#AC7CFF\]) {
+  background: #fff; color: var(--n-navy); font-weight: 700; box-shadow: 0 10px 30px rgba(76, 116, 255, 0.45);
+}
+[data-estilo="nuevo"] [data-slot="button"]:is(.bg-primary, .bg-\[\#B3C7FF\], .bg-\[\#AC7CFF\]):hover { background: #E3EAFF; box-shadow: 0 14px 40px rgba(76, 116, 255, 0.7); }
+[data-estilo="nuevo"] [data-slot="button"].bg-background { background: rgba(169, 196, 255, 0.08); border: 1px solid rgba(201, 214, 255, 0.5); color: #fff; }
+[data-estilo="nuevo"] [data-slot="button"].bg-background:hover { background: rgba(169, 196, 255, 0.18); color: #fff; }
+
+/* Campos de texto */
+[data-estilo="nuevo"] :is([data-slot="input"], [data-slot="textarea"]) { background: rgba(8, 15, 48, 0.55); border-color: rgba(201, 214, 255, 0.3); border-radius: 10px; }
+[data-estilo="nuevo"] :is([data-slot="input"], [data-slot="textarea"]):focus { border-color: var(--n-peri); box-shadow: 0 0 0 3px rgba(169, 196, 255, 0.2); }
+
+/* Barra superior (NavBar): vidrio azul y "Inicia sesión" de contorno en vez de morado con brillo */
+[data-estilo="nuevo"] header.fixed { background: rgba(5, 10, 36, 0.96); border-bottom-color: var(--n-linea); }
+/* Sin desenfoque encima del fondo animado: re-desenfocar en cada cuadro es lo que traba el movimiento */
+[data-estilo="nuevo"] [class*="backdrop-blur"] { backdrop-filter: none; }
+[data-estilo="nuevo"] header.fixed button.bg-gradient-to-b { background: transparent; border: 1px solid rgba(201, 214, 255, 0.5); box-shadow: none; border-radius: 10px; font-weight: 600; }
+[data-estilo="nuevo"] header.fixed button.bg-gradient-to-b:hover { background: rgba(169, 196, 255, 0.12); filter: none; }
+[data-estilo="nuevo"] header.fixed button.bg-gradient-to-b > div.absolute { display: none; }
+/* Botones flotantes (tamaño de letra y Discord) en blanco */
+[data-estilo="nuevo"] .fixed.right-2 > button { background: #fff; color: var(--n-navy); }
+/* Formularios y avisos (login, contraseña, verificación, registro de equipo): vidrio desenfocado para que el texto
+   no se mezcle con el logo y las líneas del fondo. Son pocas tarjetas y el fondo de esas páginas se mueve lento. */
+[data-estilo="nuevo"] [data-slot="card"].bg-black\/50 {
+  background: rgba(5, 10, 36, 0.55);
+  border-color: rgba(201, 214, 255, 0.22);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }

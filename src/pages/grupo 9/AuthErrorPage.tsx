@@ -4,6 +4,7 @@ import { AlertTriangle, Server, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 interface ErrorConfig {
   title: string;
@@ -29,7 +30,7 @@ const errorConfigs: Record<string, ErrorConfig> = {
     title: "Sesión Expirada",
     description: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente para continuar.",
     icon: <RefreshCw className="h-16 w-16" />,
-    color: "text-blue-500"
+    color: "text-[#A9C4FF]"
   },
   "access-denied": {
     title: "Acceso Denegado",
@@ -43,7 +44,7 @@ const defaultError: ErrorConfig = {
   title: "Error de Autenticación",
   description: "Ocurrió un error durante el proceso de autenticación. Por favor, intenta nuevamente.",
   icon: <AlertTriangle className="h-16 w-16" />,
-  color: "text-yellow-500"
+  color: "text-[#A9C4FF]"
 };
 
 export default function AuthErrorPage() {
@@ -76,13 +77,8 @@ export default function AuthErrorPage() {
   };
 
   return (
-    <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float"
-        style={{
-          backgroundImage: "url('/background.webp')",
-        }}
-      ></div>
+    <div className="relative min-h-screen dark overflow-hidden">
+      <FondoArkad modo="lento" estiloNuevo />
       
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
         <Card className="w-full max-w-lg p-6 sm:p-8 md:p-12 flex flex-col mx-auto items-center justify-center gap-6 bg-black/50 relative">

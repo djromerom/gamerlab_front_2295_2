@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useGameLoader } from "@/hooks/useGameLoader";
 
 import './gameplayerpage.css';
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 export default function GamePlayerPage() {
 
@@ -35,11 +36,8 @@ export default function GamePlayerPage() {
 
 
   return (
-    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-        style={{ backgroundImage: "url('/background.webp')" }}
-      />
+    <div className="relative min-h-screen overflow-hidden">
+      <FondoArkad modo="lento" estiloNuevo />
 
       <NavBar />
 

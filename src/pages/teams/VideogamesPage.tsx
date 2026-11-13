@@ -11,6 +11,7 @@ import { TeamCard } from "@/components/videogamePage/TeamCard";
 import { Filters } from "@/components/videogamePage/Filters";
 
 import { useLocation } from "react-router-dom";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 export default function VideogamesPage() {
   const location = useLocation();
@@ -234,13 +235,8 @@ export default function VideogamesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-        style={{ backgroundImage: "url('/background.webp')" }}
-      >
-        <div className="absolute inset-0"></div>
-      </div>
+    <div className="relative min-h-screen overflow-hidden">
+      <FondoArkad modo="lento" estiloNuevo />
       <NavBar />
       <div className=" max-w-7xl mx-auto relative z-10 items-center p-4 pb-12 pt-30 text-white">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-6 md:mb-10 text-[#AC7CFF]">

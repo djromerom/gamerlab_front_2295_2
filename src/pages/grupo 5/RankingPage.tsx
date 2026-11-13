@@ -6,6 +6,7 @@ import NavBar from "@/components/grupo 5/NavBar";
 import { useState, useEffect } from "react";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 type Team = {
   id: number;
@@ -223,13 +224,8 @@ export default function PodioGamer() {
     <>
       <NavBar />
 
-      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-          style={{ backgroundImage: "url('/background.webp')" }}
-        >
-          <div className="absolute inset-0"></div>
-        </div>
+      <div className="relative min-h-screen overflow-hidden">
+        <FondoArkad modo="lento" estiloNuevo />
 
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
@@ -240,13 +236,13 @@ export default function PodioGamer() {
 
           {fairEnded && (
             <div className="w-full max-w-6xl mb-8 px-4">
-              <div className="flex justify-center gap-2 md:gap-3 flex-wrap bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
+              <div className="flex justify-start md:justify-center gap-2 md:gap-3 flex-nowrap md:flex-wrap overflow-x-auto [scrollbar-width:none] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
                 <button
                   onClick={async () => {
                     setActiveSemester("all");
                     await fetchData("all");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "all"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -260,7 +256,7 @@ export default function PodioGamer() {
                     setActiveSemester("1");
                     await fetchData("n1");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "1"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -274,7 +270,7 @@ export default function PodioGamer() {
                     setActiveSemester("2");
                     await fetchData("n2");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "2"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -288,7 +284,7 @@ export default function PodioGamer() {
                     setActiveSemester("3");
                     await fetchData("n3");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "3"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -302,7 +298,7 @@ export default function PodioGamer() {
                     setActiveSemester("4");
                     await fetchData("n4");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "4"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -316,7 +312,7 @@ export default function PodioGamer() {
                     setActiveSemester("10");
                     await fetchData("n10");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "10"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"
@@ -330,7 +326,7 @@ export default function PodioGamer() {
                     setActiveSemester("colegio");
                     await fetchData("n0");
                   }}
-                  className={`px-4 py-2 cursor-pointer rounded-md transition-all ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                     activeSemester === "colegio"
                       ? "bg-[#AC7CFF] text-[#060312] font-medium"
                       : "text-gray-300 hover:bg-[#1A1428]"

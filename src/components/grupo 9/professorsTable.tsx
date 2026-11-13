@@ -291,7 +291,7 @@ export const ProfessorsTable: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${
+      className={`md:bg-background text-foreground min-h-screen p-4 ${
         showLoader ? "opacity-75 pointer-events-none" : "" // Added pointer-events-none
       }`}
     >

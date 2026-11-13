@@ -439,7 +439,7 @@ const TeamsManagementPage = () => {
           )}
 
           {view === "students" && (
-            <div className="bg-background text-foreground min-h-screen p-4">
+            <div className="md:bg-background text-foreground min-h-screen p-4">
               <div className="flex flex-col gap-4 mb-6 px-4">
                 <h1 className="text-lg md:text-xl font-medium">Equipos Inscritos</h1>
                 {header}

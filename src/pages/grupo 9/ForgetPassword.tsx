@@ -7,6 +7,7 @@ import { Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ButtonLoading } from "./ButtonLoading";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 export default function ForgetPassword() {
 
@@ -52,11 +53,8 @@ export default function ForgetPassword() {
     };
 
     return(
-        <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
-            <div
-                className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat  animate-float"
-                style={{ backgroundImage: "url('/background.webp')" }}
-            ></div>
+        <div className="relative min-h-screen dark overflow-hidden">
+            <FondoArkad modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
             <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
             <Link to={'/login'} className="w-full justify-end">Regresar</Link>

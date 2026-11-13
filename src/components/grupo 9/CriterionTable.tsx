@@ -234,7 +234,7 @@ export const CriterionTable: React.FC<Props> = ({
   }
 
   return (
-    <div className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}>
+    <div className={`md:bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""}`}>
       <div className="flex justify-between items-center mb-6 px-4">
         <h1 className="text-xl font-medium">Criterios de Evaluación</h1>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { ArrowLeft } from "lucide-react";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 export default function LoginPage() {
   useEffect(() => {
@@ -90,13 +91,8 @@ export default function LoginPage() {
   // Show loading screen while checking authentication
   if (loading) {
     return (
-      <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat animate-float"
-          style={{
-            backgroundImage: "url('/background.webp')",
-          }}
-        ></div>
+      <div className="relative min-h-screen dark overflow-hidden">
+        <FondoArkad modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4">
           <div className="text-white text-xl animate-pulse">
             Verificando autenticación...
@@ -107,13 +103,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat  animate-float"
-        style={{
-          backgroundImage: "url('/background.webp')",
-        }}
-      ></div>
+    <div className="relative min-h-screen dark overflow-hidden">
+      <FondoArkad modo="lento" estiloNuevo />
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
         <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50 relative">
           {/* Botón de flecha para volver */}
@@ -198,11 +189,11 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={isSubmitting}
-                      className="w-full"
+                      className="w-full pr-11"
                     />
                     <button type="button"
                       onClick={() => setShow(!show)}
-                      className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                      className="absolute right-3 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
                       {show ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>

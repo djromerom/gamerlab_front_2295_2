@@ -26,12 +26,12 @@ export default function VerificationCode() {
     }
 
     return (
-        <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card max-w-[320px]">
-            <div className="flex justify-center text-4xl border-b-2 border-border pb-2">
+        <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card max-w-[320px] dark:bg-[rgba(8,15,48,0.8)] dark:border-[rgba(201,214,255,0.18)]">
+            <div className="flex justify-center text-4xl border-b-2 border-border pb-2 dark:border-[rgba(201,214,255,0.18)]">
                 <h1 className="font-bold tracking-tighter text-center">Código de verificación</h1>
             </div>
             <div className="flex justify-center">
-                <p className="font-bold font-mono in-dark:text-purple-400 tracking-widest text-4xl p-5">
+                <p className="font-bold font-mono text-[#2F4BC7] dark:text-[#A9C4FF] tracking-widest text-4xl p-5">
                     {code ?? "Cargando..."}
                 </p>
             </div>

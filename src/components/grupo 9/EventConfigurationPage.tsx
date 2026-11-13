@@ -17,7 +17,7 @@ const EventConfigurationPage: React.FC = () => {
 	];
     return (
     <LayoutAplication breadcrumbs={breadcrumbs}>
-        <div className="bg-background text-foreground min-h-screen p-4 w-full">
+        <div className="md:bg-background text-foreground min-h-screen p-4 w-full">
                 
             <div className="flex justify-between items-center mb-6 px-4">
                 

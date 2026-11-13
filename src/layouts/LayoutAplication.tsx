@@ -5,6 +5,7 @@ import Breadcrumbs from "@/components/grupo 9/BreadCrums"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import PwaUpdateNotice from "@/components/pwa/PwaUpdateNotice"
+import { FondoPanel } from "@/components/fondo/FondoPanel"
 
 import type React from "react"
 
@@ -19,8 +20,10 @@ interface Props {
 const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
   return (
     <SidebarProvider>
+      <FondoPanel />
       <AppSidebar />
-      <SidebarInset id="sidebar-insert" className="relative min-w-0 overflow-x-hidden">
+      {/* ARK-222: en celular es transparente para dejar ver el degradado; en PC conserva el fondo liso del tema */}
+      <SidebarInset id="sidebar-insert" className="relative min-w-0 overflow-x-hidden max-md:bg-transparent">
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1 z-20" />

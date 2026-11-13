@@ -104,8 +104,8 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
         )
     } else if (variant === "title") {
         return (
-            <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card">
-                <div className="flex justify-center text-4xl border-b-2 border-border pb-2">
+            <div className="flex flex-col border-2 rounded-2xl p-4 h-full justify-evenly border-border bg-card dark:bg-[rgba(8,15,48,0.8)] dark:border-[rgba(201,214,255,0.18)]">
+                <div className="flex justify-center text-4xl border-b-2 border-border pb-2 dark:border-[rgba(201,214,255,0.18)]">
                     <h1 className="font-bold tracking-tighter">Equipo</h1>
                 </div>
                 {/* [MODIFICACIÓN]: Nombre del equipo sobre el código, para que coincida con lo que ve el jurado. */}
@@ -117,7 +117,7 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                 <div className="flex justify-center ">
                     {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
                     {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
-                    <p className="font-bold in-dark:text-purple-400 size-20px tracking-tighter text-4xl px-5 pb-5 pt-1 text-shadow-10xl hover:text-purple-600   rounded-lg   hover:scale-105 transition-transform duration-300">
+                    <p className="font-bold text-[#2F4BC7] dark:text-[#A9C4FF] size-20px tracking-tighter text-4xl px-5 pb-5 pt-1 text-shadow-10xl hover:text-[#4C74FF] dark:hover:text-white rounded-lg   hover:scale-105 transition-transform duration-300">
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
                 </div>
