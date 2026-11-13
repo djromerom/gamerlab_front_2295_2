@@ -70,4 +70,21 @@ describe("Nota final del estudiante (ARK-81)", () => {
     expect(await screen.findByText("Nota en proceso")).toBeTruthy();
     expect(screen.queryByTestId("grade-label")).toBeNull();
   });
+
+  it("equipo rechazado: lo dice y no muestra nota (BG-43)", async () => {
+    mocks.fetchStudentFinalGrade.mockResolvedValue({
+      editionId: 5,
+      team: { id: 301, teamName: "Pixel", teamCode: "N2-ISI-014" },
+      released: true,
+      status: "REJECTED",
+      finalGrade: null,
+    });
+    render(<Scoreboard />);
+
+    expect(
+      await screen.findByText("La inscripción de tu equipo fue rechazada, por eso no tiene nota final"),
+    ).toBeTruthy();
+    expect(screen.queryByText("Nota en proceso")).toBeNull();
+    expect(screen.queryByTestId("grade-label")).toBeNull();
+  });
 });

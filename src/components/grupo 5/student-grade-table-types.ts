@@ -14,6 +14,8 @@ export interface GradeTeam {
   source?: "current" | "historical";
   /** Con qué regla calcula el backend la nota de la feria (BG-37). */
   fairGradeRule?: FairGradeRule;
+  /** BG-43 (ARK-205): inscripción rechazada; no tiene nota de feria mientras lo esté. */
+  rejected?: boolean;
 }
 
 /**
