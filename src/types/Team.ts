@@ -15,6 +15,7 @@ export interface Team {
     logo?: string;
     additionalImages?: string[];
     isExternal?: boolean;
+    notGradable?: boolean; // HU-39 (ARK-209): presentador externo, no se califica
     likes?: number;
     gameFileUrl?: string,
     entry?: string,

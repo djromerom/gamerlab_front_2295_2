@@ -212,6 +212,7 @@ const TeamsManagementPage = () => {
       nrc_info,
       materia_info,
       isExternal: (t as any).isExternal,
+      notGradable: t.notGradable === true,
       team_nrc_global_id: (t as any).teamNrcGlobal ?? (t as any).team_nrc_global_id,
     } as TeamRowData;
   };

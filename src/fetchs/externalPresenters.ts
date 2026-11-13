@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api';
 import { fileNameFromDisposition, saveBlobAsFile } from '@/fetchs/jurorsExport';
 import type { EditionStatus } from '@/fetchs/editions';
+import { downloadCertificatePdf } from '@/lib/certificates';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';
 
@@ -22,10 +23,23 @@ export interface ExternalPresenter {
   createdAt: string;
 }
 
+/** HU-39 (ARK-209): equipo marcado como no calificable, que presenta como externo. */
+export interface ExternalPresenterTeam {
+  id: number;
+  teamCode: string;
+  teamName: string;
+  /** Nombre del juego: es el título del proyecto en el certificado */
+  projectTitle: string | null;
+  /** Integrantes activos: cada uno recibe el certificado por correo */
+  members: { firstName: string; lastName: string; email: string }[];
+}
+
 export interface ExternalPresentersList {
   /** null cuando no hay edición activa y no se pidió otra */
   edition: { id: number; title: string; status: EditionStatus; readOnly: boolean } | null;
   presenters: ExternalPresenter[];
+  /** ARK-209: un back anterior no lo envía */
+  teams?: ExternalPresenterTeam[];
 }
 
 export interface MyExternalPresenter extends ExternalPresenter {
@@ -64,7 +78,31 @@ export interface BulkResult {
 export interface SendAllResult {
   sent: number;
   failed: { id: number; email: string; error: string }[];
+  /** ARK-209: resultado del envío a los equipos presentadores (un back anterior no lo envía) */
+  teams?: { sent: number; failed: CertificateFailure[] };
   message: string;
+}
+
+/**
+ * El contrato de ARK-209 no fija la forma de cada fallo de equipo o integrante:
+ * se acepta un texto o un objeto y se muestra con `describeCertificateFailure`.
+ */
+export type CertificateFailure =
+  | string
+  | { email?: string; teamCode?: string; teamName?: string; teamId?: number; error?: string; message?: string };
+
+export interface TeamCertificateResult {
+  teamId: number;
+  /** Correos de los integrantes que recibieron el certificado */
+  sentTo: string[];
+  failed: CertificateFailure[];
+}
+
+export function describeCertificateFailure(failure: CertificateFailure): string {
+  if (typeof failure === 'string') return failure;
+  const who = failure.email ?? failure.teamName ?? failure.teamCode ?? (failure.teamId ? `Equipo ${failure.teamId}` : '');
+  const why = failure.error ?? failure.message ?? 'Error desconocido';
+  return who ? `${who}: ${why}` : why;
 }
 
 export const MAX_BULK_PRESENTERS = 100;
@@ -158,6 +196,28 @@ export async function sendExternalPresenterCertificate(
   );
   if (!res.ok) throw await toError(res, 'No se pudo enviar el certificado.');
   return res.json();
+}
+
+/** ARK-209: envía el certificado de presentador externo a cada integrante activo del equipo. */
+export async function sendExternalPresenterTeamCertificate(
+  teamId: number,
+): Promise<TeamCertificateResult> {
+  const res = await apiFetch(
+    `${API_URL}/external-presenters/teams/${teamId}/certificate`,
+    jsonRequest('POST'),
+  );
+  if (!res.ok) throw await toError(res, 'No se pudo enviar el certificado del equipo.');
+  return res.json();
+}
+
+/** ARK-209: descarga el PDF del certificado del equipo sin enviar correos. */
+export async function downloadExternalPresenterTeamCertificate(
+  team: Pick<ExternalPresenterTeam, 'id' | 'teamCode'>,
+): Promise<void> {
+  await downloadCertificatePdf(
+    `/external-presenters/teams/${team.id}/certificate`,
+    `certificado-presentador-${team.teamCode || team.id}.pdf`,
+  );
 }
 
 export async function sendAllExternalPresenterCertificates(): Promise<SendAllResult> {

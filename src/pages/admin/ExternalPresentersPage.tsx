@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
+  Download,
   FileSpreadsheet,
   Info,
   Loader2,
@@ -11,6 +12,7 @@ import {
   Trash2,
   Upload,
   UserPlus,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import LayoutAplication from "@/layouts/LayoutAplication";
@@ -39,12 +41,16 @@ import { ExternalPresenterFormDialog } from "@/components/admin/external-present
 import { BulkPresentersDialog } from "@/components/admin/external-presenters/BulkPresentersDialog";
 import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
 import {
+  describeCertificateFailure,
+  downloadExternalPresenterTeamCertificate,
   downloadExternalPresentersExport,
   fetchExternalPresenters,
   removeExternalPresenter,
   sendAllExternalPresenterCertificates,
   sendExternalPresenterCertificate,
+  sendExternalPresenterTeamCertificate,
   type ExternalPresenter,
+  type ExternalPresenterTeam,
   type ExternalPresentersList,
   type SendAllResult,
 } from "@/fetchs/externalPresenters";
@@ -68,6 +74,7 @@ const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error ? err.message : fallback;
 
 const presentersLabel = (n: number) => `${n} presentador${n !== 1 ? "es" : ""}`;
+const teamsLabel = (n: number) => `${n} equipo${n !== 1 ? "s" : ""}`;
 
 const ExternalPresentersPage: React.FC = () => {
   const [editions, setEditions] = useState<Edition[]>([]);
@@ -88,12 +95,17 @@ const ExternalPresentersPage: React.FC = () => {
   const [sendingAll, setSendingAll] = useState(false);
   const [sendAllResult, setSendAllResult] = useState<SendAllResult | null>(null);
   const [exporting, setExporting] = useState(false);
+  // ARK-209: equipo cuyo certificado se está enviando o descargando
+  const [teamAction, setTeamAction] = useState<{ id: number; kind: "send" | "download" } | null>(null);
 
   const edition = list?.edition ?? null;
   const writable = Boolean(edition && !edition.readOnly);
   const presenters = list?.presenters ?? [];
+  // ARK-209: equipos marcados como no calificables en Equipos inscritos
+  const teams = list?.teams ?? [];
+  const hasAnyone = presenters.length > 0 || teams.length > 0;
   const visible = presenters.filter(FILTERS.find((f) => f.value === filter)!.matches);
-  const busy = sendingAll || sendingId !== null;
+  const busy = sendingAll || sendingId !== null || teamAction !== null;
 
   useEffect(() => {
     fetchEditions()
@@ -179,6 +191,43 @@ const ExternalPresentersPage: React.FC = () => {
     }
   };
 
+  const sendTeamCertificate = async (team: ExternalPresenterTeam) => {
+    setTeamAction({ id: team.id, kind: "send" });
+    try {
+      const result = await sendExternalPresenterTeamCertificate(team.id);
+      const failed = result.failed ?? [];
+      if (result.sentTo.length > 0) {
+        toast.success("Certificado del equipo enviado", {
+          description: `Se envió a ${result.sentTo.join(", ")}.`,
+        });
+      }
+      if (failed.length > 0) {
+        toast.warning(`No se pudo enviar a ${failed.length} integrante(s) de ${team.teamName}`, {
+          description: failed.map(describeCertificateFailure).join(" · "),
+          duration: 10000,
+        });
+      }
+      if (result.sentTo.length === 0 && failed.length === 0) {
+        toast.warning("El equipo no tiene integrantes activos a quienes enviar el certificado.");
+      }
+    } catch (err) {
+      toast.error("Error", { description: errorMessage(err, "No se pudo enviar el certificado del equipo.") });
+    } finally {
+      setTeamAction(null);
+    }
+  };
+
+  const downloadTeamCertificate = async (team: ExternalPresenterTeam) => {
+    setTeamAction({ id: team.id, kind: "download" });
+    try {
+      await downloadExternalPresenterTeamCertificate(team);
+    } catch (err) {
+      toast.error("Error", { description: errorMessage(err, "No se pudo descargar el certificado del equipo.") });
+    } finally {
+      setTeamAction(null);
+    }
+  };
+
   const sendAll = async () => {
     setSendAllOpen(false);
     setSendingAll(true);
@@ -186,7 +235,7 @@ const ExternalPresentersPage: React.FC = () => {
     try {
       const result = await sendAllExternalPresenterCertificates();
       setSendAllResult(result);
-      if (result.failed.length) toast.warning(result.message);
+      if (result.failed.length || result.teams?.failed.length) toast.warning(result.message);
       else toast.success(result.message);
       load(); // trae las fechas de envío nuevas
     } catch (err) {
@@ -214,8 +263,8 @@ const ExternalPresentersPage: React.FC = () => {
           <div>
             <h1 className="text-lg md:text-xl font-medium">Presentadores externos</h1>
             <p className="text-sm text-muted-foreground">
-              Personas invitadas que presentan en la feria. No se califican: solo reciben el certificado
-              de asistencia por correo.
+              Personas y equipos invitados que presentan en la feria. No se califican: solo reciben el
+              certificado de presentador externo por correo.
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -255,7 +304,7 @@ const ExternalPresentersPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => setSendAllOpen(true)}
-                disabled={busy || presenters.length === 0}
+                disabled={busy || !hasAnyone}
               >
                 {sendingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
                 {sendingAll ? "Enviando certificados..." : "Enviar certificado a todos"}
@@ -266,7 +315,7 @@ const ExternalPresentersPage: React.FC = () => {
             <Button
               variant="outline"
               onClick={exportExcel}
-              disabled={exporting || presenters.length === 0}
+              disabled={exporting || !hasAnyone}
             >
               {exporting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -286,7 +335,7 @@ const ExternalPresentersPage: React.FC = () => {
           </Alert>
         )}
 
-        {sendAllResult && sendAllResult.failed.length > 0 && (
+        {sendAllResult && (sendAllResult.failed.length > 0 || (sendAllResult.teams?.failed.length ?? 0) > 0) && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>{sendAllResult.message}</AlertTitle>
@@ -296,6 +345,9 @@ const ExternalPresentersPage: React.FC = () => {
                   <li key={f.id}>
                     {f.email}: {f.error}
                   </li>
+                ))}
+                {sendAllResult.teams?.failed.map((f, i) => (
+                  <li key={`team-${i}`}>Equipo · {describeCertificateFailure(f)}</li>
                 ))}
               </ul>
             </AlertDescription>
@@ -452,6 +504,101 @@ const ExternalPresentersPage: React.FC = () => {
                 </Table>
               </div>
             )}
+
+            {/* ARK-209 (HU-39): equipos que presentan como externos */}
+            <section aria-labelledby="external-teams-title" className="space-y-3 pt-4">
+              <div>
+                <h2 id="external-teams-title" className="text-base font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" aria-hidden />
+                  Equipos presentadores
+                  <span className="text-sm text-muted-foreground font-normal">({teams.length})</span>
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Equipos marcados como presentador externo en Equipos inscritos. Reciben un solo certificado
+                  con los integrantes activos y el título del proyecto, que llega por correo a cada integrante.
+                </p>
+              </div>
+              {teams.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Ningún equipo de esta edición está marcado como presentador externo.
+                </p>
+              ) : (
+                <div className="rounded-md border border-border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Equipo</TableHead>
+                        <TableHead>Proyecto</TableHead>
+                        <TableHead>Integrantes</TableHead>
+                        {writable && <TableHead className="text-right">Certificado</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teams.map((t) => {
+                        const sending = teamAction?.id === t.id && teamAction.kind === "send";
+                        const downloading = teamAction?.id === t.id && teamAction.kind === "download";
+                        return (
+                          <TableRow key={t.id}>
+                            <TableCell>
+                              <div className="font-medium">{t.teamName}</div>
+                              <div className="text-xs text-muted-foreground font-mono">{t.teamCode}</div>
+                            </TableCell>
+                            <TableCell className="max-w-xs whitespace-normal">{t.projectTitle || "—"}</TableCell>
+                            <TableCell className="text-xs">
+                              {t.members.length === 0 ? (
+                                <span className="text-muted-foreground">Sin integrantes activos</span>
+                              ) : (
+                                <ul className="space-y-0.5">
+                                  {t.members.map((m) => (
+                                    <li key={m.email}>
+                                      {fullName(m)} <span className="text-muted-foreground">· {m.email}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </TableCell>
+                            {writable && (
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => sendTeamCertificate(t)}
+                                    disabled={busy || t.members.length === 0}
+                                    aria-label={`Enviar certificado al equipo ${t.teamName}`}
+                                  >
+                                    {sending ? (
+                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    ) : (
+                                      <Mail className="h-4 w-4 mr-1" />
+                                    )}
+                                    {sending ? "Enviando..." : "Enviar certificado"}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => downloadTeamCertificate(t)}
+                                    disabled={busy}
+                                    aria-label={`Descargar certificado del equipo ${t.teamName}`}
+                                    title="Descargar PDF (no envía correos)"
+                                  >
+                                    {downloading ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Download className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </section>
           </>
         )}
 
@@ -485,8 +632,9 @@ const ExternalPresentersPage: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>¿Enviar el certificado a todos?</AlertDialogTitle>
               <AlertDialogDescription>
-                Se enviará por correo a {presentersLabel(presenters.length)} de {edition?.title}, también a
-                quienes ya lo recibieron. Puede tardar unos segundos por persona.
+                Se enviará por correo a {presentersLabel(presenters.length)}
+                {teams.length > 0 && <> y a los integrantes de {teamsLabel(teams.length)}</>} de{" "}
+                {edition?.title}, también a quienes ya lo recibieron. Puede tardar unos segundos por persona.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

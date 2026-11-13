@@ -61,6 +61,11 @@ export default function Scoreboard() {
               La inscripción de tu equipo fue rechazada, por eso no tiene nota final
             </p>
           )}
+          {!error && grade?.status === "NOT_GRADABLE" && (
+            <p className="text-center text-sm sm:text-base text-muted-foreground py-6">
+              Tu equipo participa como presentador externo: no recibe calificación
+            </p>
+          )}
           {!error && grade?.status === "NOT_RELEASED" && (
             <p className="text-center text-sm sm:text-base text-muted-foreground py-6">
               La nota final se publica al terminar la feria

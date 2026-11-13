@@ -3,6 +3,9 @@ import {
   ExternalPresenterError,
   createExternalPresenter,
   createExternalPresentersBulk,
+  describeCertificateFailure,
+  downloadExternalPresenterTeamCertificate,
+  sendExternalPresenterTeamCertificate,
   downloadExternalPresentersExport,
   fetchExternalPresenters,
   fetchMyExternalPresenter,
@@ -114,6 +117,59 @@ describe("Cliente de presentadores externos (ARK-194 / HU-33)", () => {
     const error = await fetchMyExternalPresenter().catch((e) => e);
     expect(apiFetch.mock.calls[0][0]).toBe(`${API}/external-presenters/me`);
     expect(error).toMatchObject({ status: 404, code: "EXTERNAL_PRESENTER_NOT_FOUND" });
+  });
+});
+
+describe("Equipos presentadores externos (ARK-209 / HU-39)", () => {
+  afterEach(() => {
+    apiFetch.mockReset();
+    vi.restoreAllMocks();
+  });
+
+  it("envía el certificado del equipo con POST a /external-presenters/teams/:id/certificate", async () => {
+    apiFetch.mockResolvedValue(json(200, { teamId: 400, sentTo: ["ana@uninorte.edu.co"], failed: [] }));
+
+    await expect(sendExternalPresenterTeamCertificate(400)).resolves.toEqual({
+      teamId: 400,
+      sentTo: ["ana@uninorte.edu.co"],
+      failed: [],
+    });
+    const [url, options] = apiFetch.mock.calls[0];
+    expect(url).toBe(`${API}/external-presenters/teams/400/certificate`);
+    expect(options.method).toBe("POST");
+  });
+
+  it("si el equipo ya no está marcado conserva el código CERTIFICATE_TEAM_GRADABLE", async () => {
+    apiFetch.mockResolvedValue(
+      json(400, { code: "CERTIFICATE_TEAM_GRADABLE", message: "El equipo no es presentador externo" }),
+    );
+
+    const error = await sendExternalPresenterTeamCertificate(400).catch((e) => e);
+    expect(error).toBeInstanceOf(ExternalPresenterError);
+    expect(error).toMatchObject({ status: 400, code: "CERTIFICATE_TEAM_GRADABLE" });
+  });
+
+  it("descarga el PDF del equipo con GET y el código del equipo en el nombre", async () => {
+    const downloaded: string[] = [];
+    window.URL.createObjectURL = vi.fn(() => "blob:fake");
+    window.URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      downloaded.push(this.download);
+    });
+    apiFetch.mockResolvedValue(new Response(new Blob(["pdf"]), { status: 200 }));
+
+    await downloadExternalPresenterTeamCertificate({ id: 400, teamCode: "N2-ABC-201" });
+
+    expect(apiFetch.mock.calls[0][0]).toBe(`${API}/external-presenters/teams/400/certificate`);
+    expect(apiFetch.mock.calls[0][1]?.method ?? "GET").toBe("GET");
+    expect(downloaded).toEqual(["certificado-presentador-N2-ABC-201.pdf"]);
+  });
+
+  it("describe los fallos sea texto u objeto", () => {
+    expect(describeCertificateFailure("Sin correo")).toBe("Sin correo");
+    expect(describeCertificateFailure({ email: "a@b.co", error: "Buzón lleno" })).toBe("a@b.co: Buzón lleno");
+    expect(describeCertificateFailure({ teamName: "Los Pixeles", message: "Timeout" })).toBe("Los Pixeles: Timeout");
+    expect(describeCertificateFailure({})).toBe("Error desconocido");
   });
 });
 

@@ -2,13 +2,19 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ExternalPresentersPage from "@/pages/admin/ExternalPresentersPage";
-import type { ExternalPresenter, ExternalPresentersList } from "@/fetchs/externalPresenters";
+import type {
+  ExternalPresenter,
+  ExternalPresenterTeam,
+  ExternalPresentersList,
+} from "@/fetchs/externalPresenters";
 
 const fetchExternalPresenters = vi.fn();
 const removeExternalPresenter = vi.fn();
 const sendExternalPresenterCertificate = vi.fn();
 const sendAllExternalPresenterCertificates = vi.fn();
 const downloadExternalPresentersExport = vi.fn();
+const sendExternalPresenterTeamCertificate = vi.fn();
+const downloadExternalPresenterTeamCertificate = vi.fn();
 
 vi.mock("@/fetchs/externalPresenters", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/fetchs/externalPresenters")>()),
@@ -18,6 +24,9 @@ vi.mock("@/fetchs/externalPresenters", async (importOriginal) => ({
   sendAllExternalPresenterCertificates: (...args: unknown[]) =>
     sendAllExternalPresenterCertificates(...args),
   downloadExternalPresentersExport: (...args: unknown[]) => downloadExternalPresentersExport(...args),
+  sendExternalPresenterTeamCertificate: (...args: unknown[]) => sendExternalPresenterTeamCertificate(...args),
+  downloadExternalPresenterTeamCertificate: (...args: unknown[]) =>
+    downloadExternalPresenterTeamCertificate(...args),
 }));
 
 vi.mock("@/fetchs/editions", () => ({
@@ -55,10 +64,26 @@ const LUIS = presenter(10, "Luis", {
   organization: null,
 });
 
-const listOf = (presenters: ExternalPresenter[], readOnly = false): ExternalPresentersList => ({
+const listOf = (
+  presenters: ExternalPresenter[],
+  readOnly = false,
+  teams?: ExternalPresenterTeam[],
+): ExternalPresentersList => ({
   edition: { id: 3, title: "Feria Gamer 2025 - S2", status: readOnly ? "ARCHIVED" : "ACTIVE", readOnly },
   presenters,
+  ...(teams ? { teams } : {}),
 });
+
+const PIXELES: ExternalPresenterTeam = {
+  id: 400,
+  teamCode: "N2-ABC-201",
+  teamName: "Los Pixeles",
+  projectTitle: "Pixel Quest",
+  members: [
+    { firstName: "Ana", lastName: "Ruiz", email: "ana@uninorte.edu.co" },
+    { firstName: "Leo", lastName: "Mar", email: "leo@uninorte.edu.co" },
+  ],
+};
 
 const renderPage = () =>
   render(
@@ -204,5 +229,79 @@ describe("Página «Presentadores externos» (HU-33)", () => {
     expect(await screen.findByText("Todavía no hay presentadores externos en esta edición.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Registrar presentador/ }));
     expect(await screen.findByLabelText("Repite el correo")).toBeTruthy();
+  });
+
+  describe("Equipos presentadores (ARK-209 / HU-39)", () => {
+    it("lista los equipos marcados con su proyecto e integrantes", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([ANA], false, [PIXELES]));
+      renderPage();
+
+      const row = (await screen.findByText("Los Pixeles")).closest("tr")!;
+      expect(within(row).getByText("N2-ABC-201")).toBeTruthy();
+      expect(within(row).getByText("Pixel Quest")).toBeTruthy();
+      expect(within(row).getByText(/ana@uninorte.edu.co/)).toBeTruthy();
+      expect(within(row).getByText(/leo@uninorte.edu.co/)).toBeTruthy();
+    });
+
+    it("un back sin `teams` muestra la sección vacía sin romper la lista de personas", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([ANA]));
+      renderPage();
+
+      expect(await screen.findByText("Ana Pérez")).toBeTruthy();
+      expect(
+        screen.getByText("Ningún equipo de esta edición está marcado como presentador externo."),
+      ).toBeTruthy();
+    });
+
+    it("envía el certificado del equipo y avisa a quiénes llegó", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([], false, [PIXELES]));
+      let finish!: (value: unknown) => void;
+      sendExternalPresenterTeamCertificate.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+      renderPage();
+
+      fireEvent.click(await screen.findByRole("button", { name: "Enviar certificado al equipo Los Pixeles" }));
+      expect(await screen.findByText("Enviando...")).toBeTruthy();
+      expect(sendExternalPresenterTeamCertificate).toHaveBeenCalledWith(400);
+
+      finish({ teamId: 400, sentTo: ["ana@uninorte.edu.co", "leo@uninorte.edu.co"], failed: [] });
+      await waitFor(() => expect(screen.queryByText("Enviando...")).toBeNull());
+    });
+
+    it("descarga el PDF del equipo sin enviar correos", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([], false, [PIXELES]));
+      downloadExternalPresenterTeamCertificate.mockResolvedValue(undefined);
+      renderPage();
+
+      fireEvent.click(await screen.findByRole("button", { name: "Descargar certificado del equipo Los Pixeles" }));
+
+      await waitFor(() => expect(downloadExternalPresenterTeamCertificate).toHaveBeenCalledWith(PIXELES));
+      expect(sendExternalPresenterTeamCertificate).not.toHaveBeenCalled();
+    });
+
+    it("con solo equipos deja enviar a todos y exportar, y lo dice en la confirmación", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([], false, [PIXELES]));
+      sendAllExternalPresenterCertificates.mockResolvedValue({
+        sent: 0,
+        failed: [],
+        teams: { sent: 0, failed: [{ teamId: 400, teamName: "Los Pixeles", error: "Gotenberg no respondió" }] },
+        message: "Certificados enviados: 0 de 0 presentadores y 0 de 1 equipos.",
+      });
+      renderPage();
+
+      expect((await screen.findByRole("button", { name: /Exportar a Excel/ })).hasAttribute("disabled")).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: /Enviar certificado a todos/ }));
+      expect(screen.getByText(/a los integrantes de 1 equipo/)).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Enviar a todos" }));
+
+      expect(await screen.findByText("Equipo · Los Pixeles: Gotenberg no respondió")).toBeTruthy();
+    });
+
+    it("en una edición de solo lectura no deja enviar ni descargar el certificado del equipo", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([], true, [PIXELES]));
+      renderPage();
+
+      expect(await screen.findByText("Los Pixeles")).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /certificado del equipo|certificado al equipo/ })).toBeNull();
+    });
   });
 });

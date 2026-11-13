@@ -2,8 +2,11 @@ import { apiFetch } from "@/lib/api";
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
-/** REJECTED (BG-43, ARK-205): la inscripción del equipo está rechazada y no tiene nota. */
-export type FinalGradeStatus = "REJECTED" | "NOT_RELEASED" | "IN_PROCESS" | "AVAILABLE";
+/**
+ * REJECTED (BG-43, ARK-205): la inscripción del equipo está rechazada y no tiene nota.
+ * NOT_GRADABLE (HU-39, ARK-209): el equipo presenta como externo y no se califica.
+ */
+export type FinalGradeStatus = "REJECTED" | "NOT_GRADABLE" | "NOT_RELEASED" | "IN_PROCESS" | "AVAILABLE";
 
 export interface StudentFinalGrade {
   editionId: number;
