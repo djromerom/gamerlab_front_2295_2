@@ -27,6 +27,7 @@ import {
 } from "@/lib/workingEdition";
 import { AutomaticAssignmentModal } from "@/components/jurados-modals/AutomaticAssignmentModal";
 import { ManualAssignTeamDialog } from "./ManualAssignTeamDialog";
+import { RemoveTeamDialog } from "./RemoveTeamDialog";
 import type { LevelTeam } from "./manualAssignment";
 
 export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, apiBaseUrl, isDataLoading = false, onPageChange, onLimitChange, refreshData }) => {
@@ -46,8 +47,6 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false)
   // ARK-189: equipos del diálogo «Asignar equipo», con su nivel; null mientras cargan
   const [teams, setTeams] = useState<LevelTeam[] | null>(null)
-  const [teamsByJuror, setTeamsByJuror] = useState<LevelTeam[]>([])
-  const [valueDeleteTeam, setValueDeleteTeam] = useState<LevelTeam | null>(null)
   const [searchTerm, setSearchTerm] = useState("");
   const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -319,92 +318,9 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       key: "manualDelete",
       label: "Quitar un equipo",
       align: "center",
+      // ARK-206: pide confirmar las advertencias de HU-08 (p. ej. el grupo queda con menos de 3 jurados)
       renderCell: (juror: JurorRowData) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              onClick={async () => {
-                setTeamsByJuror([])
-                setValueDeleteTeam(null)
-                try {
-                  setTeamsByJuror(await juryManagement.getTeamsByJuror(juror.id))
-                } catch (error) {
-                  toast.error(error instanceof Error && error.message ? error.message : "No se pudieron cargar los equipos del jurado.")
-                }
-              }}
-              variant={"destructive"}
-              size="sm"
-            >
-              <BadgeXIcon />
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Quitar equipo a {juror.firstName}
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-3 mt-2">
-              <div className="flex w-full relative">
-                <select
-                  className="
-                    w-full appearance-none rounded-lg 
-                    border border-gray-300
-                    bg-white dark:bg-transparent 
-                    text-gray-900 dark:text-gray-100
-                    px-4 py-2 pr-10 text-sm shadow-sm 
-                    transition 
-                    cursor-pointer
-                  "
-                  defaultValue={""}
-                  onChange={(e) => {
-                    const value = Number(e.target.value)
-                    setValueDeleteTeam(teamsByJuror.find(team => team.id === value) ?? null)
-                  }}
-                >
-                  <option value="" disabled className="bg-white dark:bg-[#120e21]">
-                    Seleccione un equipo...
-                  </option>
-                  {teamsByJuror.map((team) => (
-                    <option key={team.id} value={String(team.id)} className="bg-white dark:bg-[#120e21]">
-                      {`${team.name} · ${team.levelLabel}`}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">
-                  ▼
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center w-full">
-                <Input
-                  placeholder="Nombre del videojuego"
-                  disabled
-                  value={valueDeleteTeam?.videogame || ""}
-                />
-              </div>
-              <Button
-                variant={"destructive"}
-                disabled={!valueDeleteTeam}
-                onClick={async () => {
-                  if (!valueDeleteTeam) return
-                  const res = await juryManagement.deleteAnAssignment(juror.id, valueDeleteTeam.id)
-                  toast.message(res.message)
-                  if (res.success) {
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 500)
-                  }
-                }}
-                className="w-full"
-              >
-                Quitar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <RemoveTeamDialog juror={juror} onRemoved={handleManualAssigned} />
       )
     }
   ];

@@ -153,6 +153,55 @@ describe("juryManagement: asignación manual con nivel (ARK-189)", () => {
   });
 });
 
+describe("juryManagement.deleteAnAssignment: quitar un equipo con advertencias (ARK-206)", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("sin confirmar no envía confirmWarnings", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "ok" }, 200));
+
+    expect(await juryManagement.deleteAnAssignment("j-1", 400)).toEqual({
+      success: true,
+      message: "La asignación fue eliminada.",
+    });
+    expect(vi.mocked(apiFetch).mock.calls[0][1].method).toBe("DELETE");
+    expect(JSON.parse(vi.mocked(apiFetch).mock.calls[0][1].body as string)).toEqual({ jurorId: "j-1", teamId: 400 });
+  });
+
+  it("al confirmar envía confirmWarnings: true", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "ok" }, 200));
+
+    await juryManagement.deleteAnAssignment("j-1", 400, true);
+
+    expect(JSON.parse(vi.mocked(apiFetch).mock.calls[0][1].body as string)).toEqual({
+      jurorId: "j-1",
+      teamId: 400,
+      confirmWarnings: true,
+    });
+  });
+
+  it("devuelve las advertencias de un 409 ASSIGNMENT_WARNINGS", async () => {
+    const warning = { code: "TEAM_UNDER_MIN", message: "El grupo N2-ABC-201 quedaría con 0 jurado(s)" };
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json({ code: "ASSIGNMENT_WARNINGS", message: "La asignación rompe reglas.", warnings: [warning] }, 409),
+    );
+
+    expect(await juryManagement.deleteAnAssignment("j-1", 400)).toEqual({
+      success: false,
+      message: "La asignación rompe reglas.",
+      warnings: [warning],
+    });
+  });
+
+  it("un error sin advertencias devuelve solo el mensaje", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "La asignación no existe." }, 404));
+
+    expect(await juryManagement.deleteAnAssignment("j-1", 400)).toEqual({
+      success: false,
+      message: "La asignación no existe.",
+    });
+  });
+});
+
 describe("juryManagement: quitar todas las asignaciones (ARK-133)", () => {
   beforeEach(() => vi.mocked(apiFetch).mockReset());
 
