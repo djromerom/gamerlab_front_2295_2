@@ -58,6 +58,12 @@ describe("StudentGradeTableView: notas con 2 decimales (BG-30)", () => {
     renderView([{ ...team, calificacionFeria: null, calificacionDocente: null }]);
     expect(screen.getByText("Nota en proceso")).toBeTruthy();
   });
+
+  it("un equipo rechazado se muestra como Rechazado, no como Nota en proceso (BG-43)", () => {
+    renderView([{ ...team, calificacionFeria: null, rejected: true }]);
+    expect(screen.getByText("Rechazado")).toBeTruthy();
+    expect(screen.queryByText("Nota en proceso")).toBeNull();
+  });
 });
 
 describe("StudentGradeTableView: motivo de la nota de la feria (ARK-203)", () => {

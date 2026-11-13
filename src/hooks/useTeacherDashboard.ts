@@ -230,6 +230,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
         canEdit: project.canEdit === true,
         source: project.source === "historical" ? "historical" as const : "current" as const,
         fairGradeRule: toFairGradeRule(project.fairGradeRule, project.isExternal),
+        rejected: project.rejected === true,
         _rows: [project],
       })),
     [projects, availableFairs],

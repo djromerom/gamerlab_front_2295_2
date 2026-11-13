@@ -56,6 +56,11 @@ export default function Scoreboard() {
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-2">
           {error && <p className="text-center text-sm text-destructive py-6">{error}</p>}
+          {!error && grade?.status === "REJECTED" && (
+            <p className="text-center text-sm sm:text-base text-muted-foreground py-6">
+              La inscripción de tu equipo fue rechazada, por eso no tiene nota final
+            </p>
+          )}
           {!error && grade?.status === "NOT_RELEASED" && (
             <p className="text-center text-sm sm:text-base text-muted-foreground py-6">
               La nota final se publica al terminar la feria
