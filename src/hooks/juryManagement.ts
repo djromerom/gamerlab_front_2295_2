@@ -161,20 +161,31 @@ export const juryManagement = {
         }, 1000) 
     },
 
-    deleteAnAssignment: async (jurorId, teamId) => {
+    // ARK-206: quitar también avisa (HU-08, p. ej. TEAM_UNDER_MIN). Con 409 ASSIGNMENT_WARNINGS
+    // no se quitó nada: se devuelven las advertencias para repetir con `confirmWarnings: true`.
+    deleteAnAssignment: async (
+        jurorId: string,
+        teamId: number,
+        confirmWarnings = false
+    ): Promise<{ success: boolean; message: string; warnings?: AssignmentWarning[] }> => {
         const res = await apiFetch(`${API_ENDPOINT}/assignments`, {
             method: 'DELETE',
             credentials: 'include',
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({jurorId: jurorId, teamId: teamId})
+            body: JSON.stringify({
+                jurorId: jurorId,
+                teamId: teamId,
+                ...(confirmWarnings && { confirmWarnings: true }),
+            })
         })
-        const data = await res.json()
+        const data = await res.json().catch(() => null)
 
         if (!res.ok) {
-            return {
-                success: false,
-                message: data.message
-            }
+            const message = getApiErrorMessage(data, 'No se pudo quitar el equipo.')
+            const warnings = getAssignmentWarnings(res.status, data)
+            return warnings
+                ? { success: false, message, warnings }
+                : { success: false, message }
         }
         return {
             success: true,
