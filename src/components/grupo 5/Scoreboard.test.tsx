@@ -87,4 +87,21 @@ describe("Nota final del estudiante (ARK-81)", () => {
     expect(screen.queryByText("Nota en proceso")).toBeNull();
     expect(screen.queryByTestId("grade-label")).toBeNull();
   });
+
+  it("equipo presentador externo: dice que no se califica, no Nota en proceso (ARK-209)", async () => {
+    mocks.fetchStudentFinalGrade.mockResolvedValue({
+      editionId: 5,
+      team: { id: 400, teamName: "Los Pixeles", teamCode: "N2-ABC-201" },
+      released: true,
+      status: "NOT_GRADABLE",
+      finalGrade: null,
+    });
+    render(<Scoreboard />);
+
+    expect(
+      await screen.findByText("Tu equipo participa como presentador externo: no recibe calificación"),
+    ).toBeTruthy();
+    expect(screen.queryByText("Nota en proceso")).toBeNull();
+    expect(screen.queryByTestId("grade-label")).toBeNull();
+  });
 });

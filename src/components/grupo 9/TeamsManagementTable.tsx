@@ -19,6 +19,7 @@ import type { WizardValues } from "./validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { batchErrors, batchFailureMessage, downloadCertificatePdf, runInBatches } from "@/lib/certificates";
+import { setTeamNotGradable } from "@/fetchs/teamGradable";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -45,6 +46,9 @@ export const TeamsManagementTable = ({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // HU-39 (ARK-209): equipo al que se le va a poner o quitar la marca de presentador externo
+  const [gradableTarget, setGradableTarget] = useState<TeamRowData | null>(null);
 
   // HU-19: equipo cuyo código de verificación se está consultando
   const [verificationTeam, setVerificationTeam] = useState<{ id: number; name: string; teamCode?: string } | null>(null);
@@ -77,8 +81,11 @@ export const TeamsManagementTable = ({
   const [certSelectAll, setCertSelectAll] = useState<boolean>(false);
   // ARK-170: todos los equipos de la edición, no solo los de la página visible, y solo confirmados
   const certTeams = allTeams?.length ? allTeams : teams ?? [];
+  // ARK-209: los presentadores externos no reciben participación ni podio (el back responde
+  // CERTIFICATE_TEAM_NOT_GRADABLE); su certificado se envía desde Presentadores externos.
   const filteredCertTeams = certTeams.filter((t) =>
     t.videojuego?.id_estado_videojuego === 1 &&
+    !t.notGradable &&
     (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
 
@@ -306,6 +313,32 @@ export const TeamsManagementTable = ({
     }
   };
 
+  // HU-39 (ARK-209): marcar o desmarcar como presentador externo (no calificable)
+  const confirmToggleNotGradable = async () => {
+    const team = gradableTarget;
+    if (!team || internalIsLoading) return;
+    const notGradable = !team.notGradable;
+    setInternalIsLoading(true);
+    try {
+      const result = await setTeamNotGradable(team.id_equipo, notGradable);
+      toast.success(
+        result.notGradable
+          ? `${team.nombre_equipo} quedó como presentador externo: no se califica.`
+          : `${team.nombre_equipo} volvió a ser un equipo calificable.`,
+      );
+      // Igual que al rechazar (ARK-158): si tenía jurados, el back los retira y lo informa.
+      if (result.avisoAsignacion) {
+        toast.warning(result.avisoAsignacion, { duration: 10000 });
+      }
+      setGradableTarget(null);
+      refreshData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo cambiar la marca de presentador externo.");
+    } finally {
+      setInternalIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (statusId: number) => {
     const map = {
       1: { variant: "default" as const, text: "Confirmado" },
@@ -363,6 +396,16 @@ export const TeamsManagementTable = ({
               {/* HU-19: el número identifica al equipo sin ambigüedad (lo ven el estudiante y el jurado) */}
               {team.teamCode && (
                 <div className="text-xs text-muted-foreground font-mono">{team.teamCode}</div>
+              )}
+              {/* HU-39 (ARK-209): sale en la galería, pero no se califica ni recibe jurados */}
+              {team.notGradable && (
+                <Badge
+                  variant="outline"
+                  className="mt-1 border-amber-500 text-amber-700 dark:text-amber-300"
+                  title="No calificable: no entra al ranking, a la asignación de jurados ni a las notas"
+                >
+                  Presentador externo
+                </Badge>
               )}
             </div>
           </div>
@@ -955,6 +998,13 @@ export const TeamsManagementTable = ({
                           >
                             Editar
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setGradableTarget(team)}
+                            disabled={internalIsLoading}
+                            className="cursor-pointer"
+                          >
+                            {team.notGradable ? "Quitar marca de presentador externo" : "Marcar como presentador externo"}
+                          </DropdownMenuItem>
                           {/* Los equipos de colegios (N0) no tienen código de verificación */}
                           {!isCollegeTeamCode(team.teamCode) && (
                             <DropdownMenuItem
@@ -1119,7 +1169,8 @@ export const TeamsManagementTable = ({
           <DialogHeader>
             <DialogTitle>Enviar certificados</DialogTitle>
             <DialogDescription>
-              Seleccione los equipos destinatarios y el tipo de certificado a enviar.
+              Seleccione los equipos destinatarios y el tipo de certificado a enviar. Los equipos
+              presentadores externos no aparecen aquí: su certificado se envía desde Presentadores externos.
             </DialogDescription>
           </DialogHeader>
 
@@ -1227,6 +1278,40 @@ export const TeamsManagementTable = ({
         team={verificationTeam}
         onClose={() => setVerificationTeam(null)}
       />
+
+      {/* HU-39 (ARK-209): marcar o desmarcar como presentador externo */}
+      <AlertDialog open={gradableTarget !== null} onOpenChange={(open) => !open && setGradableTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {gradableTarget?.notGradable
+                ? `¿Quitar la marca de presentador externo a ${gradableTarget?.nombre_equipo}?`
+                : `¿Marcar a ${gradableTarget?.nombre_equipo} como presentador externo?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {gradableTarget?.notGradable
+                ? "El equipo vuelve al ranking, la asignación de jurados, el seguimiento y las notas. Sus evaluaciones anteriores vuelven a contar, pero los jurados que se le retiraron no vuelven solos: hay que asignarlos de nuevo."
+                : "Seguirá en la galería, pero no se califica: sale del ranking, la asignación de jurados, el seguimiento, las notas y Calificaciones Uninorte. Si tiene jurados asignados, se le retiran. Sus evaluaciones no se borran. Recibe el certificado de presentador externo, que se envía desde Presentadores externos."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={internalIsLoading} className="cursor-pointer">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault(); // el diálogo se cierra cuando responde el back
+                confirmToggleNotGradable();
+              }}
+              disabled={internalIsLoading}
+              className="cursor-pointer"
+            >
+              {internalIsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {gradableTarget?.notGradable ? "Quitar marca" : "Marcar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -195,6 +195,7 @@ export default function VideogamesPage() {
           logo: videogame.logoUrl || videogame.logo_url,
           additionalImages: videogame.additionalImages || fallbackImages,
           isExternal: isExternal,
+          notGradable: team.notGradable === true,
           likes: likeCount || 0,
           entry: videogame.entry || null,
           gameFileUrl: videogame.gameFileUrl || null

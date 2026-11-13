@@ -52,12 +52,20 @@ export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
                 className="cursor-pointer"
             >
                 <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-[180px]">
-                    {/* Badge de tipo de equipo */}
-                    <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
-                        ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
-                        : "bg-green-500/20 text-green-300 border border-green-400/30"
-                        }`}>
-                        {!team.isExternal ? "Uninorte" : "Externo"}
+                    <div className="absolute top-3 right-3 flex items-center gap-1">
+                        {/* HU-39 (ARK-209): equipo que presenta sin ser calificado */}
+                        {team.notGradable && (
+                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                                Presentador externo
+                            </div>
+                        )}
+                        {/* Badge de tipo de equipo */}
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${!team.isExternal
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
+                            : "bg-green-500/20 text-green-300 border border-green-400/30"
+                            }`}>
+                            {!team.isExternal ? "Uninorte" : "Externo"}
+                        </div>
                     </div>
 
                     <CardContent className="flex space-x-5 py-6 px-8 h-full">

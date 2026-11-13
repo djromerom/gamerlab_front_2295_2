@@ -6,6 +6,8 @@ export interface TeamRowData {
   id_edicion: number;
   activo: boolean;
   isExternal?: boolean;
+  /** HU-39 (ARK-209): presentador externo que es un equipo; no se califica */
+  notGradable?: boolean;
   teamCode?: string;
   team_nrc_global_id?: number | string;
   integrantes: IntegranteData[];
