@@ -164,7 +164,7 @@ const JurorCheckInPage = () => {
         )}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-          <Card className="min-w-0">
+          <Card className="min-w-0 py-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><QrCode /> Escanear QR</CardTitle>
             </CardHeader>
@@ -179,7 +179,7 @@ const JurorCheckInPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="min-w-0">
+          <Card className="min-w-0 py-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Search /> Registro manual</CardTitle>
             </CardHeader>

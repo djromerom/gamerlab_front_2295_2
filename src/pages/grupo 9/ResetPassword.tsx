@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { Link } from "react-router";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 const passwordSchema = z
     .object({
@@ -228,7 +229,7 @@ export default function ResetPassword() {
                                 onChange={(e) => {setPassword(e.target.value)}}
                                 placeholder="Ingresar contraseña"
                                 required
-                                className="w-full h-full pl-[45px] m-0"
+                                className="w-full h-full pl-[45px] pr-11 m-0"
                                 disabled={status === "submitting_password"}
                                 aria-invalid={!!errors.password}
                                 aria-describedby={
@@ -237,7 +238,7 @@ export default function ResetPassword() {
                             />
                             <button type="button"
                                   onClick={() => setShow(!show)}
-                                  className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                                  className="absolute right-3 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
                                     {show ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                             {errors.password && (
@@ -260,11 +261,11 @@ export default function ResetPassword() {
                                 disabled={status === "submitting_password"}
                                 placeholder="Confirmar contraseña"
                                 required
-                                className="w-full h-full pl-[45px] m-0"
+                                className="w-full h-full pl-[45px] pr-11 m-0"
                             />
                             <button type="button"
                                   onClick={() => setShowConfirm(!showConfirm)}
-                                  className="absolute right-5 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
+                                  className="absolute right-3 top-[25%] text-gray-300 hover:text-gray-700 focus:outline-none">
                                     {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                             {errors.confirmPassword && (
@@ -284,7 +285,7 @@ export default function ResetPassword() {
                         </div>
                         <div className="w-full">
                             <Button type="submit"
-                                    className="w-full bg-[#B3C7FF] text-base sm:text-[18px] hover:bg-[#8a70ff] cursor-pointer"
+                                    className="w-full h-auto min-h-10 py-2.5 whitespace-normal leading-tight bg-[#B3C7FF] text-sm sm:text-[18px] hover:bg-[#8a70ff] cursor-pointer"
                                     disabled={status === "submitting_password"}>
                                     {status === "submitting_password" ? (
                                     <>
@@ -304,11 +305,8 @@ export default function ResetPassword() {
         }
     };
     return(
-        <div className="relative min-h-screen dark bg-[#060312] overflow-hidden">
-            <div
-                className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat  animate-float"
-                style={{backgroundImage: "url('/background.webp')"}}
-            ></div>
+        <div className="relative min-h-screen dark overflow-hidden">
+            <FondoArkad modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
             <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
             <div className="flex items-center w-full justify-center">
@@ -329,7 +327,7 @@ export default function ResetPassword() {
                     Rellena los campos para tu nueva contraseña.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="text-gray-800 dark:text-gray-200 px-8">
+            <CardContent className="text-gray-800 dark:text-gray-200 px-0 sm:px-8">
                 {renderContent()}
             </CardContent>
             {(status === "awaiting_password" || status === "error") && (

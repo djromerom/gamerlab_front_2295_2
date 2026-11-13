@@ -60,6 +60,7 @@ import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
 import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
 import RegistrationGate from "@/routes/RegistrationGate";
+import RestablecerInteraccion from "@/routes/RestablecerInteraccion";
 import VideogamesPage from "@/pages/teams/VideogamesPage";
 
 import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
@@ -338,6 +339,7 @@ const RoutesConfiguration: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <RestablecerInteraccion />
       <Routes>
         {routes.map((route) => {
           if (route.roles) {

@@ -25,6 +25,7 @@ import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { developers, departments, technologies, projectStats } from "@/data/contributorsData";
 
 import "./CreditsPage.css";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 export default function DevelopersCredits() {
   const [currentTeamSlide, setCurrentTeamSlide] = useState(0);
@@ -116,13 +117,8 @@ export default function DevelopersCredits() {
   return (
     <>
       <NavBar />
-      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-          style={{ backgroundImage: "url('/background.webp')" }}
-        >
-          <div className="absolute inset-0"></div>
-        </div>
+      <div className="relative min-h-screen overflow-hidden">
+        <FondoArkad modo="lento" estiloNuevo />
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Arkad</span> - Equipo de Desarrollo

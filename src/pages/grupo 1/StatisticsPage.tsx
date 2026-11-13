@@ -87,7 +87,7 @@ export default function StatisticsPage() {
           )}
 
           {/* Contenido principal */}
-          <div className="bg-background text-foreground min-h-screen p-4 w-full">
+          <div className="md:bg-background text-foreground min-h-screen p-4 w-full">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 px-4">
               <div>

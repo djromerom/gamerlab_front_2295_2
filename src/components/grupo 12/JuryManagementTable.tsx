@@ -477,7 +477,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   return (
     // Añade un contenedor div si data es null para mantener la estructura
     <div
-      className={`bg-background text-foreground min-h-screen min-w-[350px] p-4 ${showLoader ? "opacity-75" : ""
+      className={`md:bg-background text-foreground min-h-screen min-w-[350px] p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
       {/* Encabezado (Título y Botón Agregar) */}

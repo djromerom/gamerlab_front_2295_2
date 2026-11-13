@@ -6,6 +6,8 @@ import { useEffect, useState } from "react"
 interface CountdownTimerProps {
   targetDate: string | number | Date
   onCountdownEnd?: () => void
+  /** "landing": versión compacta alineada a la izquierda del diseño de ARK-222 */
+  variante?: "centrado" | "landing"
 }
 
 interface TimeLeft {
@@ -16,7 +18,7 @@ interface TimeLeft {
   isExpired: boolean
 }
 
-export default function CountdownTimer({ targetDate, onCountdownEnd }: CountdownTimerProps): React.ReactElement | null {
+export default function CountdownTimer({ targetDate, onCountdownEnd, variante = "centrado" }: CountdownTimerProps): React.ReactElement | null {
   const calculateTimeLeft = (): TimeLeft => {
     const difference = +new Date(targetDate) - +new Date()
 
@@ -58,6 +60,16 @@ export default function CountdownTimer({ targetDate, onCountdownEnd }: Countdown
   const { days, hours, minutes, seconds } = timeLeft
 
   const pad = (n: number): string => String(n).padStart(2, "0")
+  const tiempo = days > 0 ? `${pad(days)}d : ${pad(hours)}h : ${pad(minutes)}m` : `${pad(hours)}h : ${pad(minutes)}m : ${pad(seconds)}s`
+
+  if (variante === "landing") {
+    return (
+      <div className="flex flex-col gap-1" role="timer" aria-label={`La competencia inicia en ${tiempo}`}>
+        <p className="text-sm text-[#C9D6FF]">La competencia inicia en</p>
+        <p className="font-unbounded text-2xl font-bold tabular-nums text-white md:text-3xl">{tiempo}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="text-center mb-8 sm:mt-8">

@@ -327,7 +327,7 @@ export const NrcsTable: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
+      className={`md:bg-background text-foreground min-h-screen p-4 ${showLoader ? "opacity-75" : ""
         }`}
     >
       <div className="flex justify-between items-center mb-6 px-4">

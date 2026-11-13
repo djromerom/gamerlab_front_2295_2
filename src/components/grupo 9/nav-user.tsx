@@ -26,15 +26,23 @@ interface Props {
 }
 
 export const NavUser: React.FC<Props> = ({ user }) => {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
   // [MODIFICADO]: "Salir" lleva al login limpio, también desde pantallas no protegidas (BG-08)
   // [ANTES]: Solo cerraba la sesión y dejaba al usuario en la misma página
   const handleLogout = async () => {
+    setOpenMobile(false);
     await logout();
     navigate("/login", { replace: true });
+  };
+
+  // ARK-222: en celular el menú vive dentro del panel lateral (Sheet). Si se navega con los dos abiertos, Radix deja
+  // el <body> con pointer-events: none y la página queda bloqueada. Se cierra el panel y se navega en el siguiente ciclo.
+  const irAPaginaPrincipal = () => {
+    setOpenMobile(false);
+    window.setTimeout(() => navigate("/"), 0);
   };
 
   return (
@@ -94,7 +102,7 @@ export const NavUser: React.FC<Props> = ({ user }) => {
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="cursor-pointer" 
-              onClick={() => navigate("/")}
+              onClick={irAPaginaPrincipal}
             >
               <Home />
               Página Principal

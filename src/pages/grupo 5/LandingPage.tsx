@@ -2,190 +2,89 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { ArrowRight } from "lucide-react"
 import "@/index.css"
-import "@/styles/confetti.css"
 import CountdownTimer from "@/components/grupo 5/CountdownTimer"
-import FairStartedAnnouncement from "@/components/grupo 5/FairStartedAnnouncement"
-import NavBar from "@/components/grupo 5/NavBar"
+import LandingHeader from "@/components/grupo 5/LandingHeader"
+import { FondoArkad } from "@/components/fondo/FondoArkad"
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
 import { DiscordButton } from "@/components/grupo 5/DiscordButton"
-import { fetchRegistrationsOpen } from "@/fetchs/registrations"
 
+// Inicio de la feria: hasta esa hora la landing muestra la cuenta regresiva
+const INICIO_FERIA = new Date("2026-05-28T08:00:00")
+const DISCORD_SOPORTE = "https://discord.gg/RzAvUdspaT"
+
+/** Landing pública con el diseño aprobado en ARK-222 (mockups/feria-gamer-vistas.html). */
 function Landing(): React.ReactElement {
-  const [eventStarted, setEventStarted] = useState<boolean>(false)
-  const [eventEnded, setEventEnded] = useState<boolean>(false)
-  const [showConfetti, setShowConfetti] = useState<boolean>(false)
-  const [confettiFadingOut, setConfettiFadingOut] = useState<boolean>(false)
-  const startDate = new Date("2026-05-28T08:00:00")
-  const endDate = new Date("2026-05-28T12:00:00")
-
-  // temporary workaround to disable inscriptions (2026-1). It should become an admin setting
-  // To restore registrations, also uncomment route in RoutesConfiguration.tsx
-  const showRegisterButton = false;
-
-  // Con las inscripciones abiertas (ajuste del admin) el inicio lleva al formulario
-  const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false)
-  useEffect(() => {
-    let active = true
-    fetchRegistrationsOpen().then((open) => {
-      if (active) setRegistrationsOpen(open)
-    })
-    return () => {
-      active = false
-    }
-  }, [])
+  const navigate = useNavigate()
+  const [feriaIniciada, setFeriaIniciada] = useState<boolean>(() => new Date() >= INICIO_FERIA)
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
     document.documentElement.classList.add("dark")
-
-    // Check event status when component mounts
-    const now = new Date()
-
-    if (now >= endDate) {
-      // Event has ended
-      setEventEnded(true)
-      setEventStarted(true)
-      // Show confetti for event end
-      setShowConfetti(true)
-      // Start fade-out animation after 4 seconds
-      setTimeout(() => {
-        setConfettiFadingOut(true)
-      }, 8000)
-      // Completely hide confetti after fade-out animation completes
-      setTimeout(() => {
-        setShowConfetti(false)
-        setConfettiFadingOut(false)
-      }, 10000)
-    } else if (now >= startDate) {
-      // Event has started but not ended
-      setEventStarted(true)
-      setEventEnded(false)
-      // Show confetti for event start
-      setShowConfetti(true)
-      // Start fade-out animation after 4 seconds
-      setTimeout(() => {
-        setConfettiFadingOut(true)
-      }, 8000)
-      // Completely hide confetti after fade-out animation completes
-      setTimeout(() => {
-        setShowConfetti(false)
-        setConfettiFadingOut(false)
-      }, 10000)
-    } else {
-      // Event hasn't started yet
-      setEventStarted(false)
-      setEventEnded(false)
-    }
-
     return () => {
       document.documentElement.classList.remove("dark")
     }
   }, [])
 
-  const navigate = useNavigate()
-  const discordSupportUrl = "https://discord.gg/RzAvUdspaT"
-
-  const handleCountdownEnd = () => {
-    setEventStarted(true)
-    setEventEnded(false)
-    setShowConfetti(true)
-
-    // Start fade-out animation after 4 seconds
-    setTimeout(() => {
-      setConfettiFadingOut(true)
-    }, 8000)
-
-    // Completely hide confetti after fade-out animation completes
-    setTimeout(() => {
-      setShowConfetti(false)
-      setConfettiFadingOut(false)
-    }, 10000) // 4 seconds + 2.5 seconds for fade-out
-  }
-
-  const getButtonText = () => {
-    if (eventEnded) return "Ver ranking"
-    if (eventStarted) return "Ver videojuegos"
-    return "Registrar equipo"
-  }
-
-  const getButtonRoute = () => {
-    if (eventEnded) return "/ranking"
-    if (eventStarted) return "/equipos"
-    return "/registro-equipo"
-  }
-
-  const getDescriptionText = () => {
-    if (eventEnded) {
-      return "Revive los mejores momentos de la feria y explora todos los increíbles proyectos que fueron presentados por nuestros talentosos estudiantes."
-    }
-    if (eventStarted) {
-      return "La experiencia definitiva donde la creatividad y la tecnología se encuentran ya está aquí. Explora los videojuegos más innovadores creados por talentosos estudiantes."
-    }
-    return "Bienvenidos a la experiencia definitiva donde la creatividad y la tecnología se encuentran. Inscríbete y explora los videojuegos creados por nuestros estudiantes."
-  }
-
   return (
-    <>
-      <NavBar />
-      <div className="relative min-h-dvh bg-[#0d0f14] overflow-x-hidden">
-        {/* Contenedor del fondo animado para evitar que su movimiento cause scroll */}
-        <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-          <div
-            className="absolute -inset-12 bg-cover bg-center bg-no-repeat animate-float"
-            style={{ backgroundImage: "url('/background.webp')" }}
-          >
-            <div className="absolute inset-0"></div>
+    <div className="relative flex min-h-dvh flex-col overflow-x-hidden font-inter text-[#F4F7FF]">
+      {/* Escena animada con el logo de Arkad, centrada a la derecha del texto */}
+      <FondoArkad modo="vivo" centro={[0.7, 0.5]} opacidadLogo={1} />
+      {/* Velo para que el texto se lea sobre la escena */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[1] max-md:bg-[rgba(5,10,36,0.62)] md:bg-[linear-gradient(90deg,rgba(5,10,36,0.9)_0%,rgba(5,10,36,0.55)_40%,rgba(5,10,36,0)_66%)]"
+      />
+
+      <LandingHeader />
+
+      <main className="relative z-10 flex flex-1 flex-col justify-center px-5 pt-9 pb-14 md:px-[clamp(20px,5vw,72px)] md:pt-[clamp(36px,5vw,64px)] md:pb-[clamp(56px,6vw,72px)]">
+        <div className="flex max-w-[700px] flex-col items-start gap-[22px]">
+          {!feriaIniciada && (
+            <CountdownTimer targetDate={INICIO_FERIA} onCountdownEnd={() => setFeriaIniciada(true)} variante="landing" />
+          )}
+
+          <p className="m-0 inline-flex items-center gap-3 text-[13px] font-semibold tracking-[0.2em] text-[#C9D6FF] before:h-px before:w-9 before:shrink-0 before:bg-[#A9C4FF] before:content-['']">
+            VI EDICIÓN · UNIVERSIDAD DEL NORTE
+          </p>
+          <h1 className="m-0 font-unbounded text-[clamp(44px,7vw,104px)] leading-[0.98] font-extrabold tracking-[-0.02em] text-white [text-shadow:0_0_34px_rgba(110,145,255,0.55)]">
+            FERIA
+            <br />
+            GAMER
+          </h1>
+          <p className="m-0 font-unbounded text-[clamp(13px,1.25vw,17px)] font-medium tracking-[0.12em] text-[#A9C4FF]">
+            USO SALUDABLE DE LAS REDES SOCIALES
+          </p>
+          <p className="m-0 max-w-[540px] text-[clamp(16px,1.25vw,18px)] leading-[1.65] text-[#D5DDFA]">
+            La exhibición de los mejores videojuegos creados por estudiantes. Inscribe a tu equipo, presenta tu proyecto ante el
+            jurado y compite por el podio.
+          </p>
+
+          <div className="mt-2 flex w-full flex-wrap gap-3.5 md:w-auto">
+            {/* Siempre visible: si las inscripciones están cerradas, /registro-equipo muestra "Inscripciones cerradas" */}
+            <button
+              type="button"
+              onClick={() => navigate("/registro-equipo")}
+              className="inline-flex min-h-[54px] w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-white px-7 text-base font-bold text-[#0B1A6B] shadow-[0_10px_34px_rgba(76,116,255,0.55)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(76,116,255,0.8)] md:w-auto"
+            >
+              Inscribir equipo
+              <ArrowRight className="size-[18px]" aria-hidden />
+            </button>
+            <Link
+              to="/equipos"
+              className="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl border border-[rgba(201,214,255,0.5)] bg-[rgba(169,196,255,0.08)] px-7 text-base font-semibold text-white transition-[translate,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[rgba(169,196,255,0.18)] md:w-auto"
+            >
+              Ver videojuegos
+            </Link>
           </div>
         </div>
-
-        <div className="relative z-10 text-white text-center px-4 flex flex-col items-center min-h-dvh">
-          <div className="my-auto flex flex-col items-center justify-center w-full pt-16 pb-24 md:py-16">
-            {eventStarted ? (
-              <FairStartedAnnouncement
-                showConfetti={showConfetti}
-                confettiFadingOut={confettiFadingOut}
-                eventEnded={eventEnded}
-              />
-            ) : (
-              <CountdownTimer targetDate={startDate} onCountdownEnd={handleCountdownEnd} />
-            )}
-
-            <h1 className="md:px-24 font-inter text-3xl md:text-4xl sm:text-5xl xl:text-7xl max-h-[500px]:!text-3xl font-bold">
-              Una exhibición de los mejores videojuegos estudiantiles
-            </h1>
-            <h2 className="text-xl md:text-4xl font-medium tracking-tighter mt-4 max-h-[500px]:!text-xl">Feria Gamer Uninorte</h2>
-            <p className="text-md md:text-2xl mt-6 max-w-4xl max-h-[500px]:!text-base">{getDescriptionText()}</p>
-            <div className="mt-8">
-              {registrationsOpen && (
-                <button
-                  onClick={() => navigate("/registro-equipo")}
-                  className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
-                >
-                  Inscribe tu equipo
-                </button>
-              )}
-              
-              {/* See registro-equipo in RoutesConfiguration for an explanation c:
-              showRegisterButton && (
-                <button
-                  onClick={() => navigate(getButtonRoute())}
-                  className="bg-white text-[#060312] py-3 px-3 rounded-lg font-medium hover:bg-gray-100 hover:shadow-[0px_0px_12px_#8c45ff] hover:scale-103 transform transition-all duration-300 cursor-pointer"
-                >
-                  {getButtonText()}
-                </button>
-              )*/}
-            </div>
-          </div>
-          <TextSizeControls />
-          <DiscordButton discordUrl={discordSupportUrl} />
-        </div>
-      </div>
-    </>
+      </main>
+      <TextSizeControls />
+      <DiscordButton discordUrl={DISCORD_SOPORTE} />
+    </div>
   )
 }
 
 export default Landing
-
-

@@ -14,6 +14,7 @@ import NavBar from "@/components/grupo 5/NavBar";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
 import { Link } from "react-router-dom";
+import { FondoArkad } from "@/components/fondo/FondoArkad";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -289,13 +290,8 @@ export default function CompetitionInfo() {
   return (
     <>
       <NavBar />
-      <div className="relative min-h-screen bg-[#0d0f14] overflow-hidden dark">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat animate-float"
-          style={{ backgroundImage: "url('/background.webp')" }}
-        >
-          <div className="absolute inset-0"></div>
-        </div>
+      <div className="relative min-h-screen overflow-hidden dark">
+        <FondoArkad modo="lento" estiloNuevo />
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
@@ -438,9 +434,9 @@ export default function CompetitionInfo() {
 
           {/* Footer */}
           <div className="w-full max-w-4xl mt-12 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Info className="w-5 h-5 text-[#AC7CFF]" />
-              <p className="text-gray-300">
+            <div className="flex items-start sm:items-center justify-center gap-2 mb-4">
+              <Info className="w-5 h-5 shrink-0 mt-0.5 sm:mt-0 text-[#AC7CFF]" />
+              <p className="text-gray-300 text-left sm:text-center">
                 Para más información contacta a:{" "}
                 <span className="text-[#AC7CFF]">
                   info-openlab@uninorte.edu.co

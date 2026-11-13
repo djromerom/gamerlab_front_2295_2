@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AppSidebar } from "@/components/grupo 9/app-sidebar";
+import { FondoPanel } from "@/components/fondo/FondoPanel";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   decideTie,
@@ -128,8 +129,9 @@ export default function TiebreakerPage() {
 
   return (
     <SidebarProvider>
+      <FondoPanel />
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="max-md:bg-transparent">
         <header className="flex h-16 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <h1 className="font-medium">Ranking oficial y desempates</h1>

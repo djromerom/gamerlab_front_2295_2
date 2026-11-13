@@ -51,7 +51,7 @@ export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
                 onClick={() => setIsOpen(true)}
                 className="cursor-pointer"
             >
-                <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 h-[180px]">
+                <Card className="relative transition-all duration-300 hover:shadow-xl hover:border-[#AC7CFF]/50 min-h-[180px] sm:h-[180px]">
                     <div className="absolute top-3 right-3 flex items-center gap-1">
                         {/* HU-39 (ARK-209): equipo que presenta sin ser calificado */}
                         {team.notGradable && (
@@ -68,9 +68,9 @@ export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
                         </div>
                     </div>
 
-                    <CardContent className="flex space-x-5 py-6 px-8 h-full">
+                    <CardContent className="flex space-x-4 sm:space-x-5 pt-11 pb-7 px-6 sm:py-6 sm:px-8 h-full">
                         <div className="flex items-center">
-                            <Avatar className="w-20 h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
+                            <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-[#AC7CFF]/30 flex-shrink-0">
                                 <AvatarImage
                                     src={team.logo}
                                     alt={`${team.teamName} logo`}
@@ -81,8 +81,8 @@ export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
                                 </AvatarFallback>
                             </Avatar>
                         </div>
-                        <div className="flex flex-col justify-center space-y-1 flex-1 pr-16">
-                            <h4 className="text-xl font-medium">{team.gameName}</h4>
+                        <div className="flex flex-col justify-center space-y-1 flex-1 min-w-0 pr-12 sm:pr-16">
+                            <h4 className="text-lg sm:text-xl font-medium leading-snug line-clamp-2">{team.gameName}</h4>
                             <p>Equipo: {team.teamName}</p>
                             <p className="text-sm text-gray-400">{semesterDisplay}</p>
                             <div className="flex items-center justify-between">
