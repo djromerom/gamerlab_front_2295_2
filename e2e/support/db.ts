@@ -32,7 +32,11 @@ function required(name: string): string {
   return value;
 }
 
-function remoteCommand(tuplesOnly: boolean): string {
+// El comando remoto es siempre el mismo (el formato de las consultas va dentro del SQL, con \pset):
+// así la llave SSH del workflow e2e.yml puede quedar restringida a exactamente este comando con
+// `command="…"` en authorized_keys. Si se cambia, hay que cambiar también esa línea en el servidor
+// (ver e2e/README.md, «Correr desde GitHub»).
+function remoteCommand(): string {
   const container = process.env.E2E_DB_CONTAINER ?? "arkad_db";
   const user = process.env.E2E_DB_USER ?? "arkad_user";
   const database = process.env.E2E_DB_NAME ?? "arkad_db";
@@ -40,9 +44,11 @@ function remoteCommand(tuplesOnly: boolean): string {
     // Producción es arkad_db_prod: jamás se escribe ahí desde las pruebas.
     throw new Error(`E2E_DB_NAME=${database}: solo se permite arkad_db (Arkad-test)`);
   }
-  const format = tuplesOnly ? "-A -t -F '|'" : "";
-  return `docker exec -i ${container} psql -U ${user} -d ${database} -X -q -v ON_ERROR_STOP=1 ${format} -f -`;
+  return `docker exec -i ${container} psql -U ${user} -d ${database} -X -q -v ON_ERROR_STOP=1 -f -`;
 }
+
+// Equivale a `psql -A -t -F '|'`. Con -q, psql no imprime la confirmación de cada \pset.
+const TUPLES_ONLY = "\\pset format unaligned\n\\pset tuples_only on\n\\pset fieldsep '|'\n";
 
 interface PsqlResult {
   stdout: string;
@@ -55,10 +61,17 @@ function runPsql(sql: string, tuplesOnly = false): Promise<PsqlResult> {
   // Llave privada opcional (equivale a `ssh -i <llave>`); si no, ssh usa su configuración normal.
   const key = process.env.E2E_SSH_KEY;
   const keyArgs = key ? ["-i", key, "-o", "IdentitiesOnly=yes"] : [];
+  // known_hosts explícito (opcional): en el contenedor del CI ssh no usa $HOME/.ssh, y así se exige
+  // que la huella del servidor sea la guardada en el secreto.
+  const knownHosts = process.env.E2E_SSH_KNOWN_HOSTS;
+  const hostArgs = knownHosts
+    ? ["-o", `UserKnownHostsFile=${knownHosts}`, "-o", "StrictHostKeyChecking=yes"]
+    : [];
+  const input = tuplesOnly ? TUPLES_ONLY + sql : sql;
   return new Promise((resolve, reject) => {
     const child = spawn(
       "ssh",
-      ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", ...keyArgs, target, remoteCommand(tuplesOnly)],
+      ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", ...keyArgs, ...hostArgs, target, remoteCommand()],
       { stdio: ["pipe", "pipe", "pipe"] },
     );
     let stdout = "";
@@ -70,7 +83,7 @@ function runPsql(sql: string, tuplesOnly = false): Promise<PsqlResult> {
       if (code === 0) resolve({ stdout, notices });
       else reject(new Error(`psql/ssh terminó con código ${code}\n${notices || stdout}`));
     });
-    child.stdin.end(sql);
+    child.stdin.end(input);
   });
 }
 

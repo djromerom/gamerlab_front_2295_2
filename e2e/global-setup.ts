@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { runSql } from "./support/db.ts";
 
 const UP_TIMEOUT_MS = 180_000;
@@ -29,5 +30,8 @@ export default async function globalSetup(): Promise<void> {
   await Promise.all([waitUntilUp(`${base}/login`), waitUntilUp(`${api}/`)]);
 
   const { stdout } = await runSql("seed");
+  // En el CI (e2e.yml): marca que esta corrida sembró, para que el paso final de limpieza solo borre
+  // lo propio y nunca los datos de otra corrida en curso (la de alguien en su máquina, por ejemplo).
+  if (process.env.E2E_SEED_MARKER) writeFileSync(process.env.E2E_SEED_MARKER, new Date().toISOString());
   console.log(`[e2e] ${stdout.trim().split("\n").slice(-2, -1)[0]?.trim() ?? "seed listo"}`);
 }

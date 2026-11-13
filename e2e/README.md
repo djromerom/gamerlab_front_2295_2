@@ -73,6 +73,56 @@ npm run e2e:verify    # debe salir todo en 0 y e2e_estado_existe = f
 
 Si Arkad-test se estaba redesplegando, la suite espera hasta 180 s antes de fallar.
 
+## Correr desde GitHub (bajo demanda)
+
+Workflow `.github/workflows/e2e.yml` (**E2E-Arkad-test**). Prueba **lo que esté desplegado en Arkad-test en ese
+momento** con las specs de la rama que se elija. No corre en PR ni en push.
+
+1. GitHub → *Actions* → **E2E-Arkad-test** → *Run workflow*. Elegir la rama de las specs (normalmente
+   `dev-deploy`) y la acción:
+   - `suite`: corre las pruebas (filtro opcional, por ejemplo `drafts`). ≈ 5 min con la preparación.
+   - `limpiar`: solo borra restos `e2e-` de una corrida interrumpida. **No usarla si alguien está corriendo la
+     suite en su máquina**: le borraría los datos a mitad.
+2. Resultado: resumen de la corrida (rama, commit, resultado) y, en *Artifacts*, `playwright-report` con el
+   informe HTML y las trazas (14 días).
+
+GitHub solo muestra *Run workflow* cuando el archivo ya está en la rama por defecto (`main`): el botón aparece
+después de la primera promoción que lo incluya.
+
+Qué hace: contenedor `mcr.microsoft.com/playwright` (misma versión que `@playwright/test`; al subir una, subir la
+otra), `npm ci`, estado de la base, `npx playwright test`, limpieza de respaldo y estado final. Una sola corrida a
+la vez (`concurrency`). La limpieza de respaldo solo borra si **esta** corrida sembró (marca `E2E_SEED_MARKER`),
+así nunca toca los datos de otra corrida en curso.
+
+### Secretos del repo (Settings → Secrets and variables → Actions)
+
+| Secreto | Qué |
+|---|---|
+| `E2E_SSH_TARGET` | `usuario@host` del servidor de test (sin alias de `~/.ssh/config`, el CI no lo tiene) |
+| `E2E_SSH_PRIVATE_KEY` | Llave privada **propia del CI** (sin passphrase), restringida en el servidor (abajo) |
+| `E2E_SSH_HOST_KEY` | Línea de `known_hosts` del servidor; ssh rechaza cualquier otra huella |
+| `E2E_JUROR_PASSWORD`, `E2E_JUROR_PASSWORD_HASH` | Contraseña de los jurados `e2e-` y su hash bcrypt (como en `.env.e2e`) |
+
+### Llave del CI: alta, restricción y baja
+
+La llave del CI no es la de una persona: se genera solo para esto y en el servidor se limita a **un único comando**,
+el de `remoteCommand()` en `support/db.ts`. Aunque se filtrara, solo serviría para `psql` sobre `arkad_db` (test),
+sin shell, sin túneles ni acceso a producción.
+
+```bash
+ssh-keygen -t ed25519 -N "" -C arkad-e2e-ci -f arkad-e2e-ci       # en una carpeta temporal
+```
+
+En el servidor de test, en el `~/.ssh/authorized_keys` del usuario de `E2E_SSH_TARGET`, una línea **completa**:
+
+```
+command="docker exec -i arkad_db psql -U arkad_user -d arkad_db -X -q -v ON_ERROR_STOP=1 -f -",no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding <contenido de arkad-e2e-ci.pub>
+```
+
+Después: cargar `arkad-e2e-ci` (privada) como `E2E_SSH_PRIVATE_KEY` y **borrar las dos copias locales**.
+Si se cambia el comando de `remoteCommand()`, hay que cambiar también esta línea. Baja o rotación: borrar la línea
+del servidor (y, para rotar, repetir el alta con una llave nueva).
+
 ## Límites
 
 - Una sola corrida a la vez (comparten jurados y equipos); 1 worker.
