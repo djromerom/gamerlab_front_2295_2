@@ -1,0 +1,143 @@
+# ARK-42 (TA-06): pruebas funcionales (Playwright) contra lo que esté desplegado en Arkad-test, bajo demanda.
+# Solo se lanza a mano (Actions → E2E-Arkad-test → Run workflow): nunca en PR ni en push, no alarga el CI.
+# El contenedor solo trae Node y Chromium; la app que se prueba es la desplegada en test. El SQL de siembra y
+# limpieza va por SSH con una llave propia del CI, restringida en el servidor al comando de psql de db.ts.
+# Detalle, secretos y alta de la llave: e2e/README.md, «Correr desde GitHub».
+name: E2E-Arkad-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "suite = correr las pruebas · limpiar = solo borrar restos e2e- de una corrida interrumpida"
+        type: choice
+        options: [suite, limpiar]
+        default: suite
+      filtro:
+        description: "Opcional: correr solo los archivos que coincidan (ej. drafts, session)"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Las corridas comparten jurados y equipos e2e- en la base de test: nunca dos a la vez.
+concurrency:
+  group: e2e-arkad-test
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      # Misma versión que @playwright/test en package.json; al subirla, cambiar las dos.
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    env:
+      E2E_BASE_URL: https://arkad-test.openlab.uninorte.edu.co
+      E2E_API_URL: https://arkad-app-test.openlab.uninorte.edu.co
+      E2E_SSH_TARGET: ${{ secrets.E2E_SSH_TARGET }}
+      E2E_SSH_KEY: /tmp/e2e-ssh/id_ed25519
+      E2E_SSH_KNOWN_HOSTS: /tmp/e2e-ssh/known_hosts
+      E2E_JUROR_PASSWORD: ${{ secrets.E2E_JUROR_PASSWORD }}
+      E2E_JUROR_PASSWORD_HASH: ${{ secrets.E2E_JUROR_PASSWORD_HASH }}
+      # global-setup lo crea tras sembrar y global-teardown lo borra tras limpiar (ver paso «Limpieza de respaldo»).
+      E2E_SEED_MARKER: /tmp/e2e-seeded
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Cliente SSH
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends openssh-client > /dev/null
+
+      - name: Llave SSH y huella del servidor
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.E2E_SSH_PRIVATE_KEY }}
+          SSH_HOST_KEY: ${{ secrets.E2E_SSH_HOST_KEY }}
+        run: |
+          missing=""
+          [ -n "$E2E_SSH_TARGET" ] || missing="$missing E2E_SSH_TARGET"
+          [ -n "$SSH_PRIVATE_KEY" ] || missing="$missing E2E_SSH_PRIVATE_KEY"
+          [ -n "$SSH_HOST_KEY" ] || missing="$missing E2E_SSH_HOST_KEY"
+          [ -n "$E2E_JUROR_PASSWORD" ] || missing="$missing E2E_JUROR_PASSWORD"
+          [ -n "$E2E_JUROR_PASSWORD_HASH" ] || missing="$missing E2E_JUROR_PASSWORD_HASH"
+          if [ -n "$missing" ]; then
+            echo "::error::Faltan secretos del repo:$missing (ver e2e/README.md, «Correr desde GitHub»)"
+            exit 1
+          fi
+          install -d -m 700 /tmp/e2e-ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$E2E_SSH_KEY"
+          printf '%s\n' "$SSH_HOST_KEY" > "$E2E_SSH_KNOWN_HOSTS"
+          chmod 600 "$E2E_SSH_KEY" "$E2E_SSH_KNOWN_HOSTS"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Comprueba el acceso SSH/psql y muestra si quedan restos e2e- antes de empezar.
+      - name: Estado de la base de test (antes)
+        run: npm run e2e:verify
+
+      - name: Pruebas e2e
+        if: inputs.accion != 'limpiar'
+        env:
+          FILTRO: ${{ inputs.filtro }}
+        run: npx playwright test ${FILTRO:+"$FILTRO"}
+
+      - name: Limpiar restos e2e-
+        if: inputs.accion == 'limpiar'
+        run: npm run e2e:cleanup
+
+      # Si la suite se cortó (cancelación, timeout) después de sembrar y antes de que el teardown limpiara,
+      # la marca sigue ahí y se limpia. Sin marca no se toca nada: los datos e2e- serían de otra corrida.
+      - name: Limpieza de respaldo
+        if: always()
+        run: |
+          if [ -f "$E2E_SEED_MARKER" ]; then
+            echo "La corrida sembró y no terminó de limpiar: ejecutando cleanup"
+            npm run e2e:cleanup
+          else
+            echo "Nada que limpiar por esta corrida"
+          fi
+
+      - name: Estado de la base de test (después)
+        if: always()
+        run: npm run e2e:verify
+
+      - name: Resumen
+        if: always()
+        env:
+          ACCION: ${{ inputs.accion }}
+          FILTRO: ${{ inputs.filtro }}
+        run: |
+          {
+            echo "### E2E contra Arkad-test"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Acción | \`${ACCION:-suite}\` |"
+            echo "| Filtro | \`${FILTRO:-todas}\` |"
+            echo "| Specs (rama · commit) | \`$GITHUB_REF_NAME\` · \`$GITHUB_SHA\` |"
+            echo "| Front probado | $E2E_BASE_URL (lo desplegado en ese momento) |"
+            echo "| Resultado | \`${{ job.status }}\` |"
+            echo ""
+            echo "Informe HTML y trazas de los fallos: artefacto \`playwright-report\` de esta corrida."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir informe
+        if: always() && inputs.accion != 'limpiar'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
