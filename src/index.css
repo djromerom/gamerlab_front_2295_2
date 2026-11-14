@@ -225,7 +225,7 @@
 
 /* ==========================================================================
    ARK-222 · Estilo visual nuevo de las páginas públicas (mockup aprobado).
-   Se activa con <body data-estilo="nuevo">, que pone <FondoArkad estiloNuevo />.
+   Se activa con <body data-estilo="nuevo">, que pone <ArkadBackground estiloNuevo />.
    Solo cambia el aspecto (tipografía, colores, tarjetas, botones y campos); no mueve ni agrega elementos.
    Va fuera de @layer a propósito: así tiene prioridad sobre las utilidades de Tailwind de cada página.
    ========================================================================== */

@@ -8,7 +8,7 @@ vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 
-describe("LayoutAplication", () => {
+describe("LayoutApplication", () => {
   beforeEach(() => {
     // jsdom no implementa matchMedia y SidebarProvider lo usa para detectar móvil
     vi.stubGlobal("matchMedia", (query: string) => ({

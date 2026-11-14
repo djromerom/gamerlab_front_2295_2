@@ -11,7 +11,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | `/ranking` | RankingPage |
 | `/informacion` | InformationPage |
 | `/equipos` | VideogamesPage (galería) |
-| `/ediciones-pasadas` y `/ediciones-pasadas/:editionId/juegos` | FeriasPasadas, HistoricalVideogamesPage |
+| `/ediciones-pasadas` y `/ediciones-pasadas/:editionId/juegos` | PastFairsPage, HistoricalVideogamesPage |
 | `/contribuidores` | CreditsPage |
 | `/registro-equipo` | **RegistrationGate**: consulta si las inscripciones están abiertas y muestra `TeamRegisterPage` o `RegistrationClosedPage` |
 | `/login`, `/OlvidastePassword`, `/establecer-contrasena`, `/verificar-cuenta` | Acceso y cuenta |
@@ -34,11 +34,11 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 
 Hay una ruta `NotFoundPage` para URLs desconocidas.
 
-**Encuesta de experiencia del jurado (HU-17)**: no tiene ruta propia. Es un diálogo (`components/juror-survey`) que se abre solo cuando el jurado (o profesor jurado) envía su última evaluación (`/pendientes-calificar`, `/colegios-calificar` o `/calificar-lote`). Si la omite, queda el acceso «Responder encuesta» en `/inicio` y en las páginas de pendientes mientras `GET /juror-survey/status` diga `available: true`.
+**Encuesta de experiencia del jurado (HU-17)**: no tiene ruta propia. Es un diálogo (`features/jurors/survey/components/`) que se abre solo cuando el jurado (o profesor jurado) envía su última evaluación (`/pendientes-calificar`, `/colegios-calificar` o `/calificar-lote`). Si la omite, queda el acceso «Responder encuesta» en `/inicio` y en las páginas de pendientes mientras `GET /juror-survey/status` diga `available: true`.
 
 ## Reglas al agregar una pantalla
 1. Añadirla a `routes` con sus `roles`.
-2. Agregarla al **menú lateral** (`layouts/LayoutAplication.tsx`) según rol.
+2. Agregarla al **menú lateral** (`layouts/LayoutApplication.tsx`) según rol.
 3. Si es un rol nuevo: añadirlo al tipo `Role` (aquí y en `types/auth.ts`), a la lista de rutas permitidas y a la pantalla de inicio; si no, el usuario verá «no autorizado» o un menú vacío.
 4. El control real de permisos lo hace el **backend**; ocultar rutas en el front es solo UX.
 5. Revisar a **360 px** de ancho (DoD).

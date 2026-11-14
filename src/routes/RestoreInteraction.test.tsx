@@ -24,7 +24,7 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("RestablecerInteraccion", () => {
+describe("RestoreInteraction", () => {
   it("devuelve la interacción si se cambió de ruta y quedó el body bloqueado sin capas abiertas", () => {
     vi.useFakeTimers();
     montar();

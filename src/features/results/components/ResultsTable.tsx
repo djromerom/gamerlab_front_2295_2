@@ -1,5 +1,3 @@
-// src/components/Tablas/TablaResultados.tsx (o la ruta que prefieras)
-
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

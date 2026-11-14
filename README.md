@@ -53,7 +53,7 @@ En test y producción no hay `.env`: el pipeline inyecta solo `VITE_ENDPOINT_BAC
 
 ## Estructura
 
-`src/` agrupa el código en `pages/` (pantallas), `components/`, `layouts/`, `routes/`, `contexts/` (sesión), `hooks/`, `fetchs/` (llamadas a la API), `lib/`, `types/` y `data/`. El detalle y los puntos de entrada están en [estructura del proyecto](docs/arkad/03-frontend/estructura-del-proyecto.md).
+`src/` agrupa el código por dominio en `features/<dominio>/` (pantallas, componentes, hooks y llamadas a la API de cada dominio); lo compartido está en `api/`, `components/`, `contexts/`, `hooks/`, `lib/`, `types/`, `routes/` y `layouts/`. El detalle y los puntos de entrada están en [estructura del proyecto](docs/arkad/03-frontend/estructura-del-proyecto.md).
 
 ## Contribuir
 
