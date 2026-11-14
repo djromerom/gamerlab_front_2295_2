@@ -15,11 +15,12 @@ los borra con SQL. No se ejecuta en el CI de los PR.
 | `consecutive.spec.ts` | Evaluar 3 equipos seguidos (código de verificación, puntajes, envío). |
 | `drafts.spec.ts` | HU-18: el borrador autoguardado sobrevive a una sesión nueva y se reanuda; descartar cuando le quitan el grupo (A1). |
 | `batch-partial.spec.ts` | Guardado en bloque con un fallo parcial: se guardan las válidas y se reporta la que falla. |
-| `session.spec.ts` | HU-05/06: renovación automática de la sesión, pérdida de sesión con recuperación de lo escrito, y autoguardado sin red. |
+| `session.spec.ts` | HU-05/06: renovación automática de la sesión, pérdida de sesión con recuperación de lo escrito (también con el reloj del navegador atrasado), y autoguardado sin red. |
 
-`session.spec.ts` incluye un `test.fixme` que documenta un defecto conocido de la app (reloj del navegador atrasado
-frente al servidor). Detalle en `docs-locales/superpowers/plans/2026-11-10-ark-42-pruebas-funcionales-evaluacion.md`,
-sección «Hallazgos de la suite». Cuando se corrija, cambiar `test.fixme` por `test`.
+La prueba del reloj atrasado de `session.spec.ts` fue un `test.fixme` hasta que se corrigió el defecto que encontró
+(la recuperación comparaba la hora del navegador con la del servidor); ahora queda como prueba de regresión. Si una
+prueba documenta un defecto aún sin corregir, se marca con `test.fixme` y `detalles({ defecto })`: el informe y el
+resumen explican por qué se omite.
 
 ## Requisitos
 
@@ -117,8 +118,8 @@ así nunca toca los datos de otra corrida en curso.
 
 **2. Leer el resumen.** La página de la corrida (*Summary*) trae la tabla **Pruebas e2e: qué se comprobó**: cada
 prueba con ✅ / ❌ / ⏭️, sus historias de usuario y qué comportamiento comprueba. Debajo, **Detalle por paso**:
-cada prueba desplegable con sus pasos; las que fallan salen abiertas, con el paso que falló y el error. La prueba
-omitida explica por qué (defecto conocido). Para saber qué pasó y qué no, normalmente basta con esto.
+cada prueba desplegable con sus pasos; las que fallan salen abiertas, con el paso que falló y el error. Una prueba
+omitida (`test.fixme`) explica por qué (defecto conocido). Para saber qué pasó y qué no, normalmente basta con esto.
 
 ![Resumen de la corrida con la tabla de pruebas](docs/informe/02-resumen.png)
 

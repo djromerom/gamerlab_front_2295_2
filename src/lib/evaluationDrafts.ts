@@ -203,17 +203,23 @@ const BACKUP_PREFIX = "evaluation-draft-";
 const LEGACY_PREFIXES = ["rate-draft-", "batch-rate-draft-", "school-rate-draft-"];
 
 export interface LocalBackup extends DraftForm {
-  /** Momento en que se escribió en este dispositivo (ms). 0 si viene de una clave antigua. */
+  /** Momento en que se escribió en este dispositivo (ms, reloj del navegador). 0 si viene de una clave antigua. */
   savedAt: number;
+  /**
+   * Versión del servidor sobre la que se escribió (la que el autoguardado iba a mandar). Es lo que decide
+   * al reabrir, no `savedAt`: el reloj del navegador puede ir atrasado o adelantado respecto al del servidor.
+   * null en respaldos escritos antes de este campo.
+   */
+  baseVersion: number | null;
 }
 
 export const backupKey = (videogameId: number) => `${BACKUP_PREFIX}${videogameId}`;
 
-export function writeBackup(videogameId: number, form: DraftForm): void {
+export function writeBackup(videogameId: number, form: DraftForm, baseVersion: number): void {
   try {
     localStorage.setItem(
       backupKey(videogameId),
-      JSON.stringify({ ...form, savedAt: Date.now() } satisfies LocalBackup),
+      JSON.stringify({ ...form, savedAt: Date.now(), baseVersion } satisfies LocalBackup),
     );
   } catch {
     /* almacenamiento lleno o bloqueado */
@@ -259,10 +265,13 @@ export function readBackup(videogameId: number): LocalBackup | null {
     if (saved) {
       const parsed = JSON.parse(saved) as Partial<LocalBackup>;
       if (parsed && typeof parsed.scores === "object" && parsed.scores) {
+        const { baseVersion } = parsed;
         return {
           scores: parsed.scores as Record<number, string>,
           comments: typeof parsed.comments === "string" ? parsed.comments : "",
           savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : 0,
+          baseVersion:
+            typeof baseVersion === "number" && Number.isInteger(baseVersion) && baseVersion >= 0 ? baseVersion : null,
         };
       }
     }
@@ -270,7 +279,7 @@ export function readBackup(videogameId: number): LocalBackup | null {
       const legacy = localStorage.getItem(`${prefix}${videogameId}`);
       if (!legacy) continue;
       const form = parseLegacy(JSON.parse(legacy));
-      if (form && !isEmptyForm(form)) return { ...form, savedAt: 0 };
+      if (form && !isEmptyForm(form)) return { ...form, savedAt: 0, baseVersion: null };
     }
   } catch {
     /* JSON corrupto o almacenamiento bloqueado */
@@ -329,18 +338,42 @@ export interface InitialDraft {
   source: "server" | "local" | "none";
 }
 
+/** El formulario dice lo mismo que el borrador del servidor (mismas notas y comentario). */
+function sameAsServer(form: DraftForm, server: ServerDraft): boolean {
+  const byCriterion = (a: { criterionId: number }, b: { criterionId: number }) => a.criterionId - b.criterionId;
+  const local = toSaveBody(form, 0);
+  const localScores = [...local.details].sort(byCriterion);
+  const serverScores = [...(server.details ?? [])].sort(byCriterion);
+  return (
+    local.comments === (server.comments ?? "") &&
+    localScores.length === serverScores.length &&
+    localScores.every((d, i) => d.criterionId === serverScores[i].criterionId && d.score === serverScores[i].score)
+  );
+}
+
 /**
- * El servidor manda, salvo que en este dispositivo haya algo escrito después del
- * último guardado del servidor (se quedó sin red antes de sincronizar).
+ * El respaldo local solo existe mientras hay cambios que el servidor no confirmó (sin red, sesión
+ * perdida, error). Al abrir el formulario:
+ * - Sin borrador en el servidor: se sube lo local con versión 0.
+ * - Lo local dice lo mismo que el servidor (el guardado llegó, la respuesta no): manda el servidor.
+ * - Si no, se usa lo local con la versión sobre la que se escribió. Si el servidor no cambió desde
+ *   entonces, el guardado entra; si cambió (otro dispositivo), responde 409 y el jurado elige en la
+ *   pantalla de conflicto. Nunca se compara el reloj del navegador con el del servidor.
+ * - Respaldos de antes de `baseVersion`: se decide por hora, como antes.
  */
 export function pickInitialDraft(server: ServerDraft | null, local: LocalBackup | null): InitialDraft {
-  const version = server?.version ?? 0;
   if (local && !isEmptyForm(local)) {
-    const serverTime = server ? Date.parse(server.updatedAt) : Number.NEGATIVE_INFINITY;
-    if (!server || local.savedAt > serverTime) {
-      return { form: { scores: local.scores, comments: local.comments }, version, needsSync: true, source: "local" };
+    const form = { scores: local.scores, comments: local.comments };
+    if (!server) return { form, version: 0, needsSync: true, source: "local" };
+    if (!sameAsServer(form, server)) {
+      if (local.baseVersion !== null) {
+        return { form, version: local.baseVersion, needsSync: true, source: "local" };
+      }
+      if (local.savedAt > Date.parse(server.updatedAt)) {
+        return { form, version: server.version, needsSync: true, source: "local" };
+      }
     }
   }
-  if (server) return { form: fromServerDraft(server), version, needsSync: false, source: "server" };
+  if (server) return { form: fromServerDraft(server), version: server.version, needsSync: false, source: "server" };
   return { form: null, version: 0, needsSync: false, source: "none" };
 }

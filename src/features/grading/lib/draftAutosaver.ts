@@ -93,7 +93,7 @@ export class DraftAutosaver {
     if (this.stopped || this.disposed) return;
     this.latest = form;
     this.dirty = true;
-    writeBackup(this.videogameId, form);
+    writeBackup(this.videogameId, form, this.version);
     if (this.state.status === "conflict" || this.state.status === "blocked") return;
     this.clearTimer();
     if (!this.inFlight) this.setState({ status: "pending" });
@@ -125,7 +125,9 @@ export class DraftAutosaver {
       this.inFlight = false;
       if (this.stopped) return;
       this.version = saved.version;
+      // Lo escrito mientras viajaba la petición queda sobre la versión nueva.
       if (!this.dirty) clearBackup(this.videogameId);
+      else if (this.latest) writeBackup(this.videogameId, this.latest, this.version);
       this.setState({ status: this.dirty ? "pending" : "saved", savedAt: saved.updatedAt, message: null });
       if (this.dirty) void this.flush();
     } catch (error) {
@@ -160,6 +162,8 @@ export class DraftAutosaver {
       return remote;
     }
     this.dirty = true;
+    // El jurado eligió lo suyo sobre la versión actual del servidor: el respaldo pasa a esa versión.
+    if (this.latest) writeBackup(this.videogameId, this.latest, this.version);
     this.setState({ status: "pending", conflictDraft: null, message: null });
     void this.flush();
     return null;
