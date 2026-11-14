@@ -27,7 +27,9 @@ export function EvaluatorChecklist({ title, label, items, selected, onToggle, de
     <fieldset className="flex min-h-0 min-w-0 flex-col gap-2">
       <legend className="mb-2 flex w-full items-center justify-between text-sm font-medium">
         <span>{title}</span>
-        <span className="text-xs font-normal text-muted-foreground">{selected.length} elegidos</span>
+        <span className="text-xs font-normal text-muted-foreground">
+          {selected.length} {selected.length === 1 ? "elegido" : "elegidos"}
+        </span>
       </legend>
       <div className="flex h-9 items-center gap-2 rounded-md border px-2">
         <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -39,7 +41,8 @@ export function EvaluatorChecklist({ title, label, items, selected, onToggle, de
           className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
-      <ul aria-label={label} className="max-h-56 min-h-24 overflow-y-auto rounded-md border sm:max-h-72">
+      {/* En el celular solo se desplaza el diálogo (sin barras anidadas); desde sm cada lista tiene la suya */}
+      <ul aria-label={label} className="min-h-24 rounded-md border sm:max-h-72 sm:overflow-y-auto">
         {items.length === 0 ? (
           <li className="p-3 text-center text-sm text-muted-foreground">{emptyText}</li>
         ) : visible.length === 0 ? (
