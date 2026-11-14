@@ -88,8 +88,18 @@ captura del `<svg>` a 1600×1010 con `deviceScaleFactor: 1.5`.
    - `suite`: corre las pruebas (filtro opcional, por ejemplo `drafts`). ≈ 3–4 min con la preparación.
    - `limpiar`: solo borra restos `e2e-` de una corrida interrumpida. **No usarla si alguien está corriendo la
      suite en su máquina**: le borraría los datos a mitad.
-2. Resultado: resumen de la corrida (rama, commit, resultado) y, en *Artifacts*, `playwright-report` con el
-   informe HTML y las trazas (14 días).
+2. Resultado: resumen de la corrida con qué se comprobó, prueba por prueba y paso por paso, y en *Artifacts*,
+   `playwright-report` con el informe HTML, las capturas de cada paso y las trazas de los fallos (14 días). Ver
+   [Leer el resultado de una corrida](#leer-el-resultado-de-una-corrida).
+
+Desde la terminal, lo mismo (`--ref` es la rama de las specs):
+
+```bash
+gh workflow run e2e.yml -R djromerom/gamerlab_front_2295_2 --ref dev-deploy -f accion=suite   # filtro: -f filtro=drafts
+gh run watch -R djromerom/gamerlab_front_2295_2                                           # seguirla
+gh run download <id-de-la-corrida> -R djromerom/gamerlab_front_2295_2 -n playwright-report -D informe-e2e
+npx playwright show-report informe-e2e                                                     # abrirlo
+```
 
 GitHub solo muestra *Run workflow* cuando el archivo ya está en la rama por defecto (`main`): el botón aparece
 después de la primera promoción que lo incluya.
@@ -98,6 +108,58 @@ Qué hace: contenedor `mcr.microsoft.com/playwright` (misma versión que `@playw
 otra), `npm ci`, estado de la base, `npx playwright test`, limpieza de respaldo y estado final. Una sola corrida a
 la vez (`concurrency`). La limpieza de respaldo solo borra si **esta** corrida sembró (marca `E2E_SEED_MARKER`),
 así nunca toca los datos de otra corrida en curso.
+
+### Leer el resultado de una corrida
+
+**1. Abrir la corrida.** *Actions* → **E2E-Arkad-test** (columna izquierda) → la corrida, la más reciente arriba.
+
+![Lista de corridas del workflow E2E-Arkad-test](docs/informe/01-corridas.png)
+
+**2. Leer el resumen.** La página de la corrida (*Summary*) trae la tabla **Pruebas e2e: qué se comprobó**: cada
+prueba con ✅ / ❌ / ⏭️, sus historias de usuario y qué comportamiento comprueba. Debajo, **Detalle por paso**:
+cada prueba desplegable con sus pasos; las que fallan salen abiertas, con el paso que falló y el error. La prueba
+omitida explica por qué (defecto conocido). Para saber qué pasó y qué no, normalmente basta con esto.
+
+![Resumen de la corrida con la tabla de pruebas](docs/informe/02-resumen.png)
+
+**3. Descargar el informe con capturas.** Al final de la misma página, en *Artifacts*, el botón de descarga de
+`playwright-report` baja un `.zip` (≈ 3 MB). Hace falta tener sesión en GitHub con acceso al repo.
+
+![Sección Artifacts con el botón de descarga de playwright-report](docs/informe/03-descargar.png)
+
+**4. Abrirlo.** Descomprimir el zip y, desde la raíz de este repo (con `npm ci` hecho), servirlo; se abre en el
+navegador en `http://localhost:9323`:
+
+```bash
+npx playwright show-report <carpeta-descomprimida>
+```
+
+**5. Leer el informe.** La portada lista las pruebas por archivo, con su resultado, duración y etiquetas de
+historia de usuario (`HU-05`, `HU-18`…).
+
+![Portada del informe HTML](docs/informe/04-informe-lista.png)
+
+Dentro de una prueba: *Annotations* dice qué comprueba y su ticket; *Test Steps* lista los pasos con nombre, cada
+uno con su ✓ / ✗ y duración (al desplegarlo se ven las acciones de Playwright que lo componen). El ícono de clip
+marca los pasos que tienen captura.
+
+![Detalle de una prueba: anotaciones y pasos](docs/informe/05-informe-prueba.png)
+
+Más abajo, *Screenshots* muestra la captura de la pantalla al terminar cada paso, con el nombre del paso debajo.
+Si una prueba falla, el paso que falló también deja su captura, más la captura final y la traza (*Trace*), que
+permite recorrer cada acción con su pantalla antes y después.
+
+![Captura adjunta a un paso](docs/informe/06-informe-captura.png)
+
+#### Cómo se arma el informe
+
+- `support/report.ts`: `paso(nombre, fn, page?)` envuelve cada paso en `test.step` y, si recibe `page`, adjunta
+  una captura al terminar (pase o falle). `detalles({ comprueba, historias, defecto })` da las anotaciones y
+  etiquetas de cada prueba. Una prueba nueva debería usar los dos: así aparece bien en el informe y el resumen.
+- `support/summary-reporter.ts`: reporter que, solo en Actions, escribe la tabla y el detalle por paso en el
+  resumen de la corrida (`$GITHUB_STEP_SUMMARY`).
+- La contraseña de los jurados se escribe sin `fill` (`fillSecret` en `support/session.ts`) para que no quede
+  en el título del paso: el informe se publica como artefacto.
 
 ### Secretos del repo (Settings → Secrets and variables → Actions)
 
