@@ -14,9 +14,10 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  // En GitHub Actions (e2e.yml) se añade el reporter "github": los fallos salen como anotaciones de la corrida.
+  // En GitHub Actions (e2e.yml) se añaden el reporter "github" (los fallos salen como anotaciones de la corrida) y
+  // summary-reporter (tabla de pruebas y pasos en el resumen de la corrida). Capturas por paso: support/report.ts.
   reporter: process.env.GITHUB_ACTIONS
-    ? [["list"], ["html", { open: "never" }], ["github"]]
+    ? [["list"], ["html", { open: "never" }], ["github"], ["./e2e/support/summary-reporter.ts"]]
     : [["list"], ["html", { open: "never" }]],
   globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
