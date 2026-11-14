@@ -249,6 +249,37 @@ describe("respaldo local con el reloj del navegador desfasado", () => {
     return v1;
   }
 
+  it("lo escrito mientras viajaba un guardado queda sobre la versión nueva", async () => {
+    const { save, saver } = setup(1);
+    const first = deferred<ServerDraft>();
+    save.mockReturnValueOnce(first.promise).mockRejectedValue(new DraftRequestError("network", "Sin conexión"));
+
+    saver.schedule(form("1"));
+    await vi.advanceTimersByTimeAsync(2500);
+    saver.schedule(form("1", "mientras guardaba"));
+    expect(readBackup(ID)?.baseVersion).toBe(1);
+
+    first.resolve(saved(2));
+    await vi.advanceTimersByTimeAsync(0);
+    // el segundo guardado no llegó: el respaldo queda sobre la versión 2, la que tiene el servidor
+    expect(readBackup(ID)).toMatchObject({ comments: "mientras guardaba", baseVersion: 2 });
+    saver.dispose();
+  });
+
+  it("al sobrescribir tras un 409, el respaldo pasa a la versión del servidor", async () => {
+    const { save, saver } = setup(1);
+    save
+      .mockRejectedValueOnce(new DraftRequestError("conflict", "cambió", saved(4)))
+      .mockRejectedValue(new DraftRequestError("network", "Sin conexión"));
+    saver.schedule(form("2", "mío"));
+    await vi.advanceTimersByTimeAsync(2500);
+
+    saver.resolveConflict("overwrite");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(readBackup(ID)).toMatchObject({ comments: "mío", baseVersion: 4 });
+    saver.dispose();
+  });
+
   it.each([
     ["30 s atrasado", -30_000],
     ["5 min atrasado", -300_000],

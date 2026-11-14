@@ -140,20 +140,15 @@ test(
   },
 );
 
-// DEFECTO CONOCIDO (hallado con ARK-42, sin corregir): al reabrir el formulario, pickInitialDraft
-// (src/lib/evaluationDrafts.ts) elige el respaldo local solo si `local.savedAt > server.updatedAt`, o sea
-// compara el reloj del navegador con el del servidor. Con el navegador atrasado respecto al servidor, lo
-// último escrito antes de perder la sesión (dentro del desfase) se descarta, aunque la pantalla de login
-// diga «Lo que estabas escribiendo quedó guardado». Verificado: con la página +60 s pasa; con -30 s falla.
-// Al corregirlo, cambiar test.fixme por test para que quede como prueba de regresión.
+// Regresión: pickInitialDraft comparaba la hora del respaldo local (reloj del navegador) con la del último
+// guardado (reloj del servidor); con el navegador atrasado se descartaba lo último escrito antes de perder la
+// sesión. Ahora decide por la versión del servidor sobre la que se escribió el respaldo (baseVersion).
 test(
   "con el reloj del navegador atrasado, lo último escrito antes de perder la sesión se recupera",
   detalles({
     comprueba:
-      "Igual que la anterior, pero con el reloj del navegador 30 s por detrás del servidor (habitual en equipos de usuarios).",
+      "Igual que la anterior, pero con el reloj del navegador 30 s por detrás del servidor (habitual en equipos de usuarios): la recuperación no depende de la hora del navegador.",
     historias: ["HU-05", "HU-06"],
-    defecto:
-      "pickInitialDraft (src/lib/evaluationDrafts.ts) compara el reloj del navegador con el del servidor: con el navegador atrasado se descarta lo último escrito antes de perder la sesión. Sin corregir; cuando se corrija, cambiar test.fixme por test.",
   }),
   async ({ page, context }) => {
     // Reloj de la página 30 s por detrás del servidor, algo habitual en equipos de usuarios.
