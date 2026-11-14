@@ -54,20 +54,19 @@ test(
     });
 
     // «Sale»: otra sesión en un contexto nuevo (sin cookies ni localStorage, como otro dispositivo).
-    await page.context().close();
-    const other = await browser.newContext({
-      baseURL: test.info().project.use.baseURL,
-      locale: "es-CO",
+    const other = await paso("3. Cierra el navegador y abre otro, sin cookies ni datos locales", async () => {
+      await page.context().close();
+      return browser.newContext({ baseURL: test.info().project.use.baseURL, locale: "es-CO" });
     });
     const page2 = await other.newPage();
 
-    await paso("3. Entra desde otro dispositivo (sesión nueva, sin datos locales)", async () => {
+    await paso("4. Entra desde el otro dispositivo y ve su borrador en «Mis borradores»", async () => {
       await loginAs(page2, JUROR_A.email);
       await page2.goto("/pendientes-calificar");
       await expect(page2.getByText("Mis borradores (1)")).toBeVisible();
     }, page2);
 
-    await paso("4. Continúa el borrador: lo escrito está intacto y no pide el código otra vez", async () => {
+    await paso("5. Continúa el borrador: lo escrito está intacto y no pide el código otra vez", async () => {
       const row = page2.getByRole("listitem").filter({ hasText: team });
       await row.getByRole("button", { name: "Continuar" }).click();
       await expect(page2).toHaveURL(/\/pendientes-calificar\/\d+/);
@@ -77,7 +76,7 @@ test(
       await expect(page2.getByPlaceholder(COMMENTS_PLACEHOLDER)).toHaveValue("borrador e2e");
     }, page2);
 
-    await paso("5. Lo completa y lo envía: 1 evaluación y el borrador deja de estar activo", async () => {
+    await paso("6. Lo completa y lo envía: 1 evaluación y el borrador deja de estar activo", async () => {
       await fillScores(page2, 4);
       await submitEvaluation(page2);
       await expect(page2).toHaveURL(/\/pendientes-calificar$/);

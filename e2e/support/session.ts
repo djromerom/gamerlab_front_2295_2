@@ -10,10 +10,24 @@ export async function loginAs(page: Page, email: string): Promise<void> {
 /** Llena y envía el formulario de /login que ya está en pantalla (sin recargar, para conservar la ruta de origen). */
 export async function submitLoginForm(page: Page, email: string): Promise<void> {
   await page.locator("#email").fill(email);
-  await page.locator("#password").fill(jurorPassword());
+  await fillSecret(page.locator("#password"), jurorPassword());
   await page.locator('button[type="submit"]').click();
   // Tras iniciar sesión, LoginPage redirige a /inicio (o a la ruta protegida de la que venía).
   await expect(page).not.toHaveURL(/\/login/);
+}
+
+/**
+ * Escribe un secreto en un input sin que aparezca en el informe: `fill` pone el texto en el título del paso
+ * («Fill "<contraseña>"») y el informe HTML se publica como artefacto. Se asigna el valor con el setter nativo
+ * y se dispara `input`, que es lo que escucha React; luego se comprueba que el campo quedó lleno.
+ */
+async function fillSecret(input: Locator, value: string): Promise<void> {
+  await input.evaluate((el, v) => {
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setValue?.call(el, v);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }, value);
+  await expect(input, "el campo de contraseña quedó vacío").not.toHaveValue("");
 }
 
 /** Tarjeta de un videojuego en la lista (la más interna que contiene su título y un botón). */
