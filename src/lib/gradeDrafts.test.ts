@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { GradeTeam } from "@/components/grupo 5/student-grade-table-types";
+import type { GradeTeam } from "@/features/results/types/studentGradeTable";
 import {
   clearGradeDraft,
   GRADE_DRAFT_KEY,

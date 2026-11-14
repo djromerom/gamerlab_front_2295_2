@@ -18,8 +18,8 @@ import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
 import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
-import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
-import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
+import TiebreakerPage from "@/features/results/pages/TiebreakerPage";
+import ProfessorRankingTiesPage from "@/features/results/pages/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
 import JurorBadgesPage from "@/features/jurors/badges/pages/JurorBadgesPage";
 import EditionJurorsPage from "@/features/jurors/edition/pages/EditionJurorsPage";
@@ -27,7 +27,7 @@ import JurorCheckInPage from "@/features/jurors/attendance/pages/JurorCheckInPag
 import JurorAttendancePage from "@/features/jurors/attendance/pages/JurorAttendancePage";
 import StaffAccountsPage from "@/features/staff-accounts/pages/StaffAccountsPage";
 import PushNotificationsPage from "@/features/notifications/pages/PushNotificationsPage";
-import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
+import FinalGradeReleasePage from "@/features/results/pages/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/features/jurors/survey/pages/JurorSurveyResultsPage";
 import ExternalPresentersPage from "@/features/external-presenters/pages/ExternalPresentersPage";
 import MyRegistrationPage from "@/features/external-presenters/pages/MyRegistrationPage";
@@ -36,28 +36,28 @@ import PwaInstallGuidePage from "@/features/pwa/pages/PwaInstallGuidePage";
 import NotFoundPage from "@/features/public/pages/NotFoundPage";
 
 import JuryManagementPage from "@/features/jurors/management/pages/JuryManagementPage";
-import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
+import { RealtimeTrackingPage } from "@/features/grading/pages/RealtimeTrackingPage";
 
 import LandingPage from "@/features/public/pages/LandingPage";
-import RankingPage from "@/pages/grupo 5/RankingPage";
+import RankingPage from "@/features/results/pages/RankingPage";
 import InformationPage from "@/features/public/pages/InformationPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
-import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
+import TeacherHomePage from "@/features/results/pages/TeacherHomePage";
 import PastFairsPage from "@/features/public/pages/PastFairsPage";
 import CreditsPage from "@/features/public/pages/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
 import HistoricalVideogamesPage from "@/features/games/pages/HistoricalVideogamesPage";
 
-import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
-import RatePage from "@/pages/grupo 8/RatePage";
-import GradedPage from "@/pages/grupo 8/GradedPage";
-import SchoolRate from "@/pages/grupo 8/SchoolRate";
-import PendingSchoolGradesPage from "@/pages/grupo 8/PendingSchoolGradesPage";
-import SchoolGradesPage from "@/pages/grupo 8/SchoolGradesPage";
-import BatchRatePage from "@/pages/grupo 8/BatchRatePage";
+import PendingGradesPage from "@/features/grading/pages/PendingGradesPage";
+import RatePage from "@/features/grading/pages/RatePage";
+import GradedPage from "@/features/grading/pages/GradedPage";
+import SchoolRatePage from "@/features/grading/pages/SchoolRatePage";
+import PendingSchoolGradesPage from "@/features/grading/pages/PendingSchoolGradesPage";
+import SchoolGradesPage from "@/features/grading/pages/SchoolGradesPage";
+import BatchRatePage from "@/features/grading/pages/BatchRatePage";
 
-import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
+import StatisticsPage from "@/features/results/pages/StatisticsPage";
 
 import RegistrationGate from "@/routes/RegistrationGate";
 import RestablecerInteraccion from "@/routes/RestablecerInteraccion";
@@ -101,7 +101,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/realtime-tracking-panel",
-    element: <RealtimeTrackingPanel />,
+    element: <RealtimeTrackingPage />,
     roles: ["Administrador", "Profesor"],
   },
   { path: "/jurado", element: <Navigate to="/inicio" replace />, roles: ["Jurado"] },
@@ -259,7 +259,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/colegios-calificar/:id",
-    element: <SchoolRate />,
+    element: <SchoolRatePage />,
     roles: ["Profesor"],
   },
   {
@@ -298,7 +298,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/home-profesor",
-    element: <HomeTeacherPage />,
+    element: <TeacherHomePage />,
     roles: ["Profesor"],
   },
   {
