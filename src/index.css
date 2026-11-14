@@ -326,3 +326,13 @@
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
+
+/* Celular: en iPhone, un campo con letra menor a 16 px hace zoom al tocarlo y la página queda ampliada. Con 16 px no
+   hay zoom automático en ninguna vista y se conserva el zoom manual (accesibilidad). */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
