@@ -6,6 +6,9 @@
 name: E2E-Arkad-test
 
 on:
+  # TEMPORAL (solo para probar antes del merge; se quita antes del PR)
+  push:
+    branches: [chore/ARK-42-e2e-workflow-dispatch]
   workflow_dispatch:
     inputs:
       accion:
