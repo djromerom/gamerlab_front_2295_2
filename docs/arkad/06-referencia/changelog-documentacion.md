@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-14: pruebas e2e (TA-06, ARK-42), integración en serie (TA-24, ARK-208) y borradores con reloj desfasado
+- [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): el respaldo local de un borrador se decide por versión (`baseVersion`) y no por la hora del navegador; con el reloj atrasado se perdía lo último escrito (front #310).
+- [pruebas-y-verificacion](../04-devops/pruebas-y-verificacion.md): fila nueva de las e2e del front (Playwright contra Arkad-test, workflow `E2E-Arkad-test`, 9 de 9 el 14-nov) y el CI del back con `test:e2e` / `test:db` en serie.
+- Copia de [pruebas](../02-backend/pruebas.md) y del [índice de 02-backend](../02-backend/README.md) igualada con el back: 15 e2e, 29 `*.db.spec.ts`, `npm run test:db`, TA-24 y TA-06 (Hecho) y TA-11 (por hacer).
+- [`e2e/README.md`](../../../e2e/README.md): capturas del resumen y del informe rehechas con la corrida de 9 de 9 (ya no hay prueba omitida).
+
 ## 2026-11-13: reorganización de carpetas aplicada (TA-15, ARK-51)
 - Los documentos que citaban rutas o nombres viejos apuntan a la estructura nueva (`src/jurors/` en el back, `src/features/<dominio>/` en el front): [estructura-del-proyecto](../03-frontend/estructura-del-proyecto.md) (árbol reescrito), [consumo-de-api](../03-frontend/consumo-de-api.md), [arquitectura-modulos](../02-backend/arquitectura-modulos.md), [endpoints](../02-backend/endpoints.md) (`members` ya no existe), [integraciones](../02-backend/integraciones.md), [riesgos-y-deuda](../04-devops/riesgos-y-deuda.md), [inventario-de-rutas](../02-backend/inventario-de-rutas.md) (sección `PendingGamesController`) y el resto de `03-frontend/`.
 - [Mapa de movimientos](mapa-de-movimientos-ark-51.md): estado «ejecutado» con los PR de cada bloque. Los diagnósticos y las convenciones no se tocan (son el «antes» y la regla).
