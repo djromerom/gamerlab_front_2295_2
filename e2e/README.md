@@ -78,9 +78,14 @@ Si Arkad-test se estaba redesplegando, la suite espera hasta 180 s antes de fall
 Workflow `.github/workflows/e2e.yml` (**E2E-Arkad-test**). Prueba **lo que esté desplegado en Arkad-test en ese
 momento** con las specs de la rama que se elija. No corre en PR ni en push.
 
+![Esquema: GitHub Actions corre Playwright en un contenedor, entra por HTTPS a Arkad-test y por SSH restringido a la base de test](docs/esquema-e2e.png)
+
+Fuente del esquema: `docs/esquema-e2e.html` (SVG). Para regenerar el PNG, abrirlo con Playwright y hacer
+captura del `<svg>` a 1600×1010 con `deviceScaleFactor: 1.5`.
+
 1. GitHub → *Actions* → **E2E-Arkad-test** → *Run workflow*. Elegir la rama de las specs (normalmente
    `dev-deploy`) y la acción:
-   - `suite`: corre las pruebas (filtro opcional, por ejemplo `drafts`). ≈ 5 min con la preparación.
+   - `suite`: corre las pruebas (filtro opcional, por ejemplo `drafts`). ≈ 3–4 min con la preparación.
    - `limpiar`: solo borra restos `e2e-` de una corrida interrumpida. **No usarla si alguien está corriendo la
      suite en su máquina**: le borraría los datos a mitad.
 2. Resultado: resumen de la corrida (rama, commit, resultado) y, en *Artifacts*, `playwright-report` con el
