@@ -17,12 +17,22 @@ export async function paso<T>(nombre: string, fn: () => Promise<T>, page?: Page)
   });
 }
 
+/**
+ * El nombre del adjunto pasa a ser el nombre del archivo dentro de `playwright-report/data/`. Con tildes, «» o ñ,
+ * `npx playwright show-report` en Windows no sirve la imagen (sale rota): se deja solo en ASCII.
+ */
+const nombreArchivo = (nombre: string) =>
+  nombre
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Za-z0-9 .,:;()/-]/g, "");
+
 /** Captura de la pantalla actual adjunta al paso en curso. Nunca hace fallar la prueba (página cerrada, etc.). */
 async function capturar(page: Page, nombre: string): Promise<void> {
   if (page.isClosed()) return;
   try {
     const body = await page.screenshot({ fullPage: true, timeout: 10_000 });
-    await test.info().attach(nombre, { body, contentType: "image/png" });
+    await test.info().attach(nombreArchivo(nombre), { body, contentType: "image/png" });
   } catch {
     // La captura es evidencia, no una aserción: si no se puede tomar, el paso sigue con su resultado real.
   }

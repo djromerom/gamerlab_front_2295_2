@@ -54,11 +54,12 @@ test(
     });
 
     // «Sale»: otra sesión en un contexto nuevo (sin cookies ni localStorage, como otro dispositivo).
-    const other = await paso("3. Cierra el navegador y abre otro, sin cookies ni datos locales", async () => {
+    const page2 = await paso("3. Cierra el navegador y abre otro, sin cookies ni datos locales", async () => {
       await page.context().close();
-      return browser.newContext({ baseURL: test.info().project.use.baseURL, locale: "es-CO" });
+      const other = await browser.newContext({ baseURL: test.info().project.use.baseURL, locale: "es-CO" });
+      return other.newPage();
     });
-    const page2 = await other.newPage();
+    const other = page2.context();
 
     await paso("4. Entra desde el otro dispositivo y ve su borrador en «Mis borradores»", async () => {
       await loginAs(page2, JUROR_A.email);
