@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Info,
   Sparkles,
+  UserCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import LayoutApplication from "@/layouts/LayoutApplication";
@@ -60,6 +61,7 @@ import {
 } from "@/features/jurors/assignment/lib/assignmentWarnings";
 import { useAssignmentWarnings } from "@/features/jurors/assignment/hooks/useAssignmentWarnings";
 import { AssignmentWarningsDialog } from "@/features/jurors/assignment/components/AssignmentWarningsDialog";
+import { BulkSubstituteDialog } from "@/features/jurors/assignment/components/BulkSubstituteDialog";
 import { useWorkingEdition } from "@/hooks/useWorkingEdition";
 import {
   confirmRemoveAllAssignmentsText,
@@ -418,6 +420,8 @@ export function JurorAssignmentPage() {
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [showAllTeamsModal, setShowAllTeamsModal] = useState(false);
   const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+  // HU-09: suplentes en lote
+  const [showBulkSubstitutes, setShowBulkSubstitutes] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AssignmentAuditLog[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1546,6 +1550,15 @@ export function JurorAssignmentPage() {
             <Sparkles className="w-4 h-4 flex-shrink-0" />
             <span>Asignar automáticamente</span>
           </button>
+
+          <button
+            onClick={() => setShowBulkSubstitutes(true)}
+            disabled={isLoading || isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
+          >
+            <UserCheck className="w-4 h-4 flex-shrink-0" />
+            <span>Asignar suplentes</span>
+          </button>
         </div>
 
         <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-1.5 md:gap-3 lg:gap-6">
@@ -1970,6 +1983,12 @@ export function JurorAssignmentPage() {
             onSubmit={handleEditJurorSubmit}
           />
         )}
+
+        <BulkSubstituteDialog
+          open={showBulkSubstitutes}
+          onOpenChange={setShowBulkSubstitutes}
+          onAssigned={() => void loadData()}
+        />
 
         <AssignmentWarningsDialog
           warnings={assignmentWarnings.warnings}
