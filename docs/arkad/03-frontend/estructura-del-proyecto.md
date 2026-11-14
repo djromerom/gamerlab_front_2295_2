@@ -7,7 +7,7 @@ src/
 ├─ features/      un dominio funcional por carpeta, con pages/, components/, hooks/, api/, lib/, types/ y contexts/ según necesite
 │   ├─ auth/  home/  academic/  teams/  games/  grading/  results/  editions/
 │   ├─ external-presenters/  public/  notifications/  pwa/  staff-accounts/
-│   └─ jurors/    assignment/  management/  attendance/  presence/  badges/  survey/  edition/  (y types/, común a varios)
+│   └─ jurors/    assignment/  management/  attendance/  presence/  badges/  survey/  edition/  substitutes/  (y types/, común a varios)
 ├─ api/           llamadas al back compartidas (editions, evaluationProgress, registrations)
 ├─ components/    componentes compartidos (NavBar, LoadingScreen, TeamCode, background/…) y ui/ (shadcn)
 ├─ contexts/      AuthContext, SocketContext, TextSizeContext, GlobalStateContext

@@ -9,6 +9,7 @@ import VerificationCode from "@/features/teams/components/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
 import { JurorPresenceNotice } from "@/components/JurorPresenceNotice";
 import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
+import { SubstituteGuideAccess } from "@/features/jurors/substitutes/components/SubstituteGuideAccess";
 import { PwaInstallNotice } from "@/features/pwa/components/PwaInstallNotice";
 import { Navigate } from "react-router-dom";
 
@@ -47,6 +48,8 @@ const HomePage: React.FC = () => {
               Estamos encantados de tenerte, {user?.firstName}
             </p>
             <JurorPresenceNotice className="mx-auto max-w-[700px] text-left" />
+            {/* HU-22: volver a ver la explicación para suplentes */}
+            <SubstituteGuideAccess className="mx-auto w-full max-w-[700px] text-left" />
             {/* ARK-198: invitar al jurado a instalar ARKAD en el celular */}
             {userRole === "Jurado" && (
               <PwaInstallNotice className="mx-auto w-full max-w-[700px] text-left" />

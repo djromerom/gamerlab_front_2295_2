@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { JurorPresenceSection } from "@/features/jurors/presence/components/JurorPresenceSection";
+import { SubstituteNoticesSection } from "@/features/jurors/substitutes/components/SubstituteNoticesSection";
 import {
   fetchEvaluationTracking,
   type EvaluationTrackingLevel,
@@ -382,6 +383,8 @@ export function RealtimeTrackingPage() {
 
           {/* HU-23: el back solo da la presencia al Administrador (HU-12 podrá abrirla a profesores senior) */}
           {isAdmin && <JurorPresenceSection canConfigure={alert?.edition.writable !== false} />}
+          {/* HU-22 (A1): suplentes con el aviso «Te asignaron grupos» sin leer */}
+          {isAdmin && <SubstituteNoticesSection />}
 
           <div className="mb-4 grid gap-3 md:grid-cols-[minmax(220px,1fr)_150px_190px_180px_180px_auto]">
             <Input aria-label="Buscar grupo" value={search} onChange={(event) => setSearch(event.target.value)}
