@@ -5,7 +5,7 @@ import { TextSizeProvider } from "@/contexts/TextSizeContext";
 import RoutesConfiguration, { routes } from "@/routes/RoutesConfiguration";
 
 // HomePage depende de matchMedia y de otras peticiones: aquí solo importa a dónde se llega
-vi.mock("@/pages/grupo 9/HomePage", () => ({
+vi.mock("@/features/home/pages/HomePage", () => ({
   default: () => <p>Inicio del rol</p>,
 }));
 

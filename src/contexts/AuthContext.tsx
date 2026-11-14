@@ -21,7 +21,7 @@ import {
 } from "@/lib/session";
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
 import { claimLocalDrafts, clearAllLocalDrafts } from "@/lib/localDraftsOwner";
-import { unsubscribeFromPush } from "@/fetchs/pushNotifications";
+import { unsubscribeFromPush } from "@/features/notifications/api/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
