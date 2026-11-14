@@ -1,6 +1,6 @@
 import { Clock } from "lucide-react";
-import { useJurorPresence } from "@/contexts/JurorPresenceContext";
-import { formatBogotaTime, presenceHelp } from "@/fetchs/jurorPresence";
+import { useJurorPresence } from "@/features/jurors/presence/contexts/JurorPresenceContext";
+import { formatBogotaTime, presenceHelp } from "@/features/jurors/presence/api/jurorPresence";
 
 /**
  * Ayuda en las pantallas del jurado (HU-23): mientras califica, debe mantener la plataforma

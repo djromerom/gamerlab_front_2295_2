@@ -9,7 +9,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
-import { JurorPresenceSection } from "@/components/juror-presence/JurorPresenceSection";
+import { JurorPresenceSection } from "@/features/jurors/presence/components/JurorPresenceSection";
 import {
   fetchEvaluationTracking,
   type EvaluationTrackingLevel,
@@ -21,7 +21,7 @@ import {
   AbsentJurorResponseError,
   type AbsentJurorHistory,
   type AbsentJurorResult,
-} from "@/fetchs/absentJurorResponses";
+} from "@/features/jurors/presence/api/absentJurorResponses";
 import {
   fetchAbsenceAlert,
   fetchAbsencePanel,
@@ -31,7 +31,7 @@ import {
   type AbsencePanelResult,
   type FairSchedule,
   type JurorAttendanceState,
-} from "@/fetchs/absenceAlert";
+} from "@/features/jurors/presence/api/absenceAlert";
 
 const REFRESH_SECONDS = 10;
 const levels: EvaluationTrackingLevel[] = ["N0", "N1", "N2", "N3", "N4"];

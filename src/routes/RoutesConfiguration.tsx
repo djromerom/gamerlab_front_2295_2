@@ -21,21 +21,21 @@ import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
-import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
-import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
-import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
-import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
+import JurorBadgesPage from "@/features/jurors/badges/pages/JurorBadgesPage";
+import EditionJurorsPage from "@/features/jurors/edition/pages/EditionJurorsPage";
+import JurorCheckInPage from "@/features/jurors/attendance/pages/JurorCheckInPage";
+import JurorAttendancePage from "@/features/jurors/attendance/pages/JurorAttendancePage";
 import StaffAccountsPage from "@/features/staff-accounts/pages/StaffAccountsPage";
 import PushNotificationsPage from "@/features/notifications/pages/PushNotificationsPage";
 import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
-import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
+import JurorSurveyResultsPage from "@/features/jurors/survey/pages/JurorSurveyResultsPage";
 import ExternalPresentersPage from "@/features/external-presenters/pages/ExternalPresentersPage";
 import MyRegistrationPage from "@/features/external-presenters/pages/MyRegistrationPage";
 import PwaInstallGuidePage from "@/features/pwa/pages/PwaInstallGuidePage";
 
 import NotFoundPage from "@/features/public/pages/NotFoundPage";
 
-import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
+import JuryManagementPage from "@/features/jurors/management/pages/JuryManagementPage";
 import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
 
 import LandingPage from "@/features/public/pages/LandingPage";
@@ -66,7 +66,7 @@ import VideogamesPage from "@/features/games/pages/VideogamesPage";
 import GamePlayerPage from "@/features/games/pages/GamePlayerPage";
 
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
-import { JuradosAssignment } from "@/pages/JuradosAssignment";
+import { JurorAssignmentPage } from "@/features/jurors/assignment/pages/JurorAssignmentPage";
 import type { Role } from "@/types/auth";
 
 interface RouteConfig {
@@ -96,7 +96,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/jurados-assignment",
-    element: <JuradosAssignment />,
+    element: <JurorAssignmentPage />,
     roles: ["Administrador"],
   },
   {

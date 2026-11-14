@@ -8,8 +8,8 @@ const mocks = vi.hoisted(() => ({
   submitJurorSurvey: vi.fn(),
 }));
 
-vi.mock("@/fetchs/jurorSurvey", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/fetchs/jurorSurvey")>()),
+vi.mock("@/features/jurors/survey/api/jurorSurvey", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/jurors/survey/api/jurorSurvey")>()),
   fetchJurorSurveyStatus: mocks.fetchJurorSurveyStatus,
   submitJurorSurvey: mocks.submitJurorSurvey,
 }));
