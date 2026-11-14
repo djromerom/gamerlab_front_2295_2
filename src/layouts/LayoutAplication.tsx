@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/grupo 9/app-sidebar"
 import Breadcrumbs from "@/components/grupo 9/BreadCrums"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
-import PwaUpdateNotice from "@/components/pwa/PwaUpdateNotice"
+import PwaUpdateNotice from "@/features/pwa/components/PwaUpdateNotice"
 import { FondoPanel } from "@/components/fondo/FondoPanel"
 
 import type React from "react"

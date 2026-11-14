@@ -5,19 +5,19 @@ import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 
-import LoginPage from "@/pages/grupo 9/LoginPage";
-import UnauthorizedPage from "@/pages/grupo 9/UnauthorizedPage";
-import AuthErrorPage from "@/pages/grupo 9/AuthErrorPage";
-import HomePage from "@/pages/grupo 9/HomePage";
-import SubjetsPage from "@/pages/grupo 9/SubjetsPage";
-import CriteriaPage from "@/pages/grupo 9/CriterionPage";
-import NrcsPage from "@/pages/grupo 9/NrcsPage";
-import { VerifyEmailPage } from "@/pages/grupo 9/VerificationPage";
-import { ProfessorsPage } from "@/pages/grupo 9/professorsPage";
-import ForgetPassword from "@/pages/grupo 9/ForgetPassword";
-import ResetPassword from "@/pages/grupo 9/ResetPassword";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import UnauthorizedPage from "@/features/auth/pages/UnauthorizedPage";
+import AuthErrorPage from "@/features/auth/pages/AuthErrorPage";
+import HomePage from "@/features/home/pages/HomePage";
+import SubjectsPage from "@/features/academic/pages/SubjectsPage";
+import CriteriaPage from "@/features/academic/pages/CriteriaPage";
+import NrcsPage from "@/features/academic/pages/NrcsPage";
+import { AccountVerificationPage } from "@/features/auth/pages/AccountVerificationPage";
+import { ProfessorsPage } from "@/features/academic/pages/ProfessorsPage";
+import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
-import GradeWeightsPage from "@/pages/grupo 9/GradeWeightsPage";
+import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
 import TiebreakerPage from "@/pages/grupo 9/TiebreakerPage";
 import ProfessorRankingTiesPage from "@/pages/grupo 9/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
@@ -25,29 +25,29 @@ import JurorBadgesPage from "@/pages/admin/JurorBadgesPage";
 import EditionJurorsPage from "@/pages/admin/EditionJurorsPage";
 import JurorCheckInPage from "@/pages/staff/JurorCheckInPage";
 import JurorAttendancePage from "@/pages/staff/JurorAttendancePage";
-import StaffAccountsPage from "@/pages/admin/StaffAccountsPage";
-import PushNotificationsPage from "@/pages/PushNotificationsPage";
+import StaffAccountsPage from "@/features/staff-accounts/pages/StaffAccountsPage";
+import PushNotificationsPage from "@/features/notifications/pages/PushNotificationsPage";
 import FinalGradeReleasePage from "@/pages/admin/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/pages/admin/JurorSurveyResultsPage";
-import ExternalPresentersPage from "@/pages/admin/ExternalPresentersPage";
-import MyRegistrationPage from "@/pages/external-presenter/MyRegistrationPage";
-import PwaInstallGuidePage from "@/pages/PwaInstallGuidePage";
+import ExternalPresentersPage from "@/features/external-presenters/pages/ExternalPresentersPage";
+import MyRegistrationPage from "@/features/external-presenters/pages/MyRegistrationPage";
+import PwaInstallGuidePage from "@/features/pwa/pages/PwaInstallGuidePage";
 
-import NotFoundPage from "@/pages/NotFoundPage";
+import NotFoundPage from "@/features/public/pages/NotFoundPage";
 
 import JuryManagementPage from "@/pages/grupo 12/JuryManagementPage";
 import { RealtimeTrackingPanel } from "@/pages/RealtimeTrackingPanel";
 
-import LandingPage from "@/pages/grupo 5/LandingPage";
+import LandingPage from "@/features/public/pages/LandingPage";
 import RankingPage from "@/pages/grupo 5/RankingPage";
-import InformationPage from "@/pages/grupo 5/InformationPage";
+import InformationPage from "@/features/public/pages/InformationPage";
 import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
 import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
 import HomeTeacherPage from "@/pages/grupo 5/HomeTeacherPage";
-import FeriasPasadas from "@/pages/grupo 5/FeriasPasadas";
-import CreditsPage from "@/pages/grupo 5/CreditsPage";
+import PastFairsPage from "@/features/public/pages/PastFairsPage";
+import CreditsPage from "@/features/public/pages/CreditsPage";
 import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
-import HistoricalVideogamesPage from "@/pages/grupo 5/HistoricalVideogamesPage";
+import HistoricalVideogamesPage from "@/features/games/pages/HistoricalVideogamesPage";
 
 import PendingGradesPage from "@/pages/grupo 8/PendingGradesPage";
 import RatePage from "@/pages/grupo 8/RatePage";
@@ -61,9 +61,9 @@ import StatisticsPage from "@/pages/grupo 1/StatisticsPage";
 
 import RegistrationGate from "@/routes/RegistrationGate";
 import RestablecerInteraccion from "@/routes/RestablecerInteraccion";
-import VideogamesPage from "@/pages/teams/VideogamesPage";
+import VideogamesPage from "@/features/games/pages/VideogamesPage";
 
-import GamePlayerPage from "@/pages/gameplayer/GamePlayerPage";
+import GamePlayerPage from "@/features/games/pages/GamePlayerPage";
 
 import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
 import { JuradosAssignment } from "@/pages/JuradosAssignment";
@@ -132,7 +132,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/ediciones-pasadas",
-    element: <FeriasPasadas />,
+    element: <PastFairsPage />,
   },
   {
     path: "/ediciones-pasadas/:editionId/juegos",
@@ -148,11 +148,11 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/OlvidastePassword",
-    element: <ForgetPassword />,
+    element: <ForgotPasswordPage />,
   },
   {
     path: "/establecer-contrasena",
-    element: <ResetPassword />,
+    element: <ResetPasswordPage />,
   },
   {
     path: "/inicio",
@@ -229,7 +229,7 @@ export const routes: RouteConfig[] = [
     element: <JurorSurveyResultsPage />,
     roles: ["Administrador"],
   },
-  { path: "/materias", element: <SubjetsPage />, roles: ["Administrador"] },
+  { path: "/materias", element: <SubjectsPage />, roles: ["Administrador"] },
   {
     path: "/equipos-inscritos",
     element: <TeamsManagementPage />,
@@ -289,7 +289,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/verificar-cuenta",
-    element: <VerifyEmailPage />,
+    element: <AccountVerificationPage />,
   },
   {
     path: "/mi-equipo",

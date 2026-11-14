@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import RegistrationClosedPage from "@/pages/RegistrationClosedPage";
+import RegistrationClosedPage from "@/features/public/pages/RegistrationClosedPage";
 import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
 import { fetchRegistrationsOpen } from "@/fetchs/registrations";
 
