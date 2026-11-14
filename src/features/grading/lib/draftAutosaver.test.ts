@@ -3,6 +3,8 @@ import { DraftAutosaver, type AutosaveState } from "@/features/grading/lib/draft
 import {
   backupKey,
   DraftRequestError,
+  pickInitialDraft,
+  readBackup,
   type SaveDraftBody,
   type ServerDraft,
 } from "@/lib/evaluationDrafts";
@@ -214,5 +216,52 @@ describe("DraftAutosaver", () => {
     saver.dispose();
     await vi.advanceTimersByTimeAsync(0);
     expect(save).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Lo escrito después del último guardado y que no llegó al servidor (sesión perdida, sin red) se
+ * recupera al volver a abrir el formulario, sin importar si el reloj del navegador va atrasado o
+ * adelantado respecto al del servidor.
+ */
+describe("respaldo local con el reloj del navegador desfasado", () => {
+  const SERVER_NOW = Date.parse("2026-11-14T15:00:00.000Z");
+
+  /** Guarda la versión 1 en el servidor y luego el siguiente cambio no llega (401). */
+  async function loseLastChange(browserOffsetMs: number) {
+    vi.setSystemTime(SERVER_NOW + browserOffsetMs);
+    const { save, saver } = setup(0);
+    const v1 = saved(1, {
+      details: [{ criterionId: 1, score: 2 }],
+      updatedAt: new Date(SERVER_NOW + 2500).toISOString(), // hora del servidor al guardar
+    });
+    save.mockResolvedValueOnce(v1);
+    saver.schedule(form("2"));
+    await vi.advanceTimersByTimeAsync(2500);
+    expect(saver.currentVersion).toBe(1);
+
+    // 2 s después del guardado escribe el comentario y se pierde la sesión.
+    save.mockRejectedValue(new DraftRequestError("session", "Tu sesión venció"));
+    await vi.advanceTimersByTimeAsync(2000);
+    saver.schedule(form("2", "escrito antes de perder la sesión"));
+    await vi.advanceTimersByTimeAsync(2500);
+    saver.dispose();
+    return v1;
+  }
+
+  it.each([
+    ["30 s atrasado", -30_000],
+    ["5 min atrasado", -300_000],
+    ["en hora", 0],
+    ["1 min adelantado", 60_000],
+  ])("con el navegador %s, al reabrir se recupera lo último escrito", async (_label, offset) => {
+    const server = await loseLastChange(offset);
+    const initial = pickInitialDraft(server, readBackup(ID));
+    expect(initial).toMatchObject({
+      source: "local",
+      needsSync: true,
+      version: 1,
+      form: { comments: "escrito antes de perder la sesión" },
+    });
   });
 });

@@ -146,7 +146,7 @@ test(
 // último escrito antes de perder la sesión (dentro del desfase) se descarta, aunque la pantalla de login
 // diga «Lo que estabas escribiendo quedó guardado». Verificado: con la página +60 s pasa; con -30 s falla.
 // Al corregirlo, cambiar test.fixme por test para que quede como prueba de regresión.
-test.fixme(
+test(
   "con el reloj del navegador atrasado, lo último escrito antes de perder la sesión se recupera",
   detalles({
     comprueba:
