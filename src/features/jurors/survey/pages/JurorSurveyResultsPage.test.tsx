@@ -13,9 +13,9 @@ vi.mock("@/features/jurors/survey/api/jurorSurvey", () => ({
   fetchJurorSurveySummary: mocks.fetchJurorSurveySummary,
   downloadJurorSurveyExport: mocks.downloadJurorSurveyExport,
 }));
-vi.mock("@/fetchs/editions", () => ({ fetchEditions: mocks.fetchEditions }));
+vi.mock("@/api/editions", () => ({ fetchEditions: mocks.fetchEditions }));
 vi.mock("sonner", () => ({ toast: mocks.toast }));
-vi.mock("@/layouts/LayoutAplication", () => ({
+vi.mock("@/layouts/LayoutApplication", () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 

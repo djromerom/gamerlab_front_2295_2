@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import { createEdition, buildISODateTime } from "@/fetchs/editions";
+import { createEdition, buildISODateTime } from "@/api/editions";
 
 interface CreateEditionModalProps {
   open: boolean;

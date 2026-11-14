@@ -1,11 +1,11 @@
 "use client"
 
-import { AppSidebar } from "@/components/grupo 9/app-sidebar"
-import Breadcrumbs from "@/components/grupo 9/BreadCrums"
+import { AppSidebar } from "@/layouts/AppSidebar"
+import Breadcrumbs from "@/layouts/Breadcrumbs"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import PwaUpdateNotice from "@/features/pwa/components/PwaUpdateNotice"
-import { FondoPanel } from "@/components/fondo/FondoPanel"
+import { PanelBackground } from "@/components/background/PanelBackground"
 
 import type React from "react"
 
@@ -17,10 +17,10 @@ interface Props {
   }[]
 }
 
-const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
+const LayoutApplication: React.FC<Props> = ({ children, breadcrumbs }) => {
   return (
     <SidebarProvider>
-      <FondoPanel />
+      <PanelBackground />
       <AppSidebar />
       {/* ARK-222: en celular es transparente para dejar ver el degradado; en PC conserva el fondo liso del tema */}
       <SidebarInset id="sidebar-insert" className="relative min-w-0 overflow-x-hidden max-md:bg-transparent">
@@ -52,4 +52,4 @@ const LayoutAplication: React.FC<Props> = ({ children, breadcrumbs }) => {
   );
 };
 
-export default LayoutAplication;
+export default LayoutApplication;

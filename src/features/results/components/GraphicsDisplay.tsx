@@ -29,9 +29,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Info } from "lucide-react";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import { useGlobalState } from "@/contexts/GlobalStateContext";
 import { AVERAGES_HIDDEN_MESSAGE, buildAverageChartData, formatAverage, isRankingHidden } from "@/features/results/lib/averages";
-import { useCriteria } from "@/hooks/use-criteria";
+import { useCriteria } from "@/hooks/useCriteria";
 import { buildCriteriaColumns, getCriterionValue } from "@/features/results/lib/criteriaColumns";
 
 interface CriterioChartData {

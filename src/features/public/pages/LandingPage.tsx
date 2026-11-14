@@ -7,9 +7,9 @@ import { ArrowRight } from "lucide-react"
 import "@/index.css"
 import CountdownTimer from "@/features/public/components/CountdownTimer"
 import LandingHeader from "@/features/public/components/LandingHeader"
-import { FondoArkad } from "@/components/fondo/FondoArkad"
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl"
-import { DiscordButton } from "@/components/grupo 5/DiscordButton"
+import { ArkadBackground } from "@/components/background/ArkadBackground"
+import { TextSizeControl } from "@/components/TextSizeControl"
+import { DiscordButton } from "@/components/DiscordButton"
 
 // Inicio de la feria: hasta esa hora la landing muestra la cuenta regresiva
 const INICIO_FERIA = new Date("2026-05-28T08:00:00")
@@ -31,7 +31,7 @@ function LandingPage(): React.ReactElement {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-hidden font-inter text-[#F4F7FF]">
       {/* Escena animada con el logo de Arkad, centrada a la derecha del texto */}
-      <FondoArkad modo="vivo" centro={[0.7, 0.5]} opacidadLogo={1} />
+      <ArkadBackground modo="vivo" centro={[0.7, 0.5]} opacidadLogo={1} />
       {/* Velo para que el texto se lea sobre la escena */}
       <div
         aria-hidden="true"
@@ -81,7 +81,7 @@ function LandingPage(): React.ReactElement {
           </div>
         </div>
       </main>
-      <TextSizeControls />
+      <TextSizeControl />
       <DiscordButton discordUrl={DISCORD_SOPORTE} />
     </div>
   )

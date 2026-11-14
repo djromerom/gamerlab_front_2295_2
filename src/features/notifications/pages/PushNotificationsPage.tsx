@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -141,7 +141,7 @@ export default function PushNotificationsPage() {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Notificaciones", href: "/notificaciones" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Notificaciones", href: "/notificaciones" }]}>
       <main className="mx-auto w-full max-w-3xl space-y-6 p-6">
         <h1 className="text-2xl font-semibold">Notificaciones</h1>
 
@@ -185,6 +185,6 @@ export default function PushNotificationsPage() {
         {message && <p className="text-sm text-emerald-600" role="status">{message}</p>}
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

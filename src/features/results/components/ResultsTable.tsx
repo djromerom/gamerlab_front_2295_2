@@ -4,11 +4,11 @@ import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useGlobalState, VideojuegoData } from "@/fetchs/grupo 1/GlobalStateContext"; // Ajusta la ruta
+import { useGlobalState, VideojuegoData } from "@/contexts/GlobalStateContext"; // Ajusta la ruta
 import { TabsContent } from '@/components/ui/tabs'; // Asumiendo que lo usas dentro de Tabs
 import { Loader2 } from "lucide-react"; // Icono de carga
 import { Button } from "@/components/ui/button";
-import { useCriteria } from "@/hooks/use-criteria";
+import { useCriteria } from "@/hooks/useCriteria";
 import { buildCriteriaColumns, getCriterionValue } from "@/features/results/lib/criteriaColumns";
 
 const ResultsTable = () => {

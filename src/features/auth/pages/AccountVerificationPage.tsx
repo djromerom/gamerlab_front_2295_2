@@ -16,7 +16,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 const passwordSchema = z
   .object({
@@ -514,7 +514,7 @@ export function AccountVerificationPage() {
 
   return (
     <div className="relative min-h-svh flex items-center justify-center overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
       <Card className="w-full max-w-md relative z-10 bg-white/90 dark:bg-black/50 backdrop-blur-sm mt-12">
         <CardHeader className="space-y-3 pt-8 text-center">
           <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">

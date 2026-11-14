@@ -2,17 +2,17 @@
 
 
 import { apiFetch } from "@/lib/api";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { TeamsManagementTable } from "@/features/teams/components/TeamsManagementTable";
 import { useState, useEffect, useCallback } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import { PaginatedTeams, TeamConfirmationStatusResponse } from "@/features/teams/lib/teamsUtils";
 import type { TeamRowData } from "@/features/teams/lib/teamsUtils";
 import { EditionStudentsPanel } from "@/features/teams/components/EditionStudentsPanel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
-import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
 import { teamsUrl, type ListEdition } from "@/features/teams/api/editionStudents";
 
 const EDITION_STATUS_LABEL: Record<EditionStatus, string> = {
@@ -424,7 +424,7 @@ const TeamsManagementPage = () => {
   );
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading && !teamsData ? (
         <LoadingScreen text="Cargando equipos inscritos..." />
       ) : (
@@ -474,7 +474,7 @@ const TeamsManagementPage = () => {
           )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

@@ -6,7 +6,7 @@ interface PurpleButtonProps {
   className?: string;
 }
 
-export default function purpleButton({
+export default function PurpleButton({
   children,
   onClick,
   className = "",

@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
-import { uploadMainPhoto, validateImageFile } from "@/fetchs/editions";
+import { uploadMainPhoto, validateImageFile } from "@/api/editions";
 
 interface BannerUploadProps {
   editionId: number;

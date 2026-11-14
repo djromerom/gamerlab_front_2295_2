@@ -12,7 +12,7 @@ vi.mock("@/features/results/api/finalGrade", () => ({
   setFinalGradeRelease: mocks.setFinalGradeRelease,
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/layouts/LayoutAplication", () => ({
+vi.mock("@/layouts/LayoutApplication", () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 

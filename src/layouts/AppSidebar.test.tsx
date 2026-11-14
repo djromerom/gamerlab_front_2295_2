@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
+import { AppSidebar } from "@/layouts/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import type { AuthContextType, Role } from "@/types/auth";
 
@@ -12,7 +12,7 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 // La insignia de edición del administrador pide las ediciones
-vi.mock("@/fetchs/editions", () => ({
+vi.mock("@/api/editions", () => ({
   fetchEditions: () => Promise.resolve([]),
 }));
 

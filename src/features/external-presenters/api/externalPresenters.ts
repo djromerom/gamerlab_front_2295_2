@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import { fileNameFromDisposition, saveBlobAsFile } from '@/features/jurors/assignment/api/jurorsExport';
-import type { EditionStatus } from '@/fetchs/editions';
+import type { EditionStatus } from '@/api/editions';
 import { downloadCertificatePdf } from '@/lib/certificates';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';

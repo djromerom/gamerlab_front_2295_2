@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
-import { FondoPanel } from "@/components/fondo/FondoPanel";
+import { AppSidebar } from "@/layouts/AppSidebar";
+import { PanelBackground } from "@/components/background/PanelBackground";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   decideTie,
@@ -129,7 +129,7 @@ export default function TiebreakerPage() {
 
   return (
     <SidebarProvider>
-      <FondoPanel />
+      <PanelBackground />
       <AppSidebar />
       <SidebarInset className="max-md:bg-transparent">
         <header className="flex h-16 items-center gap-2 border-b px-4">

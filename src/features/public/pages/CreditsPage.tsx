@@ -19,13 +19,13 @@ import {
   Container,
   Filter,
 } from "lucide-react";
-import NavBar from "@/components/grupo 5/NavBar";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import NavBar from "@/components/NavBar";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { DiscordButton } from "@/components/DiscordButton";
 import { developers, departments, technologies, projectStats } from "@/features/public/lib/contributorsData";
 
 import "./CreditsPage.css";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function CreditsPage() {
   const [currentTeamSlide, setCurrentTeamSlide] = useState(0);
@@ -118,7 +118,7 @@ export default function CreditsPage() {
     <>
       <NavBar />
       <div className="relative min-h-screen overflow-hidden">
-        <FondoArkad modo="lento" estiloNuevo />
+        <ArkadBackground modo="lento" estiloNuevo />
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Arkad</span> - Equipo de Desarrollo
@@ -476,7 +476,7 @@ export default function CreditsPage() {
               © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
-          <TextSizeControls />
+          <TextSizeControl />
           <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>

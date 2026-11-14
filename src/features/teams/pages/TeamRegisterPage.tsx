@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import MultiStepWizard from "@/features/teams/components/registration/MultiStepWizard";
 import { Card, CardContent } from "@/components/ui/card";
-import NavBar from "@/components/grupo 5/NavBar";
+import NavBar from "@/components/NavBar";
 import { Toaster } from "sonner"
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 const TeamRegisterPage: React.FC = () => {
   useEffect(() => {
@@ -18,7 +18,7 @@ const TeamRegisterPage: React.FC = () => {
     <>
     <NavBar />
     <div className="relative min-h-screen dark overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
       <div
         className="relative flex flex-col z-10 items-center justify-center min-h-screen pt-18 dark overflow-hidden "
       >
@@ -29,7 +29,7 @@ const TeamRegisterPage: React.FC = () => {
         </Card>
         <Toaster />
       </div>
-      <TextSizeControls />
+      <TextSizeControl />
     </div>
   </>
   );

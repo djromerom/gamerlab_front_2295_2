@@ -3,7 +3,7 @@ import { findMyTeam } from "@/lib/opaqueKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotEnrolledNotice from "@/features/teams/components/NotEnrolledNotice";
-import { Team } from "@/types/Team";
+import { Team } from "@/types/team";
 
 interface TeamCodeProps {
     variant?: "default" | "title";

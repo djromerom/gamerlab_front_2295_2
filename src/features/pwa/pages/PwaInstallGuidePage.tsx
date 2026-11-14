@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import {
   clearDeferredInstallPrompt,
@@ -46,7 +46,7 @@ export default function PwaInstallGuidePage() {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Instalar ARKAD", href: "/instalar-app" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Instalar ARKAD", href: "/instalar-app" }]}>
       <main className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
         <div className="flex items-center gap-3">
           <Smartphone className="size-8 shrink-0" aria-hidden="true" />
@@ -110,6 +110,6 @@ export default function PwaInstallGuidePage() {
           )}
         </section>
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

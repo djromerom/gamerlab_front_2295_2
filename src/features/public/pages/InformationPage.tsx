@@ -10,11 +10,11 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { formatEditionDate, formatEditionTime } from "@/lib/editionDate";
-import NavBar from "@/components/grupo 5/NavBar";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/fetchs/editions";
+import NavBar from "@/components/NavBar";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { fetchEditions, fetchHighlightedGames, Edition, HighlightedGame } from "@/api/editions";
 import { Link } from "react-router-dom";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 // Estilos para el borde luminoso mejorado
 const glowStyles = `
@@ -291,7 +291,7 @@ export default function InformationPage() {
     <>
       <NavBar />
       <div className="relative min-h-screen overflow-hidden dark">
-        <FondoArkad modo="lento" estiloNuevo />
+        <ArkadBackground modo="lento" estiloNuevo />
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
@@ -447,7 +447,7 @@ export default function InformationPage() {
               © {new Date().getFullYear()} Arkad. Todos los derechos reservados.
             </p>
           </div>
-          <TextSizeControls />
+          <TextSizeControl />
 
         </div>
       </div>

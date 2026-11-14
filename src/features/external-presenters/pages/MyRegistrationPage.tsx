@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Award, Loader2, MailCheck, Presentation } from "lucide-react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +46,7 @@ const MyRegistrationPage: React.FC = () => {
   }, [load]);
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Mi registro", href: "/mi-registro" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Mi registro", href: "/mi-registro" }]}>
       <main className="mx-auto w-full max-w-2xl px-4 pb-10 space-y-6">
         <h1 className="text-lg md:text-xl font-medium">Mi registro en la feria</h1>
 
@@ -80,7 +80,7 @@ const MyRegistrationPage: React.FC = () => {
 
         {state.kind === "ready" && <Registration registration={state.registration} />}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

@@ -2,10 +2,10 @@
 
 
 import { apiFetch } from "@/lib/api";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { ProfessorsTable } from "@/features/academic/components/ProfessorsTable";
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 // Interface for a single professor (can be enhanced if more fields come from API)
 export interface ProfessorRowData {
@@ -116,7 +116,7 @@ export const ProfessorsPage: React.FC = () => {
   const breadcrumbs = [{ label: "Profesores", href: "/profesores" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading && !professorsData ? ( // Show full page loader only on initial load or when data is completely absent
         <LoadingScreen text="Cargando profesores..." />
       ) : (
@@ -153,7 +153,7 @@ export const ProfessorsPage: React.FC = () => {
             )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

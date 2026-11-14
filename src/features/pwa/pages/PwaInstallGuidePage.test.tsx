@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PwaInstallGuidePage from "@/features/pwa/pages/PwaInstallGuidePage";
 
-vi.mock("@/layouts/LayoutAplication", () => ({
+vi.mock("@/layouts/LayoutApplication", () => ({
   default: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 

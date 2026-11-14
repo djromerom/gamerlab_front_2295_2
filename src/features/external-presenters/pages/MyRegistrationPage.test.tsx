@@ -11,7 +11,7 @@ vi.mock("@/features/external-presenters/api/externalPresenters", async (importOr
   fetchMyExternalPresenter: (...args: unknown[]) => fetchMyExternalPresenter(...args),
 }));
 
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 

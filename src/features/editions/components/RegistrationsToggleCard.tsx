@@ -15,7 +15,7 @@ import {
   readRegistrationsOpen,
   updateRegistrationsOpen,
   type RegistrationReadiness,
-} from "@/fetchs/registrations";
+} from "@/api/registrations";
 
 /** ARK-136 (BG-23): orden recomendado para preparar una edición. */
 export const REGISTRATION_ORDER_HINT =

@@ -1,14 +1,14 @@
 import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { useAuth } from "@/contexts/AuthContext";
 import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
-import TeamCode from "@/components/grupo 5/TeamCode";
+import TeamCode from "@/components/TeamCode";
 import VerificationCode from "@/features/teams/components/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
-import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
-import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
+import { JurorPresenceNotice } from "@/components/JurorPresenceNotice";
+import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
 import { PwaInstallNotice } from "@/features/pwa/components/PwaInstallNotice";
 import { Navigate } from "react-router-dom";
 
@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
     return <Navigate to="/mi-registro" replace />;
   }
   return (
-    <LayoutAplication breadcrumbs={[]}>
+    <LayoutApplication breadcrumbs={[]}>
       <section className="flex flex-col justify-evenly items-center w-full h-full min-w-[250px]">
         <section className=" flex flex-col gap-[8rem] container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-4 text-center">
@@ -79,7 +79,7 @@ const HomePage: React.FC = () => {
             )}
         </section>
       </section>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

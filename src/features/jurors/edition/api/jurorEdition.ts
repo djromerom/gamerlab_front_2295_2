@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api';
-import type { EditionStatus, PaginatedResult } from '@/fetchs/editions';
+import type { EditionStatus, PaginatedResult } from '@/api/editions';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';
 

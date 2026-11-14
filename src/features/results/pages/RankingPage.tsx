@@ -2,11 +2,11 @@
 
 
 import { apiFetch } from "@/lib/api";
-import NavBar from "@/components/grupo 5/NavBar";
+import NavBar from "@/components/NavBar";
 import { useState, useEffect } from "react";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { DiscordButton } from "@/components/grupo 5/DiscordButton";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { DiscordButton } from "@/components/DiscordButton";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 type Team = {
   id: number;
@@ -225,7 +225,7 @@ export default function RankingPage() {
       <NavBar />
 
       <div className="relative min-h-screen overflow-hidden">
-        <FondoArkad modo="lento" estiloNuevo />
+        <ArkadBackground modo="lento" estiloNuevo />
 
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
@@ -552,7 +552,7 @@ export default function RankingPage() {
             </>
           )}
 
-          <TextSizeControls />
+          <TextSizeControl />
           <DiscordButton discordUrl={discordSupportUrl} />
         </div>
       </div>

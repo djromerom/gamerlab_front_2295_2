@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, QrCode, RefreshCw, Search } from "lucide-react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ const JurorAttendancePage: React.FC = () => {
   const metadata = result?.metadata;
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Asistencia de jurados", href: "/asistencia-jurados" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Asistencia de jurados", href: "/asistencia-jurados" }]}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pb-10">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -147,7 +147,7 @@ const JurorAttendancePage: React.FC = () => {
           </>
         ) : null}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

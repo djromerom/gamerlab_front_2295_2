@@ -11,7 +11,7 @@ import {
   isoToDate,
   isoToTime,
   type Edition,
-} from "@/fetchs/editions";
+} from "@/api/editions";
 
 interface EditionFormProps {
   editionId: number;

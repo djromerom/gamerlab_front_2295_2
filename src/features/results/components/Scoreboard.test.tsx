@@ -16,7 +16,7 @@ vi.mock("@/features/results/api/finalGrade", () => ({
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "u1" }, userRole: "Estudiante" }),
 }));
-vi.mock("@/components/grupo 5/TeamCode.tsx", () => ({ default: () => null }));
+vi.mock("@/components/TeamCode", () => ({ default: () => null }));
 
 import Scoreboard from "@/features/results/components/Scoreboard";
 

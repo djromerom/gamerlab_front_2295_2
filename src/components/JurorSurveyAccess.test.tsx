@@ -14,7 +14,7 @@ vi.mock("@/features/jurors/survey/api/jurorSurvey", async (importOriginal) => ({
   submitJurorSurvey: mocks.submitJurorSurvey,
 }));
 
-import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
+import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
 import { JUROR_SURVEY_CHECK_STATE } from "@/lib/jurorSurvey";
 
 const status = (over: Record<string, unknown> = {}) => ({

@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
-import { Team } from "@/types/Team";
+import { Team } from "@/types/team";
 import { MediaCarousel } from "./MediaCarousel";
 
 interface GameDetailModalProps {

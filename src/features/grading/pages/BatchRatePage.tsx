@@ -13,15 +13,15 @@ import {
   DraftConflictDialog,
   DraftSaveIndicator,
 } from "@/features/grading/components/EvaluationDrafts";
-import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
-import { useCriteria } from "@/hooks/use-criteria";
+import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
+import { useCriteria } from "@/hooks/useCriteria";
 import {
   loadInitialDrafts,
   useDraftAutosave,
   type LoadedDraft,
 } from "@/features/grading/hooks/useDraftAutosave";
 import { useTeamVerification } from "@/features/teams/hooks/useTeamVerification";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { apiFetch } from "@/lib/api";
 import { fromServerDraft, type DraftForm } from "@/lib/evaluationDrafts";
 import { ArrowLeft, CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
@@ -375,13 +375,13 @@ export default function BatchRatePage() {
 
   if (!currentGame || (apiCriteria.length > 0 && !draftsReady)) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-64">
           <p className="text-lg">
             {currentGame ? "Cargando borradores..." : "Cargando..."}
           </p>
         </div>
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
@@ -399,7 +399,7 @@ export default function BatchRatePage() {
         ];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="container mx-auto py-4 md:py-6 px-3 md:px-5">
         <h1 className="text-xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">
           Calificación en Lote
@@ -680,6 +680,6 @@ export default function BatchRatePage() {
           </>
         )}
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

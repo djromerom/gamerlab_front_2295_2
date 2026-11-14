@@ -1,4 +1,4 @@
-import { Team, TeamStatus } from "@/types/Team";
+import { Team, TeamStatus } from "@/types/team";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";

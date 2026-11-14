@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ const StaffAccountsPage = () => {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Cuentas Staff", href: "/cuentas-staff" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Cuentas Staff", href: "/cuentas-staff" }]}>
       <main className="mx-auto w-full max-w-2xl px-4 pb-10">
         <Card className="py-6">
           <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus /> Crear cuenta Staff</CardTitle></CardHeader>
@@ -47,7 +47,7 @@ const StaffAccountsPage = () => {
           </CardContent>
         </Card>
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

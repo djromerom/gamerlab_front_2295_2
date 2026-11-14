@@ -1,10 +1,10 @@
 import { apiFetch } from "@/lib/api";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import { MyDraftsPanel } from "@/features/grading/components/EvaluationDrafts";
 import { PendingGradesGrid } from "@/features/grading/components/PendingGradesGrid";
-import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
+import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
 import { Button } from "@/components/ui/button";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -243,7 +243,7 @@ const PendingSchoolGradesPage: React.FC = () => {
         })) || [];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
       <MyDraftsPanel ratePath="/colegios-calificar" games={gamesToShow} />
       <JurorSurveyAccess className="mb-4" />
@@ -344,7 +344,7 @@ const PendingSchoolGradesPage: React.FC = () => {
           )} */}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

@@ -1,10 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 
 // El sidebar real depende de la sesión: aquí solo importa el marco del layout
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 
@@ -27,9 +27,9 @@ describe("LayoutAplication", () => {
   it("muestra el sidebar, las migas desde Inicio y el contenido", () => {
     render(
       <MemoryRouter>
-        <LayoutAplication breadcrumbs={[{ label: "Configuración", href: "/configuracion" }]}>
+        <LayoutApplication breadcrumbs={[{ label: "Configuración", href: "/configuracion" }]}>
           <p>Contenido de la página</p>
-        </LayoutAplication>
+        </LayoutApplication>
       </MemoryRouter>,
     );
 

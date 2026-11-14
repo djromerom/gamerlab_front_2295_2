@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FondoArkad } from "./FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 // Mismo corte que el menú lateral (md): por debajo es celular
 const CONSULTA_CELULAR = "(max-width: 767px)";
@@ -24,10 +24,10 @@ function useEsCelular() {
  * - En celular, un degradado difuminado que casi no se mueve, con colores según el tema (sin fondo en alto contraste).
  * El área de contenido del panel es transparente solo en celular para dejarlo ver.
  */
-export function FondoPanel() {
+export function PanelBackground() {
   const celular = useEsCelular();
   if (!celular) return null;
-  return <FondoArkad modo="quieto" />;
+  return <ArkadBackground modo="quieto" />;
 }
 
-export default FondoPanel;
+export default PanelBackground;

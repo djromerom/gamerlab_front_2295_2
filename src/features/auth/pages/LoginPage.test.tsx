@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { TextSizeProvider } from "@/contexts/TextSizeContext";
 import LoginPage from "@/features/auth/pages/LoginPage";
 import type { AuthContextType, Role } from "@/types/auth";

@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { crearEscena, type Escena, type ModoFondo } from "./escena";
+import { createScene, type Scene, type BackgroundMode } from "@/components/background/scene";
 
-interface FondoArkadProps {
+interface ArkadBackgroundProps {
   /** "vivo" en la landing, "lento" en las páginas públicas de lectura, "quieto" en los paneles (solo celular). */
-  modo: ModoFondo;
+  modo: BackgroundMode;
   /** Centro de la escena en fracciones de la ventana (x, y). Por defecto el centro. */
   centro?: [number, number];
   /** Opacidad del logo 3D; 0 lo oculta. */
@@ -25,15 +25,15 @@ function forzarOscuro() {
  * Fondo nuevo de Arkad (ARK-222): escena en un canvas fijo detrás de la página.
  * No intercepta clics, no se imprime y no se muestra en alto contraste.
  */
-export function FondoArkad({ modo, centro, opacidadLogo, estiloNuevo = false }: FondoArkadProps) {
+export function ArkadBackground({ modo, centro, opacidadLogo, estiloNuevo = false }: ArkadBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const escenaRef = useRef<Escena | null>(null);
+  const escenaRef = useRef<Scene | null>(null);
   const cx = centro?.[0], cy = centro?.[1];
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || sinCanvas) return;
-    const escena = crearEscena(canvas, { modo });
+    const escena = createScene(canvas, { modo });
     escenaRef.current = escena;
     return () => {
       escena.destruir();
@@ -80,4 +80,4 @@ export function FondoArkad({ modo, centro, opacidadLogo, estiloNuevo = false }: 
   );
 }
 
-export default FondoArkad;
+export default ArkadBackground;

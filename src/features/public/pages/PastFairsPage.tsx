@@ -12,7 +12,7 @@ import {
   Testimonial,
   EducationalFocus,
   HighlightedGame
-} from "@/fetchs/editions";
+} from "@/api/editions";
 import { Link } from "react-router-dom";
 
 import {
@@ -29,8 +29,8 @@ import {
   Monitor,
   User,
 } from "lucide-react";
-import NavBar from "@/components/grupo 5/NavBar";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import NavBar from "@/components/NavBar";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 
 
@@ -379,7 +379,7 @@ export default function PastFairsPage() {
       <NavBar />
 
       <div className="relative min-h-screen overflow-hidden">
-        <FondoArkad modo="lento" estiloNuevo />
+        <ArkadBackground modo="lento" estiloNuevo />
 
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
 

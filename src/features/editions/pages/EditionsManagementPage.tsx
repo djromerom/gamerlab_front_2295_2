@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { EditionsTable } from "@/features/editions/components/EditionsTable";
 import { EditionDetailView } from "@/features/editions/components/EditionDetailView";
 import { CreateEditionModal } from "@/features/editions/components/modals/CreateEditionModal";
 import { CalendarRange, Loader2, AlertCircle } from "lucide-react";
-import { fetchEditions, type Edition } from "@/fetchs/editions";
+import { fetchEditions, type Edition } from "@/api/editions";
 import { toast } from "sonner";
 
 type View = "list" | "detail";
@@ -63,7 +63,7 @@ const EditionsManagementPage: React.FC = () => {
       : [{ label: "Ediciones", href: "/gestionar-ediciones" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="p-6 w-full space-y-6">
         {/* Vistas */}
         {view === "list" ? (
@@ -112,7 +112,7 @@ const EditionsManagementPage: React.FC = () => {
           }}
         />
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

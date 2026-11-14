@@ -1,11 +1,11 @@
 import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import EventSetupCard from "@/features/editions/components/EventSetupCard";
 import RegistrationsToggleCard from "@/features/editions/components/RegistrationsToggleCard";
 
 import { useNavigate } from "react-router-dom";
 import { GradingButton } from "@/features/grading/components/GradingButton";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import { useGlobalState } from "@/contexts/GlobalStateContext";
 
 
 const EventConfigurationPage: React.FC = () => {
@@ -16,7 +16,7 @@ const EventConfigurationPage: React.FC = () => {
 		{ label: "Configuración", href: "/configuracion-evento" },
 	];
     return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
         <div className="md:bg-background text-foreground min-h-screen p-4 w-full">
                 
             <div className="flex justify-between items-center mb-6 px-4">
@@ -59,7 +59,7 @@ const EventConfigurationPage: React.FC = () => {
 
         </div>
         
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

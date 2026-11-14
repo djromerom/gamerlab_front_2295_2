@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { NotEnrolledError } from "@/lib/notEnrolled";
-import type { Team } from "@/types/Team";
+import type { Team } from "@/types/team";
 import { resolveMyTeam } from "@/lib/opaqueKeys";
 
 let cachedUserId: string | null = null;

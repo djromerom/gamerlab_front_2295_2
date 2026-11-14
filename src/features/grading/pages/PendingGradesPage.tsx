@@ -1,8 +1,8 @@
 import { apiFetch } from "@/lib/api";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import { MyDraftsPanel } from "@/features/grading/components/EvaluationDrafts";
 import { PendingGradesGrid } from "@/features/grading/components/PendingGradesGrid";
-import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";
+import { JurorSurveyAccess } from "@/components/JurorSurveyAccess";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,9 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
-import LayoutAplication from "@/layouts/LayoutAplication";
-import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
+import { useGlobalState } from "@/contexts/GlobalStateContext";
+import LayoutApplication from "@/layouts/LayoutApplication";
+import { JurorPresenceNotice } from "@/components/JurorPresenceNotice";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -220,7 +220,7 @@ const PendingGradesPage: React.FC = () => {
 
   if (canViewJudges === false) {
     return (
-      <LayoutAplication breadcrumbs={breadcrumbs}>
+      <LayoutApplication breadcrumbs={breadcrumbs}>
         <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           {/* HU-17: la encuesta se puede responder aunque ya se hayan cerrado las evaluaciones */}
           <JurorSurveyAccess />
@@ -246,7 +246,7 @@ const PendingGradesPage: React.FC = () => {
         </div>
         {/* HU-18: la lista de borradores funciona aunque las evaluaciones estén cerradas */}
         <MyDraftsPanel ratePath="/pendientes-calificar" />
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
@@ -285,7 +285,7 @@ const PendingGradesPage: React.FC = () => {
         })) || [];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {/* HU-18: borradores sin enviar, para continuarlos o descartarlos */}
       <MyDraftsPanel ratePath="/pendientes-calificar" games={gamesToShow} />
       <JurorSurveyAccess className="mb-4" />
@@ -391,7 +391,7 @@ const PendingGradesPage: React.FC = () => {
           )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

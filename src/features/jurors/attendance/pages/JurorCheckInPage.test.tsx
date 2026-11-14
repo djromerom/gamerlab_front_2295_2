@@ -23,7 +23,7 @@ vi.mock("html5-qrcode", () => ({
   Html5QrcodeSupportedFormats: { QR_CODE: 0 },
 }));
 
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 
