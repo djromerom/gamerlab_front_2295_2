@@ -8,7 +8,7 @@ import { useFetch } from "@/hooks/useFetch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Lock } from "lucide-react";
 import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
-import type { ListEdition } from "@/fetchs/editionStudents";
+import type { ListEdition } from "@/features/teams/api/editionStudents";
 import { NRC_ORDER_HINT, nrcsUrl } from "@/features/academic/api/nrcs";
 
 const EDITION_STATUS_LABEL: Record<EditionStatus, string> = {

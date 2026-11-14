@@ -1,4 +1,4 @@
-import { getGameFileEntry } from "@/components/grupo 11/azureFile";
+import { getGameFileEntry } from "@/features/teams/lib/azureFile";
 
 
 

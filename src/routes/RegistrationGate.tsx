@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/grupo 5/LoadingScreen";
 import RegistrationClosedPage from "@/features/public/pages/RegistrationClosedPage";
-import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
+import TeamRegisterPage from "@/features/teams/pages/TeamRegisterPage";
 import { fetchRegistrationsOpen } from "@/fetchs/registrations";
 
 /** Muestra el registro de equipos solo si las inscripciones están abiertas. */

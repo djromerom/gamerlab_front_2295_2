@@ -5,7 +5,7 @@ import darkLogo from "@/assets/Arkad Dark.svg";
 import lightLogo from "@/assets/Arkad Light.svg";
 
 import TeamCode from "@/components/grupo 5/TeamCode";
-import VerificationCode from "@/components/grupo 5/VerificationCode";
+import VerificationCode from "@/features/teams/components/VerificationCode";
 import CircularProgress from "@/components/CircularProgress";
 import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
 import { JurorSurveyAccess } from "@/components/juror-survey/JurorSurveyAccess";

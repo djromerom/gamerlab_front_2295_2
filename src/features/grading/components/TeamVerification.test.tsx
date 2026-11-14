@@ -5,7 +5,7 @@ import {
   TeamVerificationForm,
   TeamVerificationGate,
 } from "@/features/grading/components/TeamVerification";
-import { useTeamVerification } from "@/hooks/useTeamVerification";
+import { useTeamVerification } from "@/features/teams/hooks/useTeamVerification";
 import { apiFetch } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));

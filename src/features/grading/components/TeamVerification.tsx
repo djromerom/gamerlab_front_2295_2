@@ -10,8 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TeamVerificationError, verifyTeamCode } from "@/fetchs/teamVerification";
-import { useTeamVerification } from "@/hooks/useTeamVerification";
+import { TeamVerificationError, verifyTeamCode } from "@/features/teams/api/teamVerification";
+import { useTeamVerification } from "@/features/teams/hooks/useTeamVerification";
 
 interface TeamVerificationFormProps {
   teamId: number;
