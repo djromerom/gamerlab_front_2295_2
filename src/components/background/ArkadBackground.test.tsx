@@ -7,7 +7,7 @@ afterEach(() => {
   delete document.body.dataset.estilo;
 });
 
-describe("FondoArkad", () => {
+describe("ArkadBackground", () => {
   it("dibuja un canvas decorativo que no intercepta clics ni se imprime", () => {
     const { container } = render(<ArkadBackground modo="lento" />);
     const canvas = container.querySelector("canvas");
@@ -31,7 +31,7 @@ describe("FondoArkad", () => {
   });
 });
 
-describe("FondoPanel", () => {
+describe("PanelBackground", () => {
   const matchMediaOriginal = window.matchMedia;
   afterEach(() => {
     window.matchMedia = matchMediaOriginal;

@@ -1,4 +1,3 @@
-// src/components/Tablas/TablaPorJurado.tsx
 "use client";
 
 import { useMemo } from "react"; // Añadido useMemo para optimizar

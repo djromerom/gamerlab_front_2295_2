@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-// CustomTableRowBeta.tsx
 "use client";
 
 import { useState } from "react";

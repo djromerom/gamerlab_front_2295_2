@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
 
-interface CriteriabuttonProps {
+interface CriteriaButtonProps {
   description: string;
 }
 
-export default function CriteriaButton({ description }: CriteriabuttonProps) {
+export default function CriteriaButton({ description }: CriteriaButtonProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>

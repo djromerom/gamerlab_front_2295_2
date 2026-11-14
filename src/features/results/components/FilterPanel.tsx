@@ -1,4 +1,3 @@
-// src/components/Filtros/FiltrosPanel.tsx
 "use client";
 
 import { useEffect } from "react"; // Solo necesitamos useEffect para el reseteo

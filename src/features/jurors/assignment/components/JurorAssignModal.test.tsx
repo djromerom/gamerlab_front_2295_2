@@ -11,7 +11,7 @@ const team = {
   requiredJurados: 3,
 } as never;
 
-describe("JuradoAssignModal", () => {
+describe("JurorAssignModal", () => {
   afterEach(cleanup);
 
   it("Escape cierra el diálogo «Asignar Jurado»", () => {
