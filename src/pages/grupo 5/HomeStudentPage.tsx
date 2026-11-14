@@ -1,5 +1,5 @@
 import type React from "react";
-import Scoreboard from "@/components/grupo 5/Scoreboard";
+import Scoreboard from "@/features/results/components/Scoreboard";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";

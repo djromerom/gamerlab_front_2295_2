@@ -4,7 +4,7 @@ import EventSetupCard from "./EventSetupCard";
 import RegistrationsToggleCard from "./RegistrationsToggleCard";
 
 import { useNavigate } from "react-router-dom";
-import { Button } from "../grupo 8/boton";
+import { GradingButton } from "@/features/grading/components/GradingButton";
 import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
 
 
@@ -41,12 +41,12 @@ const EventConfigurationPage: React.FC = () => {
                         <div className="flex items-center justify-between">   
                             <p className="text-sm ">Define los pesos porcentuales asignados a cada jurado.</p> 
                             <div>
-                                <Button
+                                <GradingButton
                                     className="bg-card border-2 hover:bg-accent hover:transition-colors  text-foreground cursor-pointer" 
                                     onClick={() => navigate("/ponderado-calificaciones")}
                                     >
                                         Configurar Ponderación
-                                </Button>
+                                </GradingButton>
                             </div>
                         </div>
                     </div>
