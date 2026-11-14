@@ -25,8 +25,9 @@ export function SubstituteGuideDialog() {
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && closeGuide()}>
+      {/* Solo el texto se desplaza: «Entendido» queda siempre a la vista, también a 360 px */}
       <AlertDialogContent
-        className="max-h-[90vh] overflow-y-auto"
+        className="flex max-h-[90dvh] flex-col"
         onEscapeKeyDown={(event) => {
           if (guideRequired) event.preventDefault();
         }}
@@ -36,7 +37,7 @@ export function SubstituteGuideDialog() {
           <AlertDialogDescription>{SUBSTITUTE_GUIDE_INTRO}</AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="text-sm">
+        <div className="min-h-0 flex-1 overflow-y-auto text-sm">
           <p className="mb-2 font-medium">{SUBSTITUTE_GUIDE_STEPS_TITLE}</p>
           <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
             {SUBSTITUTE_GUIDE_STEPS.map((step) => (

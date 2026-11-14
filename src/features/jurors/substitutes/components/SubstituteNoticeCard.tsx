@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { BellRing, Loader2 } from "lucide-react";
+import { BellRing, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBogotaTime } from "@/features/jurors/presence/api/jurorPresence";
 import { useSubstituteNotices } from "@/features/jurors/substitutes/contexts/SubstituteNoticesContext";
@@ -7,22 +8,54 @@ import { PENDING_GRADING_PATH, groupsLabel } from "@/features/jurors/substitutes
 
 /**
  * Aviso «Te asignaron grupos» (HU-22, CU-22). Se queda en todas las pantallas del suplente
- * hasta que lo marque como leído; muestra los grupos y su nivel.
+ * hasta que lo marque como leído; muestra los grupos y su nivel. Se puede minimizar para ver la
+ * pantalla de abajo (en el celular ocupa casi todo), pero no desaparece hasta marcarlo leído.
  */
 export function SubstituteNoticeCard() {
   const { unread, markingId, markError, markRead, openGuide } = useSubstituteNotices();
+  const [minimized, setMinimized] = useState(false);
+  const newestId = unread[0]?.id ?? null;
+  // Último aviso que ya se mostró: solo uno distinto reabre la tarjeta minimizada.
+  const shownId = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (newestId === null || newestId === shownId.current) return;
+    if (shownId.current !== null) setMinimized(false);
+    shownId.current = newestId;
+  }, [newestId]);
+
   if (unread.length === 0) return null;
+
+  if (minimized) {
+    return (
+      <button
+        type="button"
+        onClick={() => setMinimized(false)}
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-violet-500/50 bg-card px-4 py-2 text-sm font-semibold text-card-foreground shadow-xl sm:right-6"
+        aria-label={`Te asignaron grupos: ${unread.length} aviso${unread.length === 1 ? "" : "s"} sin leer. Ver aviso`}
+      >
+        <BellRing className="size-4 text-violet-500" aria-hidden />
+        Te asignaron grupos ({unread.length})
+      </button>
+    );
+  }
 
   return (
     <section
       role="alert"
       aria-labelledby="substitute-notice-title"
-      className="fixed inset-x-4 bottom-4 z-40 max-h-[70vh] overflow-y-auto rounded-lg border border-violet-500/50 bg-card p-4 text-card-foreground shadow-xl sm:left-auto sm:right-6 sm:w-[26rem]"
+      className="fixed inset-x-4 bottom-4 z-40 max-h-[60dvh] overflow-y-auto rounded-lg border border-violet-500/50 bg-card p-4 text-card-foreground shadow-xl sm:left-auto sm:right-6 sm:max-h-[70vh] sm:w-[26rem]"
     >
-      <h2 id="substitute-notice-title" className="mb-3 flex items-center gap-2 text-base font-semibold">
-        <BellRing className="size-5 text-violet-500" aria-hidden />
-        Te asignaron grupos
-      </h2>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 id="substitute-notice-title" className="flex items-center gap-2 text-base font-semibold">
+          <BellRing className="size-5 text-violet-500" aria-hidden />
+          Te asignaron grupos
+        </h2>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setMinimized(true)} aria-label="Minimizar el aviso">
+          <ChevronDown className="size-4" aria-hidden />
+          Minimizar
+        </Button>
+      </div>
 
       <ul className="space-y-3">
         {unread.map((notice) => {

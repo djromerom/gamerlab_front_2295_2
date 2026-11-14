@@ -211,4 +211,34 @@ describe("Suplente: explicación y aviso «Te asignaron grupos» (HU-22, ARK-85)
     });
     expect(screen.getByText("Te asignaron grupos")).toBeTruthy();
   });
+
+  it("se puede minimizar sin perder el aviso, y un aviso nuevo lo vuelve a abrir", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    window.localStorage.setItem("arkad:substitute-guide:suplente-1:3", "x");
+    const second = { ...NOTICE, id: 8, createdAt: "2026-11-14T16:20:00.000Z" };
+    fetchMySubstituteNotices.mockResolvedValue(mine([NOTICE]));
+    renderNotices();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Minimizar el aviso" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: /1 aviso sin leer. Ver aviso/ })).toBeTruthy();
+
+    // La siguiente consulta trae un aviso nuevo
+    fetchMySubstituteNotices.mockResolvedValue(mine([NOTICE, second]));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    const card = screen.getByRole("alert");
+    expect(within(card).getAllByRole("button", { name: /Marcar como leído/ })).toHaveLength(2);
+  });
+
+  it("minimizado, se vuelve a abrir con la pastilla", async () => {
+    window.localStorage.setItem("arkad:substitute-guide:suplente-1:3", "x");
+    fetchMySubstituteNotices.mockResolvedValue(mine([NOTICE]));
+    renderNotices();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Minimizar el aviso" }));
+    fireEvent.click(screen.getByRole("button", { name: /Ver aviso/ }));
+    expect(screen.getByRole("alert")).toBeTruthy();
+  });
 });
