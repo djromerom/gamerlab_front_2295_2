@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-13: estructura objetivo y convenciones (TA-14, ARK-50)
+- Nuevos: [estructura objetivo y convenciones del backend](../02-backend/estructura-objetivo-y-convenciones.md) (módulo por dominio, `src/jurors/`, nombres y capas), [del frontend](../03-frontend/estructura-objetivo-y-convenciones.md) (`src/features/<dominio>/`) y el [mapa de movimientos para TA-15](mapa-de-movimientos-ark-51.md). Propuesta a validar con el equipo y el profesor el 17-nov.
+- Guías de contribución de back y front, [arquitectura-modulos](../02-backend/arquitectura-modulos.md), [estructura-del-proyecto](../03-frontend/estructura-del-proyecto.md), índices y [checklist de traspaso](../05-scrum-y-proceso/checklist-traspaso-v5.md) enlazan a las convenciones.
+- Corregido el H4 del [diagnóstico del back](../02-backend/diagnostico-estructura.md): `members/dto/update-member.dto.ts` sigue en uso.
+- Decisiones del equipo (13-nov) y ensayo local de TA-15 sin regresiones: se borra `members`; el símbolo principal se llama como su archivo (40 renombres); lo genérico queda en compartido y lo común a subdominios de `jurors` va a `features/jurors/<tipo>/`; imports entre módulos hermanos de `src/jurors/` con `src/`; regla de ubicación del front sin contradicción. El [mapa de movimientos](mapa-de-movimientos-ark-51.md) suma los archivos que entraron con #298 y #299 y corrige destinos y conteos.
+
 ## 2026-11-13: diagnóstico de la estructura de los repos (TA-13, ARK-49)
 - Nuevos: [diagnóstico del backend](../02-backend/diagnostico-estructura.md) y [diagnóstico del frontend](../03-frontend/diagnostico-estructura.md), medidos sobre `origin/dev` (`a564190`) y `origin/dev-deploy` (`10b4bd7f`), con hallazgos priorizados para TA-14 (ARK-50).
 - [estructura-del-proyecto](../03-frontend/estructura-del-proyecto.md) y [deuda-tecnica](../03-frontend/deuda-tecnica.md) del front apuntan al diagnóstico para las cifras de tamaño; se corrige qué contiene `grupo 11`. Índices de [02-backend](../02-backend/README.md) y [03-frontend](../03-frontend/README.md).
