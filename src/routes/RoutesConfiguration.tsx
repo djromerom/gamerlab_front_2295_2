@@ -1,5 +1,6 @@
 import React, { JSX } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SubstituteNotices } from "@/features/jurors/substitutes/components/SubstituteNotices";
 
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
@@ -340,6 +341,8 @@ const RoutesConfiguration: React.FC = () => {
   return (
     <BrowserRouter>
       <RestoreInteraction />
+      {/* HU-22: dentro del router para que «Ver mis grupos» navegue sin recargar */}
+      <SubstituteNotices />
       <Routes>
         {routes.map((route) => {
           if (route.roles) {

@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-14: subdominio `jurors/substitutes` (HU-22, ARK-85)
+
+- Nuevo subdominio del front `features/jurors/substitutes/`: aviso «Te asignaron grupos» al suplente (consulta cada 10 s), su explicación con «Entendido» guardado en el navegador por usuario y edición, y la sección «Avisos a suplentes sin leer» del seguimiento. Agregado a la tabla de [dominios](../03-frontend/estructura-objetivo-y-convenciones.md#dominios) y al árbol de [estructura del proyecto](../03-frontend/estructura-del-proyecto.md).
+
 ## 2026-11-14: pruebas e2e (TA-06, ARK-42), integración en serie (TA-24, ARK-208) y borradores con reloj desfasado
 - [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): el respaldo local de un borrador se decide por versión (`baseVersion`) y no por la hora del navegador; con el reloj atrasado se perdía lo último escrito (front #310).
 - [pruebas-y-verificacion](../04-devops/pruebas-y-verificacion.md): fila nueva de las e2e del front (Playwright contra Arkad-test, workflow `E2E-Arkad-test`, 9 de 9 el 14-nov) y el CI del back con `test:e2e` / `test:db` en serie.
