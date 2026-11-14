@@ -20,7 +20,7 @@ import {
   useDraftAutosave,
   type LoadedDraft,
 } from "@/features/grading/hooks/useDraftAutosave";
-import { useTeamVerification } from "@/hooks/useTeamVerification";
+import { useTeamVerification } from "@/features/teams/hooks/useTeamVerification";
 import LayoutAplication from "@/layouts/LayoutAplication";
 import { apiFetch } from "@/lib/api";
 import { fromServerDraft, type DraftForm } from "@/lib/evaluationDrafts";

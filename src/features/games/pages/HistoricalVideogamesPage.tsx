@@ -9,7 +9,7 @@ import { GameDetailModal } from "@/features/games/components/GameDetailModal";
 import { Team } from "@/types/Team";
 import { Edition } from "@/fetchs/editions";
 import { ChevronLeft, ChevronRight, Trophy, ArrowLeft } from "lucide-react";
-import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
+import { TeamSkeletonGrid } from "@/features/teams/components/TeamSkeleton";
 import { Filters } from "@/features/games/components/Filters";
 import { motion } from "framer-motion";
 import { FondoArkad } from "@/components/fondo/FondoArkad";

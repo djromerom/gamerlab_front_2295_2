@@ -16,11 +16,11 @@ import { AccountVerificationPage } from "@/features/auth/pages/AccountVerificati
 import { ProfessorsPage } from "@/features/academic/pages/ProfessorsPage";
 import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
-import TeamsManagementPage from "@/pages/grupo 9/TeamsManagementPage";
+import TeamsManagementPage from "@/features/teams/pages/TeamsManagementPage";
 import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
 import TiebreakerPage from "@/features/results/pages/TiebreakerPage";
 import ProfessorRankingTiesPage from "@/features/results/pages/ProfessorRankingTiesPage";
-import EditionsManagementPage from "@/pages/admin/EditionsManagementPage";
+import EditionsManagementPage from "@/features/editions/pages/EditionsManagementPage";
 import JurorBadgesPage from "@/features/jurors/badges/pages/JurorBadgesPage";
 import EditionJurorsPage from "@/features/jurors/edition/pages/EditionJurorsPage";
 import JurorCheckInPage from "@/features/jurors/attendance/pages/JurorCheckInPage";
@@ -41,12 +41,12 @@ import { RealtimeTrackingPage } from "@/features/grading/pages/RealtimeTrackingP
 import LandingPage from "@/features/public/pages/LandingPage";
 import RankingPage from "@/features/results/pages/RankingPage";
 import InformationPage from "@/features/public/pages/InformationPage";
-import HomeStudentPage from "@/pages/grupo 5/HomeStudentPage";
-import MisJuradosPage from "@/pages/grupo 5/MisJuradosPage";
+import StudentHomePage from "@/features/teams/pages/StudentHomePage";
+import MyJurorsPage from "@/features/teams/pages/MyJurorsPage";
 import TeacherHomePage from "@/features/results/pages/TeacherHomePage";
 import PastFairsPage from "@/features/public/pages/PastFairsPage";
 import CreditsPage from "@/features/public/pages/CreditsPage";
-import EditTeamPage from "@/pages/grupo 5/EditTeamPage";
+import EditTeamPage from "@/features/teams/pages/EditTeamPage";
 import HistoricalVideogamesPage from "@/features/games/pages/HistoricalVideogamesPage";
 
 import PendingGradesPage from "@/features/grading/pages/PendingGradesPage";
@@ -65,7 +65,7 @@ import VideogamesPage from "@/features/games/pages/VideogamesPage";
 
 import GamePlayerPage from "@/features/games/pages/GamePlayerPage";
 
-import EventConfigurationPage from "@/components/grupo 9/EventConfigurationPage";
+import EventConfigurationPage from "@/features/editions/pages/EventConfigurationPage";
 import { JurorAssignmentPage } from "@/features/jurors/assignment/pages/JurorAssignmentPage";
 import type { Role } from "@/types/auth";
 
@@ -293,7 +293,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/mi-equipo",
-    element: <HomeStudentPage />,
+    element: <StudentHomePage />,
     roles: ["Estudiante", "Profesor"],
   },
   {
@@ -308,7 +308,7 @@ export const routes: RouteConfig[] = [
   },
   {
     path: "/mis-jurados",
-    element: <MisJuradosPage />,
+    element: <MyJurorsPage />,
     roles: ["Estudiante"],
   },
   {

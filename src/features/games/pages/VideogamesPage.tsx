@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import NavBar from "@/components/grupo 5/NavBar";
 import { useFetch } from "@/hooks/useFetch";
-import { TeamSkeletonGrid } from "@/components/grupo 5/TeamSkeleton";
+import { TeamSkeletonGrid } from "@/features/teams/components/TeamSkeleton";
 import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
 import { DiscordButton } from "@/components/grupo 5/DiscordButton";
 import { useLikesSocket } from "@/features/games/hooks/useLikesSocket";
