@@ -27,8 +27,8 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { NavUser } from "@/components/grupo 9/nav-user";
-import { MenuItem, NavContent } from "@/components/grupo 9/nav-projects";
+import { NavUser } from "@/layouts/NavUser";
+import { MenuItem, NavContent } from "@/layouts/NavContent";
 import {
   Sidebar,
   SidebarContent,
@@ -40,7 +40,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/ui/logo";
 import ThemeToggleSwitch from "@/components/ui/theme-toggle-switch";
 import { Role } from "@/types/auth";
-import { WorkingEditionBadge } from "@/components/grupo 9/WorkingEditionBadge";
+import { WorkingEditionBadge } from "@/components/WorkingEditionBadge";
 
 const MENU: Record<Role, MenuItem[]> = {
   Administrador: [

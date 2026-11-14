@@ -1,9 +1,9 @@
 import React, { JSX } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import { ProtectedRoute } from "@/components/grupo 9/ProtectedRoute";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 import UnauthorizedPage from "@/features/auth/pages/UnauthorizedPage";
@@ -60,7 +60,7 @@ import BatchRatePage from "@/features/grading/pages/BatchRatePage";
 import StatisticsPage from "@/features/results/pages/StatisticsPage";
 
 import RegistrationGate from "@/routes/RegistrationGate";
-import RestablecerInteraccion from "@/routes/RestablecerInteraccion";
+import RestoreInteraction from "@/routes/RestoreInteraction";
 import VideogamesPage from "@/features/games/pages/VideogamesPage";
 
 import GamePlayerPage from "@/features/games/pages/GamePlayerPage";
@@ -339,7 +339,7 @@ const RoutesConfiguration: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <RestablecerInteraccion />
+      <RestoreInteraction />
       <Routes>
         {routes.map((route) => {
           if (route.roles) {

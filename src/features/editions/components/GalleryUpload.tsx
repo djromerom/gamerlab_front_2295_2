@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, X, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
-import { uploadPhotos, deletePhotos, validateImageFile } from "@/fetchs/editions";
+import { uploadPhotos, deletePhotos, validateImageFile } from "@/api/editions";
 
 interface GalleryUploadProps {
   editionId: number;

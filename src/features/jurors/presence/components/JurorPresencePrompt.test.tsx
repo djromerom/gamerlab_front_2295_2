@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JurorPresenceProvider } from "@/features/jurors/presence/contexts/JurorPresenceContext";
 import { JurorPresencePrompt } from "@/features/jurors/presence/components/JurorPresencePrompt";
-import { JurorPresenceNotice } from "@/components/juror-presence/JurorPresenceNotice";
+import { JurorPresenceNotice } from "@/components/JurorPresenceNotice";
 import { JurorPresenceError, type MyPresence } from "@/features/jurors/presence/api/jurorPresence";
 
 const mocks = vi.hoisted(() => ({

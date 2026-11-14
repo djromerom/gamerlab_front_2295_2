@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { type Edition } from "@/fetchs/editions";
+import { type Edition } from "@/api/editions";
 
 interface EditionsListProps {
   editions: Edition[];

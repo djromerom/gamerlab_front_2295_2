@@ -10,7 +10,7 @@ import {
   createTestimonial,
   deleteTestimonial,
   type Testimonial,
-} from "@/fetchs/editions";
+} from "@/api/editions";
 
 const ExpandableQuote: React.FC<{ text: string }> = ({ text }) => {
   const [expanded, setExpanded] = useState(false);

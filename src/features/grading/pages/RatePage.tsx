@@ -1,6 +1,6 @@
 "use client";
 
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import CriteriaButton from "@/features/grading/components/CriteriaButton";
 import { GradingTextarea } from "@/features/grading/components/GradingTextarea";
 import { TeamVerificationGate } from "@/features/grading/components/TeamVerification";
@@ -36,9 +36,9 @@ import {
   DraftSaveIndicator,
 } from "@/features/grading/components/EvaluationDrafts";
 import { JUROR_SURVEY_CHECK_STATE } from "@/lib/jurorSurvey";
-import { useCriteria } from "@/hooks/use-criteria";
+import { useCriteria } from "@/hooks/useCriteria";
 import { loadInitialDraft, useDraftAutosave } from "@/features/grading/hooks/useDraftAutosave";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { apiFetch } from "@/lib/api";
 import {
   formFromCriteria,
@@ -160,17 +160,17 @@ export default function RatePage() {
 
   if (isLoadingCriteria) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <LoadingScreen text="Cargando criterios de evaluación..." />
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
   if (game && apiCriteria.length > 0 && !draftReady) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <LoadingScreen text="Cargando borrador..." />
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
@@ -427,15 +427,15 @@ export default function RatePage() {
 
   if (showSuccessLoading) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <LoadingScreen text="Redirigiendo a pendientes por calificar..." />
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
   if (isLoadingCriteria || !game) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-screen">
           {isLoadingCriteria && <p>Cargando criterios de evaluación...</p>}
           {!game && !isLoadingCriteria && (
@@ -447,13 +447,13 @@ export default function RatePage() {
             </p>
           )}
         </div>
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
   if (criteriaError) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <div className="container mx-auto py-6 p-10 text-center">
           <h2 className="text-2xl font-bold text-red-500 mb-4">
             Error al Cargar Criterios
@@ -466,20 +466,20 @@ export default function RatePage() {
             Recargar Página
           </Button>
         </div>
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
   if (uiCriteria.length === 0 && !isLoadingCriteria) {
     return (
-      <LayoutAplication breadcrumbs={[]}>
+      <LayoutApplication breadcrumbs={[]}>
         <div className="flex justify-center items-center h-screen">
           <p>
             No se encontraron criterios de evaluación. Por favor, contacte a un
             administrador.
           </p>
         </div>
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
@@ -493,7 +493,7 @@ export default function RatePage() {
     : [];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="container mx-auto py-6 p-5">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -749,6 +749,6 @@ export default function RatePage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

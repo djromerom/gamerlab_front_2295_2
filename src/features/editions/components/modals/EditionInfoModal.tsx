@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { EditionForm } from "@/features/editions/components/EditionForm";
 import { FileText } from "lucide-react";
-import { type Edition } from "@/fetchs/editions";
+import { type Edition } from "@/api/editions";
 
 interface EditionInfoModalProps {
   open: boolean;

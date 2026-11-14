@@ -13,10 +13,10 @@
  * no un shadowBlur (que obliga a desenfocar en cada cuadro).
  */
 
-export type ModoFondo = "vivo" | "lento" | "quieto";
+export type BackgroundMode = "vivo" | "lento" | "quieto";
 
-export interface OpcionesEscena {
-  modo: ModoFondo;
+export interface SceneOptions {
+  modo: BackgroundMode;
   /** Centro de la escena en fracciones de la ventana (x, y). */
   centro?: [number, number];
   /** Opacidad del logo 3D (0 lo oculta). */
@@ -77,12 +77,12 @@ function mezclar(a: number[], b: number[], k: number) {
   return `rgb(${Math.round(a[0] + (b[0] - a[0]) * k)},${Math.round(a[1] + (b[1] - a[1]) * k)},${Math.round(a[2] + (b[2] - a[2]) * k)})`;
 }
 
-export interface Escena {
-  actualizar(opciones: OpcionesEscena): void;
+export interface Scene {
+  actualizar(opciones: SceneOptions): void;
   destruir(): void;
 }
 
-export function crearEscena(canvas: HTMLCanvasElement, inicial: OpcionesEscena): Escena {
+export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): Scene {
   // alpha:false evita componer la transparencia del canvas con la página en cada cuadro
   const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
   if (!ctx) return { actualizar() {}, destruir() {} };
@@ -98,7 +98,7 @@ export function crearEscena(canvas: HTMLCanvasElement, inicial: OpcionesEscena):
   const base = document.createElement("canvas");
   const ctxBase = base.getContext("2d");
 
-  let op: OpcionesEscena = inicial;
+  let op: SceneOptions = inicial;
   let W = 0, H = 0, dpr = 1;
   let mx = 0, my = 0, rx = 0, ry = 0, fase = 0.4, t = 0, tb = 0;
   let cx0 = 0, cy0 = 0; // centro de la escena sin el desplazamiento del cursor
@@ -377,7 +377,7 @@ export function crearEscena(canvas: HTMLCanvasElement, inicial: OpcionesEscena):
   raf = requestAnimationFrame(bucle);
 
   return {
-    actualizar(nuevas: OpcionesEscena) {
+    actualizar(nuevas: SceneOptions) {
       op = nuevas;
       preparar_todo();
     },

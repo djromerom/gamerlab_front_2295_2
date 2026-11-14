@@ -1,6 +1,6 @@
 import type React from "react";
 import Scoreboard from "@/features/results/components/Scoreboard";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -24,7 +24,7 @@ const StudentHomePage: React.FC = () => {
       : [{ label: "Notas", href: location.pathname + location.search }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isProfesor ? (
         <div className="m-4 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-8 text-center">
           <h2 className="text-lg font-medium text-foreground">Esta vista es para estudiantes</h2>
@@ -43,7 +43,7 @@ const StudentHomePage: React.FC = () => {
           <Scoreboard />
         </div>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

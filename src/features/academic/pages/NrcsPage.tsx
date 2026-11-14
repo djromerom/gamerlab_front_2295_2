@@ -1,13 +1,13 @@
 "use client";
 
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { NrcsTable } from "@/features/academic/components/NrcsTable";
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useFetch } from "@/hooks/useFetch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Lock } from "lucide-react";
-import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
 import type { ListEdition } from "@/features/teams/api/editionStudents";
 import { NRC_ORDER_HINT, nrcsUrl } from "@/features/academic/api/nrcs";
 
@@ -196,7 +196,7 @@ const NrcsPage = () => {
   );
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {header}
       {isPageLoading ? (
         <LoadingScreen text="Cargando NRCs..." />
@@ -225,7 +225,7 @@ const NrcsPage = () => {
           )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

@@ -3,7 +3,7 @@ import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/types/auth";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen"; 
+import LoadingScreen from "@/components/LoadingScreen"; 
 
 interface ProtectedRouteProps {
   roles?: Role[];

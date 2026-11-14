@@ -1,9 +1,9 @@
 import { apiFetch } from "@/lib/api";
 import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import {useState} from "react";
 import { Switch } from "@/components/ui/switch.tsx"
-// import { ThemeProvider } from "@/components/grupo 11/theme-provider";
+// import { ThemeProvider } from "@/components/ThemeProvider";
 
 // const url = "/settings/evaluations-status?open="
 

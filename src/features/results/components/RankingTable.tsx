@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button"; // Import Button
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext"; // Adjust path
+import { useGlobalState } from "@/contexts/GlobalStateContext"; // Adjust path
 import { TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For better error display
 import { AVERAGES_HIDDEN_MESSAGE, isRankingHidden } from "@/features/results/lib/averages";

@@ -1,17 +1,17 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import NavBar from "@/components/grupo 5/NavBar";
+import NavBar from "@/components/NavBar";
 import { useFetch } from "@/hooks/useFetch";
 import { TeamSkeletonGrid } from "@/features/teams/components/TeamSkeleton";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { DiscordButton } from "@/components/grupo 5/DiscordButton";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { DiscordButton } from "@/components/DiscordButton";
 import { useLikesSocket } from "@/features/games/hooks/useLikesSocket";
-import { Team, TeamStatus } from "@/types/Team";
+import { Team, TeamStatus } from "@/types/team";
 import { TeamCard } from "@/features/games/components/TeamCard";
 import { Filters } from "@/features/games/components/Filters";
 
 import { useLocation } from "react-router-dom";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function VideogamesPage() {
   const location = useLocation();
@@ -236,7 +236,7 @@ export default function VideogamesPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
       <NavBar />
       <div className=" max-w-7xl mx-auto relative z-10 items-center p-4 pb-12 pt-30 text-white">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-6 md:mb-10 text-[#AC7CFF]">
@@ -272,7 +272,7 @@ export default function VideogamesPage() {
           )}
         </div>
       </div>
-      <TextSizeControls />
+      <TextSizeControl />
       <DiscordButton discordUrl={discordSupportUrl} />
     </div>
   );

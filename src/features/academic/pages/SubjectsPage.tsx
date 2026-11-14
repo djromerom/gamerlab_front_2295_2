@@ -2,10 +2,10 @@
 
 
 import { apiFetch } from "@/lib/api";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { SubjectsTable } from "@/features/academic/components/SubjectsTable";
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface Subject {
   id: number;
@@ -106,7 +106,7 @@ const SubjectsPage = () => {
   const breadcrumbs = [{ label: "Materias", href: "/materias" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
         <LoadingScreen text="Cargando materias..." />
       ) : (
@@ -141,7 +141,7 @@ const SubjectsPage = () => {
             )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

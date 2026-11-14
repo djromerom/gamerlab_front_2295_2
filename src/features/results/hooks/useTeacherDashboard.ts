@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Edition } from "@/fetchs/editions";
+import type { Edition } from "@/api/editions";
 import { useFetch } from "@/hooks/useFetch";
 import { toFairGradeRule } from "@/features/results/types/studentGradeTable";
 

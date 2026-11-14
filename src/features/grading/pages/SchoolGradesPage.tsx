@@ -1,9 +1,9 @@
 import { apiFetch } from "@/lib/api";
 import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { PendingGradesGrid } from "@/features/grading/components/PendingGradesGrid";
 import { useEffect, useState } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface VideogameDetails {
   videogameId: number;
@@ -176,7 +176,7 @@ const SchoolGradesPage: React.FC = () => {
 
     
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
         <LoadingScreen text="Cargando juegos calificados..." />
       ) : (
@@ -253,7 +253,7 @@ const SchoolGradesPage: React.FC = () => {
           )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

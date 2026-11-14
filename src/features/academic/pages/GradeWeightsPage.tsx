@@ -3,7 +3,7 @@
 
 import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,7 +134,7 @@ export default function GradeWeightsPage() {
 	}
 
 	return (
-		<LayoutAplication breadcrumbs={breadcrumbs}>
+		<LayoutApplication breadcrumbs={breadcrumbs}>
 			<div className="p-4 space-y-6">
 				<div className="flex justify-between items-center mb-6 px-4">
 					<h1 className="text-xl font-medium">Ponderación general</h1>
@@ -245,6 +245,6 @@ export default function GradeWeightsPage() {
 					</Button>
 				</div>
 			</div>
-		</LayoutAplication>
+		</LayoutApplication>
 		);
 		}

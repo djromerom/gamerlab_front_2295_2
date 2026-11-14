@@ -38,7 +38,7 @@ vi.mock("@/features/jurors/presence/api/absentJurorResponses", () => ({
   },
 }));
 
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 

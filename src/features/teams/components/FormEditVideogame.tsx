@@ -11,7 +11,7 @@ import { TeamImages } from "./TeamImages"
 import { toast } from "sonner"
 import { fetchOwnTeam } from "@/lib/ownTeam";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchRegistrationsOpen } from "@/fetchs/registrations";
+import { fetchRegistrationsOpen } from "@/api/registrations";
 
 export default function FormEditVideogame (
     {

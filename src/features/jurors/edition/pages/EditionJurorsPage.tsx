@@ -11,7 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditionJurorsTable } from "@/features/jurors/edition/components/EditionJurorsTable";
 import { EnrollJurorDialog } from "@/features/jurors/edition/components/EnrollJurorDialog";
-import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
 import {
   JurorEditionError,
   MAX_STATUS_ITEMS,
@@ -269,7 +269,7 @@ const EditionJurorsPage: React.FC = () => {
   const busy = saving || countingPending;
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Jurados de la edición", href: "/jurados-edicion" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Jurados de la edición", href: "/jurados-edicion" }]}>
       <div className="p-6 w-full space-y-6">
         {/* Título, edición y acciones */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
@@ -558,7 +558,7 @@ const EditionJurorsPage: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

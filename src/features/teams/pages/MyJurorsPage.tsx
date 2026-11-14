@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api";
 import { resolveMyTeam } from "@/lib/opaqueKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Users } from "lucide-react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface JuradoInfo {
   id: string;
@@ -212,14 +212,14 @@ export default function MyJurorsPage() {
 
   if (loading) {
     return (
-      <LayoutAplication breadcrumbs={breadcrumbs}>
+      <LayoutApplication breadcrumbs={breadcrumbs}>
         <LoadingScreen text="Cargando jurados asignados..." />
-      </LayoutAplication>
+      </LayoutApplication>
     );
   }
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4 sm:px-6 py-6">
         <Card className="w-full shadow-sm border">
           <CardHeader className="p-4 sm:p-6">
@@ -287,6 +287,6 @@ export default function MyJurorsPage() {
           </CardContent>
         </Card>
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

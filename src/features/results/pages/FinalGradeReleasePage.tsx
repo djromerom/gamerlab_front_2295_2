@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -94,7 +94,7 @@ const FinalGradeReleasePage = () => {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Notas finales", href: "/notas-finales" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Notas finales", href: "/notas-finales" }]}>
       <main className="mx-auto w-full max-w-5xl px-4 pb-10">
         <div className="mb-5">
           <h1 className="text-2xl font-semibold">Publicación de notas finales</h1>
@@ -182,7 +182,7 @@ const FinalGradeReleasePage = () => {
           </div>
         )}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

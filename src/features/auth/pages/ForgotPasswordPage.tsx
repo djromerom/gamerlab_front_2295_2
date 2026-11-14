@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { TextSizeControl } from "@/components/TextSizeControl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ButtonLoading } from "@/features/auth/components/ButtonLoading";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function ForgotPasswordPage() {
 
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
 
     return(
         <div className="relative min-h-screen dark overflow-hidden">
-            <FondoArkad modo="lento" estiloNuevo />
+            <ArkadBackground modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
             <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
             <Link to={'/login'} className="w-full justify-end">Regresar</Link>
@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
             <CardFooter className="w-full justify-center p-0 mt-2 sm:mt-4 text-center">
             </CardFooter>
             </Card>
-            <TextSizeControls />
+            <TextSizeControl />
         </div>
     </div>
   );

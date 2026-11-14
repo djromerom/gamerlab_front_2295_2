@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, CalendarRange } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { fetchEditions, type Edition } from "@/fetchs/editions";
+import { fetchEditions, type Edition } from "@/api/editions";
 import { findWorkingEdition } from "@/lib/workingEdition";
 
 /**

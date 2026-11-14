@@ -4,7 +4,7 @@ import {
   Html5QrcodeSupportedFormats,
 } from "html5-qrcode";
 import { AlertCircle, Camera, Loader2, QrCode, Search, UserCheck } from "lucide-react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -141,7 +141,7 @@ const JurorCheckInPage = () => {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Check-in de jurados", href: "/check-in-jurados" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Check-in de jurados", href: "/check-in-jurados" }]}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10">
         <div>
           <h1 className="text-2xl font-bold">Registrar llegada</h1>
@@ -220,7 +220,7 @@ const JurorCheckInPage = () => {
           </Alert>
         )}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

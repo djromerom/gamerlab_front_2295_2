@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, CircleHelp, Clock3, RefreshCw } from "lucide-react";
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
-import { FondoPanel } from "@/components/fondo/FondoPanel";
+import { AppSidebar } from "@/layouts/AppSidebar";
+import { PanelBackground } from "@/components/background/PanelBackground";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -276,7 +276,7 @@ export function RealtimeTrackingPage() {
 
   return (
     <SidebarProvider>
-      <FondoPanel />
+      <PanelBackground />
       <AppSidebar />
       <SidebarInset className="max-md:bg-transparent">
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">

@@ -4,7 +4,7 @@ import { Shield, ArrowLeft, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function UnauthorizedPage() {
   const navigate = useNavigate()
@@ -111,7 +111,7 @@ export default function UnauthorizedPage() {
 
   return (
     <div className="full-viewport flex items-center justify-center">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
 
       <div className="relative z-10 mx-auto w-full max-w-md px-4 py-8 sm:px-6 lg:max-w-lg lg:px-8">
         <div className="relative gradient-border gradient-border-purple p-0">

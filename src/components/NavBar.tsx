@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Menu, X, User, Plus } from "lucide-react";
 import PurpleButton from "./PurpleButton";
 import { useAuth } from "@/contexts/AuthContext";
-export default function navBar(): React.ReactElement {
+export default function NavBar(): React.ReactElement {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);

@@ -23,7 +23,7 @@ import { TestimonialsModal } from "@/features/editions/components/modals/Testimo
 import { HighlightedGamesModal } from "@/features/editions/components/modals/HighlightedGamesModal";
 import { EducationalFocusesModal } from "@/features/editions/components/modals/EducationalFocusesModal";
 import { toast } from "sonner";
-import { activateEdition, archiveEdition, type Edition } from "@/fetchs/editions";
+import { activateEdition, archiveEdition, type Edition } from "@/api/editions";
 
 interface EditionDetailViewProps {
   edition: Edition;

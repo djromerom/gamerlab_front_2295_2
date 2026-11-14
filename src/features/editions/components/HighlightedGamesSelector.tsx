@@ -11,7 +11,7 @@ import {
   fetchEditionVideogames,
   type HighlightedGame,
   type Videogame,
-} from "@/fetchs/editions";
+} from "@/api/editions";
 
 interface HighlightedGamesSelectorProps {
   editionId: number;

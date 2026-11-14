@@ -4,7 +4,7 @@ import { AlertTriangle, Server, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 interface ErrorConfig {
   title: string;
@@ -78,7 +78,7 @@ export default function AuthErrorPage() {
 
   return (
     <div className="relative min-h-screen dark overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
       
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
         <Card className="w-full max-w-lg p-6 sm:p-8 md:p-12 flex flex-col mx-auto items-center justify-center gap-6 bg-black/50 relative">

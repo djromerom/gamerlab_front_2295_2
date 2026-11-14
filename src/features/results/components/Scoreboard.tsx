@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import TeamCode from "@/components/grupo 5/TeamCode.tsx";
+import LoadingScreen from "@/components/LoadingScreen";
+import TeamCode from "@/components/TeamCode";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchStudentFinalGrade, FinalGradeApiError, type StudentFinalGrade } from "@/features/results/api/finalGrade";
 import { formatGrade, gradeLabel } from "@/features/results/lib/grades";

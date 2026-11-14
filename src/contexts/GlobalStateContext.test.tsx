@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import {
   GlobalStateProvider,
   JuradosAuthSync,
-} from "@/fetchs/grupo 1/GlobalStateContext";
+} from "@/contexts/GlobalStateContext";
 
 const API = import.meta.env.VITE_ENDPOINT_BACKEND;
 

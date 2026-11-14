@@ -16,7 +16,7 @@ vi.mock("@/features/jurors/attendance/api/jurorAttendance", async (importOrigina
 }));
 
 // El sidebar real depende de la sesión: aquí solo importa la página
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 

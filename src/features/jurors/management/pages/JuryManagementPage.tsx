@@ -1,9 +1,9 @@
 "use client";
 
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { JuryManagementTable } from "@/features/jurors/management/components/JuryManagementTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import {
   formatDate,
   mapConfirmationStatus,
@@ -78,7 +78,7 @@ const JuryManagementPage = () => {
   const breadcrumbs = [{ label: "Jurados", href: "/jurados" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading && !jurorsData ? (
         <LoadingScreen text="Cargando jurados..." />
       ) : (
@@ -113,7 +113,7 @@ const JuryManagementPage = () => {
           )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

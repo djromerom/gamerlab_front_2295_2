@@ -6,7 +6,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/toolti
 import { Type, PlusIcon as TypePlus, MinusIcon as TypeMinus } from "lucide-react"
 import { useTextSize } from "@/contexts/TextSizeContext"
 
-export function TextSizeControls() {
+export function TextSizeControl() {
   const { increaseFontSize, decreaseFontSize } = useTextSize()
 
   return (

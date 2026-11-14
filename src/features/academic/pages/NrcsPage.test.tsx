@@ -18,7 +18,7 @@ const fakeFetch = vi.fn((input: RequestInfo | URL) => {
 
 vi.mock("@/hooks/useFetch", () => ({ useFetch: () => fakeFetch }));
 
-vi.mock("@/fetchs/editions", () => ({
+vi.mock("@/api/editions", () => ({
   fetchEditions: () =>
     Promise.resolve([
       { id: 5, title: "Feria 5", status: "ACTIVE" },
@@ -27,7 +27,7 @@ vi.mock("@/fetchs/editions", () => ({
 }));
 
 // El sidebar real depende de la sesión: aquí solo importa la página
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 

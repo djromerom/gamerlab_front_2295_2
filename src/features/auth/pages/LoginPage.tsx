@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { TextSizeControl } from "@/components/TextSizeControl";
 import { ArrowLeft } from "lucide-react";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function LoginPage() {
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen dark overflow-hidden">
-        <FondoArkad modo="lento" estiloNuevo />
+        <ArkadBackground modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4">
           <div className="text-white text-xl animate-pulse">
             Verificando autenticación...
@@ -104,7 +104,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen dark overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
         <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50 relative">
           {/* Botón de flecha para volver */}
@@ -229,7 +229,7 @@ export default function LoginPage() {
             </Link>
           </CardFooter>
         </Card>
-        <TextSizeControls />
+        <TextSizeControl />
       </div>
     </div>
   );

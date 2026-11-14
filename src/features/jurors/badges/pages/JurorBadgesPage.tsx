@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -131,7 +131,7 @@ const JurorBadgesPage: React.FC = () => {
   const breadcrumbs = [{ label: "Escarapelas", href: "/escarapelas" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="p-6 w-full space-y-6">
         <div className="flex flex-col gap-4">
           {/* Fila 1: Título */}
@@ -232,7 +232,7 @@ const JurorBadgesPage: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

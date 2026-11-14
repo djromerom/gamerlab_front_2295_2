@@ -29,7 +29,7 @@ vi.mock("@/features/external-presenters/api/externalPresenters", async (importOr
     downloadExternalPresenterTeamCertificate(...args),
 }));
 
-vi.mock("@/fetchs/editions", () => ({
+vi.mock("@/api/editions", () => ({
   fetchEditions: () =>
     Promise.resolve([
       { id: 3, title: "Feria Gamer 2025 - S2", status: "ACTIVE" },
@@ -38,7 +38,7 @@ vi.mock("@/fetchs/editions", () => ({
 }));
 
 // El sidebar real depende de la sesión: aquí solo importa la página
-vi.mock("@/components/grupo 9/app-sidebar", () => ({
+vi.mock("@/layouts/AppSidebar", () => ({
   AppSidebar: () => <nav>Menú lateral</nav>,
 }));
 

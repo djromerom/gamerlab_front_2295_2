@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppSidebar } from "@/components/grupo 9/app-sidebar";
-import { FondoPanel } from "@/components/fondo/FondoPanel";
+import { AppSidebar } from "@/layouts/AppSidebar";
+import { PanelBackground } from "@/components/background/PanelBackground";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { decideTie, fetchMyTies, type TieGroup } from "@/features/results/api/ranking";
 
@@ -60,7 +60,7 @@ export default function ProfessorRankingTiesPage() {
 
   return (
     <SidebarProvider>
-      <FondoPanel />
+      <PanelBackground />
       <AppSidebar />
       <SidebarInset className="max-md:bg-transparent">
         <header className="flex h-16 items-center gap-2 border-b px-4">

@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
+import { TextSizeControl } from "@/components/TextSizeControl";
 import { Link } from "react-router";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 const passwordSchema = z
     .object({
@@ -306,7 +306,7 @@ export default function ResetPasswordPage() {
     };
     return(
         <div className="relative min-h-screen dark overflow-hidden">
-            <FondoArkad modo="lento" estiloNuevo />
+            <ArkadBackground modo="lento" estiloNuevo />
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4 sm:p-6 md:p-10">
             <Card className="w-full max-w-md p-6 sm:p-8 md:p-12 py-5 flex flex-col mx-auto items-center justify-center gap-4 sm:gap-6 bg-black/50">
             <div className="flex items-center w-full justify-center">
@@ -346,7 +346,7 @@ export default function ResetPasswordPage() {
                 </CardFooter>
             )}
             </Card>
-            <TextSizeControls />
+            <TextSizeControl />
         </div>
     </div>
   );

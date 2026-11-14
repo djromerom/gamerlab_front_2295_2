@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { ExternalPresenterFormDialog } from "@/features/external-presenters/components/ExternalPresenterFormDialog";
 import { BulkPresentersDialog } from "@/features/external-presenters/components/BulkPresentersDialog";
-import { fetchEditions, type Edition, type EditionStatus } from "@/fetchs/editions";
+import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
 import {
   describeCertificateFailure,
   downloadExternalPresenterTeamCertificate,
@@ -257,7 +257,7 @@ const ExternalPresentersPage: React.FC = () => {
   };
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Presentadores externos", href: "/presentadores-externos" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Presentadores externos", href: "/presentadores-externos" }]}>
       <div className="p-6 w-full space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
@@ -644,7 +644,7 @@ const ExternalPresentersPage: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

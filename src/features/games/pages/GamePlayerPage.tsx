@@ -1,11 +1,11 @@
-import NavBar from "@/components/grupo 5/NavBar";
+import NavBar from "@/components/NavBar";
 import { useParams } from "react-router-dom";
 import fetchGameFrameURL from "@/features/games/api/gameFrame"
 import { useEffect, useState } from "react";
 import { useGameLoader } from "@/features/games/hooks/useGameLoader";
 
 import '@/features/games/pages/GamePlayerPage.css';
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 export default function GamePlayerPage() {
 
@@ -37,7 +37,7 @@ export default function GamePlayerPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
 
       <NavBar />
 

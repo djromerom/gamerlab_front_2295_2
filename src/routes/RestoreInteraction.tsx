@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom";
  * ruta con uno abierto (p. ej. el menú de usuario dentro del panel lateral del celular), a veces ese estilo no se
  * retira. Al cambiar de ruta, si ya no queda ninguna capa abierta, se devuelve la interacción a la página.
  */
-export function RestablecerInteraccion() {
+export function RestoreInteraction() {
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -23,4 +23,4 @@ export function RestablecerInteraccion() {
   return null;
 }
 
-export default RestablecerInteraccion;
+export default RestoreInteraction;

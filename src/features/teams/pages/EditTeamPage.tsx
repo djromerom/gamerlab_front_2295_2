@@ -1,5 +1,5 @@
 import type React from "react";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,11 +33,11 @@ const EditTeamPage: React.FC = () => {
       : [{ label: "Editar", href: location.pathname + location.search }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="">
         <EditBoard />
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

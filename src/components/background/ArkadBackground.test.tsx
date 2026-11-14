@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { FondoArkad } from "./FondoArkad";
-import { FondoPanel } from "./FondoPanel";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
+import { PanelBackground } from "@/components/background/PanelBackground";
 
 afterEach(() => {
   delete document.body.dataset.estilo;
@@ -9,7 +9,7 @@ afterEach(() => {
 
 describe("FondoArkad", () => {
   it("dibuja un canvas decorativo que no intercepta clics ni se imprime", () => {
-    const { container } = render(<FondoArkad modo="lento" />);
+    const { container } = render(<ArkadBackground modo="lento" />);
     const canvas = container.querySelector("canvas");
     expect(canvas).not.toBeNull();
     expect(canvas?.getAttribute("aria-hidden")).toBe("true");
@@ -19,14 +19,14 @@ describe("FondoArkad", () => {
   });
 
   it("activa el estilo nuevo de las páginas públicas mientras está montado", () => {
-    const { unmount } = render(<FondoArkad modo="lento" estiloNuevo />);
+    const { unmount } = render(<ArkadBackground modo="lento" estiloNuevo />);
     expect(document.body.dataset.estilo).toBe("nuevo");
     unmount();
     expect(document.body.dataset.estilo).toBeUndefined();
   });
 
   it("no cambia el estilo de la página si no se le pide", () => {
-    render(<FondoArkad modo="vivo" />);
+    render(<ArkadBackground modo="vivo" />);
     expect(document.body.dataset.estilo).toBeUndefined();
   });
 });
@@ -47,13 +47,13 @@ describe("FondoPanel", () => {
 
   it("en PC no dibuja fondo: el panel conserva el fondo liso del tema", () => {
     simularPantalla(false);
-    const { container } = render(<FondoPanel />);
+    const { container } = render(<PanelBackground />);
     expect(container.querySelector("canvas")).toBeNull();
   });
 
   it("en celular usa el fondo quieto (degradado)", () => {
     simularPantalla(true);
-    const { container } = render(<FondoPanel />);
+    const { container } = render(<PanelBackground />);
     expect(container.querySelector("canvas")?.getAttribute("data-fondo")).toBe("quieto");
   });
 });

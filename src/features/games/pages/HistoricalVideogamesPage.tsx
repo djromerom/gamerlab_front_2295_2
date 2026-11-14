@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import NavBar from "@/components/grupo 5/NavBar";
-import { TextSizeControls } from "@/components/grupo 5/TextSizeControl";
-import { DiscordButton } from "@/components/grupo 5/DiscordButton";
-import { fetchHistoricalTeamsWithScores, fetchEditionById } from "@/fetchs/editions";
+import NavBar from "@/components/NavBar";
+import { TextSizeControl } from "@/components/TextSizeControl";
+import { DiscordButton } from "@/components/DiscordButton";
+import { fetchHistoricalTeamsWithScores, fetchEditionById } from "@/api/editions";
 import { TeamCard } from "@/features/games/components/TeamCard";
 import { GameDetailModal } from "@/features/games/components/GameDetailModal";
-import { Team } from "@/types/Team";
-import { Edition } from "@/fetchs/editions";
+import { Team } from "@/types/team";
+import { Edition } from "@/api/editions";
 import { ChevronLeft, ChevronRight, Trophy, ArrowLeft } from "lucide-react";
 import { TeamSkeletonGrid } from "@/features/teams/components/TeamSkeleton";
 import { Filters } from "@/features/games/components/Filters";
 import { motion } from "framer-motion";
-import { FondoArkad } from "@/components/fondo/FondoArkad";
+import { ArkadBackground } from "@/components/background/ArkadBackground";
 
 const glowStyles = `
   @property --angle{
@@ -201,7 +201,7 @@ export default function HistoricalVideogamesPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <FondoArkad modo="lento" estiloNuevo />
+      <ArkadBackground modo="lento" estiloNuevo />
 
       <NavBar />
 
@@ -216,7 +216,7 @@ export default function HistoricalVideogamesPage() {
             <span className="hidden sm:inline font-medium text-sm">Volver a Ediciones</span>
           </Link>
           <div className="flex items-center gap-4">
-            <TextSizeControls />
+            <TextSizeControl />
             <DiscordButton discordUrl={discordSupportUrl} />
           </div>
         </div>

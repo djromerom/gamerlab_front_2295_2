@@ -11,7 +11,7 @@ import {
   updateEducationalFocus,
   deleteEducationalFocus,
   type EducationalFocus,
-} from "@/fetchs/editions";
+} from "@/api/editions";
 
 interface EducationalFocusesManagerProps {
   editionId: number;

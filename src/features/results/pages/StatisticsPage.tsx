@@ -6,22 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import LayoutAplication from "@/layouts/LayoutAplication";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LayoutApplication from "@/layouts/LayoutApplication";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useState, useEffect } from "react";
 
 import GraphicsDisplay from "@/features/results/components/GraphicsDisplay";
 import RankingTable from "@/features/results/components/RankingTable";
 import ResultsTable from "@/features/results/components/ResultsTable";
 import FilterPanel from "@/features/results/components/FilterPanel";
-import { useGlobalState } from "@/fetchs/grupo 1/GlobalStateContext";
+import { useGlobalState } from "@/contexts/GlobalStateContext";
 import DownloadReport from "@/features/results/components/DownloadReport";
 import JudgesTable from "@/features/results/components/JudgesTable";
 import { AVERAGES_HIDDEN_MESSAGE, averageOfGames } from "@/features/results/lib/averages";
 import {
   progressPercentage,
   useEvaluationProgress,
-} from "@/fetchs/evaluationProgress";
+} from "@/api/evaluationProgress";
 
 export default function StatisticsPage() {
   const { listaVideojuegos, isLoading, error, fetchGlobalData } =
@@ -60,7 +60,7 @@ export default function StatisticsPage() {
   const VALUE_Jurados = "tablaJurados";
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {/* Mostrar LoadingScreen siempre que esté cargando (inicial o actualización) */}
       {shouldShowLoading ? (
         <LoadingScreen text="Cargando estadísticas y datos de videojuegos..." />
@@ -216,6 +216,6 @@ export default function StatisticsPage() {
           </div>
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

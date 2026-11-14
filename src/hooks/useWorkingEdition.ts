@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchEditions, type Edition } from "@/fetchs/editions";
+import { fetchEditions, type Edition } from "@/api/editions";
 import { findWorkingEdition } from "@/lib/workingEdition";
 
 /**

@@ -9,7 +9,7 @@ import { apiFetch } from "@/lib/api";
  */
 
 import { useEffect, useRef, useState } from "react"
-import LoadingScreen from "@/components/grupo 5/LoadingScreen"
+import LoadingScreen from "@/components/LoadingScreen"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form";
 import type { CombinedFormValues } from "@/features/teams/lib/schemas";

@@ -1,7 +1,7 @@
 import { act, render } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RestablecerInteraccion } from "./RestablecerInteraccion";
+import { RestoreInteraction } from "@/routes/RestoreInteraction";
 
 let navegar: ReturnType<typeof useNavigate>;
 function CapturarNavegacion() {
@@ -12,7 +12,7 @@ function CapturarNavegacion() {
 function montar() {
   render(
     <MemoryRouter initialEntries={["/asistencia-jurados"]}>
-      <RestablecerInteraccion />
+      <RestoreInteraction />
       <CapturarNavegacion />
     </MemoryRouter>,
   );

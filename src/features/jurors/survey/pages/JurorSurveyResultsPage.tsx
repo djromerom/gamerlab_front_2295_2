@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Download, Loader2, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchEditions, type Edition } from "@/fetchs/editions";
+import { fetchEditions, type Edition } from "@/api/editions";
 import {
   downloadJurorSurveyExport,
   fetchJurorSurveySummary,
@@ -114,7 +114,7 @@ const JurorSurveyResultsPage = () => {
   const totals = summary?.totals;
 
   return (
-    <LayoutAplication breadcrumbs={[{ label: "Encuesta de jurados", href: "/encuesta-jurados" }]}>
+    <LayoutApplication breadcrumbs={[{ label: "Encuesta de jurados", href: "/encuesta-jurados" }]}>
       <main className="mx-auto w-full max-w-5xl px-4 pb-10">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -247,7 +247,7 @@ const JurorSurveyResultsPage = () => {
           </div>
         )}
       </main>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 

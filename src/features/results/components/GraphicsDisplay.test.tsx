@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Tabs } from "@/components/ui/tabs";
 
 const state = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
-vi.mock("@/fetchs/grupo 1/GlobalStateContext", () => ({
+vi.mock("@/contexts/GlobalStateContext", () => ({
   useGlobalState: () => state.value,
 }));
 

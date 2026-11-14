@@ -22,7 +22,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import type {
   JurorType,
   JurorCategory,
@@ -52,7 +52,7 @@ import { toast } from "sonner";
 import {
   progressPercentage,
   useEvaluationProgress,
-} from "@/fetchs/evaluationProgress";
+} from "@/api/evaluationProgress";
 import { downloadJurorsExport } from "@/features/jurors/assignment/api/jurorsExport";
 import {
   AssignmentWarningsError,
@@ -1239,7 +1239,7 @@ export function JurorAssignmentPage() {
   ];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       <div className="md:bg-background text-foreground min-h-screen p-4 w-full">
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8 w-full px-4">
           <h1 className="text-xl font-medium text-foreground">
@@ -1978,6 +1978,6 @@ export function JurorAssignmentPage() {
         />
 
       </div>
-    </LayoutAplication>
+    </LayoutApplication>
   );
 }

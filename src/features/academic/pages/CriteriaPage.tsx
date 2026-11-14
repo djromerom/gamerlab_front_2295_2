@@ -2,10 +2,10 @@
 
 
 import { apiFetch } from "@/lib/api";
-import LayoutAplication from "@/layouts/LayoutAplication";
+import LayoutApplication from "@/layouts/LayoutApplication";
 import { CriterionTable } from "@/features/academic/components/CriterionTable";
 import { useState, useEffect } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface CriterionRowData {
   id: number;
@@ -105,7 +105,7 @@ const CriteriaPage = () => {
   const breadcrumbs = [{ label: "Criterios", href: "/criterios" }];
 
   return (
-    <LayoutAplication breadcrumbs={breadcrumbs}>
+    <LayoutApplication breadcrumbs={breadcrumbs}>
       {isPageLoading ? (
         <LoadingScreen text="Cargando criterios de calificación..." />
       ) : (
@@ -140,7 +140,7 @@ const CriteriaPage = () => {
             )}
         </>
       )}
-    </LayoutAplication>
+    </LayoutApplication>
   );
 };
 
