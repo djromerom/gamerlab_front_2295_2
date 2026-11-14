@@ -18,7 +18,7 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ userRole: mocks.role }),
 }));
 
-vi.mock("@/fetchs/absenceAlert", () => ({
+vi.mock("@/features/jurors/presence/api/absenceAlert", () => ({
   fetchAbsenceAlert: mocks.fetchAbsenceAlert,
   fetchAbsencePanel: mocks.fetchAbsencePanel,
   fetchFairSchedule: mocks.fetchFairSchedule,
@@ -28,7 +28,7 @@ vi.mock("@/fetchs/absenceAlert", () => ({
 vi.mock("@/fetchs/evaluationTracking", () => ({
   fetchEvaluationTracking: mocks.fetchEvaluationTracking,
 }));
-vi.mock("@/fetchs/absentJurorResponses", () => ({
+vi.mock("@/features/jurors/presence/api/absentJurorResponses", () => ({
   fetchAbsentJurorHistory: mocks.fetchAbsentJurorHistory,
   recordAbsentJurorResponse: mocks.recordAbsentJurorResponse,
   AbsentJurorResponseError: class extends Error {
@@ -43,7 +43,7 @@ vi.mock("@/components/grupo 9/app-sidebar", () => ({
 }));
 
 // La sección de presencia (HU-23) tiene sus propias pruebas y su propia consulta
-vi.mock("@/components/juror-presence/JurorPresenceSection", () => ({
+vi.mock("@/features/jurors/presence/components/JurorPresenceSection", () => ({
   JurorPresenceSection: ({ canConfigure }: { canConfigure?: boolean }) => (
     <section>Presencia de los jurados{canConfigure ? " · configurable" : ""}</section>
   ),

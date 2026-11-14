@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { MessageSquareHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { fetchJurorSurveyStatus, type JurorSurveyStatus } from "@/fetchs/jurorSurvey";
-import { JurorSurveyDialog } from "@/components/juror-survey/JurorSurveyDialog";
+import { fetchJurorSurveyStatus, type JurorSurveyStatus } from "@/features/jurors/survey/api/jurorSurvey";
+import { JurorSurveyDialog } from "@/features/jurors/survey/components/JurorSurveyDialog";
 import { hasJurorSurveyCheck as hasSurveyCheck } from "@/lib/jurorSurvey";
 
 interface JurorSurveyAccessProps {
