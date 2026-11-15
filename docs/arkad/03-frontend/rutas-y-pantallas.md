@@ -23,7 +23,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 |---|---|
 | **Todos con sesión** | `/inicio` (HomePage, con Staff incluido) |
 | **Administrador** | `/estadisticas`, `/jurados`, `/jurados-assignment`, `/jurados-edicion` (jurados de la edición), `/escarapelas`, `/cuentas-staff`, `/gestionar-ediciones`, `/materias`, `/nrcs`, `/criterios`, `/profesores`, `/equipos-inscritos`, `/tiebreaker`, `/ponderado-calificaciones`, `/configuracion-evento`, `/encuesta-jurados` (resultados de la encuesta de experiencia, HU-17) |
-| **Administrador + Staff** | `/check-in-jurados`, `/asistencia-jurados` |
+| **Administrador + Staff** | `/check-in-jurados`, `/asistencia-jurados` (el administrador ve además «Agregar jurado del día», HU-24) |
 | **Administrador + Profesor** | `/profesor`, `/realtime-tracking-panel` (seguimiento) |
 | **Profesor** | `/home-profesor`, `/colegios-calificar`, `/colegios-calificar/:id`, `/colegios-evaluados`, `/ranking/mis-empates` |
 | **Profesor + Jurado** | `/calificar-lote` |

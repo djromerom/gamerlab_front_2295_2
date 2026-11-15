@@ -24,6 +24,8 @@ export interface EditionJurorItem {
   status: JurorEditionListStatus;
   source: JurorEditionSource;
   updatedAt: string | null;
+  /** HU-24: se dio de alta el día de la feria (para revisarlo después). Opcional hasta que el back lo despliegue. */
+  walkIn?: boolean;
 }
 
 export interface EditionJurorsList extends PaginatedResult<EditionJurorItem> {

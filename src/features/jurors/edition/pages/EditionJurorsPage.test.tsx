@@ -103,6 +103,16 @@ describe("Página «Jurados de la edición» (ARK-126)", () => {
     expect(screen.getAllByText("Profesor con NRC").length).toBeGreaterThan(0);
   });
 
+  it("marca con «Alta del día» a quien se dio de alta el día de la feria (HU-24)", async () => {
+    fetchEditionJurors.mockResolvedValue(listOf([{ ...juror("w-1", "Laura", "CONFIRMED"), type: "BACKUP", walkIn: true }, ...JURORS]));
+    renderPage();
+
+    await screen.findByText("Ana Test");
+    const rows = screen.getAllByRole("row");
+    expect(within(rows[1]).getByText("Alta del día")).toBeTruthy();
+    expect(screen.getAllByText("Alta del día")).toHaveLength(1);
+  });
+
   it("en una edición de solo lectura oculta las acciones y las casillas", async () => {
     fetchEditionJurors.mockResolvedValue(listOf(JURORS, { writable: false }));
     renderPage();
