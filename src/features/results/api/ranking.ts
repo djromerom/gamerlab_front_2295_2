@@ -37,7 +37,10 @@ export interface RankedTeam {
 export interface TieGroup {
   tieKey: string;
   editionId: number;
-  level: number;
+  /** Null en un empate del grupo Externos (HU-38), que mezcla niveles. */
+  level: number | null;
+  /** HU-38: empate dentro del grupo Externos (su clave dice `EXT`). */
+  external: boolean;
   score: number;
   positions: [number, number];
   affectsPodium: boolean;
@@ -70,25 +73,57 @@ export interface RankingSnapshot {
   weighting: { configured: boolean; juniorPct: number; seniorPct: number };
   pendingTies: number;
   finalized: { at: string; matchesCurrent: boolean } | null;
-  levels: Array<{
-    level: number;
-    label: string;
-    teams: RankedTeam[];
-    podium: RankedTeam[];
-    ties: TieGroup[];
-    withoutScore: Array<{
-      teamId: number;
-      teamCode: string;
-      teamName: string | null;
-      missing?: Array<"PROFESSOR" | "JUROR">;
-    }>;
+  /** Ya no traen a los equipos externos: compiten en `external` (HU-38). */
+  levels: RankingGroup[];
+  /** HU-38 (ARK-219): grupo «Externos» con su propio podio; null si no hay externos o se pidió un nivel. */
+  external: RankingGroup | null;
+}
+
+/** Un nivel (N0 a N4) o el grupo Externos, que tiene `level: null` y `external: true`. */
+export interface RankingGroup {
+  level: number | null;
+  external: boolean;
+  label: string;
+  teams: RankedTeam[];
+  podium: RankedTeam[];
+  ties: TieGroup[];
+  withoutScore: Array<{
+    teamId: number;
+    teamCode: string;
+    teamName: string | null;
+    missing?: Array<"PROFESSOR" | "JUROR">;
   }>;
+}
+
+/** Podio de un nivel o del grupo Externos en `GET /ranking/winners`. */
+export interface WinnersGroup {
+  level: number | null;
+  external: boolean;
+  label: string;
+  podium: RankedTeam[];
+  ties: TieGroup[];
+  pendingTies: number;
+}
+
+export interface RankingWinners {
+  editionId: number;
+  podiumSize: number;
+  finalized: { at: string; matchesCurrent: boolean } | null;
+  levels: WinnersGroup[];
+  external: WinnersGroup | null;
+}
+
+export interface FinalizeResult {
+  editionId: number;
+  teams: number;
+  levels: Array<{ level: number | null; external: boolean; label: string; teams: number }>;
 }
 
 export interface RankingDecision {
   id: number;
   editionId: number;
-  level: number;
+  level: number | null;
+  external: boolean;
   score: number;
   tieKey: string;
   teamIds: number[];
@@ -132,7 +167,7 @@ export async function fetchWinners(options: { editionId?: number; level?: number
   if (options.level !== undefined) params.set("level", String(options.level));
   if (options.top) params.set("top", String(options.top));
   const response = await apiFetch(rankingUrl("/winners", params));
-  return responseBody(response, `No se pudieron cargar los ganadores (${response.status})`);
+  return responseBody(response, `No se pudieron cargar los ganadores (${response.status})`) as Promise<RankingWinners>;
 }
 
 export async function fetchRankingTies(status: "PENDING" | "RESOLVED" = "PENDING", podiumOnly = false, editionId?: number) {
@@ -173,5 +208,5 @@ export async function finalizeRanking(editionId?: number) {
   const params = new URLSearchParams();
   if (editionId) params.set("editionId", String(editionId));
   const response = await apiFetch(rankingUrl("/finalize", params), { method: "POST" });
-  return responseBody(response, `No se pudo definir el ranking final (${response.status})`);
+  return responseBody(response, `No se pudo definir el ranking final (${response.status})`) as Promise<FinalizeResult>;
 }

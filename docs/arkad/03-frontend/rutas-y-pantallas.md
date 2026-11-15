@@ -8,7 +8,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | Ruta | Pantalla |
 |---|---|
 | `/` | LandingPage |
-| `/ranking` | RankingPage |
+| `/ranking` | RankingPage (pestaña «Externos» con el podio propio de los equipos externos, HU-38) |
 | `/informacion` | InformationPage |
 | `/equipos` | VideogamesPage (galería) |
 | `/ediciones-pasadas` y `/ediciones-pasadas/:editionId/juegos` | PastFairsPage, HistoricalVideogamesPage |

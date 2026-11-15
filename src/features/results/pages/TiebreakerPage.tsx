@@ -15,16 +15,11 @@ import {
   type TieGroup,
 } from "@/features/results/api/ranking";
 import { formatFinalGradeWeighting } from "@/features/results/lib/finalGradeWeights";
+import { finalizeSummary, groupLabel, rankingGroups } from "@/features/results/lib/rankingGroups";
+import { RankingGroupCard } from "@/features/results/components/RankingGroupCard";
 
 const score = (value: number | null | undefined) =>
   value === null || value === undefined ? "Sin nota" : value.toFixed(2);
-
-const missingScoreMessage = (missing?: Array<"PROFESSOR" | "JUROR">) => {
-  if (missing?.length === 2) return "Faltan las dos notas";
-  if (missing?.includes("PROFESSOR")) return "Falta la nota de profesores";
-  if (missing?.includes("JUROR")) return "Falta la nota de jurados";
-  return "Nota en proceso";
-};
 
 export default function TiebreakerPage() {
   const [ranking, setRanking] = useState<RankingSnapshot | null>(null);
@@ -120,7 +115,7 @@ export default function TiebreakerPage() {
     try {
       setError("");
       const result = await finalizeRanking(ranking.editionId);
-      setNotice(`Ranking final definido: ${result.teams} grupos en ${result.levels.length} niveles.`);
+      setNotice(finalizeSummary(result));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo definir el ranking final");
@@ -175,34 +170,11 @@ export default function TiebreakerPage() {
           ) : (
             <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
               <section className="space-y-5">
-                <h2 className="text-lg font-medium">Ganadores por nivel</h2>
-                {ranking?.levels.map((item) => (
-                  <div key={item.label} className="overflow-hidden rounded-lg border">
-                    <div className="border-b bg-muted/40 px-4 py-3 font-medium">{item.label}</div>
-                    {item.podium.length ? (
-                      <div className="divide-y">
-                        {item.podium.map((team) => (
-                          <div key={team.teamId} className="grid gap-2 px-4 py-3 sm:grid-cols-[60px_1fr_100px]">
-                            <span className="font-semibold">#{team.position}</span>
-                            <div>
-                              <p className="font-medium">{team.teamName || team.teamCode}</p>
-                              <p className="text-xs text-muted-foreground">{team.teamCode} · {team.videogameName || "Sin videojuego"}</p>
-                              {team.lessThanMinEvaluations && <span className="mt-1 inline-block rounded bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700">Menos de 3 evaluaciones</span>}
-                            </div>
-                            <span className="text-right text-lg font-semibold">{score(team.finalScore)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="p-4 text-sm text-muted-foreground">No hay grupos con nota en este nivel.</p>}
-                    {item.withoutScore.length > 0 && (
-                      <p className="border-t px-4 py-2 text-xs text-muted-foreground">
-                        Sin nota: {item.withoutScore.map((team) =>
-                          `${team.teamCode} (${missingScoreMessage(team.missing)})`
-                        ).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                <h2 className="text-lg font-medium">Ganadores por nivel y externos</h2>
+                {level !== "" && (
+                  <p className="text-sm text-muted-foreground">Con un nivel elegido no se muestra el grupo Externos, que mezcla niveles.</p>
+                )}
+                {ranking && rankingGroups(ranking).map((group) => <RankingGroupCard key={group.label} group={group} />)}
               </section>
 
               <aside className="space-y-5">
@@ -211,7 +183,7 @@ export default function TiebreakerPage() {
                   {ties.length === 0 && <p className="rounded-lg border p-4 text-sm text-muted-foreground">No hay empates pendientes.</p>}
                   {ties.map((tie) => (
                     <div key={tie.tieKey} className="mb-3 rounded-lg border p-4">
-                      <p className="font-medium">N{tie.level} · {score(tie.score)}</p>
+                      <p className="font-medium">{groupLabel(tie)} · {score(tie.score)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{tie.explanation}</p>
                       {tie.rule === "REGISTRATION" && <p className="mt-2 text-xs">Se resolverá por inscripción más antigua.</p>}
                       {resolving === tie.tieKey ? (
@@ -248,7 +220,7 @@ export default function TiebreakerPage() {
                   {decisions.length === 0 && <p className="rounded-lg border p-4 text-sm text-muted-foreground">Todavía no hay decisiones.</p>}
                   {decisions.map((decision) => (
                     <div key={decision.id} className="mb-2 rounded-lg border p-3 text-sm">
-                      <p><strong>N{decision.level}</strong> · {decision.method}</p>
+                      <p><strong>{groupLabel(decision)}</strong> · {decision.method}</p>
                       <p className="text-muted-foreground">{decision.reason || "Criterio de inscripción"}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{decision.decidedBy.name}</p>
                     </div>

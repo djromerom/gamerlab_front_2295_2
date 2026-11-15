@@ -5,6 +5,7 @@ import { AppSidebar } from "@/layouts/AppSidebar";
 import { PanelBackground } from "@/components/background/PanelBackground";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { decideTie, fetchMyTies, type TieGroup } from "@/features/results/api/ranking";
+import { groupLabel } from "@/features/results/lib/rankingGroups";
 
 export default function ProfessorRankingTiesPage() {
   const [ties, setTies] = useState<TieGroup[]>([]);
@@ -75,7 +76,7 @@ export default function ProfessorRankingTiesPage() {
             {pending.length === 0 && <p className="rounded-lg border p-6 text-sm text-muted-foreground">No tienes empates pendientes.</p>}
             {pending.map((tie) => (
               <div key={tie.tieKey} className="mb-4 rounded-lg border p-4">
-                <p className="font-medium">N{tie.level} · {tie.score.toFixed(2)}</p>
+                <p className="font-medium">{groupLabel(tie)} · {tie.score.toFixed(2)}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{tie.explanation}</p>
                 <div className="mt-3 space-y-2">
                   {!useRegistration[tie.tieKey] && (order[tie.tieKey] ?? []).map((teamId, index) => {
@@ -104,7 +105,7 @@ export default function ProfessorRankingTiesPage() {
               <h2 className="mb-3 text-lg font-medium">Decididos</h2>
               {resolved.map((tie) => (
                 <div key={tie.tieKey} className="mb-2 rounded-lg border p-4 text-sm">
-                  <p className="font-medium">N{tie.level} · {tie.score.toFixed(2)} · {tie.decision?.method}</p>
+                  <p className="font-medium">{groupLabel(tie)} · {tie.score.toFixed(2)} · {tie.decision?.method}</p>
                   <p className="text-muted-foreground">{tie.decision?.reason || tie.explanation}</p>
                 </div>
               ))}

@@ -41,7 +41,7 @@
   3. Si el profesor no quiere decidir, se aplica la inscripción.
   4. Un empate que mezcla grupos del mismo profesor con otros se resuelve por inscripción.
 - La decisión del profesor queda registrada (`TieBreakDecision`).
-- **Equipos externos (decisión de Allison del 7-nov, por confirmar con el profesor):** sí compiten por el podio, pero con uno **propio** de 3 (configurable), separado de los niveles, porque no pueden competir con los de nivel 1 (HU-38, en el backlog; hoy no está implementado). Los colegios (N0) siguen en su propio nivel.
+- **Equipos externos (decisión de Allison del 7-nov, por confirmar con el profesor):** sí compiten por el podio, pero con uno **propio** de 3 (configurable), separado de los niveles, porque no pueden competir con los de nivel 1. Los colegios (N0) siguen en su propio nivel. Implementado en HU-38 (ARK-219 back, ARK-220 front): el ranking y los ganadores traen el grupo «Externos» aparte de los niveles; sus empates usan la clave `EXT` y el mismo desempate (P-05). Se ve en `/tiebreaker`, en `/ranking/mis-empates` y en la pestaña «Externos» de `/ranking`, donde un externo ya no aparece en su semestre.
 
 ## 5. Asignación de jurados
 | Regla | Valor | Ref. |

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { TextSizeControl } from "@/components/TextSizeControl";
 import { DiscordButton } from "@/components/DiscordButton";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
+import { publicTabQuery, publicTeamsFor, type PublicRankingTab } from "@/features/results/lib/rankingGroups";
 
 type Team = {
   id: number;
@@ -14,6 +15,7 @@ type Team = {
   score: number;
   logo?: string;
   teamCode?: string;
+  isExternal?: boolean;
   tieBreakerScore?: number | null;
   position?: number | null;
   levelPosition?: number | null;
@@ -102,13 +104,25 @@ const glowStyles = `
   }
 `;
 
+// HU-38: «Externos» va aparte; en cada nivel no aparecen los externos (los colegios siguen en Colegios)
+const TABS: { tab: PublicRankingTab; label: string }[] = [
+  { tab: "all", label: "Todos" },
+  { tab: "n1", label: "Primer Semestre" },
+  { tab: "n2", label: "Segundo Semestre" },
+  { tab: "n3", label: "Tercer Semestre" },
+  { tab: "n4", label: "Cuarto Semestre" },
+  { tab: "n10", label: "Décimo Semestre" },
+  { tab: "n0", label: "Colegios" },
+  { tab: "external", label: "Externos" },
+];
+
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function RankingPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fairEnded, setFairEnded] = useState(false);
-  const [activeSemester, setActiveSemester] = useState<string>("all");
+  const [activeSemester, setActiveSemester] = useState<PublicRankingTab>("all");
 
   const normalizeNumber = (value: unknown, fallback = 0): number => {
     const parsed = Number(value);
@@ -177,6 +191,7 @@ export default function RankingPage() {
             team.videogame_logo_url ??
             undefined,
           teamCode: team.teamCode ?? team.team_code ?? undefined,
+          isExternal: Boolean(team.isExternal ?? team.is_external),
           tieBreakerScore: normalizeNullableNumber(
             team.tieBreakerScore ?? team.tie_breaker_score,
           ),
@@ -208,7 +223,7 @@ export default function RankingPage() {
     };
   }, []);
 
-  const sortedTeams = teams;
+  const sortedTeams = publicTeamsFor(activeSemester, teams);
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -237,103 +252,22 @@ export default function RankingPage() {
           {fairEnded && (
             <div className="w-full max-w-6xl mb-8 px-4">
               <div className="flex justify-start md:justify-center gap-2 md:gap-3 flex-nowrap md:flex-wrap overflow-x-auto [scrollbar-width:none] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-2">
-                <button
-                  onClick={async () => {
-                    setActiveSemester("all");
-                    await fetchData("all");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "all"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Todos
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("1");
-                    await fetchData("n1");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "1"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Primer Semestre
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("2");
-                    await fetchData("n2");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "2"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Segundo Semestre
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("3");
-                    await fetchData("n3");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "3"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Tercer Semestre
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("4");
-                    await fetchData("n4");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "4"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Cuarto Semestre
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("10");
-                    await fetchData("n10");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "10"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Décimo Semestre
-                </button>
-
-                <button
-                  onClick={async () => {
-                    setActiveSemester("colegio");
-                    await fetchData("n0");
-                  }}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
-                    activeSemester === "colegio"
-                      ? "bg-[#AC7CFF] text-[#060312] font-medium"
-                      : "text-gray-300 hover:bg-[#1A1428]"
-                  }`}
-                >
-                  Colegios
-                </button>
+                {TABS.map(({ tab, label }) => (
+                  <button
+                    key={tab}
+                    onClick={async () => {
+                      setActiveSemester(tab);
+                      await fetchData(publicTabQuery(tab));
+                    }}
+                    className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
+                      activeSemester === tab
+                        ? "bg-[#AC7CFF] text-[#060312] font-medium"
+                        : "text-gray-300 hover:bg-[#1A1428]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           )}
