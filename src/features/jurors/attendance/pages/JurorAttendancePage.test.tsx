@@ -125,6 +125,18 @@ describe("Asistencia de jurados (HU-29)", () => {
     expect(within(rows[1]).getByText("Jurado · Sin escarapela")).toBeTruthy();
     expect(within(rows[2]).getByText("Jurado · Profesor")).toBeTruthy();
     expect(container.textContent).not.toMatch(/junior|senior/i);
+    // HU-24: el Staff no da de alta jurados del día
+    expect(screen.queryByRole("button", { name: /Agregar jurado del día/ })).toBeNull();
+  });
+
+  it("el administrador abre «Agregar jurado del día» (HU-24)", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing]));
+    renderPage();
+    await flush();
+
+    fireEvent.click(screen.getByRole("button", { name: /Agregar jurado del día/ }));
+    expect(await screen.findByRole("dialog", { name: "Agregar jurado del día" })).toBeTruthy();
+    expect(screen.getByLabelText("Correo")).toBeTruthy();
   });
 
   it("filtrar por estado pide ese estado desde la página 1", async () => {

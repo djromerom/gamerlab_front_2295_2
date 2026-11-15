@@ -41,7 +41,7 @@ Un dominio solo crea las subcarpetas que necesita. `fetchs/`, `data/` y las carp
 | `grading` | Calificar (normal, colegios, por lote), pendientes, calificados, borradores, seguimiento en tiempo real | `grupo 8`, `pages/RealtimeTrackingPanel` |
 | `results` | Estadísticas, ranking, desempates, notas finales, panel del profesor | `grupo 1`, `grupo 5`, `grupo 9` |
 | `editions` | Gestión de ediciones, configuración del evento, inscripciones | `admin/editions/`, `grupo 9` |
-| `jurors/<sub>` | `assignment`, `management`, `attendance`, `presence`, `badges`, `survey`, `edition`, `substitutes` (aviso «Te asignaron grupos» y explicación para suplentes, HU-22, ARK-85) | `grupo 12`, `jurados-modals/`, `pages/JuradosAssignment`, `staff/`, `juror-*`, `admin/juror-*` |
+| `jurors/<sub>` | `assignment`, `management`, `attendance` (incluye el alta del jurado del día y su asignación automática, HU-24, ARK-218), `presence`, `badges`, `survey`, `edition`, `substitutes` (aviso «Te asignaron grupos» y explicación para suplentes, HU-22, ARK-85) | `grupo 12`, `jurados-modals/`, `pages/JuradosAssignment`, `staff/`, `juror-*`, `admin/juror-*` |
 | `external-presenters` | Presentadores externos (admin y «mi registro») | `admin/external-presenters/`, `pages/external-presenter` |
 | `public` | Landing, información, ferias pasadas, créditos, inscripción cerrada, 404 | `grupo 5`, `pages/` |
 | `notifications`, `pwa`, `staff-accounts` | Push, instalación como app, cuentas de staff | `pages/`, `components/pwa`, `pages/admin` |

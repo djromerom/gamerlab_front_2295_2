@@ -108,6 +108,11 @@ export const EditionJurorsTable: React.FC<EditionJurorsTableProps> = ({
                   </TableCell>
                   <TableCell className="font-medium">
                     {name}
+                    {juror.walkIn && (
+                      <Badge variant="outline" className="ml-2 align-middle">
+                        Alta del día
+                      </Badge>
+                    )}
                     {rowError && (
                       <p className="text-xs font-normal text-destructive">{ROW_ERROR_MESSAGE[rowError]}</p>
                     )}

@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ChevronLeft, ChevronRight, Loader2, QrCode, RefreshCw, Search } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, QrCode, RefreshCw, Search, UserPlus } from "lucide-react";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { JurorAttendanceTable } from "@/features/jurors/attendance/components/JurorAttendanceTable";
+import { WalkInJurorDialog } from "@/features/jurors/attendance/components/WalkInJurorDialog";
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, type JurorAttendanceResult } from "@/features/jurors/attendance/api/jurorAttendance";
 import { useJurorAttendance, type AttendanceTab } from "@/features/jurors/attendance/hooks/useJurorAttendance";
 import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
@@ -29,11 +30,14 @@ function emptyMessage(result: JurorAttendanceResult, searching: boolean) {
 /**
  * HU-29: quién de los jurados de la edición activa ya llegó y quién falta.
  * La ven el Administrador y el Staff, en solo lectura (la llegada se registra en Check-in).
+ * HU-24: el Administrador agrega aquí a un jurado del día que llegó sin estar registrado.
  */
 const JurorAttendancePage: React.FC = () => {
   useLockViewportZoom();
   const { tab, setTab, search, setSearch, setPage, result, error, loading, updatedAt, reload } = useJurorAttendance();
   const { userRole } = useAuth();
+  const isAdmin = userRole === "Administrador";
+  const [walkInOpen, setWalkInOpen] = useState(false);
   const searching = search.trim().length >= SEARCH_MIN_LENGTH;
   const metadata = result?.metadata;
 
@@ -47,11 +51,18 @@ const JurorAttendancePage: React.FC = () => {
               {result ? `${result.edition.title} · ` : ""}Se actualiza sola cada 10 segundos.
             </p>
           </div>
-          <Button asChild variant="outline" size="sm" className="self-start sm:self-auto">
-            <Link to="/check-in-jurados">
-              <QrCode className="mr-2 h-4 w-4" /> Registrar llegada
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+            {isAdmin && (
+              <Button size="sm" onClick={() => setWalkInOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" /> Agregar jurado del día
+              </Button>
+            )}
+            <Button asChild variant="outline" size="sm">
+              <Link to="/check-in-jurados">
+                <QrCode className="mr-2 h-4 w-4" /> Registrar llegada
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {error && !result && (
@@ -147,6 +158,7 @@ const JurorAttendancePage: React.FC = () => {
           </>
         ) : null}
       </main>
+      {isAdmin && <WalkInJurorDialog open={walkInOpen} onOpenChange={setWalkInOpen} onChanged={() => void reload()} />}
     </LayoutApplication>
   );
 };
