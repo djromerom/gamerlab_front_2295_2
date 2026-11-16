@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, CircleHelp, Clock3, RefreshCw } from "lucide-react";
+import { ChevronRight, CircleHelp, Clock3, LifeBuoy, RefreshCw } from "lucide-react";
 import { AppSidebar } from "@/layouts/AppSidebar";
 import { PanelBackground } from "@/components/background/PanelBackground";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -325,9 +325,18 @@ export function RealtimeTrackingPage() {
                     {alertIsDefinitive ? "Los jurados sin llegada se consideran ausentes." : "Entrega esta lista al profesor para seguimiento manual."}
                   </p>
                 </div>
-                <div className="rounded-lg bg-background px-4 py-2 text-center">
-                  <div className="text-2xl font-bold">{alert.totals.missing}</div>
-                  <div className="text-xs text-muted-foreground">jurados faltan</div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* HU-14 (ARK-214): de la alerta a la sugerencia de suplentes */}
+                  {isAdmin && (
+                    <Link to="/contingencia-suplentes"
+                      className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm text-primary-foreground hover:bg-primary/90">
+                      <LifeBuoy className="size-4" /> Sugerir suplentes
+                    </Link>
+                  )}
+                  <div className="rounded-lg bg-background px-4 py-2 text-center">
+                    <div className="text-2xl font-bold">{alert.totals.missing}</div>
+                    <div className="text-xs text-muted-foreground">jurados faltan</div>
+                  </div>
                 </div>
               </div>
 
@@ -564,7 +573,11 @@ export function RealtimeTrackingPage() {
 
                     {responseResult === "CANNOT_ATTEND" && (
                       <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                        Se puede abrir la sugerencia de suplentes desde el flujo de suplentes.
+                        Sus grupos se pueden cubrir desde la{" "}
+                        <Link to="/contingencia-suplentes" className="font-medium underline underline-offset-2">
+                          contingencia con suplentes
+                        </Link>
+                        .
                       </div>
                     )}
 
