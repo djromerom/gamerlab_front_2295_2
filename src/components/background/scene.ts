@@ -8,6 +8,10 @@
  * En pantallas de menos de 768 px (salvo la landing) la escena se cambia por un degradado difuminado.
  * En alto contraste no se dibuja nada, y con prefers-reduced-motion se dibuja un solo cuadro.
  *
+ * Landing de varias pantallas (ARK-233, opción conScroll): la escena se mueve con la página. El túnel y el logo se quedan
+ * en la portada; al bajar, detrás de la galería y de los juegos solo se ven partículas y líneas, a 30 cuadros por segundo.
+ * Con la opción pausada (los minijuegos llenan la pantalla) la escena se congela y la GPU queda libre para el juego.
+ *
  * Rendimiento: el fondo fijo (color, halo y líneas del túnel) se pinta una vez en un canvas aparte y cada cuadro
  * solo lo copia desplazado; las partículas se trazan en pocos grupos y el brillo del logo es un degradado,
  * no un shadowBlur (que obliga a desenfocar en cada cuadro).
@@ -21,6 +25,10 @@ export interface SceneOptions {
   centro?: [number, number];
   /** Opacidad del logo 3D (0 lo oculta). */
   opacidadLogo?: number;
+  /** La escena se mueve con la página (el centro queda en la primera pantalla). */
+  conScroll?: boolean;
+  /** No se anima (queda el último cuadro). */
+  pausada?: boolean;
 }
 
 interface Paleta {
@@ -112,6 +120,8 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
   const velocidad = () => (vivo() ? 1 : 0.06);
   const amplitud = () => (vivo() ? 1 : 0.3);
   const opacidadLogo = () => op.opacidadLogo ?? 0.3;
+  // cuánto bajó la página (en píxeles del canvas), solo con conScroll
+  const desplazamiento = () => (op.conScroll ? window.scrollY * dpr : 0);
 
   function leerTema() {
     // Paleta según el tema: oscuro, claro, o sin escena en alto contraste (queda a la vista el fondo liso del tema)
@@ -165,6 +175,33 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
     c.stroke();
   }
 
+  // Con conScroll, ya bajando: el centro del túnel quedó arriba y el fondo se pinta en cada cuadro (las líneas radiales
+  // siguen cruzando la pantalla aunque el túnel ya no se vea)
+  function pintarFondoDesplazado(cx: number, cy: number) {
+    const c = ctx!;
+    c.fillStyle = P.bg;
+    c.fillRect(0, 0, W, H);
+    const radio = Math.max(W, H) * 0.34;
+    if (cy + radio > 0) {
+      const halo = c.createRadialGradient(cx, cy, 0, cx, cy, radio);
+      halo.addColorStop(0, `rgba(${P.halo},${0.42 * P.haloK})`);
+      halo.addColorStop(0.5, P.halo2);
+      halo.addColorStop(1, P.haloFin);
+      c.fillStyle = halo;
+      c.fillRect(cx - radio, cy - radio, radio * 2, radio * 2);
+    }
+    const lejos = (Math.max(W, H) + Math.abs(cy)) * 2.2;
+    c.lineWidth = dpr;
+    c.strokeStyle = `rgba(${P.linea},0.13)`;
+    c.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const an = (i / 24) * Math.PI * 2 + 0.13;
+      c.moveTo(cx + Math.cos(an) * W * 0.035, cy + Math.sin(an) * W * 0.035 * 0.5625);
+      c.lineTo(cx + Math.cos(an) * lejos, cy + Math.sin(an) * lejos * 0.5625);
+    }
+    c.stroke();
+  }
+
   function rectRedondeado(x: number, y: number, w: number, h: number, r: number) {
     const c = ctx!;
     c.beginPath();
@@ -198,16 +235,22 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
     t += dt * 0.6;
     fase += dt * 0.03;
     const desX = rx * W * 0.03, desY = ry * H * 0.04;
-    const cx = cx0 - desX, cy = cy0 - desY;
+    const sy = desplazamiento();
+    const cx = cx0 - desX, cy = cy0 - desY - sy;
     const angosta = W / dpr < 760 && (op.centro ?? [0.5, 0.5])[0] !== 0.5;
+    // con conScroll, el túnel y el logo ya salieron por arriba: no se dibujan
+    const arriba = cy < -H * 0.6;
 
-    // Fondo fijo: una sola copia desplazada según el cursor
+    // Fondo fijo: una sola copia desplazada según el cursor (bajando con conScroll, se pinta en cada cuadro)
     c.globalAlpha = 1;
-    const m = (base.width - W) / 2;
-    c.drawImage(base, -m - desX, -m - desY);
+    if (sy > 0) pintarFondoDesplazado(cx, cy);
+    else {
+      const m = (base.width - W) / 2;
+      c.drawImage(base, -m - desX, -m - desY);
+    }
 
     // Marcos del túnel que vienen hacia la cámara
-    const N = 16;
+    const N = arriba ? 0 : 16;
     for (let k = 0; k < N; k++) {
       const zz = (((k / N - fase) % 1) + 1) % 1;
       const w = (W * 0.075) / (0.035 + zz);
@@ -219,16 +262,18 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
       c.stroke();
     }
 
-    // Partículas con profundidad, agrupadas por brillo (más tenues en las páginas de lectura)
+    // Partículas con profundidad, agrupadas por brillo (más tenues en las páginas de lectura).
+    // Con conScroll, cuando el túnel sube siguen naciendo a media pantalla (así no desaparecen al bajar)
+    const py = op.conScroll ? Math.max(cy, H * 0.45) : cy;
     for (const g of grupos) g.length = 0;
     for (const e of estrellas) {
       e.z -= dt * 0.04;
       if (e.z <= 0.03) { e.z = 1; e.x = Math.random() * 2 - 1; e.y = Math.random() * 2 - 1; }
-      const x1 = cx + (e.x / e.z) * W * 0.32, y1 = cy + (e.y / e.z) * H * 0.32;
+      const x1 = cx + (e.x / e.z) * W * 0.32, y1 = py + (e.y / e.z) * H * 0.32;
       if (x1 < -50 || x1 > W + 50 || y1 < -50 || y1 > H + 50) { e.z = 0; continue; }
       const z0 = e.z + 0.004;
       const grupo = Math.min(GRUPOS - 1, Math.floor((1 - e.z) * GRUPOS));
-      grupos[grupo].push(cx + (e.x / z0) * W * 0.32, cy + (e.y / z0) * H * 0.32, x1, y1);
+      grupos[grupo].push(cx + (e.x / z0) * W * 0.32, py + (e.y / z0) * H * 0.32, x1, y1);
     }
     c.lineCap = "round";
     const brilloMax = vivo() ? 0.85 : 0.4;
@@ -245,7 +290,7 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
 
     // Logo 3D extruido
     const alfaLogo = angosta ? Math.min(opacidadLogo(), 0.4) : opacidadLogo();
-    if (alfaLogo <= 0) return;
+    if (alfaLogo <= 0 || arriba) return;
     const yaw = rx * 0.75 + Math.sin(t * 0.5) * 0.14;
     const pitch = -ry * 0.45 + Math.sin(t * 0.37) * 0.05;
     const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
@@ -338,7 +383,7 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
     raf = requestAnimationFrame(bucle);
     const dt = Math.min(0.05, (ahora - ultimo) / 1000 || 0.016);
     ultimo = ahora;
-    if (oculto || reducir) return;
+    if (oculto || reducir || op.pausada) return;
     if (celular()) {
       if (ahora - ultimoDibujo < INTERVALO_CELULAR_MS) return;
       dibujarManchas(Math.min(0.1, (ahora - ultimoDibujo) / 1000) * 0.04);
@@ -353,7 +398,15 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
       ultimoDibujo = ahora;
       return;
     }
+    // con conScroll, lejos de la portada (galería y juegos) basta con 30 cuadros por segundo
+    if (desplazamiento() > cy0 + H * 0.3) {
+      if (ahora - ultimoDibujo < INTERVALO_LENTO_MS) return;
+      dibujarEscena(Math.min(0.1, (ahora - ultimoDibujo) / 1000) * velocidad());
+      ultimoDibujo = ahora;
+      return;
+    }
     dibujarEscena(dt * velocidad());
+    ultimoDibujo = ahora;
   }
 
   let pendienteTamano = 0;
@@ -361,6 +414,12 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
     // agrupa los eventos de resize: se re-prepara una vez por cuadro como mucho
     if (pendienteTamano) return;
     pendienteTamano = requestAnimationFrame(() => { pendienteTamano = 0; preparar_todo(); });
+  }
+  // sin animación (movimiento reducido o pausada), con conScroll se redibuja al bajar para que el fondo siga a la página
+  let pendienteScroll = 0;
+  function alDesplazar() {
+    if (!op.conScroll || !(reducir || op.pausada) || pendienteScroll) return;
+    pendienteScroll = requestAnimationFrame(() => { pendienteScroll = 0; dibujarFijo(); });
   }
   const alMover = (e: PointerEvent) => {
     mx = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -374,6 +433,7 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
   preparar_todo();
   window.addEventListener("resize", alCambiarTamano);
   window.addEventListener("pointermove", alMover, { passive: true });
+  window.addEventListener("scroll", alDesplazar, { passive: true });
   raf = requestAnimationFrame(bucle);
 
   return {
@@ -384,9 +444,11 @@ export function createScene(canvas: HTMLCanvasElement, inicial: SceneOptions): S
     destruir() {
       cancelAnimationFrame(raf);
       cancelAnimationFrame(pendienteTamano);
+      cancelAnimationFrame(pendienteScroll);
       observador.disconnect();
       window.removeEventListener("resize", alCambiarTamano);
       window.removeEventListener("pointermove", alMover);
+      window.removeEventListener("scroll", alDesplazar);
     },
   };
 }

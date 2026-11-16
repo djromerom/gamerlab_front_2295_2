@@ -7,7 +7,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 ## Públicas (sin sesión)
 | Ruta | Pantalla |
 |---|---|
-| `/` | LandingPage |
+| `/` | LandingPage: portada, galería de las ferias pasadas (fotos en `public/galeria/`) y sección de juegos con dos pestañas: minijuegos Arkadash y Arkad Jam, y «De los estudiantes» (destacados por edición de `GET /highlighted-games`, HU-41; se juegan en la cabina con `/play-game/:id?embed=1`) (ARK-233; código en `features/public/components/gallery/` y `minigames/`) |
 | `/ranking` | RankingPage (pestaña «Externos» con el podio propio de los equipos externos, HU-38) |
 | `/informacion` | InformationPage |
 | `/equipos` | VideogamesPage (galería) |

@@ -1,0 +1,56 @@
+/*
+ * Landing (ARK-233): pestañas de la sección de juegos y la pestaña «De los estudiantes» (destacados por edición, HU-41).
+ * Va bajo .arkad-landing y en @layer components, como el resto de la landing.
+ */
+@layer components {
+  /* pestañas «Minijuegos ARKAD» · «De los estudiantes» */
+  .arkad-landing .pestanas-juegos { display: inline-flex; gap: 4px; margin-top: 14px; padding: 4px; border-radius: 14px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(201,214,255,.22); }
+  .arkad-landing .pestana-juego { min-height: 40px; padding: 0 18px; border: 0; border-radius: 10px; background: none; color: #C9D6FF;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s, color .2s; }
+  .arkad-landing .pestana-juego:hover { color: #fff; background: rgba(169,196,255,.12); }
+  .arkad-landing .pestana-juego[aria-selected="true"] { background: #fff; color: var(--navy); }
+  .arkad-landing .zona-juegos[hidden], .arkad-landing .juego-derecha[hidden] { display: none; }
+
+  /* lista de destacados */
+  .arkad-landing .estudiantes { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding: 2px; }
+  .arkad-landing .filtro-ediciones { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+  .arkad-landing .filtro { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(201,214,255,.4); background: rgba(169,196,255,.08);
+    color: #E3EAFF; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .2s, border-color .2s; }
+  .arkad-landing .filtro:hover { border-color: rgba(255,255,255,.7); }
+  .arkad-landing .filtro[aria-pressed="true"] { background: rgba(255,255,255,.18); border-color: #fff; color: #fff; }
+  .arkad-landing .estado-lista { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; color: var(--suave); font-size: 15px; }
+  .arkad-landing .estado-lista p { margin: 0; }
+  .arkad-landing .tarjetas-estudiantes { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .arkad-landing .tarjeta-estudiante { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 20px;
+    background: linear-gradient(150deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 50%); border: 1px solid rgba(255,255,255,.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 18px 40px -20px rgba(0,0,0,.6); }
+  .arkad-landing .logo-estudiante { aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; display: grid; place-items: center;
+    background: radial-gradient(ellipse at 50% 40%, #1d2f9e, #070d33 75%); }
+  .arkad-landing .logo-estudiante img { width: 100%; height: 100%; object-fit: cover; }
+  .arkad-landing .logo-estudiante span { font: 800 44px Unbounded, sans-serif; color: rgba(201,214,255,.7); }
+  .arkad-landing .datos-estudiante { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex: 1; }
+  .arkad-landing .chip-edicion { padding: 3px 10px; border-radius: 999px; background: rgba(76,116,255,.25); border: 1px solid rgba(169,196,255,.4);
+    font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #DCE5FF; }
+  .arkad-landing .datos-estudiante h3 { margin: 4px 0 0; font: 700 17px/1.2 Unbounded, sans-serif; color: #fff; }
+  .arkad-landing .datos-estudiante p { margin: 0; font-size: 14px; color: var(--suave); }
+  .arkad-landing .tarjeta-estudiante .btn { min-height: 44px; width: 100%; }
+  .arkad-landing .nota-jugar { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 13px; color: #C9D6FF; text-align: center; }
+
+  /* juego abierto: la misma cabina de los minijuegos, con el juego en un iframe */
+  .arkad-landing .estudiante-abierto { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  .arkad-landing .estudiante-barra { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .arkad-landing .estudiante-titulo { margin: 0; display: flex; flex-direction: column; min-width: 0; }
+  .arkad-landing .estudiante-titulo b { font: 700 16px Unbounded, sans-serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .arkad-landing .estudiante-titulo small { font-size: 13px; color: var(--suave); }
+  .arkad-landing .cabina-estudiante iframe { position: relative; display: block; width: 100%; height: 100%; border: 0; border-radius: 22px; background: #000; }
+
+  @media (max-width: 767px) {
+    .arkad-landing .pestanas-juegos { display: flex; width: 100%; } .arkad-landing .pestana-juego { flex: 1; padding: 0 10px; }
+    .arkad-landing .tarjetas-estudiantes { grid-template-columns: 1fr; }
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    .arkad-landing .pestanas-juegos { margin-top: 0; } .arkad-landing .pestana-juego { min-height: 34px; padding: 0 12px; font-size: 13px; }
+    .arkad-landing .logo-estudiante { aspect-ratio: 21 / 9; }
+  }
+}

@@ -1,0 +1,104 @@
+/*
+ * Galería de las ferias de la landing (ARK-233): carrusel 3D con marcos de vidrio, pestañas, controles y visor.
+ * Viene del mockup aprobado (mockups/landing-galeria-ferias.html). Todo va bajo .arkad-landing (la raíz de LandingPage)
+ * y en @layer components: no afecta a otras páginas y las utilidades de Tailwind siguen mandando.
+ */
+@layer components {
+  /* ── Galería: mide una pantalla menos la barra; fondo casi transparente ── */
+  .arkad-landing .galeria { position: relative; z-index: 10; overflow: hidden; height: calc(100dvh - var(--cab)); min-height: 520px; display: flex; flex-direction: column;
+    scroll-snap-align: start; padding: clamp(16px,3vh,32px) 0 clamp(14px,2.4vh,24px); background: none; }
+  /* aire entre secciones: cada una sigue midiendo una pantalla y el scroll se ajusta a su inicio */
+  .arkad-landing .galeria, .arkad-landing .juego { margin-top: clamp(72px, 14vh, 160px); }
+  @media (max-width: 767px) { .arkad-landing .galeria, .arkad-landing .juego { margin-top: 56px; } }
+  .arkad-landing .gal-cabeza { position: relative; width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px,5vw,72px); display: flex; flex-wrap: wrap; align-items: flex-end;
+    justify-content: space-between; gap: 14px 40px; flex-shrink: 0; }
+  .arkad-landing .gal-cabeza h2 { margin: 10px 0 0; font: 700 clamp(24px, min(2.7vw, 4.4vh), 40px)/1.05 Unbounded, sans-serif; letter-spacing: -.01em; }
+  .arkad-landing .gal-cabeza .desc { margin: 10px 0 0; max-width: 520px; color: var(--suave); line-height: 1.55; font-size: 15px; }
+  .arkad-landing .ferias { display: flex; gap: 10px; }
+  .arkad-landing .feria { display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; border-radius: 16px; cursor: pointer; text-align: left;
+    transition: border-color .25s, background-color .25s, transform .25s; }
+  .arkad-landing .feria:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.4); }
+  .arkad-landing .feria[aria-selected="true"] { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.55); }
+  .arkad-landing .feria img { width: 58px; height: 39px; object-fit: cover; border-radius: 9px; border: 1px solid rgba(255,255,255,.25); }
+  .arkad-landing .feria b { display: block; font: 700 13px Unbounded, sans-serif; }
+  .arkad-landing .feria small { color: #D5DDFA; font-size: 12px; }
+  /* escenario 3D: ocupa el alto que sobra; el tamaño de las fotos lo calcula el JS (--ancho) */
+  .arkad-landing .escenario { position: relative; flex: 1; min-height: 200px; margin-top: clamp(8px,2vh,24px); perspective: 1500px; perspective-origin: 50% 46%;
+    touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .arkad-landing .escenario.arrastrando { cursor: grabbing; }
+  .arkad-landing .carril { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
+  /* cada foto va en un marco de vidrio (borde translúcido con brillo, como las tarjetas de iOS) */
+  .arkad-landing .tarjeta { position: absolute; left: 50%; top: 50%; width: var(--ancho, 600px); aspect-ratio: 3 / 2; margin: calc(var(--ancho, 600px) / -3) 0 0 calc(var(--ancho, 600px) / -2);
+    padding: 6px; border-radius: 24px; border: 1px solid rgba(255,255,255,.34);
+    background: linear-gradient(150deg, rgba(255,255,255,.26), rgba(255,255,255,.06) 42%, rgba(255,255,255,.14));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(255,255,255,.12), 0 30px 60px -18px rgba(0,0,0,.65);
+    backface-visibility: hidden; transition: transform .8s var(--curva), opacity .5s ease; }
+  /* solo las fotos en escena (y las vecinas) tienen capa propia en la GPU; las lejanas no ocupan memoria (display: none) */
+  .arkad-landing .tarjeta.en-escena { will-change: transform, opacity; }
+  .arkad-landing .tarjeta.fuera { display: none; }
+  .arkad-landing .escenario.arrastrando .tarjeta { transition: opacity .3s; }
+  .arkad-landing .marco { position: absolute; inset: 6px; border-radius: 18px; overflow: hidden; background: var(--navy); }
+  .arkad-landing .marco img { position: absolute; inset: -4%; width: 108%; height: 108%; object-fit: cover; pointer-events: none; opacity: 0; transition: opacity .6s ease; }
+  .arkad-landing .marco img.cargada { opacity: 1; }
+  .arkad-landing .marco .oscuro { position: absolute; inset: 0; background: rgba(5,10,36,.5); transition: opacity .6s ease; }
+  .arkad-landing .tarjeta.activa .oscuro { opacity: 0; }
+  .arkad-landing .marco .brillo { position: absolute; inset: -30%; opacity: 0; transition: opacity .6s ease; pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.22), rgba(255,255,255,0) 38%); }
+  .arkad-landing .tarjeta.activa .brillo { opacity: 1; will-change: transform; }
+  .arkad-landing .tarjeta.activa .marco img { will-change: transform; }
+  .arkad-landing .marco::after { content: ""; position: absolute; inset: 55% 0 0; background: linear-gradient(180deg, rgba(5,10,36,0), rgba(5,10,36,.72)); opacity: 0; transition: opacity .5s; }
+  .arkad-landing .marco .pie { position: absolute; z-index: 1; left: 16px; right: 16px; bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    opacity: 0; transform: translateY(8px); transition: opacity .5s .2s, transform .5s .2s; }
+  .arkad-landing .tarjeta.activa .marco::after, .arkad-landing .tarjeta.activa .pie { opacity: 1; transform: none; }
+  .arkad-landing .pie span { font-size: 13px; font-weight: 600; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+  .arkad-landing .pie .ampliar { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; font-size: 12px; text-shadow: none;
+    background: rgba(5,10,36,.42); border: 1px solid rgba(255,255,255,.4); }
+  /* sin backdrop-filter: dentro de una tarjeta 3D cuesta mucho y parpadea */
+  .arkad-landing .carril.cambiando .tarjeta { opacity: 0 !important; }
+  /* controles en una cápsula de vidrio */
+  .arkad-landing .controles { flex-shrink: 0; width: min(720px, calc(100% - 32px)); margin: clamp(8px,2vh,22px) auto 0; padding: 8px 10px; border-radius: 999px; display: flex; align-items: center; gap: 16px; }
+  .arkad-landing .flecha { flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); transition: background-color .2s, color .2s, transform .15s, box-shadow .2s; }
+  .arkad-landing .flecha:hover { background: #fff; color: var(--navy); box-shadow: 0 8px 24px rgba(76,116,255,.5); }
+  .arkad-landing .flecha:active { transform: scale(.94); }
+  .arkad-landing .progreso { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .arkad-landing .contador { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; color: #E3EAFF; }
+  .arkad-landing .contador b { font: 700 18px Unbounded, sans-serif; color: #fff; }
+  .arkad-landing .contador b small { font-size: 12px; color: #C9D6FF; }
+  .arkad-landing .barra { position: relative; height: 16px; cursor: pointer; }
+  .arkad-landing .barra::before { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 2px; background: rgba(255,255,255,.22); border-radius: 2px; }
+  .arkad-landing .barra i { position: absolute; left: 0; top: 7px; height: 2px; width: 100%; transform-origin: 0 50%; transform: scaleX(0); border-radius: 2px;
+    background: linear-gradient(90deg, var(--azul), #fff); transition: transform .6s var(--curva); }
+  @media (max-width: 767px) {
+    .arkad-landing .tarjeta { aspect-ratio: 4 / 3; margin: calc(var(--ancho, 280px) * -.375) 0 0 calc(var(--ancho, 280px) / -2); border-radius: 18px; padding: 5px; }
+    .arkad-landing .marco { inset: 5px; border-radius: 13px; }
+    .arkad-landing .gal-cabeza .desc { font-size: 14px; }
+    .arkad-landing .ferias { width: 100%; overflow-x: auto; scrollbar-width: none; } .arkad-landing .feria { flex-shrink: 0; padding: 6px 12px 6px 6px; }
+    .arkad-landing .pie span:first-child, .arkad-landing .contador span { display: none; } .arkad-landing .marco .pie { justify-content: flex-end; }
+    .arkad-landing .controles { width: calc(100% - 80px); margin-left: 16px; gap: 10px; } .arkad-landing .flecha { width: 42px; height: 42px; }
+  }
+  /* ── Visor: vidrio esmerilado sobre la página ── */
+  .arkad-landing .visor { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(3,6,22,.55); opacity: 0; visibility: hidden;
+    -webkit-backdrop-filter: blur(26px) saturate(150%); backdrop-filter: blur(26px) saturate(150%); transition: opacity .3s, visibility .3s; }
+  .arkad-landing .visor.abierto { opacity: 1; visibility: visible; }
+  .arkad-landing .visor figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 8px; border-radius: 22px;
+    background: linear-gradient(150deg, rgba(255,255,255,.22), rgba(255,255,255,.05)); border: 1px solid rgba(255,255,255,.3); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 30px 80px rgba(0,0,0,.5); }
+  .arkad-landing .visor img { display: block; max-width: min(90vw, 1400px); max-height: 76vh; border-radius: 15px; }
+  .arkad-landing .visor figcaption { font-size: 14px; color: #E3EAFF; padding: 0 8px 4px; }
+  .arkad-landing .visor .flecha { background: rgba(255,255,255,.14); }
+  .arkad-landing .visor .cerrar { position: absolute; top: 18px; right: 18px; }
+  .arkad-landing .visor .ant, .arkad-landing .visor .sig { position: absolute; top: 50%; translate: 0 -50%; }
+  .arkad-landing .visor .ant { left: 18px; }
+  .arkad-landing .visor .sig { right: 18px; }
+  @media (max-width: 767px) { .arkad-landing .visor .ant, .arkad-landing .visor .sig { top: auto; bottom: 22px; translate: none; } .arkad-landing .visor .ant { left: calc(50% - 60px); } .arkad-landing .visor .sig { right: calc(50% - 60px); } }
+  /* en pantallas donde taparían el juego (celular, tablet), se apartan mientras la sección de minijuegos está a la vista */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .arkad-landing .galeria { height: 100dvh; min-height: 0; margin-top: 32px; }
+    .arkad-landing .galeria { padding: 8px 0 6px; }
+    .arkad-landing .gal-cabeza { flex-wrap: nowrap; align-items: center; gap: 10px 20px; }
+    .arkad-landing .gal-cabeza .ceja, .arkad-landing .gal-cabeza .desc { display: none; }
+    .arkad-landing .gal-cabeza h2 { margin: 0; font-size: 20px; white-space: nowrap; }
+    .arkad-landing .feria { padding: 4px 12px 4px 4px; gap: 8px; } .arkad-landing .feria img { width: 42px; height: 28px; } .arkad-landing .feria b { font-size: 12px; } .arkad-landing .feria small { font-size: 11px; }
+    .arkad-landing .escenario { min-height: 0; margin-top: 6px; }
+  }
+}

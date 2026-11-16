@@ -10,6 +10,10 @@ interface ArkadBackgroundProps {
   opacidadLogo?: number;
   /** Aplica el estilo visual nuevo de las páginas públicas (ver index.css, [data-estilo="nuevo"]). */
   estiloNuevo?: boolean;
+  /** La escena se mueve con la página: el túnel y el logo se quedan en la primera pantalla (landing, ARK-233). */
+  conScroll?: boolean;
+  /** Deja de animarse (por ejemplo, mientras un minijuego llena la pantalla). */
+  pausada?: boolean;
 }
 
 // jsdom (pruebas) no implementa canvas: ahí no se monta la escena
@@ -25,7 +29,7 @@ function forzarOscuro() {
  * Fondo nuevo de Arkad (ARK-222): escena en un canvas fijo detrás de la página.
  * No intercepta clics, no se imprime y no se muestra en alto contraste.
  */
-export function ArkadBackground({ modo, centro, opacidadLogo, estiloNuevo = false }: ArkadBackgroundProps) {
+export function ArkadBackground({ modo, centro, opacidadLogo, estiloNuevo = false, conScroll = false, pausada = false }: ArkadBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const escenaRef = useRef<Scene | null>(null);
   const cx = centro?.[0], cy = centro?.[1];
@@ -48,8 +52,10 @@ export function ArkadBackground({ modo, centro, opacidadLogo, estiloNuevo = fals
       modo,
       centro: cx !== undefined && cy !== undefined ? [cx, cy] : undefined,
       opacidadLogo,
+      conScroll,
+      pausada,
     });
-  }, [modo, cx, cy, opacidadLogo]);
+  }, [modo, cx, cy, opacidadLogo, conScroll, pausada]);
 
   // Las páginas públicas (vivo y lento) van siempre en tema oscuro. Algunas no lo forzaban y, al llegar desde otra
   // que lo quita al desmontarse (p. ej. Videojuegos → Ediciones pasadas), quedaban en tema claro. Se aplica antes del

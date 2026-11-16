@@ -1,24 +1,32 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronDown } from "lucide-react"
 import "@/index.css"
-import CountdownTimer from "@/features/public/components/CountdownTimer"
-import LandingHeader from "@/features/public/components/LandingHeader"
+import "@/features/public/pages/LandingPage.css"
+import LandingHeader, { LANDSCAPE_SHORT } from "@/features/public/components/LandingHeader"
 import { ArkadBackground } from "@/components/background/ArkadBackground"
+import FairGallery from "@/features/public/components/gallery/FairGallery"
+import MiniGamesSection from "@/features/public/components/minigames/MiniGamesSection"
 import { TextSizeControl } from "@/components/TextSizeControl"
 import { DiscordButton } from "@/components/DiscordButton"
 
-// Inicio de la feria: hasta esa hora la landing muestra la cuenta regresiva
-const INICIO_FERIA = new Date("2026-05-28T08:00:00")
 const DISCORD_SOPORTE = "https://discord.gg/RzAvUdspaT"
 
-/** Landing pública con el diseño aprobado en ARK-222 (mockups/feria-gamer-vistas.html). */
+/**
+ * Landing pública (ARK-222, ARK-233; mockup aprobado: mockups/landing-galeria-ferias.html). Tres pantallas:
+ * la portada, la galería de las ferias pasadas y los minijuegos Arkadash y Arkad Jam (con los créditos al pie).
+ * Cada sección mide una pantalla menos la barra (--cab) y el scroll se ajusta a su inicio. En celular horizontal la barra
+ * se esconde mientras la galería o los minijuegos llenan la pantalla y vuelve al subir a la portada.
+ */
 function LandingPage(): React.ReactElement {
   const navigate = useNavigate()
-  const [feriaIniciada, setFeriaIniciada] = useState<boolean>(() => new Date() >= INICIO_FERIA)
+  const [barraEscondida, setBarraEscondida] = useState(false)
+  const raizRef = useRef<HTMLDivElement>(null)
+  const cabeceraRef = useRef<HTMLElement>(null)
+  const [juegosEnPantalla, setJuegosEnPantalla] = useState(false)
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "high-contrast")
@@ -28,61 +36,101 @@ function LandingPage(): React.ReactElement {
     }
   }, [])
 
+  // Scroll con ajuste a cada sección (en <html>) y alto de la barra (--cab), antes del primer pintado
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    const cabecera = cabeceraRef.current
+    html.classList.add("landing-arkad")
+    const medir = () => {
+      const alto = `${cabecera?.offsetHeight ?? 81}px`
+      html.style.setProperty("--cab", alto)
+      raizRef.current?.style.setProperty("--cab", alto)
+    }
+    medir()
+    const observador = typeof ResizeObserver === "function" && cabecera ? new ResizeObserver(medir) : null
+    if (observador && cabecera) observador.observe(cabecera)
+    return () => {
+      observador?.disconnect()
+      html.classList.remove("landing-arkad")
+      html.style.removeProperty("--cab")
+    }
+  }, [])
+
+  // Celular en horizontal: la barra se esconde mientras la galería o los minijuegos llenan la pantalla
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return
+    const horizontalBajo = window.matchMedia(LANDSCAPE_SHORT)
+    const revisar = () => {
+      const galeria = document.getElementById("galeria")
+      setBarraEscondida(horizontalBajo.matches && !!galeria && galeria.getBoundingClientRect().top < window.innerHeight * 0.5)
+    }
+    window.addEventListener("scroll", revisar, { passive: true })
+    window.addEventListener("resize", revisar)
+    horizontalBajo.addEventListener("change", revisar)
+    revisar()
+    return () => {
+      window.removeEventListener("scroll", revisar)
+      window.removeEventListener("resize", revisar)
+      horizontalBajo.removeEventListener("change", revisar)
+    }
+  }, [])
+
+  // Con los minijuegos llenando la pantalla, el fondo casi no se ve: se congela y la GPU queda libre para el juego
+  useEffect(() => {
+    const juegos = document.getElementById("juego")
+    if (!juegos || typeof IntersectionObserver !== "function") return
+    const observador = new IntersectionObserver(([e]) => setJuegosEnPantalla(e.intersectionRatio > 0.6), { threshold: [0, 0.6, 1] })
+    observador.observe(juegos)
+    return () => observador.disconnect()
+  }, [])
+
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-x-hidden font-inter text-[#F4F7FF]">
-      {/* Escena animada con el logo de Arkad, centrada a la derecha del texto */}
-      <ArkadBackground modo="vivo" centro={[0.7, 0.5]} opacidadLogo={1} />
-      {/* Velo para que el texto se lea sobre la escena */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[1] max-md:bg-[rgba(5,10,36,0.62)] md:bg-[linear-gradient(90deg,rgba(5,10,36,0.9)_0%,rgba(5,10,36,0.55)_40%,rgba(5,10,36,0)_66%)]"
-      />
+    <div ref={raizRef} className="arkad-landing">
+      {/* Escena del fondo: túnel y logo 3D a la derecha de la portada; se queda en la portada al bajar */}
+      <ArkadBackground modo="vivo" centro={[0.7, 0.5]} opacidadLogo={1} conScroll pausada={juegosEnPantalla} />
+      <LandingHeader ref={cabeceraRef} sticky concealed={barraEscondida} />
 
-      <LandingHeader />
-
-      <main className="relative z-10 flex flex-1 flex-col justify-center px-5 pt-9 pb-14 md:px-[clamp(20px,5vw,72px)] md:pt-[clamp(36px,5vw,64px)] md:pb-[clamp(56px,6vw,72px)]">
-        <div className="flex max-w-[700px] flex-col items-start gap-[22px]">
-          {!feriaIniciada && (
-            <CountdownTimer targetDate={INICIO_FERIA} onCountdownEnd={() => setFeriaIniciada(true)} variante="landing" />
-          )}
-
-          <p className="m-0 inline-flex items-center gap-3 text-[13px] font-semibold tracking-[0.2em] text-[#C9D6FF] before:h-px before:w-9 before:shrink-0 before:bg-[#A9C4FF] before:content-['']">
-            VI EDICIÓN · UNIVERSIDAD DEL NORTE
-          </p>
-          <h1 className="m-0 font-unbounded text-[clamp(44px,7vw,104px)] leading-[0.98] font-extrabold tracking-[-0.02em] text-white [text-shadow:0_0_34px_rgba(110,145,255,0.55)]">
-            FERIA
-            <br />
-            GAMER
-          </h1>
-          <p className="m-0 font-unbounded text-[clamp(13px,1.25vw,17px)] font-medium tracking-[0.12em] text-[#A9C4FF]">
-            USO SALUDABLE DE LAS REDES SOCIALES
-          </p>
-          <p className="m-0 max-w-[540px] text-[clamp(16px,1.25vw,18px)] leading-[1.65] text-[#D5DDFA]">
-            La exhibición de los mejores videojuegos creados por estudiantes. Inscribe a tu equipo, presenta tu proyecto ante el
-            jurado y compite por el podio.
-          </p>
-
-          <div className="mt-2 flex w-full flex-wrap gap-3.5 md:w-auto">
-            {/* Siempre visible: si las inscripciones están cerradas, /registro-equipo muestra "Inscripciones cerradas" */}
-            <button
-              type="button"
-              onClick={() => navigate("/registro-equipo")}
-              className="inline-flex min-h-[54px] w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-white px-7 text-base font-bold text-[#0B1A6B] shadow-[0_10px_34px_rgba(76,116,255,0.55)] transition-[translate,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(76,116,255,0.8)] md:w-auto"
-            >
-              Inscribir equipo
-              <ArrowRight className="size-[18px]" aria-hidden />
-            </button>
-            <Link
-              to="/equipos"
-              className="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl border border-[rgba(201,214,255,0.5)] bg-[rgba(169,196,255,0.08)] px-7 text-base font-semibold text-white transition-[translate,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[rgba(169,196,255,0.18)] md:w-auto"
-            >
-              Ver videojuegos
-            </Link>
+      <main>
+        <section className="portada" id="portada">
+          <div className="velo" aria-hidden="true" />
+          <div className="contenido">
+            <p className="ceja">VI EDICIÓN · UNIVERSIDAD DEL NORTE</p>
+            <h1>
+              FERIA
+              <br />
+              GAMER
+            </h1>
+            <p className="lema">USO SALUDABLE DE LAS REDES SOCIALES</p>
+            <p className="lead">
+              La exhibición de los mejores videojuegos creados por estudiantes. Inscribe a tu equipo, presenta tu proyecto ante el
+              jurado y compite por el podio.
+            </p>
+            <div className="botones">
+              {/* Siempre visible: si las inscripciones están cerradas, /registro-equipo muestra "Inscripciones cerradas" */}
+              <button type="button" className="btn btn-blanco" onClick={() => navigate("/registro-equipo")}>
+                Inscribir equipo
+                <ArrowRight className="size-[18px]" aria-hidden />
+              </button>
+              <Link to="/equipos" className="btn btn-vidrio">
+                Ver videojuegos
+              </Link>
+            </div>
           </div>
-        </div>
+          <a className="bajar" href="#galeria">
+            REVIVE LAS FERIAS
+            <ChevronDown size={18} aria-hidden />
+          </a>
+        </section>
+
+        <FairGallery />
+        <MiniGamesSection />
       </main>
-      <TextSizeControl />
-      <DiscordButton discordUrl={DISCORD_SOPORTE} />
+
+      {/* Botones flotantes: en celular y tablet se apartan mientras los minijuegos están a la vista (sobre-juego) */}
+      <div className="flotantes-landing">
+        <TextSizeControl />
+        <DiscordButton discordUrl={DISCORD_SOPORTE} />
+      </div>
     </div>
   )
 }
