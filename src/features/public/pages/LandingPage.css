@@ -1,0 +1,65 @@
+/*
+ * Landing pública (ARK-233): variables, portada, botones y botones flotantes (el fondo es ArkadBackground).
+ * La barra superior es LandingHeader (Tailwind); sus reglas del mockup no se copian. La galería y los minijuegos tienen su propio CSS.
+ * Viene del mockup aprobado (mockups/landing-galeria-ferias.html). Todo va bajo .arkad-landing (la raíz de LandingPage)
+ * y en @layer components: no afecta a otras páginas y las utilidades de Tailwind siguen mandando.
+ */
+@layer components {
+  .arkad-landing { --bg: #050A24; --navy: #0B1A6B; --peri: #A9C4FF; --azul: #4C74FF; --texto: #F4F7FF; --suave: #D5DDFA;
+    --linea: rgba(201,214,255,.18); --curva: cubic-bezier(.2,.75,.2,1);
+    /* vidrio estilo iPhone */
+    --vidrio-fondo: rgba(255,255,255,.07); --vidrio-borde: rgba(255,255,255,.2); --vidrio-luz: inset 0 1px 0 rgba(255,255,255,.28);
+    --vidrio-filtro: blur(22px) saturate(170%); }
+  .arkad-landing * { box-sizing: border-box; }
+  html.landing-arkad { scroll-behavior: smooth; scroll-snap-type: y proximity; scroll-padding-top: var(--cab); -webkit-text-size-adjust: 100%; }
+  .arkad-landing { background: var(--bg); color: var(--texto); font-family: Inter, system-ui, sans-serif; overflow-x: clip; }
+  .arkad-landing a { color: inherit; text-decoration: none; }
+  .arkad-landing button { font: inherit; color: inherit; }
+  .arkad-landing :focus-visible { outline: 2px solid var(--peri); outline-offset: 3px; }
+  .arkad-landing .sr { position: fixed; top: 0; left: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .arkad-landing .vidrio { background: var(--vidrio-fondo); border: 1px solid var(--vidrio-borde); box-shadow: var(--vidrio-luz), 0 12px 32px rgba(0,0,0,.28);
+    -webkit-backdrop-filter: var(--vidrio-filtro); backdrop-filter: var(--vidrio-filtro); }
+  /* ── Escena fija (túnel + logo) y velo para el texto ── */
+  .arkad-landing .velo { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(5,10,36,.9) 0%, rgba(5,10,36,.55) 40%, rgba(5,10,36,0) 66%); }
+  @media (max-width: 767px) { .arkad-landing .velo { background: rgba(5,10,36,.62); } }
+  /* ── Portada: mide una pantalla menos la barra ── */
+  .arkad-landing .portada { position: relative; z-index: 10; overflow: clip; height: calc(100dvh - var(--cab)); min-height: 560px; display: flex; flex-direction: column; scroll-snap-align: start;
+    padding: clamp(14px,2.2vh,24px) clamp(20px,5vw,72px) clamp(64px,9vh,88px); }
+  .arkad-landing .contenido { position: relative; z-index: 1; margin-block: auto; max-width: 700px; display: flex; flex-direction: column; align-items: flex-start; gap: clamp(14px,2.4vh,22px); }
+  .arkad-landing .ceja { margin: 0; display: inline-flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; letter-spacing: .2em; color: #C9D6FF; }
+  .arkad-landing .ceja::before { content: ""; width: 36px; height: 1px; background: var(--peri); flex-shrink: 0; }
+  .arkad-landing h1 { margin: 0; font: 800 clamp(42px, min(7vw, 11vh), 104px)/.98 Unbounded, sans-serif; letter-spacing: -.02em; text-shadow: 0 0 34px rgba(110,145,255,.55); }
+  .arkad-landing .lema { margin: 0; font: 500 clamp(13px,1.25vw,17px) Unbounded, sans-serif; letter-spacing: .12em; color: var(--peri); }
+  .arkad-landing .lead { margin: 0; max-width: 540px; font-size: clamp(15px,1.25vw,18px); line-height: 1.62; color: var(--suave); }
+  .arkad-landing .botones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+  .arkad-landing .btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 54px; padding: 0 28px; border-radius: 12px; font-size: 16px; cursor: pointer;
+    transition: translate .2s, box-shadow .2s, background-color .2s; }
+  .arkad-landing .btn:hover { translate: 0 -2px; }
+  .arkad-landing .btn-blanco { border: 0; background: #fff; color: var(--navy); font-weight: 700; box-shadow: 0 10px 34px rgba(76,116,255,.55); }
+  .arkad-landing .btn-blanco:hover { box-shadow: 0 16px 44px rgba(76,116,255,.8); }
+  .arkad-landing .btn-vidrio { border: 1px solid rgba(201,214,255,.5); background: rgba(169,196,255,.08); color: #fff; font-weight: 600; }
+  .arkad-landing .btn-vidrio:hover { background: rgba(169,196,255,.18); }
+  .arkad-landing .bajar { position: absolute; left: 50%; bottom: clamp(12px,2.5vh,22px); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; letter-spacing: .18em; color: #C9D6FF; transition: color .2s; }
+  .arkad-landing .bajar:hover { color: #fff; }
+  .arkad-landing .bajar svg { animation: ark-flotar 2.2s ease-in-out infinite; }
+  @keyframes ark-flotar { 50% { transform: translateY(6px); } }
+  @media (max-width: 767px) { .arkad-landing .botones, .arkad-landing .btn { width: 100%; } .arkad-landing .btn { min-height: 50px; } .arkad-landing .portada { min-height: 0; } }
+  .arkad-landing .solo-tactil { display: none; }
+  @media (hover: none) { .arkad-landing .solo-tactil { display: inline; } .arkad-landing .solo-mouse { display: none; } }
+  @media (orientation: landscape) and (max-height: 520px) {
+    html.landing-arkad { scroll-padding-top: 0; }
+    .arkad-landing .portada { min-height: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .arkad-landing *, .arkad-landing *::before, .arkad-landing *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
+    html.landing-arkad { scroll-behavior: auto; }
+  }
+  /* botones flotantes (Discord y tamaño de letra): en celular y tablet se apartan mientras los minijuegos están a la vista */
+  .arkad-landing .flotantes-landing > * { transition: opacity .3s, translate .3s, visibility 0s; }
+  @media (max-width: 1100px) {
+    .arkad-landing .flotantes-landing.sobre-juego > * { opacity: 0; visibility: hidden; translate: 24px 0; transition: opacity .3s, translate .3s, visibility 0s .3s; }
+  }
+
+}

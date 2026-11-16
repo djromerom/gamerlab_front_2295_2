@@ -1,5 +1,5 @@
 import NavBar from "@/components/NavBar";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import fetchGameFrameURL from "@/features/games/api/gameFrame"
 import { useEffect, useState } from "react";
 import { useGameLoader } from "@/features/games/hooks/useGameLoader";
@@ -11,6 +11,9 @@ export default function GamePlayerPage() {
 
   // -> /play-game/:videogameID
   const { videogameID } = useParams<{ videogameID: string }>();
+  // ?embed=1: dentro de la cabina de la landing (ARK-233) solo se muestra el juego, sin la barra ni el fondo
+  const [params] = useSearchParams();
+  const embebido = params.has("embed");
 
   //use custom hook to setup Service Worker
   //el service worker va a descomprimir y tratar los archivos del juego
@@ -33,6 +36,18 @@ export default function GamePlayerPage() {
 
   if (error) return <p>Error loading game: {error}</p>;
   //if (!ready) return <p>Loading...</p>;
+
+  if (embebido) {
+    return (
+      <div className="gameEmbed">
+        {ready ? (
+          <iframe src={`/play-game/${videogameID}/${gEntry}`} className="gameFrame gameFrame--embed" allow="fullscreen; autoplay; gamepad" allowFullScreen title="Videojuego" />
+        ) : (
+          <p>Cargando archivos del juego...</p>
+        )}
+      </div>
+    );
+  }
 
 
   return (

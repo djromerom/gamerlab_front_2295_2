@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+/* ARK-233: celular en horizontal (pantalla bajita), p. ej. la barra compacta de la landing */
+@custom-variant landscape-short (@media (orientation: landscape) and (max-height: 520px));
 
 /* ARK-222: tipografías del diseño nuevo (se cargan en index.html) */
 @theme {

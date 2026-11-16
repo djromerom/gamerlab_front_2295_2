@@ -1,0 +1,339 @@
+/*
+ * Minijuegos de la landing (ARK-233): portadas animadas (solo CSS), marco del juego, HUD de Arkadash y la interfaz de Arkad Jam.
+ * Viene del mockup aprobado (mockups/landing-galeria-ferias.html). Todo va bajo .arkad-landing (la raíz de LandingPage)
+ * y en @layer components: no afecta a otras páginas y las utilidades de Tailwind siguen mandando.
+ */
+@layer components {
+  .arkad-landing .contorno { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 22px; border-radius: 10px;
+    border: 1px solid rgba(201,214,255,.5); font-size: 14px; font-weight: 600; background: none; cursor: pointer; transition: background-color .2s; }
+  .arkad-landing .contorno:hover { background: rgba(169,196,255,.12); }
+  /* ── Minijuego «Arkadash»: también mide una pantalla menos la barra ── */
+  .arkad-landing .juego { position: relative; z-index: 10; height: calc(100dvh - var(--cab)); min-height: 560px; display: flex; flex-direction: column; scroll-snap-align: start;
+    padding: clamp(16px,3vh,32px) clamp(16px,5vw,72px) clamp(8px,1.4vh,14px); }
+  .arkad-landing .juego-cabeza { width: 100%; max-width: 1280px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 40px; flex-shrink: 0; }
+  .arkad-landing .juego-cabeza h2 { margin: 10px 0 0; font: 700 clamp(24px, min(2.7vw, 4.4vh), 40px)/1.05 Unbounded, sans-serif; letter-spacing: -.01em; }
+  .arkad-landing .juego-cabeza .desc { margin: 10px 0 0; max-width: 580px; color: var(--suave); line-height: 1.55; font-size: 15px; }
+  .arkad-landing .teclas-ayuda { margin: 0; font-size: 13px; color: #C9D6FF; }
+  .arkad-landing .teclas-ayuda[hidden] { display: none; }
+  .arkad-landing .juego-derecha { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .arkad-landing .volver[hidden], .arkad-landing .volumen[hidden], .arkad-landing .boton-icono[hidden] { display: none; }
+  /* volver a las portadas y volumen */
+  .arkad-landing .controles-juego { display: flex; align-items: center; gap: 8px; }
+  .arkad-landing .boton-icono { flex-shrink: 0; width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; border: 0; background: none; color: #fff; cursor: pointer;
+    transition: background-color .2s; }
+  .arkad-landing .boton-icono:hover { background: rgba(169,196,255,.14); }
+  .arkad-landing .volumen { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 14px 0 4px; border-radius: 10px; border: 1px solid rgba(201,214,255,.5); }
+  .arkad-landing .volumen .boton-icono { width: 36px; height: 36px; border-radius: 8px; }
+  .arkad-landing .volumen input { -webkit-appearance: none; appearance: none; width: 110px; height: 4px; margin: 0; border-radius: 4px; cursor: pointer;
+    background: linear-gradient(90deg, #fff var(--v, 80%), rgba(255,255,255,.25) var(--v, 80%)); }
+  .arkad-landing .volumen input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(76,116,255,.45); }
+  .arkad-landing .volumen input::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(76,116,255,.45); }
+  .arkad-landing .volumen input:focus-visible { outline: 2px solid var(--peri); outline-offset: 6px; }
+  @media (max-width: 767px) { .arkad-landing .volumen input { width: 80px; } }
+  /* zona de juegos: las dos portadas o el marco del juego abierto (mismo lugar, una pantalla) */
+  .arkad-landing .zona-juegos { position: relative; flex: 1; min-height: 0; width: 100%; max-width: 1280px; margin: clamp(10px,2vh,20px) auto 0; display: flex; }
+  .arkad-landing .portadas { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px,1.6vw,22px); }
+  .arkad-landing .portadas[hidden], .arkad-landing .cabina[hidden] { display: none; }
+  .arkad-landing .portadas.pausadas *, .arkad-landing .portadas.pausadas *::before, .arkad-landing .portadas.pausadas *::after { animation-play-state: paused !important; }
+  /* ── Portadas animadas: solo CSS (transform y opacity), así no cuestan nada hasta abrir un juego ── */
+  .arkad-landing .portada-juego { position: relative; isolation: isolate; overflow: hidden; display: block; min-height: 0; padding: 0; border-radius: 28px; cursor: pointer; text-align: left; color: #fff;
+    font: inherit; background: #070d33; border: 1px solid rgba(255,255,255,.3);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 30px 70px -20px rgba(0,0,0,.7); transition: transform .4s var(--curva), box-shadow .4s, border-color .4s; }
+  .arkad-landing .portada-juego:hover, .arkad-landing .portada-juego:focus-visible { transform: translateY(-5px); border-color: rgba(255,255,255,.6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 34px 80px -20px rgba(0,0,0,.75), 0 0 70px -12px rgba(76,116,255,.75); }
+  .arkad-landing .portada-juego .arte { position: absolute; inset: 0; z-index: -1; overflow: hidden; transition: transform .6s var(--curva); }
+  .arkad-landing .portada-juego:hover .arte { transform: scale(1.04); }
+  .arkad-landing .portada-juego .arte > * { position: absolute; }
+  .arkad-landing .portada-juego .info { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    padding: clamp(18px,2.4vw,30px); padding-top: 70px; background: linear-gradient(180deg, rgba(5,10,36,0), rgba(5,10,36,.88) 42%); }
+  .arkad-landing .info .chip { display: inline-flex; gap: 10px; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: rgba(5,10,36,.5);
+    font-size: 11px; font-weight: 700; letter-spacing: .16em; color: #C9D6FF; }
+  .arkad-landing .info .chip em { font-style: normal; color: #fff; }
+  .arkad-landing .info .titulo { font: 800 clamp(26px, min(3.2vw, 5.4vh), 46px)/1 Unbounded, sans-serif; letter-spacing: -.01em; text-shadow: 0 0 30px rgba(110,145,255,.6); }
+  .arkad-landing .info .bajada { max-width: 440px; font-size: 14px; line-height: 1.5; color: var(--suave); }
+  .arkad-landing .info .cta { margin-top: 4px; display: inline-flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 22px; border-radius: 12px; background: #fff; color: var(--navy);
+    font-weight: 700; font-size: 15px; box-shadow: 0 10px 30px rgba(76,116,255,.5); transition: box-shadow .3s, translate .3s; }
+  .arkad-landing .portada-juego:hover .cta { translate: 4px 0; box-shadow: 0 14px 40px rgba(76,116,255,.8); }
+  .arkad-landing .arkad-svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
+  .arkad-landing .ojos-svg { transform-box: fill-box; transform-origin: center; animation: ark-parpadeo 4.2s infinite; filter: drop-shadow(0 0 2px #8fb6ff); }
+  @keyframes ark-parpadeo { 0%, 90%, 100% { transform: none; } 94% { transform: scaleY(.15); } }
+  /* Arkadash: cielo, estrellas, logo-luna, ciudad, piso de neón que corre, torres de cubos, cristal y el personaje volando */
+  .arkad-landing .a-cielo { inset: 0; background: radial-gradient(ellipse at 62% 52%, #2a44c4 0%, #13237d 32%, #070d33 70%); }
+  .arkad-landing .a-estrellas { inset: 0 0 40% 0; opacity: .9; animation: ark-titilar 3s ease-in-out infinite alternate;
+    background: radial-gradient(1.5px 1.5px at 12% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 30% 8%, #cfe0ff, transparent), radial-gradient(2px 2px at 48% 26%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 66% 12%, #cfe0ff, transparent), radial-gradient(2px 2px at 82% 30%, #fff, transparent), radial-gradient(1.5px 1.5px at 92% 10%, #cfe0ff, transparent),
+      radial-gradient(1.5px 1.5px at 22% 40%, #cfe0ff, transparent), radial-gradient(1.5px 1.5px at 74% 44%, #fff, transparent); }
+  @keyframes ark-titilar { from { opacity: .45; } to { opacity: 1; } }
+  .arkad-landing .a-luna { left: 50%; top: 10%; width: 42%; fill: #4c74ff; opacity: .16; animation: ark-flotar-luna 8s ease-in-out infinite alternate; }
+  @keyframes ark-flotar-luna { to { transform: translateY(10px) rotate(2deg); } }
+  .arkad-landing .a-ciudad { left: 0; right: 0; bottom: 30%; height: 26%; opacity: .8; background: #0b1650;
+    clip-path: polygon(0 100%, 0 40%, 6% 40%, 6% 20%, 12% 20%, 12% 55%, 18% 55%, 18% 10%, 24% 10%, 24% 45%, 31% 45%, 31% 30%, 37% 30%, 37% 60%, 44% 60%, 44% 15%, 50% 15%, 50% 50%,
+      57% 50%, 57% 25%, 63% 25%, 63% 65%, 70% 65%, 70% 5%, 76% 5%, 76% 40%, 83% 40%, 83% 20%, 89% 20%, 89% 55%, 95% 55%, 95% 30%, 100% 30%, 100% 100%); }
+  .arkad-landing .a-suelo { left: -60%; right: -60%; bottom: 0; height: 32%; perspective: 220px; overflow: hidden; background: linear-gradient(#0d1a66, #040822); }
+  .arkad-landing .a-rejilla { position: absolute; left: 0; right: 0; top: 0; height: 300%; transform-origin: top; transform: rotateX(68deg); animation: ark-correr .55s linear infinite;
+    background: linear-gradient(90deg, rgba(110,145,255,.55) 1.5px, transparent 1.5px) 0 0 / 34px 34px, linear-gradient(rgba(110,145,255,.55) 1.5px, transparent 1.5px) 0 0 / 34px 34px; }
+  @keyframes ark-correr { to { transform: rotateX(68deg) translateX(-34px); } }
+  .arkad-landing .a-torres { inset: 0 0 30% 0; }
+  .arkad-landing .a-torre { position: absolute; top: 0; bottom: 0; left: 100%; width: 11%; animation: ark-torre 6.6s linear infinite; animation-delay: var(--d); }
+  .arkad-landing .a-torre::before, .arkad-landing .a-torre::after { content: ""; position: absolute; left: 0; right: 0; border-radius: 4px;
+    background: linear-gradient(90deg, transparent 47%, rgba(5,10,36,.55) 47% 53%, transparent 53%),
+      repeating-linear-gradient(180deg, transparent 0 13px, rgba(5,10,36,.55) 13px 16px), linear-gradient(90deg, #3d63f0, #5b80ff 50%, #2a44c4); }
+  .arkad-landing .a-torre::before { top: 0; height: var(--h); border-bottom: 4px solid #a9c4ff; box-shadow: 0 6px 22px rgba(110,145,255,.9); }
+  .arkad-landing .a-torre::after { bottom: 0; height: calc(100% - var(--h) - 36%); border-top: 4px solid #a9c4ff; box-shadow: 0 -6px 22px rgba(110,145,255,.9); }
+  @keyframes ark-torre { to { transform: translateX(-1100%); } }
+  .arkad-landing .a-gema { left: 66%; top: 34%; width: 18px; height: 18px; border-radius: 3px; background: linear-gradient(135deg, #e6fbff, #38b6ff); box-shadow: 0 0 22px #38b6ff, 0 0 44px rgba(56,182,255,.6);
+    animation: ark-gema 2.4s ease-in-out infinite; }
+  @keyframes ark-gema { 0%, 100% { transform: translateY(0) rotate(45deg); } 50% { transform: translateY(-12px) rotate(45deg) scale(1.15); } }
+  .arkad-landing .a-heroe { left: 20%; top: 30%; width: 24%; animation: ark-vuelo 1.25s ease-in-out infinite; }
+  @keyframes ark-vuelo { 0%, 100% { transform: translateY(14px) rotate(8deg); } 35% { transform: translateY(-16px) rotate(-10deg) scaleY(1.06); } }
+  .arkad-landing .a-estela { position: absolute; right: 88%; top: 40%; width: 60%; height: 30%; }
+  .arkad-landing .a-estela i { position: absolute; right: 0; top: 50%; width: 8px; height: 8px; background: #a9c4ff; box-shadow: 0 0 10px #6f95ff; animation: ark-estela .9s linear infinite; }
+  .arkad-landing .a-estela i:nth-child(2) { animation-delay: -.18s; top: 20%; }
+  .arkad-landing .a-estela i:nth-child(3) { animation-delay: -.36s; top: 70%; }
+  .arkad-landing .a-estela i:nth-child(4) { animation-delay: -.54s; top: 35%; }
+  .arkad-landing .a-estela i:nth-child(5) { animation-delay: -.72s; top: 60%; }
+  @keyframes ark-estela { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-120px) scale(.4); opacity: 0; } }
+  /* Arkad Jam: haces de luz, ecualizador de píxeles, el personaje al ritmo, notas que suben y una pista estilo Guitar Hero */
+  .arkad-landing .j-cielo { inset: 0; background: radial-gradient(ellipse at 50% 36%, #22389e 0%, #101e72 34%, #070d33 72%); }
+  .arkad-landing .j-haces { inset: 0; }
+  .arkad-landing .j-haces i { position: absolute; top: -12%; width: 28%; height: 115%; transform-origin: 50% 0; animation: ark-haz 5s ease-in-out infinite alternate;
+    background: linear-gradient(180deg, rgba(150,175,255,.38), rgba(150,175,255,0) 78%); clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%); }
+  .arkad-landing .j-haces i:nth-child(1) { left: 6%; --a: -16deg; --b: 6deg; }
+  .arkad-landing .j-haces i:nth-child(2) { left: 36%; --a: 8deg; --b: -8deg; animation-duration: 6s; }
+  .arkad-landing .j-haces i:nth-child(3) { left: 66%; --a: 14deg; --b: -6deg; animation-duration: 4.4s; }
+  @keyframes ark-haz { from { transform: rotate(var(--a)); } to { transform: rotate(var(--b)); } }
+  .arkad-landing .j-eq { left: 10%; right: 10%; top: 12%; height: 40%; display: flex; align-items: flex-end; gap: 3%; opacity: .6;
+    -webkit-mask: repeating-linear-gradient(0deg, #000 0 9px, transparent 9px 12px); mask: repeating-linear-gradient(0deg, #000 0 9px, transparent 9px 12px); }
+  .arkad-landing .j-eq i { flex: 1; height: 100%; transform-origin: bottom; background: linear-gradient(0deg, var(--c), rgba(255,255,255,.05));
+    animation: ark-eq var(--t) ease-in-out infinite alternate; animation-delay: var(--d); }
+  @keyframes ark-eq { from { transform: scaleY(.18); } to { transform: scaleY(1); } }
+  .arkad-landing .j-heroe { left: 12%; top: 18%; width: 26%; animation: ark-ritmo .5s ease-in-out infinite alternate; }
+  @keyframes ark-ritmo { from { transform: translateY(4px) rotate(-4deg) scaleY(.96); } to { transform: translateY(-8px) rotate(4deg) scaleY(1.04); } }
+  .arkad-landing .j-notas { inset: 0; }
+  .arkad-landing .j-notas i { position: absolute; left: calc(var(--x) - 18%); top: 30%; font: 800 22px Unbounded, sans-serif; font-style: normal; color: var(--c); text-shadow: 0 0 12px var(--c);
+    animation: ark-subir 3.3s linear infinite; animation-delay: var(--d); opacity: 0; }
+  @keyframes ark-subir { 0% { transform: translateY(20px) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-120px) rotate(var(--r)); opacity: 0; } }
+  .arkad-landing .j-pista { right: 5%; bottom: 34%; width: 44%; height: 50%; perspective: 340px; }
+  .arkad-landing .j-carriles { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5, 1fr); transform-origin: 50% 100%; transform: rotateX(56deg);
+    background: linear-gradient(180deg, rgba(76,116,255,0), rgba(76,116,255,.28)); border-inline: 2px solid rgba(169,196,255,.4); }
+  .arkad-landing .j-carriles > span { position: relative; overflow: hidden; border-left: 1px solid rgba(169,196,255,.18); }
+  .arkad-landing .j-carriles > span::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: 6%; height: 6%; border-radius: 6px; border: 3px solid var(--c); box-shadow: 0 0 16px var(--c); }
+  .arkad-landing .j-carriles b { position: absolute; left: 14%; right: 14%; top: -8%; height: 7%; border-radius: 6px; background: var(--c); box-shadow: 0 0 14px var(--c);
+    animation: ark-caer 1.8s linear infinite; animation-delay: var(--d); }
+  @keyframes ark-caer { to { transform: translateY(1400%); } }
+  /* Arkad Jam: instrumentos y modo arriba, teclas abajo (cada nota con su color; en el piano, teclas negras con semitonos) */
+  .arkad-landing .jam-arriba { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: clamp(10px,1.8vw,18px); display: flex; flex-wrap: wrap; justify-content: space-between;
+    align-items: flex-start; gap: 10px; pointer-events: none; }
+  .arkad-landing .instrumentos, .arkad-landing .modos { display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(5,10,36,.65); border: 1px solid rgba(255,255,255,.2); pointer-events: auto; }
+  .arkad-landing .instrumento, .arkad-landing .modo { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border-radius: 999px; border: 0; background: none; cursor: pointer;
+    font: 600 13px Inter, sans-serif; color: #E3EAFF; transition: background-color .2s, color .2s; }
+  .arkad-landing .instrumento:hover, .arkad-landing .modo:hover { background: rgba(255,255,255,.12); }
+  .arkad-landing .instrumento[aria-checked="true"], .arkad-landing .modo[aria-checked="true"] { background: #fff; color: var(--navy); }
+  .arkad-landing .instrumento kbd { min-width: 0; padding: 0 6px; font-size: 11px; }
+  .arkad-landing .instrumento[aria-checked="true"] kbd { color: var(--navy); border-color: rgba(11,26,107,.35); background: rgba(11,26,107,.08); }
+  .arkad-landing .jam-modo { display: flex; align-items: flex-start; gap: 8px; pointer-events: auto; }
+  .arkad-landing .jam-modo .modos[hidden], .arkad-landing .marcador-jam[hidden] { display: none; }
+  .arkad-landing .marcador-jam { display: flex; align-items: center; gap: 14px; padding: 6px 6px 6px 16px; border-radius: 999px; background: rgba(5,10,36,.7); border: 1px solid rgba(255,255,255,.22); }
+  .arkad-landing .marcador-jam small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .14em; color: #C9D6FF; }
+  .arkad-landing .marcador-jam b { display: block; min-width: 3ch; font: 800 18px/1.1 Unbounded, sans-serif; }
+  .arkad-landing .detener { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
+  .arkad-landing .detener:hover { background: #fff; color: var(--navy); }
+  .arkad-landing .detener:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .arkad-landing .pausar-dash { position: absolute; z-index: 3; top: clamp(12px,2vw,22px); right: clamp(12px,2vw,22px); background: rgba(5,10,36,.6); }
+  .arkad-landing .pausar-dash[hidden] { display: none; }
+  .arkad-landing .pausar-dash:not([hidden]) ~ .hud .indicadores { margin-right: 52px; }
+  .arkad-landing .cabina canvas.pista-notas { position: absolute; left: 0; right: 0; width: 100%; height: 0; opacity: 1; border-radius: 0; pointer-events: none; z-index: 1; }
+  .arkad-landing .jam-teclas { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: clamp(10px,1.8vw,18px); display: grid; grid-template-columns: repeat(8, 1fr); gap: clamp(4px,.8vw,10px); }
+  .arkad-landing .nota { position: relative; min-width: 0; min-height: clamp(54px, 9vh, 78px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border-radius: 14px; border: 1px solid rgba(255,255,255,.22); background: rgba(5,10,36,.62); color: #fff; cursor: pointer; touch-action: none;
+    transition: transform .12s, background-color .12s, box-shadow .12s, border-color .12s; }
+  .arkad-landing .nota b { font: 800 clamp(15px,2.4vh,22px)/1 Unbounded, sans-serif; color: var(--c); }
+  .arkad-landing .nota small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 600; color: #D5DDFA; white-space: nowrap; }
+  .arkad-landing .nota::after { content: ""; position: absolute; left: 22%; right: 22%; bottom: 7px; height: 3px; border-radius: 3px; background: var(--c); opacity: .75; }
+  .arkad-landing .nota:hover { border-color: var(--c); }
+  .arkad-landing .nota.sonando { transform: translateY(2px) scale(.97); background: color-mix(in srgb, var(--c) 38%, rgba(5,10,36,.6)); border-color: var(--c); box-shadow: 0 0 26px -4px var(--c); }
+  /* piano: las negras van encima, entre las blancas (el JS calcula su lugar) */
+  .arkad-landing .nota.negra { position: absolute; z-index: 1; min-height: 0; padding-bottom: 6px; justify-content: flex-end; border-radius: 0 0 10px 10px; background: rgba(2,4,18,.94); border-color: rgba(255,255,255,.35); }
+  .arkad-landing .nota.negra b { font-size: clamp(12px,1.8vh,16px); }
+  .arkad-landing .jam-teclas.piano .nota:not(.negra) { justify-content: flex-end; padding-bottom: 14px; }
+  .arkad-landing .cuenta { position: absolute; left: 50%; top: 46%; z-index: 3; translate: -50% -50%; font: 800 clamp(56px,12vh,120px)/1 Unbounded, sans-serif; color: #fff; pointer-events: none;
+    text-shadow: 0 0 40px rgba(110,145,255,.9); }
+  .arkad-landing .cuenta.pop { animation: ark-pop .6s var(--curva); }
+  @keyframes ark-pop { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+  .arkad-landing .tarjeta-juego.ancha { width: min(560px, 100%); }
+  /* menú de canciones: tarjeta sólida y con contraste (no translúcida), el fondo se oscurece detrás */
+  .arkad-landing #jamCanciones { background: rgba(3,6,22,.72); }
+  /* las pantallas del juego (menú, resultado, carga) van encima de la pista y de las teclas */
+  .arkad-landing #panelJam .pantalla, .arkad-landing #panelJam .cargando { z-index: 4; }
+  .arkad-landing #panelJam .capa { z-index: 3; }
+  /* la barra de instrumento y modo sigue usable con el menú abierto: queda encima y el menú empieza debajo de ella */
+  .arkad-landing #panelJam .jam-arriba { z-index: 5; }
+  .arkad-landing #panelJam .pantalla { padding-top: calc(var(--alto-arriba, 70px) + 6px); padding-bottom: 12px; }
+  /* compacto y sin scroll: 4 canciones en 2×2 (una columna si la tarjeta es angosta) */
+  .arkad-landing #jamCanciones .tarjeta-juego { width: min(720px, 100%); max-height: 100%; overflow: hidden; container-type: inline-size; padding: clamp(14px,2.4vh,24px);
+    background: linear-gradient(160deg, #1d2f9e 0%, #0e1a63 45%, #08113f 100%); border: 1px solid rgba(169,196,255,.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 24px 60px rgba(0,0,0,.6), 0 0 60px -10px rgba(76,116,255,.65); }
+  .arkad-landing .lista-cabeza { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 16px; margin-bottom: clamp(10px,1.8vh,16px); }
+  .arkad-landing .lista-cabeza .titulo-juego { margin-top: 4px; }
+  .arkad-landing .ayuda-lista { margin: 0; font-size: 12px; color: #D5DDFA; }
+  .arkad-landing .lista-canciones { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  /* pestañas de dificultad: cada una con su color; la elegida, rellena */
+  .arkad-landing .niveles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: clamp(8px,1.6vh,14px); }
+  .arkad-landing .nivel-btn { min-height: 40px; padding: 6px 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,.3); border-bottom: 3px solid var(--c); background: rgba(5,10,36,.55);
+    color: #E3E9FF; font: 700 12px Unbounded, sans-serif; cursor: pointer; transition: background .2s, color .2s, transform .2s; }
+  .arkad-landing .nivel-btn small { display: block; margin-top: 2px; font: 600 10px Inter, system-ui, sans-serif; color: inherit; opacity: .8; }
+  .arkad-landing .nivel-btn:hover { transform: translateY(-1px); background: rgba(76,116,255,.3); }
+  .arkad-landing .nivel-btn[aria-selected="true"] { background: var(--c); border-color: var(--c); color: #050a24; }
+  .arkad-landing .nivel-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  /* tarjeta angosta (celular): sigue en 2×2, cada canción en formato vertical y sin el estilo, para no necesitar scroll */
+  @container (max-width: 520px) { /* con #jamCanciones delante, para ganarle a las reglas base que vienen después */
+    .arkad-landing #jamCanciones .lista-canciones { gap: 8px; } .arkad-landing #jamCanciones .lista-cabeza { margin-bottom: 10px; }
+    .arkad-landing #jamCanciones .lista-cabeza .ceja { display: none; } .arkad-landing #jamCanciones .lista-cabeza .titulo-juego { margin: 0; font-size: 20px; }
+    .arkad-landing #jamCanciones .cancion-btn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "num txt lado"; align-items: center; gap: 8px; padding: 8px 10px; }
+    /* angosta (celular): sin la cabecera (el instrumento ya se ve arriba), pestañas de una línea y filas compactas: caben sin scroll */
+    .arkad-landing #jamCanciones .lista-cabeza { display: none; }
+    .arkad-landing #jamCanciones .nivel-btn { font-size: 10px; min-height: 32px; padding: 4px 2px; } .arkad-landing #jamCanciones .nivel-btn small { display: none; }
+    .arkad-landing #jamCanciones .niveles { margin-bottom: 8px; gap: 4px; } .arkad-landing #jamCanciones .lista-canciones { gap: 6px; }
+    .arkad-landing #jamCanciones .cancion-btn { padding: 6px 10px; } .arkad-landing #jamCanciones .cancion-btn .num { width: 26px; height: 26px; font-size: 12px; }
+    .arkad-landing #jamCanciones .cancion-btn .num { grid-area: num; width: 28px; height: 28px; font-size: 13px; } .arkad-landing #jamCanciones .cancion-btn .txt { grid-area: txt; }
+    .arkad-landing #jamCanciones .cancion-btn b { font-size: 13px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; }
+    .arkad-landing #jamCanciones .cancion-btn small, .arkad-landing #jamCanciones .cancion-btn .largo { display: none; }
+    .arkad-landing #jamCanciones .cancion-btn .lado { grid-area: lado; min-width: 0; }
+    .arkad-landing #jamCanciones .cancion-btn .dificultad { padding: 1px 6px; font-size: 9px; letter-spacing: 0; }
+    .arkad-landing #jamCanciones .cancion-btn .mejor { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
+  }
+  .arkad-landing .cancion-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.28); border-left: 4px solid var(--c);
+    background: rgba(5,10,36,.55); color: #fff; font: inherit; text-align: left; cursor: pointer; transition: background-color .2s, border-color .2s, transform .2s, box-shadow .2s; }
+  .arkad-landing .cancion-btn:hover, .arkad-landing .cancion-btn:focus-visible { background: rgba(76,116,255,.32); border-color: rgba(255,255,255,.7); border-left-color: var(--c); transform: translateY(-2px);
+    box-shadow: 0 0 26px -6px var(--c); }
+  .arkad-landing .cancion-btn .num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font: 800 14px Unbounded, sans-serif; background: var(--c); color: #050a24;
+    box-shadow: 0 0 18px -4px var(--c); }
+  .arkad-landing .cancion-btn .txt { flex: 1; min-width: 0; }
+  .arkad-landing .cancion-btn b, .arkad-landing .cancion-btn small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arkad-landing .cancion-btn b { font-size: 14px; }
+  .arkad-landing .cancion-btn small { font-size: 12px; color: #C9D6FF; }
+  .arkad-landing .cancion-btn .lado { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .arkad-landing .cancion-btn .dificultad { padding: 2px 8px; border-radius: 8px; border: 1px solid var(--c); font: 700 10px Unbounded, sans-serif; letter-spacing: .04em; color: var(--c); background: rgba(5,10,36,.6); white-space: nowrap; }
+  .arkad-landing .cancion-btn .mejor { font-size: 11px; font-weight: 700; color: #FFE58A; white-space: nowrap; }
+  .arkad-landing .cancion-btn .mejor.nueva { font-weight: 600; color: #C9D6FF; }
+  @media (max-width: 767px) { .arkad-landing .ayuda-lista { display: none; } .arkad-landing #jamCanciones .tarjeta-juego { padding: 12px; } }
+  .arkad-landing .tarjeta-juego .btn + .btn { margin-top: 10px; }
+  .arkad-landing .estrellas { margin: 8px 0 0; font-size: 30px; letter-spacing: .12em; color: #FFE58A; text-shadow: 0 0 18px rgba(255,190,60,.7); }
+  .arkad-landing .estrellas .apagada { color: rgba(255,255,255,.18); text-shadow: none; }
+  .arkad-landing .detalle { margin: 0 0 16px; font-size: 13px; color: #D5DDFA; }
+  .arkad-landing .aviso.perfecto { color: #FFE58A; text-shadow: 0 0 16px rgba(255,190,60,.95), 0 2px 6px rgba(0,0,0,.5); }
+  .arkad-landing .aviso.bien { color: #CFF6FF; text-shadow: 0 0 16px rgba(56,182,255,.95), 0 2px 6px rgba(0,0,0,.5); }
+  .arkad-landing .aviso.fallo { color: #ff9aa8; text-shadow: 0 0 16px rgba(255,80,110,.8), 0 2px 6px rgba(0,0,0,.5); }
+  @media (max-width: 767px) {
+    .arkad-landing .juego-cabeza .desc { display: none; } /* en celular el espacio es para el juego */
+    .arkad-landing .juego-derecha { width: 100%; align-items: stretch; } .arkad-landing .volver { align-self: flex-start; }
+    .arkad-landing .portadas { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .arkad-landing .portada-juego { border-radius: 22px; }
+    .arkad-landing .portada-juego .info { padding: 14px 16px; padding-top: 50px; gap: 6px; } .arkad-landing .info .bajada { display: none; } .arkad-landing .info .cta { min-height: 40px; padding: 0 16px; font-size: 14px; }
+    .arkad-landing .instrumentos { flex: 1; } .arkad-landing .instrumento { flex: 1; justify-content: center; padding: 0 6px; font-size: 12px; } .arkad-landing .instrumento kbd { display: none; }
+    .arkad-landing .jam-modo { width: 100%; } .arkad-landing .modos, .arkad-landing .marcador-jam { flex: 1; } .arkad-landing .modo { flex: 1; justify-content: center; } .arkad-landing .marcador-jam { justify-content: space-between; }
+    .arkad-landing .jam-teclas { padding: 8px; gap: 4px; } .arkad-landing .nota { min-height: 52px; border-radius: 10px; } .arkad-landing .nota small { font-size: 9px; } .arkad-landing .nota::after { bottom: 5px; }
+  }
+  @media (hover: none) { .arkad-landing .instrumento kbd { display: none; } }
+  .arkad-landing kbd { display: inline-block; min-width: 26px; padding: 2px 8px; border-radius: 7px; border: 1px solid rgba(255,255,255,.35); border-bottom-width: 2px;
+    background: rgba(255,255,255,.1); font: 600 12px Inter, sans-serif; color: #fff; text-align: center; }
+  /* cabina: marco de vidrio "falso" (sin backdrop-filter, porque detrás hay un lienzo que se repinta en cada cuadro) */
+  .arkad-landing .cabina { position: relative; flex: 1; min-height: 0; width: 100%; margin: 0; padding: 6px; border-radius: 28px;
+    border: 1px solid rgba(255,255,255,.3); background: linear-gradient(150deg, rgba(255,255,255,.24), rgba(255,255,255,.05) 42%, rgba(255,255,255,.12));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 30px 70px -20px rgba(0,0,0,.7), 0 0 90px -30px rgba(76,116,255,.6);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+  /* fondo de espera detrás del lienzo; el lienzo aparece con un fundido cuando ya pintó sus primeros cuadros */
+  .arkad-landing .cabina::before { content: ""; position: absolute; inset: 6px; border-radius: 22px; background: radial-gradient(ellipse at 56% 46%, #1d2f9e, #070d33 70%); }
+  .arkad-landing .cabina canvas { position: relative; display: block; width: 100%; height: 100%; border-radius: 22px; opacity: 0; transition: opacity .6s ease; }
+  .arkad-landing .cabina canvas.listo { opacity: 1; }
+  /* cada minijuego vive en su panel, dentro del mismo marco; solo se ve (y se dibuja) el elegido */
+  .arkad-landing .panel { position: absolute; inset: 6px; border-radius: 22px; overflow: hidden; }
+  .arkad-landing .panel[hidden] { display: none; }
+  .arkad-landing .capa, .arkad-landing .destello, .arkad-landing .pantalla, .arkad-landing .cargando { position: absolute; inset: 0; border-radius: 22px; }
+  .arkad-landing .capa { pointer-events: none; overflow: hidden; }
+  .arkad-landing .hud { position: absolute; top: 0; left: 0; right: 0; padding: clamp(12px,2vw,22px); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; }
+  .arkad-landing .marcador b { display: block; font: 800 clamp(34px, 5.4vh, 56px)/1 Unbounded, sans-serif; text-shadow: 0 0 24px rgba(110,145,255,.85); transform-origin: 0 60%; }
+  .arkad-landing .marcador b.sube { animation: ark-sube .35s var(--curva); }
+  @keyframes ark-sube { 0% { transform: scale(1.35); } 100% { transform: none; } }
+  .arkad-landing .marcador small { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; letter-spacing: .14em; color: #C9D6FF; }
+  .arkad-landing .indicadores { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .arkad-landing .pildora { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; background: rgba(5,10,36,.55); border: 1px solid rgba(255,255,255,.22);
+    font-size: 12px; font-weight: 600; letter-spacing: .08em; color: #E3EAFF; white-space: nowrap; transition: border-color .3s, box-shadow .3s; }
+  .arkad-landing .energia i { width: 11px; height: 11px; transform: rotate(45deg); border-radius: 2px; border: 1.5px solid #7fd8ff; transition: background-color .2s, box-shadow .2s; }
+  .arkad-landing .energia i.llena { background: #8fe3ff; box-shadow: 0 0 10px #38b6ff; }
+  .arkad-landing .energia em { display: none; font-style: normal; color: #CFF6FF; }
+  .arkad-landing .energia.activo { border-color: rgba(127,216,255,.85); box-shadow: 0 0 18px rgba(56,182,255,.6); }
+  .arkad-landing .energia.activo em { display: inline; }
+  .arkad-landing .energia.activo i, .arkad-landing .energia.activo .txt { display: none; }
+  /* pantallas sobre el juego: inicio (a la derecha del personaje), pausa y fin (al centro) */
+  .arkad-landing .pantalla { display: flex; align-items: center; justify-content: flex-end; padding: clamp(16px,5vw,72px); transition: opacity .3s, visibility 0s; }
+  .arkad-landing .pantalla.centro { justify-content: center; background: rgba(5,10,36,.35); }
+  /* al ocultar, la visibilidad cambia al final; al mostrar, de inmediato (así el botón puede recibir el foco enseguida) */
+  .arkad-landing .pantalla.oculta, .arkad-landing .cargando.oculta { opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
+  .arkad-landing .tarjeta-juego { width: min(380px, 100%); padding: clamp(18px,3vh,28px); border-radius: 22px; cursor: default;
+    /* vidrio sin backdrop-filter: encima de un lienzo 3D que se repinta en cada cuadro, el desenfoque costaría un pase extra por cuadro */
+    background: linear-gradient(150deg, rgba(40,62,170,.72), rgba(8,16,52,.82)); border: 1px solid rgba(255,255,255,.24);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 20px 50px rgba(0,0,0,.45); }
+  .arkad-landing .titulo-juego { margin: 8px 0 0; font: 800 clamp(20px,3vh,28px)/1.1 Unbounded, sans-serif; }
+  .arkad-landing .reglas { list-style: none; margin: 14px 0 18px; padding: 0; display: grid; gap: 10px; font-size: 14px; line-height: 1.35; color: #E3EAFF; }
+  .arkad-landing .reglas li { display: flex; align-items: center; gap: 12px; }
+  .arkad-landing .ico { flex-shrink: 0; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); }
+  .arkad-landing .ico-gema::before { content: ""; width: 10px; height: 10px; transform: rotate(45deg); border-radius: 2px; background: #8fe3ff; box-shadow: 0 0 10px #38b6ff; }
+  .arkad-landing .ico-ras::before { content: "+1"; font: 800 11px Unbounded, sans-serif; color: #FFE58A; text-shadow: 0 0 8px rgba(255,190,60,.8); }
+  .arkad-landing .tarjeta-juego .btn { width: 100%; }
+  .arkad-landing .tecla { margin: 12px 0 0; font-size: 13px; color: #C9D6FF; text-align: center; }
+  .arkad-landing .resultado { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
+  .arkad-landing .resultado div { padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); }
+  .arkad-landing .resultado small { display: block; font-size: 12px; font-weight: 600; letter-spacing: .12em; color: #C9D6FF; }
+  .arkad-landing .resultado b { display: block; margin-top: 4px; font: 800 30px/1 Unbounded, sans-serif; }
+  .arkad-landing .cargando { display: grid; place-items: center; align-content: center; gap: 14px; padding: 24px; text-align: center; font-size: 14px; color: #C9D6FF; }
+  .arkad-landing .giro { display: block; width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(169,196,255,.25); border-top-color: #A9C4FF; animation: ark-girar 1s linear infinite; }
+  @keyframes ark-girar { to { transform: rotate(360deg); } }
+  /* avisos flotantes (+1, ¡al ras!) y carteles (escudo) */
+  .arkad-landing .aviso { position: absolute; translate: -50% -50%; font: 800 clamp(13px,2vh,19px) Unbounded, sans-serif; color: #fff; white-space: nowrap;
+    text-shadow: 0 0 16px rgba(110,145,255,.95), 0 2px 6px rgba(0,0,0,.5); animation: ark-aviso .9s var(--curva) forwards; }
+  .arkad-landing .aviso.gema { color: #CFF6FF; text-shadow: 0 0 16px rgba(56,182,255,.95), 0 2px 6px rgba(0,0,0,.5); }
+  .arkad-landing .aviso.ras { color: #FFE58A; text-shadow: 0 0 16px rgba(255,190,60,.95), 0 2px 6px rgba(0,0,0,.5); }
+  @keyframes ark-aviso { 0% { opacity: 0; transform: translateY(8px) scale(.6); } 18% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-44px); } }
+  .arkad-landing .banner { position: absolute; left: 50%; top: 24%; translate: -50% 0; font: 800 clamp(16px,3.4vh,32px) Unbounded, sans-serif; letter-spacing: .04em; white-space: nowrap; animation: ark-banner 1.4s var(--curva) forwards; }
+  .arkad-landing .banner.escudo { color: #CFF6FF; text-shadow: 0 0 24px rgba(56,182,255,.95); }
+  @keyframes ark-banner { 0% { opacity: 0; transform: scale(1.5); } 15% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+  .arkad-landing .destello { pointer-events: none; opacity: 0; background: radial-gradient(circle at 30% 50%, rgba(255,255,255,.6), rgba(255,90,140,.25) 60%, transparent); }
+  .arkad-landing .destello.activo { animation: ark-destello .45s ease-out; }
+  @keyframes ark-destello { 0% { opacity: 1; } 100% { opacity: 0; } }
+  @media (max-width: 767px) {
+    .arkad-landing .juego { padding: 14px 12px 12px; } .arkad-landing .juego-cabeza .desc { font-size: 14px; } .arkad-landing .teclas-ayuda { display: none; }
+    .arkad-landing .cabina { border-radius: 22px; padding: 5px; } .arkad-landing .cabina canvas { border-radius: 17px; } .arkad-landing .cabina::before, .arkad-landing .panel { inset: 5px; border-radius: 17px; }
+    .arkad-landing .capa, .arkad-landing .destello, .arkad-landing .pantalla, .arkad-landing .cargando { border-radius: 17px; } .arkad-landing .hud { padding: 12px; }
+    .arkad-landing .pantalla { justify-content: center; align-items: flex-end; padding: 12px; } .arkad-landing .pantalla.centro { align-items: center; }
+    .arkad-landing .tarjeta-juego { padding: 16px; } .arkad-landing .tarjeta-juego .ceja { display: none; } .arkad-landing .titulo-juego { margin-top: 0; } .arkad-landing .tarjeta-juego .btn { min-height: 46px; }
+    .arkad-landing .reglas { font-size: 13px; gap: 8px; margin: 10px 0 14px; } .arkad-landing .ico { width: 26px; height: 26px; }
+    .arkad-landing .pildora { padding: 5px 10px; font-size: 11px; } .arkad-landing .energia .txt { display: none; }
+  }
+  /* ── Pie de página: créditos al final ── */
+  .arkad-landing .pie-pagina { flex-shrink: 0; margin: clamp(8px,1.4vh,14px) 0 0; text-align: center; font-size: 12px; line-height: 1.4; color: #C9D6FF; }
+  /* en celular, a la izquierda: no queda debajo de los botones flotantes */
+  @media (max-width: 767px) { .arkad-landing .pie-pagina { text-align: left; padding: 0 60px 0 4px; } }
+  @media (orientation: landscape) and (max-height: 520px) {
+    .arkad-landing .juego { height: 100dvh; min-height: 0; margin-top: 32px; }
+    .arkad-landing .juego-cabeza { flex-wrap: nowrap; align-items: center; gap: 10px 20px; }
+    .arkad-landing .juego-cabeza .ceja, .arkad-landing .juego-cabeza .desc, .arkad-landing .teclas-ayuda { display: none; }
+    .arkad-landing .juego-cabeza h2 { margin: 0; font-size: 20px; white-space: nowrap; }
+    .arkad-landing .juego { padding: 8px 16px 6px; }
+    .arkad-landing .juego-derecha { width: auto; flex-direction: row; align-items: center; gap: 8px; } .arkad-landing .volver { align-self: auto; }
+    .arkad-landing .contorno.volver, .arkad-landing .volumen { min-height: 40px; height: 40px; }
+    .arkad-landing .cabina { margin-top: 8px; }
+    .arkad-landing .pie-pagina { margin-top: 4px; font-size: 11px; }
+    .arkad-landing #jamPausa .ceja, .arkad-landing #jamPausa .tecla { display: none; } .arkad-landing #jamPausa .tarjeta-juego { width: min(560px, 100%); padding: 12px; }
+    .arkad-landing .portadas { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+    .arkad-landing .jam-arriba { padding: 8px; flex-wrap: nowrap; gap: 8px; }
+    .arkad-landing .instrumentos, .arkad-landing .jam-modo, .arkad-landing .modos, .arkad-landing .marcador-jam { flex: 0 1 auto; width: auto; } .arkad-landing .instrumento, .arkad-landing .modo { flex: 0 1 auto; min-height: 34px; padding: 0 10px; }
+    .arkad-landing .marcador-jam { padding: 3px 3px 3px 12px; gap: 10px; }
+    .arkad-landing #jamCanciones .tarjeta-juego { padding: 10px; }
+    .arkad-landing #jamCanciones .lista-cabeza { display: none; }
+    .arkad-landing #jamCanciones .niveles { margin-bottom: 8px; gap: 6px; } .arkad-landing #jamCanciones .nivel-btn { min-height: 32px; padding: 4px; } .arkad-landing #jamCanciones .nivel-btn small { display: none; }
+    .arkad-landing #jamCanciones .lista-canciones { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .arkad-landing #jamCanciones .cancion-btn { padding: 6px 8px; gap: 8px; } .arkad-landing #jamCanciones .cancion-btn .num { width: 26px; height: 26px; font-size: 12px; }
+    .arkad-landing #jamCanciones .cancion-btn small { display: none; } .arkad-landing #jamCanciones .cancion-btn b { font-size: 12px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; }
+    .arkad-landing #jamCanciones .cancion-btn .lado { min-width: 0; } .arkad-landing #jamCanciones .cancion-btn .mejor { font-size: 10px; }
+  }
+}
