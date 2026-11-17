@@ -333,6 +333,11 @@ export const routes: RouteConfig[] = [
     path: "/play-game/:videogameID",
     element: <GamePlayerPage />,
   },
+  {
+    // HU-40 (ARK-225): juego de una edición archivada (id de HistoricalVideogame)
+    path: "/play-game/historical/:videogameID",
+    element: <GamePlayerPage kind="historical" />,
+  },
 ];
 
 const RoutesConfiguration: React.FC = () => {

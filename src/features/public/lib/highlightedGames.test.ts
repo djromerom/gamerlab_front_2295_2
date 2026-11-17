@@ -54,7 +54,9 @@ describe("webPlay", () => {
     expect(webPlay(juego({ hasGameFile: false }))).toBe("noFile");
   });
 
-  it("un juego histórico espera el endpoint de HU-40", () => {
-    expect(webPlay(juego({ play: { type: "historical", id: 87 } }))).toBe("historicalPending");
+  it("un juego histórico con zip se juega en su ruta de históricos (HU-40)", () => {
+    const historico = juego({ play: { type: "historical", id: 87 } });
+    expect(webPlay(historico)).toBe("playable");
+    expect(playerUrl(historico)).toBe("/play-game/historical/87?embed=1");
   });
 });

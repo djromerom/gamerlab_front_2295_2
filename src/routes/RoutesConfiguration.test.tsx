@@ -134,6 +134,12 @@ describe("routes", () => {
     expect(paths.filter((p) => p === "/materias")).toHaveLength(1);
   });
 
+  it("HU-40: los juegos en vivo e históricos se abren sin sesión", () => {
+    const route = (path: string) => routes.find((r) => r.path === path);
+    expect(route("/play-game/:videogameID")?.roles).toBeUndefined();
+    expect(route("/play-game/historical/:videogameID")?.roles).toBeUndefined();
+  });
+
   it("HU-33: la pantalla de presentadores es del administrador y /mi-registro del presentador", () => {
     const rolesOf = (path: string) => routes.find((r) => r.path === path)?.roles;
     expect(rolesOf("/presentadores-externos")).toEqual(["Administrador"]);

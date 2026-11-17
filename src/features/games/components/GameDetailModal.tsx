@@ -1,4 +1,4 @@
-import { ExternalLink, Heart, Users, X } from "lucide-react";
+import { ExternalLink, Heart, Monitor, Users, X } from "lucide-react";
 import { isOwnLikeEvent } from "@/lib/opaqueKeys";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -11,19 +11,25 @@ import { toast, Toaster } from "sonner";
 
 import { Team } from "@/types/team";
 import { MediaCarousel } from "./MediaCarousel";
+import { playPath, type GameKind } from "@/features/games/lib/gameFiles";
+import { useTouchOnly } from "@/hooks/useTouchOnly";
 
 interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
   onRefresh: () => void;
   liveCount?: number;
+  /** «historical» en ediciones pasadas: team.videogameId es el id del HistoricalVideogame (HU-40) */
+  gameKind?: GameKind;
 }
 
-export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDetailModalProps) {
+export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind = "live" }: GameDetailModalProps) {
   const customFetch = useFetch();
   const { user } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
+  // Los juegos de los equipos se juegan solo en computador (HU-40)
+  const touchOnly = useTouchOnly();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
@@ -283,12 +289,20 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount }: GameDet
                       </Button>
                     )}
 
-                    {(team.gameFileUrl) && <Button
-                      onClick={() => navigate(`/play-game/${team.videogameId}`)}
-                      className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
-                    >
-                      Jugar
-                    </Button>}
+                    {team.gameFileUrl && !touchOnly && (
+                      <Button
+                        onClick={() => navigate(playPath(gameKind, team.videogameId))}
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
+                      >
+                        Jugar
+                      </Button>
+                    )}
+                    {team.gameFileUrl && touchOnly && (
+                      <p className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#AC7CFF]/30 px-3 py-2 text-sm text-gray-300">
+                        <Monitor className="w-4 h-4 shrink-0 text-[#AC7CFF]" aria-hidden="true" />
+                        Este juego se juega en computador
+                      </p>
+                    )}
 
                     {/* Botón Cerrar - Solo visible en móvil */}
                     <button

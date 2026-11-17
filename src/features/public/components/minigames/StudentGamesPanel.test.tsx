@@ -61,13 +61,14 @@ describe("StudentGamesPanel", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
-  it("solo se puede jugar el que tiene zip; los históricos esperan HU-40", async () => {
+  it("se pueden jugar los que tienen zip, también los históricos (HU-40)", async () => {
     fetchHighlightedGames.mockResolvedValue(JUEGOS);
     render(<StudentGamesPanel active />);
     await screen.findByText("Ecos del Aula");
-    expect(screen.getAllByRole("button", { name: /^Jugar/ })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Jugar/ })).toHaveLength(2);
     expect(screen.getByText("Sin versión para jugar en la web")).toBeTruthy();
-    expect(screen.getByText("Pronto se podrá jugar aquí")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Jugar Otro juego" }));
+    expect(screen.getByTitle("Otro juego, de Equipo histórico").getAttribute("src")).toBe("/play-game/historical/87?embed=1");
   });
 
   it("en el computador abre el juego en la cabina y vuelve a la lista", async () => {
@@ -96,7 +97,8 @@ describe("StudentGamesPanel", () => {
     fetchHighlightedGames.mockResolvedValue(JUEGOS);
     render(<StudentGamesPanel active />);
     await screen.findByText("Ecos del Aula");
-    expect(screen.getByText("Este juego se juega en computador")).toBeTruthy();
+    // los dos con zip (el vivo y el histórico) muestran el aviso
+    expect(screen.getAllByText("Este juego se juega en computador")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /^Jugar/ })).toBeNull();
   });
 

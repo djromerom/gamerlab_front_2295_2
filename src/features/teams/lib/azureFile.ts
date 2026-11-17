@@ -17,29 +17,26 @@ export interface UrlResult {
   expiresAt: string;
 }
 
-interface videogameFetchResult {
-  id: number;
-  name: string;
-  desc?: string;
-  teamName: string;
-  status: string;
-  gameFileURL?: string;
-  entry?: string;
-}
-
 const BACKEND_BASE = (import.meta.env.VITE_ENDPOINT_BACKEND as string) || 'http://localhost:3000';
+
+/** HU-40 (ARK-225): máximo del zip del juego, igual al del back (MAX_ZIP_SIZE_MB), y el tamaño recomendado. */
+export const MAX_ZIP_MB = 200;
+export const MAX_ZIP_BYTES = MAX_ZIP_MB * 1024 * 1024;
+export const RECOMMENDED_ZIP_MB = 50;
 
 // Convierte la respuesta de error de /upload en un mensaje legible para el usuario.
 // El backend limita las subidas por IP (429) y valida el contenido real del archivo (400) (BG-02).
-async function uploadErrorMessage(res: Response, maxSize: string): Promise<string> {
+// Ante un 413 se muestra el mensaje del back («El archivo supera el máximo de 200 MB.»); si el que corta es el nginx
+// (responde HTML, sin JSON), se arma el texto con el límite real.
+export async function uploadErrorMessage(res: Response, maxSize: string): Promise<string> {
   if (res.status === 429) {
     return 'Se han hecho demasiadas solicitudes desde tu red. Espera un minuto e inténtalo de nuevo.';
   }
-  if (res.status === 413) {
-    return `Uno de los archivos es demasiado grande. El tamaño máximo permitido es ${maxSize}.`;
-  }
   const body = await res.json().catch(() => null);
   const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+  if (res.status === 413) {
+    return message || `El archivo es demasiado grande. El tamaño máximo permitido es ${maxSize}.`;
+  }
   return message || `No se pudo subir el archivo (error ${res.status}).`;
 }
 
@@ -54,7 +51,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   });
 
   if (!res.ok) {
-    throw new Error(await uploadErrorMessage(res, '1MB'));
+    throw new Error(await uploadErrorMessage(res, '1 MB'));
   }
 
   const uploadResult = (await res.json()) as UploadResult;
@@ -73,7 +70,7 @@ export async function uploadZip(file: File): Promise<UploadResult> {
     });
 
   if (!res.ok) {
-    throw new Error(await uploadErrorMessage(res, '500MB'));
+    throw new Error(await uploadErrorMessage(res, `${MAX_ZIP_MB} MB`));
   }
 
   return (await res.json()) as UploadResult;
@@ -101,46 +98,22 @@ export async function getImageUrl(uploadId: string): Promise<UrlResult> {
   //Si se está en ambiente de desarrollo, el backend mandará las SAS a las imagenes en
   //formato de URL entre contenedores (hostnames = docker service names)
   //en cuyo caso, toca reemplazar el hostname por el real (el real siendo el mismo del BACKEND_BASE_URL)
-  const parsed = new URL(urlResult.url);
-  if (parsed.hostname === 'azurite') {
-    const parsed = new URL(urlResult.url);
-    const base = new URL(BACKEND_BASE);
-    parsed.hostname = base.hostname;
-    urlResult.url = parsed.toString();
-  }
+  urlResult.url = reachableBlobUrl(urlResult.url);
   return urlResult;
 }
 
-//funcion auxiliar para obtener URL y entrypoint de archivos estaticos de un juego dado.
-export async function getGameFileEntry(videogameID: number): Promise<videogameFetchResult> {
-  const endpoint = `${BACKEND_BASE.replace(/\/$/, '')}/videogames/${videogameID}`;
-
-  const res = await apiFetch(
-    `${endpoint}`,
-    {
-      method: 'GET',
-      credentials: 'include',
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`getImageUrl failed: ${res.status} ${res.statusText} ${text}`);
+/**
+ * En desarrollo el back firma las URLs con el nombre del contenedor de Azurite («azurite»), que el navegador no
+ * resuelve: se cambia por el host del back. Las demás URLs (y la cadena vacía) pasan sin cambios.
+ */
+export function reachableBlobUrl(url: string): string {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== 'azurite') return url;
+    parsed.hostname = new URL(BACKEND_BASE).hostname;
+    return parsed.toString();
+  } catch {
+    return url;
   }
-
-  const videogameFetchResult = (await res.json()) as videogameFetchResult;
-
-  //Si se está en ambiente de desarrollo, el backend mandará las SAS a las imagenes en
-  //formato de URL entre contenedores (hostnames = docker service names)
-  //en cuyo caso, toca reemplazar el hostname por el real (el real siendo el mismo del BACKEND_BASE_URL)
-  const parsed = new URL(videogameFetchResult.gameFileURL);
-  if (parsed.hostname === 'azurite') {
-    const parsed = new URL(videogameFetchResult.gameFileURL);
-    const base = new URL(BACKEND_BASE);
-    parsed.hostname = base.hostname;
-    videogameFetchResult.gameFileURL = parsed.toString();
-  }
-  console.log("videogame static url: ", videogameFetchResult.gameFileURL);
-  console.log("videogame entry point: ", videogameFetchResult.entry);
-  return videogameFetchResult;
 }

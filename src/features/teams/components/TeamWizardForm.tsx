@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageCropper } from "@/features/teams/components/registration/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { MAX_ZIP_MB, RECOMMENDED_ZIP_MB } from "@/features/teams/lib/azureFile";
 
 import {
   AlertDialog,
@@ -559,6 +560,9 @@ export default function TeamWizardForm(props: any) {
                   className="hidden"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Máximo {MAX_ZIP_MB} MB. Recomendado: {RECOMMENDED_ZIP_MB} MB o menos, porque carga más rápido.
+              </p>
               {zipFile && (
                 <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2 text-sm mt-1">
                   <span className="truncate text-muted-foreground">{zipFile.name} · {(zipFile.size / (1024 * 1024)).toFixed(1)} MB</span>
