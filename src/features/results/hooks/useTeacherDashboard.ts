@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { Edition } from "@/api/editions";
 import { useFetch } from "@/hooks/useFetch";
 import { toFairGradeRule } from "@/features/results/types/studentGradeTable";
+import { editionSemesterLabel } from "@/lib/semesterLabel";
 
 interface PaginationMetadata {
   totalItems: number;
@@ -56,11 +57,20 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
     setCurrentPage(1);
   }, [includeHistorical]);
 
+  // BG-63: al cambiar de feria se conserva el NRC si pertenece a la nueva feria (o si se eligen
+  // todas las ferias). Si no pertenece, se vuelve a «Todos los NRCs» y se avisa con un toast.
   const setSelectedFair = useCallback((editionId: string) => {
     setSelectedFairState(editionId);
-    setSelectedNRCState("");
     setCurrentPage(1);
-  }, []);
+    if (!selectedNRC || !editionId) return;
+    const belongs = allNRCs.some((nrc) => String(nrc.editionId) === editionId && String(nrc.id) === selectedNRC);
+    if (belongs) return;
+    setSelectedNRCState("");
+    const code = allNRCs.find((nrc) => String(nrc.id) === selectedNRC)?.code ?? selectedNRC;
+    const edition = availableFairs.find((item) => String(item.id) === editionId);
+    const fairLabel = edition ? `la feria ${editionSemesterLabel(edition)}` : "la feria elegida";
+    toast.info(`El NRC ${code} no pertenece a ${fairLabel}. Se muestran todos los NRC de esa feria.`, { id: "grade-nrc-reset" });
+  }, [allNRCs, availableFairs, selectedNRC]);
 
   const validEditionIds = useMemo(
     () => new Set(availableFairs.map((edition) => String(edition.id))),
@@ -223,8 +233,7 @@ export function useTeacherDashboard({ itemsPerPage = 25, search = "", includeHis
         editionLabel: (() => {
           const edition = availableFairs.find((item) => String(item.id) === String(project.editionId));
           if (!edition) return project.editionId == null ? "-" : `Edición ${project.editionId}`;
-          const semester = edition.semester === 10 ? 1 : edition.semester === 30 ? 2 : edition.semester;
-          return `${edition.year} - S${semester}`;
+          return editionSemesterLabel(edition);
         })(),
         nrcId: project.nrcId ?? null,
         canEdit: project.canEdit === true,

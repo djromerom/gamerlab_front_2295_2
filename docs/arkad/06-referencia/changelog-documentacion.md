@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-17: Históricos del profesor (BG-63, ARK-263)
+
+- Front, Panel de Calificaciones: el pie dice «Mostrando 1-25 de 216 equipo(s)» con `metadata.totalItems` del back; los botones de página tienen `aria-label` («Página anterior» / «Página siguiente»).
+- Etiqueta de feria única con `src/lib/semesterLabel.ts` (10 → «1», 20 → «Intersemestral», 30 → «2»; p. ej. «2026 - 2»), igual que el back; ya no sale «S20».
+- Las columnas «Calificación Feria» y «Calificación Docente» van después de «Equipo» para verse a 1280 px; al cambiar de feria se conserva el NRC si pertenece a la nueva y, si no, vuelve a «Todos» con un aviso.
+
 ## 2026-11-16: jugar en el computador los juegos de los equipos (HU-40, ARK-225)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): ruta nueva `/play-game/historical/:videogameID` y el aviso de celular en `/play-game`.

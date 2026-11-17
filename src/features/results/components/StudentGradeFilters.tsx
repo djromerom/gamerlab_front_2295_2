@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { editionSemesterLabel } from "@/lib/semesterLabel";
 
 interface Props {
   selectedFair: string;
@@ -22,8 +23,6 @@ interface Props {
   disabled?: boolean;
 }
 
-const semesterLabel = (semester: number) => semester === 10 ? 1 : semester === 30 ? 2 : semester;
-
 export default function StudentGradeFilters({
   selectedFair, setSelectedFair, setSelectedNRC, availableFairs,
   selectedEdition, availableNRCs, selectedNRC, initialLoading,
@@ -37,10 +36,10 @@ export default function StudentGradeFilters({
           <div className="w-full lg:flex-1">
             <label className="block text-xs font-medium mb-2 opacity-70">Filtrar por Feria</label>
             <div className="flex flex-wrap justify-start gap-2">
-              <Button disabled={disabled} variant={selectedFair === "" ? "default" : "outline"} size="sm" onClick={() => { setSelectedFair(""); setSelectedNRC(""); }} className="cursor-pointer">Todas las Ferias</Button>
+              <Button disabled={disabled} variant={selectedFair === "" ? "default" : "outline"} size="sm" onClick={() => setSelectedFair("")} className="cursor-pointer">Todas las Ferias</Button>
               {availableFairs.map((fair) => (
-                <Button key={fair.id} disabled={disabled} variant={selectedFair === String(fair.id) ? "default" : "outline"} size="sm" onClick={() => { setSelectedFair(String(fair.id)); setSelectedNRC(""); }} className="cursor-pointer">
-                  {fair.year} - S{semesterLabel(fair.semester)}
+                <Button key={fair.id} disabled={disabled} variant={selectedFair === String(fair.id) ? "default" : "outline"} size="sm" onClick={() => setSelectedFair(String(fair.id))} className="cursor-pointer">
+                  {editionSemesterLabel(fair)}
                 </Button>
               ))}
               {availableFairs.length === 0 && <span className="text-xs text-muted-foreground self-center">No hay ferias disponibles</span>}
@@ -77,7 +76,7 @@ export default function StudentGradeFilters({
         </div>
         <div className="w-full">
           <label className="block text-xs font-medium mb-2 opacity-70">
-            Filtrar por NRC{selectedEdition ? ` · ${selectedEdition.year} - S${semesterLabel(selectedEdition.semester)}` : ""}
+            Filtrar por NRC{selectedEdition ? ` · ${editionSemesterLabel(selectedEdition)}` : ""}
           </label>
           <div className="flex flex-wrap justify-start gap-2">
             <Button disabled={disabled} variant={selectedNRC === "" ? "default" : "outline"} size="sm" onClick={() => setSelectedNRC("")} className="cursor-pointer">Todos los NRCs</Button>
