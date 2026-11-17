@@ -21,6 +21,17 @@ export interface HighlightedGame {
   videogame: Videogame;
 }
 
+/**
+ * Fila de juego_destacado tal como la incluye GET /editions/:id (ARK-229): es de un juego en vivo
+ * o de uno histórico, así que uno de los dos ids viene en null.
+ */
+export interface HighlightedGameRow {
+  id: number;
+  editionId: number;
+  videogameId: number | null;
+  historicalVideogameId: number | null;
+}
+
 export interface Testimonial {
   id: number;
   editionId: number;
@@ -53,7 +64,7 @@ export interface Edition {
   photosUrls?: { id: string; url: string }[];
   testimonials?: Testimonial[];
   educationalFocuses?: EducationalFocus[];
-  highlightedGames?: HighlightedGame[];
+  highlightedGames?: HighlightedGameRow[];
 }
 
 export interface PaginatedResult<T> {
@@ -95,7 +106,7 @@ export function isoToTime(iso: string): string {
 /**
  * Extrae el mensaje de error de una respuesta HTTP con body JSON.
  */
-async function extractErrorMessage(res: Response): Promise<string> {
+export async function extractErrorMessage(res: Response): Promise<string> {
   try {
     const body = await res.json();
     if (typeof body?.message === 'string') return body.message;

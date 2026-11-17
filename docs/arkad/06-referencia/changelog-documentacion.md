@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-16: destacados históricos en el selector del admin (HU-41, ARK-230)
+
+- [consumo-de-api](../03-frontend/consumo-de-api.md): `features/editions/api/highlightedGames.ts` (históricos de una edición archivada, `POST` con `historicalVideogameId` y `DELETE …/highlighted-games/historical/:id`) y el hook `useHighlightedGamesSelector`. El selector de Ediciones → Juegos Destacados lista los históricos cuando la edición está `ARCHIVED`, marca cuáles tienen zip y lee los destacados de `GET /highlighted-games?editionId=` (back ARK-229).
+
 ## 2026-11-16: notificaciones en Safari de iPhone o iPad sin la app (HU-37, ARK-240)
 
 - [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): al salir, la baja de la suscripción push va aparte y `POST /auth/logout` se llama siempre. `/notificaciones` usa `getPushSubscription()` y `pushAvailability()` (`features/notifications/lib/pushNotifications.ts`) con la detección de iOS de `lib/pwa.ts` (incluye el iPad con iPadOS): sin la app instalada muestra de una vez cómo instalarla, sin error técnico.

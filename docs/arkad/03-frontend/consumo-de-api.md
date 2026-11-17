@@ -16,6 +16,7 @@ Compartidas, en `api/`: `editions`, `evaluationProgress`, `registrations`. El re
 - `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame`.
 - `jurors`: `juryManagement` (management), `automaticAssignment` y `jurorsExport` (assignment), `jurorEdition`, `jurorAttendance`, `jurorCheckIn`, `jurorBadges`, `jurorSurvey`, `jurorPresence`, `absenceAlert`, `absentJurorResponses`.
 - `external-presenters`: `externalPresenters`. `notifications`: `pushNotifications`.
+- `editions`: `highlightedGames` (juegos históricos de una edición archivada y destacar o quitar un histórico, ARK-230). `public`: `highlightedGames` (`GET /highlighted-games`, también lo lee el selector de destacados del admin).
 
 Muchos tienen su `*.test.ts` al lado.
 
@@ -29,7 +30,7 @@ Muchos tienen su `*.test.ts` al lado.
 - Datos de equipos propios: `lib/ownTeam.ts`; no asumir un solo equipo por usuario (BG-17).
 
 ## Hooks de datos
-`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useTeamVerification`, `useWorkingEdition`, `useGameLoader`, `useCriteria`.
+`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useHighlightedGamesSelector` (ARK-230), `useTeamVerification`, `useWorkingEdition`, `useGameLoader`, `useCriteria`.
 
 ## Contrato front↔back
 Antes de implementar, acordar por escrito endpoints, payloads, errores y permisos en el ticket ([flujo-fullstack-y-ramas §4](../04-devops/flujo-fullstack-y-ramas.md)). El front puede avanzar con mocks.
