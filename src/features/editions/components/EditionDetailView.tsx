@@ -294,6 +294,7 @@ export const EditionDetailView: React.FC<EditionDetailViewProps> = ({
         open={openModal === "games"}
         onOpenChange={open => setOpenModal(open ? "games" : null)}
         editionId={edition.id}
+        editionStatus={edition.status}
       />
 
       <EducationalFocusesModal
