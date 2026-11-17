@@ -4,6 +4,8 @@ import {
   attendanceQueryString,
   fetchJurorAttendance,
   formatArrival,
+  sortAttendanceRows,
+  type JurorAttendanceItem,
 } from "@/features/jurors/attendance/api/jurorAttendance";
 
 const apiFetch = vi.fn();
@@ -52,8 +54,46 @@ describe("Asistencia de jurados: llamadas a la API (HU-29)", () => {
   });
 
   it("la hora de llegada sale en hora de Colombia", () => {
-    // 13:05 UTC = 8:05 a. m. en Bogotá
-    expect(formatArrival("2026-11-26T13:05:12.000Z")).toMatch(/^8:05/);
+    // 13:05 UTC = 8:05 a. m. en Bogotá; el mismo día solo se ve la hora
+    expect(formatArrival("2026-11-26T13:05:12.000Z", "2026-11-26T20:00:00.000Z")).toMatch(/^8:05/);
     expect(formatArrival(null)).toBe("—");
+  });
+
+  it("una llegada de otro día se ve con su fecha (ARK-261)", () => {
+    // 05:17 UTC del 11-nov = 12:17 a. m. del 11-nov en Bogotá
+    expect(formatArrival("2026-11-11T05:17:00.000Z", "2026-11-16T15:00:00.000Z")).toMatch(/^11\/11, 12:17/);
+  });
+});
+
+describe("orden de la tabla de asistencia (ARK-261)", () => {
+  const row = (jurorId: string, checkedInAt: string | null): JurorAttendanceItem => ({
+    jurorId,
+    name: jurorId,
+    category: "Junior",
+    isProfessor: false,
+    hasBadge: true,
+    status: checkedInAt ? "PRESENT" : "MISSING",
+    checkedInAt,
+    method: checkedInAt ? "QR" : null,
+    checkedInBy: null,
+  });
+
+  it("primero los que faltan y luego los presentes por fecha y hora reales, el último arriba", () => {
+    const rows = [
+      row("hoy-temprano", "2026-11-16T13:05:00.000Z"), // hoy 8:05 a. m.
+      row("06-nov-tarde", "2026-11-06T22:00:00.000Z"), // 06/11 5:00 p. m.
+      row("falta-a", null),
+      row("11-nov-madrugada", "2026-11-11T05:17:00.000Z"), // 11/11 12:17 a. m.
+      row("falta-b", null),
+    ];
+    expect(sortAttendanceRows(rows).map((r) => r.jurorId)).toEqual([
+      "falta-a",
+      "falta-b",
+      "hoy-temprano",
+      "11-nov-madrugada",
+      "06-nov-tarde",
+    ]);
+    // No muta la lista recibida
+    expect(rows[0].jurorId).toBe("hoy-temprano");
   });
 });

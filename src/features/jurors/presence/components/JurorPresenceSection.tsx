@@ -9,12 +9,13 @@ import {
   SETTINGS_RANGES,
   changedSettings,
   fetchPresenceSettings,
-  formatBogotaTime,
+  nextPromptLabel,
   updatePresenceSettings,
   validatePresenceSettings,
   type PresenceIndicator,
   type PresenceSettings,
 } from "@/features/jurors/presence/api/jurorPresence";
+import { formatBogotaDateTime } from "@/lib/bogotaDateTime";
 
 const TABS: Array<{ value: PresenceTab; label: string }> = [
   { value: "ANY", label: "Con alguna alerta" },
@@ -242,10 +243,10 @@ export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: b
                       {juror.category}{juror.isProfessor ? " · Profesor" : ""}
                     </div>
                   </td>
-                  <td className="p-2">{formatBogotaTime(juror.checkedInAt)}</td>
-                  <td className="p-2">{juror.lastConfirmedAt ? formatBogotaTime(juror.lastConfirmedAt) : "Sin responder"}</td>
-                  <td className="p-2">{juror.lastActivityAt ? formatBogotaTime(juror.lastActivityAt) : "Ninguna"}</td>
-                  <td className="p-2">{formatBogotaTime(juror.nextPromptAt)}</td>
+                  <td className="p-2">{formatBogotaDateTime(juror.checkedInAt, result.serverTime)}</td>
+                  <td className="p-2">{juror.lastConfirmedAt ? formatBogotaDateTime(juror.lastConfirmedAt, result.serverTime) : "Sin responder"}</td>
+                  <td className="p-2">{juror.lastActivityAt ? formatBogotaDateTime(juror.lastActivityAt, result.serverTime) : "Ninguna"}</td>
+                  <td className="p-2">{nextPromptLabel(juror.nextPromptAt, result)}</td>
                   <td className="p-2">
                     {juror.indicators.length === 0 ? (
                       <span className="text-muted-foreground">Sin alertas</span>

@@ -7,10 +7,13 @@ import {
   describeInterval,
   fetchJurorPresence,
   fetchMyPresence,
+  NO_PENDING_PROMPT,
+  PROMPT_ALREADY_ASKED,
   formatBogotaTime,
   isRetryableConfirmError,
   msUntilNextPrompt,
   nextCheckDelay,
+  nextPromptLabel,
   presenceHelp,
   updatePresenceSettings,
   validatePresenceSettings,
@@ -131,6 +134,16 @@ describe("reglas de la ventana «¿Sigues en la feria?»", () => {
   it("muestra las horas en hora de Colombia", () => {
     expect(formatBogotaTime("2026-11-26T14:05:00.000Z")).toMatch(/9:05/);
     expect(formatBogotaTime(null)).toBe("—");
+  });
+
+  it("«Próxima pregunta» nunca muestra una hora que ya pasó (ARK-261)", () => {
+    const open = { serverTime: "2026-11-16T15:00:00.000Z", evaluationsOpen: true };
+    expect(nextPromptLabel("2026-11-16T15:30:00.000Z", open)).toMatch(/^10:30/);
+    expect(nextPromptLabel("2026-11-16T14:59:00.000Z", open)).toBe(PROMPT_ALREADY_ASKED);
+    expect(nextPromptLabel("2026-11-11T06:17:00.000Z", open)).toBe(PROMPT_ALREADY_ASKED);
+    expect(nextPromptLabel(null, open)).toBe(NO_PENDING_PROMPT);
+    // Con las evaluaciones cerradas no se pregunta a nadie
+    expect(nextPromptLabel("2026-11-16T15:30:00.000Z", { ...open, evaluationsOpen: false })).toBe(NO_PENDING_PROMPT);
   });
 });
 

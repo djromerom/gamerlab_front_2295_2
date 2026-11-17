@@ -62,6 +62,28 @@ describe("Presencia de los jurados en el panel (HU-23)", () => {
     expect(within(row).getByText("Senior · Profesor")).toBeTruthy();
     expect(within(row).getByText(/8:05/)).toBeTruthy();
     expect(within(row).getByText("Ninguna")).toBeTruthy();
+    // La próxima pregunta (10:06) ya pasó a las 10:30: no se muestra una hora vencida (ARK-261)
+    expect(within(row).getByText("Ya se preguntó, sin responder")).toBeTruthy();
+  });
+
+  it("muestra la fecha de las llegadas y los «Sigo aquí» de otro día (ARK-261)", async () => {
+    mocks.fetchJurorPresence.mockResolvedValue({
+      ...list,
+      serverTime: "2026-11-16T15:00:00.000Z",
+      data: [{
+        ...list.data[0],
+        checkedInAt: "2026-11-06T13:05:00.000Z",
+        lastConfirmedAt: "2026-11-11T05:17:00.000Z",
+        nextPromptAt: "2026-11-11T06:17:00.000Z",
+      }],
+      evaluationsOpen: false,
+    });
+    render(<JurorPresenceSection />);
+
+    const row = (await screen.findByText("Ana Pérez")).closest("tr")!;
+    expect(within(row).getByText(/^06\/11, 8:05/)).toBeTruthy();
+    expect(within(row).getByText(/^11\/11, 12:17/)).toBeTruthy();
+    expect(within(row).getByText("Sin pregunta pendiente")).toBeTruthy();
   });
 
   it("por defecto pide los que tienen alguna alerta y filtra por indicador", async () => {
