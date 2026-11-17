@@ -1,6 +1,7 @@
 import { Clock } from "lucide-react";
 import { useJurorPresence } from "@/features/jurors/presence/contexts/JurorPresenceContext";
 import { formatBogotaTime, presenceHelp } from "@/features/jurors/presence/api/jurorPresence";
+import { isPastInstant } from "@/lib/bogotaDateTime";
 
 /**
  * Ayuda en las pantallas del jurado (HU-23): mientras califica, debe mantener la plataforma
@@ -15,7 +16,7 @@ export function JurorPresenceNotice({ className = "" }: { className?: string }) 
       <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
       <p>
         {presenceHelp(presence.settings)}
-        {presence.nextPromptAt && !presence.promptDue && (
+        {presence.nextPromptAt && !presence.promptDue && !isPastInstant(presence.nextPromptAt, presence.serverTime) && (
           <span className="text-muted-foreground"> Próxima pregunta hacia las {formatBogotaTime(presence.nextPromptAt)}.</span>
         )}
       </p>

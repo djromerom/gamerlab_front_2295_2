@@ -6,6 +6,7 @@ import {
   METHOD_LABEL,
   STATUS_LABEL,
   formatArrival,
+  sortAttendanceRows,
   type JurorAttendanceItem,
 } from "@/features/jurors/attendance/api/jurorAttendance";
 import { JUROR_PUBLIC_LABEL } from "@/lib/jurorLabel";
@@ -42,7 +43,7 @@ export const JurorAttendanceTable: React.FC<JurorAttendanceTableProps> = ({
             </TableCell>
           </TableRow>
         ) : (
-          jurors.map((juror) => {
+          sortAttendanceRows(jurors).map((juror) => {
             const present = juror.status === "PRESENT";
             return (
               <TableRow key={juror.jurorId}>

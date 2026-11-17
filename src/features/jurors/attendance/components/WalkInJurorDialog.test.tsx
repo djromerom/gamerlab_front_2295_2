@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WalkInJurorDialog } from "@/features/jurors/attendance/components/WalkInJurorDialog";
 import {
   WalkInJurorError,
@@ -97,9 +97,16 @@ const createAndPropose = async () => {
 };
 
 describe("Agregar jurado del día (HU-24, ARK-218)", () => {
+  // El día de la feria: las llegadas de hoy se muestran solo con la hora (ARK-261).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-26T15:00:00.000Z"));
+  });
+
   afterEach(() => {
     cleanup();
     vi.resetAllMocks();
+    vi.useRealTimers();
   });
 
   it("pide solo nombre, apellido y correo; Junior · Suplente es texto fijo", () => {

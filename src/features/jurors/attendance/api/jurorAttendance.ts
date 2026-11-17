@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { compareInstantsDesc, formatBogotaDateTime } from "@/lib/bogotaDateTime";
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
@@ -103,12 +104,24 @@ export async function fetchJurorAttendance(query: JurorAttendanceQuery = {}): Pr
   return res.json();
 }
 
-/** Hora de llegada en hora de Colombia (el back la manda en UTC). */
-export function formatArrival(iso: string | null): string {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat("es-CO", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/Bogota",
-  }).format(new Date(iso));
+/**
+ * Llegada en hora de Colombia (el back la manda en UTC): solo la hora si es de hoy,
+ * «11/11, 12:17 a. m.» si es de otro día (ARK-261).
+ */
+export function formatArrival(iso: string | null, now: string | Date = new Date()): string {
+  return formatBogotaDateTime(iso, now);
+}
+
+/**
+ * Orden de la tabla (ARK-261): primero los que faltan y luego los presentes, el último en
+ * llegar arriba, por fecha y hora completas. Es el mismo orden del back; al ser estable,
+ * los empates conservan el orden por apellido que manda el back.
+ */
+export function sortAttendanceRows(rows: JurorAttendanceItem[]): JurorAttendanceItem[] {
+  return [...rows].sort((a, b) => {
+    const aPresent = a.checkedInAt !== null;
+    const bPresent = b.checkedInAt !== null;
+    if (aPresent !== bPresent) return aPresent ? 1 : -1;
+    return compareInstantsDesc(a.checkedInAt, b.checkedInAt);
+  });
 }

@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { formatBogotaDateTime, isPastInstant } from "@/lib/bogotaDateTime";
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
@@ -205,6 +206,23 @@ export function formatBogotaTime(iso: string | null): string {
     minute: "2-digit",
     timeZone: "America/Bogota",
   }).format(new Date(iso));
+}
+
+export const NO_PENDING_PROMPT = "Sin pregunta pendiente";
+export const PROMPT_ALREADY_ASKED = "Ya se preguntó, sin responder";
+
+/**
+ * «Próxima pregunta» del panel (ARK-261): nunca una hora que ya pasó. Con las evaluaciones
+ * cerradas no se pregunta a nadie; si la hora ya pasó, la pregunta ya se hizo y el jurado
+ * no ha respondido (el back corre la próxima cuando responde «Sigo aquí»).
+ */
+export function nextPromptLabel(
+  nextPromptAt: string | null,
+  list: Pick<JurorPresenceList, "serverTime" | "evaluationsOpen">,
+): string {
+  if (!nextPromptAt || !list.evaluationsOpen) return NO_PENDING_PROMPT;
+  if (isPastInstant(nextPromptAt, list.serverTime)) return PROMPT_ALREADY_ASKED;
+  return formatBogotaDateTime(nextPromptAt, list.serverTime);
 }
 
 /** "cada hora", "cada 2 horas", "cada 30 minutos". */
