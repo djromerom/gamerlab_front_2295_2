@@ -9,7 +9,7 @@
 | `SocketContext` | Una conexión `socket.io` única (singleton) a `VITE_ENDPOINT_BACKEND`, `withCredentials: false`; expone `socket` e `isConnected`. Lo usan los likes (`useLikesSocket`) |
 | `MultiFormContext` | Paso actual del formulario de registro (`next`, `back`, `reset`, `initialStep` restaurado del borrador) |
 | `TextSizeContext` | Tamaño de texto (accesibilidad) |
-| `contexts/GlobalStateContext` | Estado global de criterios |
+| `contexts/GlobalStateContext` | Datos de `/estadisticas` y permisos del evento (`canViewJudges`, `canViewScores`, `canViewRanking`). `GlobalDataAuthSync` (dentro de `AuthProvider`) sigue la sesión: los jurados de `/reports/JuradosData` se piden con sesión y las notas de `/reports/videojuegoData`, `NRCData` y `DatosGraficoMateria` solo con el rol Administrador; al salir se borran de memoria (BG-67, ARK-269). `materiaData` es pública |
 
 ## Sesión (HU-05, HU-06)
 - Cookies HttpOnly del backend; el front **no** guarda el token en `localStorage`.

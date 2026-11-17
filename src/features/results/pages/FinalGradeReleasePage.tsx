@@ -10,6 +10,7 @@ import {
   type FinalGradeRelease,
   type IncompleteFinalGradeTeam,
 } from "@/features/results/api/finalGrade";
+import { useGlobalState } from "@/contexts/GlobalStateContext";
 
 const reasonLabels = {
   MISSING_PROFESSOR_SCORE: "Sin nota de los profesores",
@@ -52,6 +53,7 @@ const FinalGradeReleasePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setCanViewRanking } = useGlobalState();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,7 +85,9 @@ const FinalGradeReleasePage = () => {
     setError(null);
     try {
       setRelease(await setFinalGradeRelease(show));
-      toast.success(show ? "Notas finales publicadas" : "Notas finales ocultadas");
+      // BG-67 (ARK-269): ocultar la nota final también oculta el ranking público en el back
+      if (!show) setCanViewRanking(false);
+      toast.success(show ? "Notas finales publicadas" : "Notas finales ocultadas y ranking público oculto");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo actualizar la publicación de notas.";
       setError(message);
