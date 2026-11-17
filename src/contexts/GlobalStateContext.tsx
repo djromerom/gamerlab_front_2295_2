@@ -93,7 +93,9 @@ export interface GlobalStateContextType {
   fetchGlobalData: () => Promise<void>; // Función para cargar/recargar todos estos datos
   fetchJurados: () => Promise<void>; // Recarga solo los jurados (requieren sesión)
   clearJurados: () => void;
-  hasSessionRef: React.MutableRefObject<boolean>; // lo marca JuradosAuthSync
+  clearReports: () => void;
+  hasSessionRef: React.MutableRefObject<boolean>; // lo marca GlobalDataAuthSync
+  isAdminRef: React.MutableRefObject<boolean>; // lo marca GlobalDataAuthSync (BG-67)
 
   // Permiso local para mostrar u ocultar calificaciones (frontend-only)
   canViewScores: boolean;
@@ -270,7 +272,7 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   }, []);
 
   // JuradosData exige sesión (BG-02): se carga aparte para que un 401 antes del login
-  // no tumbe el resto de datos, y se vuelve a pedir al iniciar sesión (ver JuradosAuthSync).
+  // no tumbe el resto de datos, y se vuelve a pedir al iniciar sesión (ver GlobalDataAuthSync).
   // El contador descarta respuestas viejas si se piden los jurados varias veces seguidas.
   const juradosRequestRef = useRef(0);
 
@@ -296,71 +298,67 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     setListaJurados([]);
   }, []);
 
-  // Lo actualiza JuradosAuthSync; fetchGlobalData solo pide los jurados si hay sesión.
+  // Los actualiza GlobalDataAuthSync: los jurados solo se piden con sesión (BG-02) y las notas de /reports solo
+  // para el Administrador (BG-67, ARK-269).
   const hasSessionRef = useRef(false);
+  const isAdminRef = useRef(false);
 
-  // Función para cargar todos los datos globales
-  const fetchGlobalData = async () => {
+  const getJson = useCallback(
+    async (path: string) => {
+      const response = await apiFetch(`${API_ENDPOINT}/${path}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(
+          `Error HTTP ${response.status}: ${response.statusText}. URL: ${response.url}. Details: ${errorData}`,
+        );
+      }
+      return response.json();
+    },
+    [API_ENDPOINT],
+  );
+
+  /** Borra de memoria las notas, los promedios y los integrantes (al salir o si el usuario no es Administrador). */
+  const clearReports = useCallback(() => {
+    setListaVideojuegos([]);
+    setOpcionesFiltroNRC([]);
+    setDatosGraficoTortaMaterias([]);
+    setVideojuegoSeleccionado(null);
+  }, []);
+
+  // Función para cargar todos los datos globales. `materiaData` es público (solo nombres de materias);
+  // videojuegoData, NRCData y DatosGraficoMateria traen notas, promedios por NRC y junior/senior e
+  // integrantes, y desde BG-67 el back solo se los da al Administrador (401 sin sesión, 403 a otros roles).
+  const fetchGlobalData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     if (hasSessionRef.current) fetchJurados();
+    const isAdmin = isAdminRef.current;
     try {
-      // Cargamos todos los datos globales (videojuegos, materias, NRCs, etc.)
-      // usando apiFetch para garantizar que la comunicación sea resiliente a errores 401.
-      const responses = await Promise.all([
-        apiFetch(`${API_ENDPOINT}/videojuegoData`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }),
-        apiFetch(`${API_ENDPOINT}/MateriaData`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }),
-        apiFetch(`${API_ENDPOINT}/NRCData`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }),
-        apiFetch(`${API_ENDPOINT}/DatosGraficoMateria`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }),
+      const [fetchedMaterias, adminReports] = await Promise.all([
+        getJson("materiaData"),
+        isAdmin
+          ? Promise.all([getJson("videojuegoData"), getJson("NRCData"), getJson("DatosGraficoMateria")])
+          : Promise.resolve(null),
       ]);
 
-      // Verificar todas las respuestas
-      for (const response of responses) {
-        if (!response.ok) {
-          // Intenta obtener más detalles del error si es posible
-          const errorData = await response.text(); // o response.json() si tu API devuelve errores JSON
-          throw new Error(
-            `Error HTTP ${response.status}: ${response.statusText}. URL: ${response.url}. Details: ${errorData}`,
-          );
-        }
+      setOpcionesFiltroMateria(fetchedMaterias as MateriaData[]);
+      // Si mientras tanto salió el Administrador, no se guardan sus datos
+      if (!adminReports || !isAdminRef.current) {
+        clearReports();
+        return;
       }
-
-      // Desestructurar las promesas de los JSON después de verificar que todas las respuestas están OK
-      const [
-        fetchedVideojuegos,
-        fetchedMaterias,
-        fetchedNRCs,
-        fetchedDatosGraficoMateria,
-      ] = await Promise.all(responses.map((res) => res.json()));
-
-      // Ahora TypeScript sabrá los tipos si los endpoints devuelven los JSON correctos
-      setListaVideojuegos(fetchedVideojuegos as VideojuegoData[]);
-      setOpcionesFiltroMateria(fetchedMaterias as MateriaData[]); // <-- CORRECCIÓN: Usar el setter correcto
-      setOpcionesFiltroNRC(fetchedNRCs as NRCData[]); // <-- CORRECCIÓN: Usar el setter correcto
-      setDatosGraficoTortaMaterias(
-        fetchedDatosGraficoMateria as DatosGraficoMateria[],
-      ); // <-- CORRECCIÓN: Nombre del estado y setter consistentes
-
-      if (
-        fetchedVideojuegos &&
-        (fetchedVideojuegos as VideojuegoData[]).length > 0
-      ) {
-        setVideojuegoSeleccionado((fetchedVideojuegos as VideojuegoData[])[0]);
-      } else {
-        setVideojuegoSeleccionado(null);
-      }
+      const [fetchedVideojuegos, fetchedNRCs, fetchedDatosGraficoMateria] = adminReports as [
+        VideojuegoData[],
+        NRCData[],
+        DatosGraficoMateria[],
+      ];
+      setListaVideojuegos(fetchedVideojuegos);
+      setOpcionesFiltroNRC(fetchedNRCs);
+      setDatosGraficoTortaMaterias(fetchedDatosGraficoMateria);
+      setVideojuegoSeleccionado(fetchedVideojuegos.length > 0 ? fetchedVideojuegos[0] : null);
     } catch (e: any) {
       console.error("Failed to fetch global data:", e);
       setError(
@@ -371,11 +369,11 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchJurados, getJson, clearReports]);
 
   useEffect(() => {
     fetchGlobalData();
-  }, []);
+  }, [fetchGlobalData]);
 
   // SUGERENCIA: Derivar la lista filtrada aquí
   const listaVideojuegosFiltrados = useMemo(() => {
@@ -453,7 +451,9 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       fetchGlobalData,
       fetchJurados,
       clearJurados,
+      clearReports,
       hasSessionRef,
+      isAdminRef,
     }),
     [
       // Dependencias: todos los estados que se incluyen en contextValue
@@ -474,7 +474,8 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
       canViewJudges,
       fetchJurados,
       clearJurados,
-      // fetchGlobalData es estable y no necesita estar aquí, pero no hace daño.
+      clearReports,
+      fetchGlobalData,
     ],
   );
 
@@ -488,22 +489,31 @@ export function GlobalStateProvider({ children }: GlobalStateProviderProps) {
   );
 }
 
-// Vuelve a pedir los jurados cuando cambia la sesión. Va dentro de AuthProvider (App.tsx),
-// porque GlobalStateProvider está por fuera y no se entera del login (BG-02).
-export function JuradosAuthSync() {
-  const { user, loading } = useAuth();
-  const { fetchJurados, clearJurados, hasSessionRef } = useGlobalState();
+// Sigue la sesión, porque GlobalStateProvider está por fuera de AuthProvider (App.tsx) y no se entera del login:
+// - los jurados se piden con cualquier sesión (BG-02);
+// - las notas de /reports solo con el rol Administrador (BG-67, ARK-269). Al salir o con otro rol se borran.
+export function GlobalDataAuthSync() {
+  const { user, userRole, loading } = useAuth();
+  const { fetchJurados, clearJurados, fetchGlobalData, clearReports, hasSessionRef, isAdminRef } =
+    useGlobalState();
   const userId = user?.id;
+  const isAdmin = Boolean(userId) && userRole === "Administrador";
 
   useEffect(() => {
     if (loading) return;
     hasSessionRef.current = Boolean(userId);
+    isAdminRef.current = isAdmin;
+    if (isAdmin) {
+      fetchGlobalData(); // también pide los jurados
+      return;
+    }
+    clearReports();
     if (userId) {
       fetchJurados();
     } else {
       clearJurados();
     }
-  }, [userId, loading, fetchJurados, clearJurados, hasSessionRef]);
+  }, [userId, isAdmin, loading, fetchJurados, clearJurados, fetchGlobalData, clearReports, hasSessionRef, isAdminRef]);
 
   return null;
 }

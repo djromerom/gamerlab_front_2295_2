@@ -15,6 +15,7 @@ Compartidas, en `api/`: `editions`, `evaluationProgress`, `registrations`. El re
 - `teams`: `editionStudents`, `teamVerification`, `teamGradable`.
 - `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
 - `jurors`: `juryManagement` (management), `automaticAssignment` y `jurorsExport` (assignment), `jurorEdition`, `jurorAttendance`, `jurorCheckIn`, `jurorBadges`, `jurorSurvey`, `jurorPresence`, `absenceAlert`, `absentJurorResponses`.
+- `editions`: `eventSettings` (interruptores de la configuración del evento; muestra el 400 `RANKING_REQUIRES_FINAL_GRADE` de BG-67).
 - `external-presenters`: `externalPresenters`. `notifications`: `pushNotifications`.
 - `editions`: `highlightedGames` (juegos históricos de una edición archivada y destacar o quitar un histórico, ARK-230). `public`: `highlightedGames` (`GET /highlighted-games`, también lo lee el selector de destacados del admin).
 

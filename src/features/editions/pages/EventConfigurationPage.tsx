@@ -9,7 +9,7 @@ import { useGlobalState } from "@/contexts/GlobalStateContext";
 
 
 const EventConfigurationPage: React.FC = () => {
-    const {canViewScores, canViewJudges, canViewRanking } = useGlobalState() // Placeholder for actual permission logic
+    const { canViewScores, canViewJudges, canViewRanking, setCanViewScores, setCanViewJudges, setCanViewRanking } = useGlobalState();
 
     const navigate = useNavigate();
     const breadcrumbs = [
@@ -26,9 +26,10 @@ const EventConfigurationPage: React.FC = () => {
             </div>
 
             <div className="grid gap-4 max-[500px]:gap-4 md:grid:gap-4:grid-cols-[repeat(auto-fill,minmax(370px,1fr))] min-w-[200px] mb-8  max-w-full">
-                <EventSetupCard value={canViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Permite que los jurados califiquen a los equipos del evento."/>
-                <EventSetupCard value={canViewScores} url="/settings/show-evaluations" title="Resultados de Evaluación" subtitle="Permite que los equipos vean las calificaciones que recibieron."/>
-                <EventSetupCard value={canViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público."/>
+                <EventSetupCard value={canViewJudges} onChange={setCanViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Permite que los jurados califiquen a los equipos del evento."/>
+                <EventSetupCard value={canViewScores} onChange={setCanViewScores} url="/settings/show-evaluations" title="Resultados de Evaluación" subtitle="Permite que los equipos vean las calificaciones que recibieron."/>
+                {/* BG-67 (ARK-269): el back no deja publicar el ranking sin la nota final liberada */}
+                <EventSetupCard value={canViewRanking} onChange={setCanViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público." hint="Se habilita después de liberar la nota final (Notas finales). Mientras el ranking no esté publicado, ninguna página pública muestra notas."/>
                 <RegistrationsToggleCard />
                 <div className="sm:flex-[0_1_10%] md:mb-6 space-y-2 border-2 rounded-lg overflow-hidden  md:w-full shadow-sm ">
                 <div className="border-b last:border-b-0">

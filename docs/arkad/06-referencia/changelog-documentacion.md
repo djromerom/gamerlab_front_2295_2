@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-16: notas solo con el ranking publicado (BG-67, ARK-269)
+
+- [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): `GlobalDataAuthSync` (antes `JuradosAuthSync`) pide las notas de `/reports` solo para el Administrador y las borra al salir; los visitantes ya no reciben 401 de esas rutas.
+- [consumo-de-api](../03-frontend/consumo-de-api.md): `features/editions/api/eventSettings.ts`. El interruptor «Ranking Público» muestra el mensaje del back si la nota final no está liberada, y ocultar la nota final deja el interruptor apagado (back ARK-268).
+
 ## 2026-11-17: Históricos del profesor (BG-63, ARK-263)
 
 - Front, Panel de Calificaciones: el pie dice «Mostrando 1-25 de 216 equipo(s)» con `metadata.totalItems` del back; los botones de página tienen `aria-label` («Página anterior» / «Página siguiente»).

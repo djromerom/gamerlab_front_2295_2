@@ -5,11 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   fetchFinalGradeRelease: vi.fn(),
   setFinalGradeRelease: vi.fn(),
+  setCanViewRanking: vi.fn(),
 }));
 
 vi.mock("@/features/results/api/finalGrade", () => ({
   fetchFinalGradeRelease: mocks.fetchFinalGradeRelease,
   setFinalGradeRelease: mocks.setFinalGradeRelease,
+}));
+vi.mock("@/contexts/GlobalStateContext", () => ({
+  useGlobalState: () => ({ setCanViewRanking: mocks.setCanViewRanking }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/layouts/LayoutApplication", () => ({
@@ -74,5 +78,7 @@ describe("Publicación de notas finales (ARK-81)", () => {
     render(<FinalGradeReleasePage />);
     fireEvent.click(await screen.findByRole("button", { name: "Ocultar notas" }));
     await waitFor(() => expect(mocks.setFinalGradeRelease).toHaveBeenCalledWith(false));
+    // BG-67: el back también oculta el ranking público; el interruptor de la configuración queda apagado
+    await waitFor(() => expect(mocks.setCanViewRanking).toHaveBeenCalledWith(false));
   });
 });
