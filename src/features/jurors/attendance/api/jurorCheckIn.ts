@@ -47,6 +47,31 @@ export async function scanJurorBadge(token: string): Promise<CheckInResult> {
   return response.json();
 }
 
+/**
+ * Jurado de una escarapela, sin registrar la llegada: el QR es un token opaco, así que hay que preguntarle al back
+ * de quién es para pedir confirmación antes de registrar (ARK-252). Ruta pedida al back con ARK-252; mientras no
+ * exista, el escaneo muestra el error y se puede registrar por nombre.
+ */
+export interface BadgePreview {
+  juror: CheckInResult["juror"];
+  /** Si ya llegó, la hora de su llegada activa (ISO UTC). */
+  checkedInAt: string | null;
+}
+
+export const QR_PREVIEW_UNAVAILABLE =
+  "Leer el QR todavía no está disponible en este servidor. Busca al jurado por nombre en «Registro manual».";
+
+export async function previewJurorBadge(token: string): Promise<BadgePreview> {
+  const response = await apiFetch(`${API_URL}/juror-checkin/badge?token=${encodeURIComponent(token.trim())}`);
+  if (!response.ok) {
+    const message = await errorMessage(response, "Código QR no válido");
+    // Back sin la ruta todavía: Nest responde «Cannot GET …», que no le sirve al Staff
+    if (response.status === 404 && message.startsWith("Cannot GET")) throw new Error(QR_PREVIEW_UNAVAILABLE);
+    throw new Error(message);
+  }
+  return response.json();
+}
+
 export async function searchJurors(query: string): Promise<JurorSearchItem[]> {
   const response = await apiFetch(`${API_URL}/juror-checkin/search?q=${encodeURIComponent(query.trim())}`);
   if (!response.ok) throw new Error(await errorMessage(response, "No se pudo buscar al jurado"));

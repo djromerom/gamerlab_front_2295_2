@@ -11,6 +11,8 @@ export type AttendanceCategory = "Senior" | "Junior" | "Sin categoría";
 
 export interface JurorAttendanceItem {
   jurorId: string;
+  /** Id de la llegada activa (BG-49): el que se manda para anularla; null si el jurado falta. */
+  attendanceId: number | null;
   name: string;
   category: AttendanceCategory;
   isProfessor: boolean;
@@ -124,4 +126,64 @@ export function sortAttendanceRows(rows: JurorAttendanceItem[]): JurorAttendance
     if (aPresent !== bPresent) return aPresent ? 1 : -1;
     return compareInstantsDesc(a.checkedInAt, b.checkedInAt);
   });
+}
+
+// ─── Anular una llegada (BG-49, ARK-251/ARK-252; contrato docs/frontend/BG-49-anular-llegada.md del back) ──
+
+export const ANNUL_REASON_MAX = 500;
+
+interface PersonRef {
+  id: string;
+  name: string;
+}
+
+export interface AnnulledArrival {
+  attendanceId: number;
+  edition: { id: number; title: string };
+  juror: PersonRef;
+  checkedInAt: string;
+  method: AttendanceMethod;
+  checkedInBy: PersonRef;
+  annulledAt: string;
+  annulledBy: PersonRef;
+  annulmentReason: string | null;
+  jurorStatus: "MISSING";
+}
+
+const ANNUL_MESSAGES: Record<number, string> = {
+  403: "Solo el administrador puede anular una llegada.",
+  404: "No se encontró la llegada. Puede que ya no exista: la tabla se actualizó.",
+  409: "Esta llegada ya estaba anulada. La tabla se actualizó.",
+};
+
+/** Error al anular, con el código HTTP: 404 y 409 piden volver a consultar la tabla. */
+export class AnnulArrivalError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Anula la llegada de un jurado (solo el Administrador). La llegada no se borra: queda con quién la anuló, cuándo
+ * y el motivo, y el jurado vuelve a «Sin check-in». Un motivo vacío o solo con espacios se manda como sin motivo.
+ */
+export async function annulJurorArrival(attendanceId: number, reason = ""): Promise<AnnulledArrival> {
+  const trimmed = reason.trim().slice(0, ANNUL_REASON_MAX);
+  const res = await apiFetch(`${API_URL}/juror-attendance/${attendanceId}/annul`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(trimmed ? { reason: trimmed } : {}),
+  });
+  if (res.ok) return res.json();
+  const body = await res.json().catch(() => null);
+  const code = typeof body?.code === "string" ? body.code : undefined;
+  const backMessage = Array.isArray(body?.message) ? body.message.join(", ") : body?.message;
+  const message =
+    ANNUL_MESSAGES[res.status] ??
+    (typeof backMessage === "string" && backMessage ? backMessage : `No se pudo anular la llegada (error ${res.status}).`);
+  throw new AnnulArrivalError(message, res.status, code);
 }

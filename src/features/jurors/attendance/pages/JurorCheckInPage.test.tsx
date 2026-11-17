@@ -6,19 +6,27 @@ import type { CheckInResult, JurorSearchItem } from "@/features/jurors/attendanc
 
 const searchJurors = vi.fn();
 const checkInJurorManually = vi.fn();
+const scanJurorBadge = vi.fn();
+const previewJurorBadge = vi.fn();
 
 vi.mock("@/features/jurors/attendance/api/jurorCheckIn", () => ({
   searchJurors: (...args: unknown[]) => searchJurors(...args),
   checkInJurorManually: (...args: unknown[]) => checkInJurorManually(...args),
-  scanJurorBadge: vi.fn(),
+  scanJurorBadge: (...args: unknown[]) => scanJurorBadge(...args),
+  previewJurorBadge: (...args: unknown[]) => previewJurorBadge(...args),
 }));
 
-// jsdom no tiene cámara: el escáner no se usa en estas pruebas
+// jsdom no tiene cámara: el escáner falso guarda la función que recibe cada lectura
+const scanner = vi.hoisted(() => ({ onScan: null as ((token: string) => void) | null, pause: vi.fn(), resume: vi.fn() }));
 vi.mock("html5-qrcode", () => ({
   Html5Qrcode: class {
-    start = vi.fn();
-    stop = vi.fn();
+    start = vi.fn(async (_camera: unknown, _config: unknown, onScan: (token: string) => void) => {
+      scanner.onScan = onScan;
+    });
+    stop = vi.fn(async () => undefined);
     clear = vi.fn();
+    pause = scanner.pause;
+    resume = scanner.resume;
   },
   Html5QrcodeSupportedFormats: { QR_CODE: 0 },
 }));
@@ -85,6 +93,7 @@ describe("Check-in de jurados: categoría según el rol (HU-35)", () => {
     expect(option.textContent).toContain("Jurado · Tiene escarapela");
 
     fireEvent.click(option);
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar llegada" }));
     await waitFor(() => expect(screen.getByText("Llegada registrada")).toBeTruthy());
     expect(container.textContent).not.toMatch(/junior|senior/i);
   });
@@ -96,7 +105,126 @@ describe("Check-in de jurados: categoría según el rol (HU-35)", () => {
     expect(option.textContent).toContain("Senior · Tiene escarapela");
 
     fireEvent.click(option);
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar llegada" }));
     await waitFor(() => expect(screen.getByText("Llegada registrada")).toBeTruthy());
     expect(screen.getByText(/· Senior/)).toBeTruthy();
+  });
+});
+
+describe("Check-in de jurados: confirmar antes de registrar (ARK-252)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    searchJurors.mockReset().mockResolvedValue([ana]);
+    checkInJurorManually.mockReset().mockResolvedValue(checkIn);
+    scanJurorBadge.mockReset().mockResolvedValue({ ...checkIn, method: "QR" });
+    previewJurorBadge.mockReset();
+    scanner.onScan = null;
+    scanner.pause.mockReset();
+    scanner.resume.mockReset();
+    auth.userRole = "Staff";
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("tocar un resultado no registra: muestra el nombre y espera «Confirmar llegada»", async () => {
+    renderPage();
+    fireEvent.click(await searchAna());
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toContain("Ana Pérez");
+    expect(dialog.textContent).toContain("Jurado · Tiene escarapela");
+    expect(checkInJurorManually).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar llegada" }));
+    await waitFor(() => expect(checkInJurorManually).toHaveBeenCalledWith("j-1"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("«Cancelar» no registra", async () => {
+    renderPage();
+    fireEvent.click(await searchAna());
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(checkInJurorManually).not.toHaveBeenCalled();
+    expect(screen.queryByText("Llegada registrada")).toBeNull();
+  });
+
+  it("si ya llegó, lo avisa en la confirmación", async () => {
+    searchJurors.mockResolvedValue([{ ...ana, checkedInAt: "2026-11-26T13:05:12.000Z" }]);
+    renderPage();
+    fireEvent.click(await searchAna());
+    expect((await screen.findByRole("dialog")).textContent).toMatch(/Ya llegó/);
+  });
+
+  async function startCamera() {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /Activar cámara/ }));
+    await waitFor(() => expect(scanner.onScan).not.toBeNull());
+  }
+
+  it("leer un QR muestra el nombre del jurado leído, pausa la cámara y solo registra al confirmar", async () => {
+    previewJurorBadge.mockResolvedValue({
+      juror: { id: "j-2", name: "Kevin Lara", category: "Junior", teams: [{ id: 3, name: "Grupo 3" }] },
+      checkedInAt: null,
+    });
+    await startCamera();
+    scanner.onScan!("token-qr");
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toContain("Kevin Lara");
+    expect(dialog.textContent).toContain("el escáner puede leer el QR de al lado");
+    expect(dialog.textContent).toContain("Grupos: Grupo 3");
+    expect(previewJurorBadge).toHaveBeenCalledWith("token-qr");
+    expect(scanJurorBadge).not.toHaveBeenCalled();
+    await waitFor(() => expect(scanner.pause).toHaveBeenCalled());
+
+    // otra lectura mientras está abierta la confirmación se ignora
+    scanner.onScan!("otro-token");
+    expect(previewJurorBadge).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar llegada" }));
+    await waitFor(() => expect(scanJurorBadge).toHaveBeenCalledWith("token-qr"));
+    await waitFor(() => expect(scanner.resume).toHaveBeenCalled());
+  });
+
+  it("cancelar un QR no registra", async () => {
+    previewJurorBadge.mockResolvedValue({ juror: { id: "j-2", name: "Kevin Lara", category: "Junior", teams: [] }, checkedInAt: null });
+    await startCamera();
+    scanner.onScan!("token-qr");
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(scanJurorBadge).not.toHaveBeenCalled();
+  });
+
+  it("tras cancelar, el mismo QR (el de al lado) no vuelve a abrir la confirmación enseguida; otro QR sí", async () => {
+    previewJurorBadge.mockResolvedValue({ juror: { id: "j-2", name: "Kevin Lara", category: "Junior", teams: [] }, checkedInAt: null });
+    await startCamera();
+    scanner.onScan!("token-vecino");
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    scanner.onScan!("token-vecino");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(previewJurorBadge).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    scanner.onScan!("token-correcto");
+    await screen.findByRole("dialog");
+    expect(previewJurorBadge).toHaveBeenLastCalledWith("token-correcto");
+  });
+
+  it("un QR que no sirve muestra el error y no abre la confirmación", async () => {
+    previewJurorBadge.mockRejectedValue(new Error("Código QR no válido"));
+    await startCamera();
+    scanner.onScan!("token-malo");
+    expect(await screen.findByText("Código QR no válido")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(scanJurorBadge).not.toHaveBeenCalled();
   });
 });

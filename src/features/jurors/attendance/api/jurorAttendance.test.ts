@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  AnnulArrivalError,
+  annulJurorArrival,
   JurorAttendanceError,
   attendanceQueryString,
   fetchJurorAttendance,
@@ -68,6 +70,7 @@ describe("Asistencia de jurados: llamadas a la API (HU-29)", () => {
 describe("orden de la tabla de asistencia (ARK-261)", () => {
   const row = (jurorId: string, checkedInAt: string | null): JurorAttendanceItem => ({
     jurorId,
+    attendanceId: checkedInAt ? 1 : null,
     name: jurorId,
     category: "Junior",
     isProfessor: false,
@@ -95,5 +98,42 @@ describe("orden de la tabla de asistencia (ARK-261)", () => {
     ]);
     // No muta la lista recibida
     expect(rows[0].jurorId).toBe("hoy-temprano");
+  });
+});
+
+describe("Anular una llegada (BG-49)", () => {
+  afterEach(() => apiFetch.mockReset());
+
+  const errorOf = async (status: number, body: unknown) => {
+    apiFetch.mockResolvedValueOnce(json(status, body));
+    return annulJurorArrival(31).catch((e) => e);
+  };
+
+  it("PATCH /juror-attendance/:id/annul con el motivo recortado", async () => {
+    apiFetch.mockResolvedValueOnce(json(200, { attendanceId: 31, juror: { id: "j", name: "Ana" }, jurorStatus: "MISSING" }));
+    await annulJurorArrival(31, "  Leyó el QR de al lado  ");
+    const [url, init] = apiFetch.mock.calls[0];
+    expect(url).toBe("http://api.test/juror-attendance/31/annul");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({ reason: "Leyó el QR de al lado" });
+  });
+
+  it("un motivo vacío o con solo espacios se manda como sin motivo", async () => {
+    apiFetch.mockResolvedValueOnce(json(200, {}));
+    await annulJurorArrival(31, "   ");
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toEqual({});
+  });
+
+  it("403, 404 y 409 con los textos del contrato y su código", async () => {
+    expect(await errorOf(403, { message: "Forbidden resource" })).toMatchObject({ status: 403, message: "Solo el administrador puede anular una llegada." });
+    const notFound = await errorOf(404, { code: "ATTENDANCE_NOT_FOUND", message: "x" });
+    expect(notFound).toBeInstanceOf(AnnulArrivalError);
+    expect(notFound).toMatchObject({ status: 404, code: "ATTENDANCE_NOT_FOUND" });
+    expect((await errorOf(409, { code: "ARRIVAL_ALREADY_ANNULLED", message: "x" })).message).toMatch(/ya estaba anulada/);
+  });
+
+  it("400 muestra el mensaje del back (también si es una lista)", async () => {
+    expect((await errorOf(400, { code: "EDITION_READ_ONLY", message: "La edición no está activa." })).message).toBe("La edición no está activa.");
+    expect((await errorOf(400, { message: ["reason must be shorter than or equal to 500 characters"] })).message).toContain("500");
   });
 });

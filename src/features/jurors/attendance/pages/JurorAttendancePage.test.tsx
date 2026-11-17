@@ -3,17 +3,21 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import JurorAttendancePage from "@/features/jurors/attendance/pages/JurorAttendancePage";
 import {
+  AnnulArrivalError,
   JurorAttendanceError,
   type JurorAttendanceItem,
   type JurorAttendanceResult,
 } from "@/features/jurors/attendance/api/jurorAttendance";
 
 const fetchJurorAttendance = vi.fn();
+const annulJurorArrival = vi.fn();
 
 vi.mock("@/features/jurors/attendance/api/jurorAttendance", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/jurors/attendance/api/jurorAttendance")>()),
   fetchJurorAttendance: (...args: unknown[]) => fetchJurorAttendance(...args),
+  annulJurorArrival: (...args: unknown[]) => annulJurorArrival(...args),
 }));
+vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), info: vi.fn(), error: vi.fn() }), Toaster: () => null }));
 
 // El sidebar real depende de la sesión: aquí solo importa la página
 vi.mock("@/layouts/AppSidebar", () => ({
@@ -29,6 +33,7 @@ vi.mock("@/contexts/AuthContext", async (importOriginal) => ({
 
 const missing: JurorAttendanceItem = {
   jurorId: "j-1",
+  attendanceId: null,
   name: "Luis Gómez",
   category: "Junior",
   isProfessor: false,
@@ -41,6 +46,7 @@ const missing: JurorAttendanceItem = {
 
 const present: JurorAttendanceItem = {
   jurorId: "p-1",
+  attendanceId: 31,
   name: "Ana Pérez",
   category: "Senior",
   isProfessor: true,
@@ -208,14 +214,72 @@ describe("Asistencia de jurados (HU-29)", () => {
     expect(screen.getByText("La edición no tiene jurados confirmados.")).toBeTruthy();
   });
 
-  it("no ofrece acciones sobre la asistencia (solo lectura)", async () => {
+  it("BG-49: el Staff no ve «Anular llegada»", async () => {
+    auth.userRole = "Staff";
     fetchJurorAttendance.mockResolvedValue(resultOf([missing, present]));
     renderPage();
     await flush();
 
     const table = screen.getByRole("table");
     expect(within(table).queryAllByRole("button")).toHaveLength(0);
-    expect(within(table).queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("BG-49: el administrador ve «Anular llegada» solo en quien llegó", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing, present]));
+    renderPage();
+    await flush();
+
+    const table = screen.getByRole("table");
+    expect(within(table).getAllByRole("button", { name: /Anular llegada/ })).toHaveLength(1);
+    expect(within(table).getByRole("button", { name: "Anular llegada de Ana Pérez" })).toBeTruthy();
+  });
+
+  it("BG-49: confirma con nombre, hora y quién registró; anula con el motivo y vuelve a consultar la tabla", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([missing, present]));
+    annulJurorArrival.mockReset().mockResolvedValue({ juror: { id: "p-1", name: "Ana Pérez" }, jurorStatus: "MISSING" });
+    renderPage();
+    await flush();
+
+    fireEvent.click(screen.getByRole("button", { name: "Anular llegada de Ana Pérez" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Ana Pérez");
+    expect(dialog.textContent).toContain("Staff Mesa 1");
+    expect(dialog.textContent).toContain("QR");
+    expect(annulJurorArrival).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText("Motivo (opcional)"), { target: { value: "Leyó el QR de al lado" } });
+    const callsBefore = fetchJurorAttendance.mock.calls.length;
+    fireEvent.click(within(dialog).getByRole("button", { name: "Anular llegada" }));
+    await flush();
+
+    expect(annulJurorArrival).toHaveBeenCalledWith(31, "Leyó el QR de al lado");
+    expect(fetchJurorAttendance.mock.calls.length).toBeGreaterThan(callsBefore);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("BG-49: «Cancelar» no anula", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([present]));
+    annulJurorArrival.mockReset();
+    renderPage();
+    await flush();
+
+    fireEvent.click(screen.getByRole("button", { name: "Anular llegada de Ana Pérez" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }));
+    await flush();
+    expect(annulJurorArrival).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("BG-49: un error que no es 404/409 se muestra en el diálogo sin cerrarlo", async () => {
+    fetchJurorAttendance.mockResolvedValue(resultOf([present]));
+    annulJurorArrival.mockReset().mockRejectedValueOnce(new AnnulArrivalError("Solo el administrador puede anular una llegada.", 403));
+    renderPage();
+    await flush();
+
+    fireEvent.click(screen.getByRole("button", { name: "Anular llegada de Ana Pérez" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Anular llegada" }));
+    await flush();
+    expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toContain("Solo el administrador");
   });
 
   it("en el celular no hace zoom (ARK-165): escala fija, buscador de 16 px y todo se restaura al salir", async () => {
