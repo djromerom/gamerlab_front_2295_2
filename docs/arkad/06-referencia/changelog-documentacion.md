@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-16: notificaciones en Safari de iPhone o iPad sin la app (HU-37, ARK-240)
+
+- [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): al salir, la baja de la suscripción push va aparte y `POST /auth/logout` se llama siempre. `/notificaciones` usa `getPushSubscription()` y `pushAvailability()` (`features/notifications/lib/pushNotifications.ts`) con la detección de iOS de `lib/pwa.ts` (incluye el iPad con iPadOS): sin la app instalada muestra de una vez cómo instalarla, sin error técnico.
+
 ## 2026-11-14: subdominio `jurors/substitutes` (HU-22, ARK-85)
 
 - Nuevo subdominio del front `features/jurors/substitutes/`: aviso «Te asignaron grupos» al suplente (consulta cada 10 s), su explicación con «Entendido» guardado en el navegador por usuario y edición, y la sección «Avisos a suplentes sin leer» del seguimiento. Agregado a la tabla de [dominios](../03-frontend/estructura-objetivo-y-convenciones.md#dominios) y al árbol de [estructura del proyecto](../03-frontend/estructura-del-proyecto.md).

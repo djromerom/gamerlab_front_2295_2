@@ -235,3 +235,68 @@ describe("AuthContext: sesión del jurado (HU-05)", () => {
     expect(sessionExpired()).toBe("false");
   });
 });
+
+describe("AuthContext: Salir con avisos push (Safari de iPhone sin la app)", () => {
+  const original = Object.getOwnPropertyDescriptor(navigator, "serviceWorker");
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    if (original) Object.defineProperty(navigator, "serviceWorker", original);
+    else delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+  });
+
+  function withRegistration(registration: unknown) {
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: { getRegistration: vi.fn(async () => registration) },
+    });
+  }
+
+  const logoutCalls = () =>
+    vi.mocked(fetch).mock.calls.filter(([url]) => String(url) === `${API}/auth/logout`).length;
+
+  it("sin pushManager (Safari sin la app instalada) igual llama a /auth/logout", async () => {
+    createFakeBackend();
+    withRegistration({}); // el service worker existe pero no trae pushManager
+    await startSession();
+    await click("Salir");
+    expect(logoutCalls()).toBe(1);
+    expect(currentUser()).toBe("none");
+  });
+
+  it("si falla la baja de la suscripción, igual llama a /auth/logout", async () => {
+    createFakeBackend();
+    withRegistration({ pushManager: { getSubscription: vi.fn(async () => Promise.reject(new Error("push roto"))) } });
+    await startSession();
+    await click("Salir");
+    expect(logoutCalls()).toBe(1);
+  });
+
+  it("con una suscripción la da de baja en el back y en el navegador antes de salir", async () => {
+    createFakeBackend();
+    const backendFetch = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (input, init) =>
+      String(input) === `${API}/push/unsubscribe` ? json(201, { devices: 0 }) : backendFetch(input, init),
+    );
+    const unsubscribe = vi.fn(async () => true);
+    withRegistration({
+      pushManager: { getSubscription: vi.fn(async () => ({ endpoint: "https://push.test/abc", unsubscribe })) },
+    });
+    await startSession();
+    await click("Salir");
+    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
+    expect(urls).toContain(`${API}/push/unsubscribe`);
+    expect(unsubscribe).toHaveBeenCalled();
+    expect(logoutCalls()).toBe(1);
+  });
+});

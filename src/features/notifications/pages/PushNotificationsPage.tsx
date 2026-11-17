@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Smartphone } from "lucide-react";
+import { Link } from "react-router-dom";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,9 +14,10 @@ import {
 } from "@/features/notifications/api/pushNotifications";
 import {
   base64UrlToUint8Array,
-  getPushRegistration,
-  isPushSupported,
-  requiresInstalledPwa,
+  getPushSubscription,
+  NEEDS_INSTALL_MESSAGE,
+  pushAvailability,
+  UNSUPPORTED_MESSAGE,
 } from "@/features/notifications/lib/pushNotifications";
 
 export default function PushNotificationsPage() {
@@ -29,10 +31,13 @@ export default function PushNotificationsPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  // En iPhone o iPad sin la app instalada (o en un navegador sin push) se avisa de una vez, sin error técnico
+  const [availability] = useState(pushAvailability);
+  const canUsePush = availability === "supported";
 
   const syncSubscription = async () => {
-    const registration = await getPushRegistration();
-    const browserSubscription = await registration?.pushManager.getSubscription();
+    // null sin pushManager (Safari sin la app instalada): ya no lanza
+    const browserSubscription = await getPushSubscription();
     setSubscribed(Boolean(browserSubscription));
 
     const [status, publicKey] = await Promise.all([getPushStatus(), getPushPublicKey()]);
@@ -60,14 +65,7 @@ export default function PushNotificationsPage() {
   const activate = async () => {
     setError("");
     setMessage("");
-    if (requiresInstalledPwa()) {
-      setError("Instala ARKAD como aplicación desde Safari antes de activar las notificaciones.");
-      return;
-    }
-    if (!isPushSupported()) {
-      setError("Este navegador no es compatible con las notificaciones push.");
-      return;
-    }
+    if (!canUsePush) return;
 
     setBusy(true);
     try {
@@ -107,8 +105,7 @@ export default function PushNotificationsPage() {
     setMessage("");
     setBusy(true);
     try {
-      const registration = await getPushRegistration();
-      const subscription = await registration?.pushManager.getSubscription();
+      const subscription = await getPushSubscription();
       if (subscription) {
         await unsubscribeFromPush(subscription.endpoint);
         await subscription.unsubscribe();
@@ -159,9 +156,23 @@ export default function PushNotificationsPage() {
                 ? <Bell className="text-primary" />
                 : <BellOff className="text-muted-foreground" />}
             </div>
-            <Button className="mt-4" onClick={subscribed ? deactivate : activate} disabled={loading || busy}>
-              {busy ? "Procesando..." : subscribed ? "Desactivar" : "Activar notificaciones"}
-            </Button>
+            {canUsePush || subscribed ? (
+              <Button className="mt-4" onClick={subscribed ? deactivate : activate} disabled={loading || busy}>
+                {busy ? "Procesando..." : subscribed ? "Desactivar" : "Activar notificaciones"}
+              </Button>
+            ) : (
+              <div className="mt-4 flex gap-3 rounded-md border border-primary/30 bg-primary/5 p-4 text-sm" role="note">
+                <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                <div className="space-y-2">
+                  <p>{availability === "needsInstall" ? NEEDS_INSTALL_MESSAGE : UNSUPPORTED_MESSAGE}</p>
+                  {availability === "needsInstall" && userRole === "Jurado" && (
+                    <Link to="/instalar-app" className="font-medium text-primary underline underline-offset-4">
+                      Ver la guía para instalar la app
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
