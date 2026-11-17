@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-16: confirmar la llegada y anularla (BG-49, ARK-252)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en `/check-in-jurados` tocar un resultado o leer un QR abre una confirmación con el nombre; en `/asistencia-jurados` el Administrador tiene «Anular llegada» (`PATCH /juror-attendance/:attendanceId/annul`, back ARK-251). La confirmación del QR usa `GET /juror-checkin/badge?token=` (back #307, sin efectos); si entre la vista previa y «Confirmar» otra mesa registró la llegada, `ALREADY_CHECKED_IN` se muestra como aviso. En un servidor sin la ruta, el QR pide buscar por nombre.
+
 ## 2026-11-16: notas solo con el ranking publicado (BG-67, ARK-269)
 
 - [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): `GlobalDataAuthSync` (antes `JuradosAuthSync`) pide las notas de `/reports` solo para el Administrador y las borra al salir; los visitantes ya no reciben 401 de esas rutas.

@@ -3,7 +3,7 @@ import {
   Html5Qrcode,
   Html5QrcodeSupportedFormats,
 } from "html5-qrcode";
-import { AlertCircle, Camera, Loader2, QrCode, Search, UserCheck } from "lucide-react";
+import { AlertCircle, Camera, Info, Loader2, QrCode, Search, UserCheck } from "lucide-react";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,12 @@ import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
 import { useAuth } from "@/contexts/AuthContext";
 import { jurorCategoryForViewer } from "@/lib/jurorLabel";
 import {
-  checkInJurorManually,
-  scanJurorBadge,
   searchJurors,
   type CheckInResult,
   type JurorSearchItem,
 } from "@/features/jurors/attendance/api/jurorCheckIn";
+import { CheckInConfirmDialog } from "@/features/jurors/attendance/components/CheckInConfirmDialog";
+import { useCheckInConfirmation } from "@/features/jurors/attendance/hooks/useCheckInConfirmation";
 
 const SCANNER_ID = "juror-checkin-scanner";
 
@@ -34,19 +34,29 @@ const JurorCheckInPage = () => {
   useLockViewportZoom();
   // HU-35: el registro se hace frente al jurado; el Staff ve solo «Jurado», el administrador la categoría
   const { userRole } = useAuth();
-  const categoryLabel = (category: string) => jurorCategoryForViewer(category, userRole);
+  const categoryLabel = useCallback((category: string) => jurorCategoryForViewer(category, userRole), [userRole]);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerRunningRef = useRef(false);
-  const lastTokenRef = useRef("");
-  const processingRef = useRef(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckInResult | null>(null);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<JurorSearchItem[]>([]);
   const [searching, setSearching] = useState(false);
+  const clearError = useCallback(() => setError(null), []);
+  // ARK-252: el registro se confirma viendo el nombre (búsqueda y QR)
+  const confirmation = useCheckInConfirmation({
+    categoryLabel,
+    onResult: (checkIn) => {
+      setError(null);
+      setResult(checkIn);
+    },
+    onError: setError,
+    onStart: clearError,
+  });
+  const { askForQr, candidate } = confirmation;
+  const processing = confirmation.submitting || confirmation.previewing;
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
@@ -55,24 +65,13 @@ const JurorCheckInPage = () => {
     setScanning(false);
   }, []);
 
+  // Leer un QR ya no registra: abre la confirmación con el nombre del jurado leído. El hook ignora las lecturas
+  // mientras hay una confirmación abierta y el mismo QR durante unos segundos después de cerrarla.
   const submitToken = useCallback(async (rawToken: string) => {
     const token = rawToken.trim();
-    if (!token || token === lastTokenRef.current || processingRef.current) return;
-    lastTokenRef.current = token;
-    processingRef.current = true;
-    setProcessing(true);
-    setError(null);
-    try {
-      const checkIn = await scanJurorBadge(token);
-      setResult(checkIn);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo registrar la llegada");
-    } finally {
-      processingRef.current = false;
-      setProcessing(false);
-      window.setTimeout(() => { lastTokenRef.current = ""; }, 2000);
-    }
-  }, []);
+    if (!token) return;
+    await askForQr(token);
+  }, [askForQr]);
 
   const startScanner = useCallback(async () => {
     setCameraError(null);
@@ -98,6 +97,18 @@ const JurorCheckInPage = () => {
       setCameraError(err instanceof Error ? err.message : "No se pudo iniciar la cámara.");
     }
   }, [submitToken]);
+
+  // Con la confirmación abierta la cámara se pausa, para no leer el QR de al lado mientras tanto
+  useEffect(() => {
+    const scanner = scannerRef.current;
+    if (!scanner || !scannerRunningRef.current) return;
+    try {
+      if (candidate) scanner.pause(true);
+      else scanner.resume();
+    } catch {
+      // pause/resume lanzan si el escáner no estaba en ese estado
+    }
+  }, [candidate]);
 
   useEffect(() => {
     return () => {
@@ -126,26 +137,12 @@ const JurorCheckInPage = () => {
     return () => window.clearTimeout(timeout);
   }, [query]);
 
-  const registerManually = async (juror: JurorSearchItem) => {
-    processingRef.current = true;
-    setProcessing(true);
-    setError(null);
-    try {
-      setResult(await checkInJurorManually(juror.id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo registrar la llegada");
-    } finally {
-      processingRef.current = false;
-      setProcessing(false);
-    }
-  };
-
   return (
     <LayoutApplication breadcrumbs={[{ label: "Check-in de jurados", href: "/check-in-jurados" }]}>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10">
         <div>
           <h1 className="text-2xl font-bold">Registrar llegada</h1>
-          <p className="text-muted-foreground">Escanea la escarapela o busca al jurado manualmente.</p>
+          <p className="text-muted-foreground">Escanea la escarapela o busca al jurado manualmente. Antes de registrar se confirma el nombre.</p>
         </div>
 
         {cameraError && (
@@ -192,7 +189,7 @@ const JurorCheckInPage = () => {
               )}
               <div className="space-y-2">
                 {searchResults.map((juror) => (
-                  <button key={juror.id} type="button" onClick={() => void registerManually(juror)} disabled={processing}
+                  <button key={juror.id} type="button" onClick={() => confirmation.askForSearchResult(juror)} disabled={processing}
                     className="w-full touch-manipulation rounded-md border p-3 text-left hover:bg-accent disabled:opacity-50">
                     <div className="flex items-center justify-between gap-2">
                       <span className="min-w-0 break-words font-medium">{juror.name}</span>
@@ -209,16 +206,28 @@ const JurorCheckInPage = () => {
         </div>
 
         {result && (
-          <Alert className="border-green-600">
-            <UserCheck className="h-4 w-4" />
-            <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya registrado" : "Llegada registrada"}</AlertTitle>
+          // ALREADY_CHECKED_IN es un aviso, no un error: ya había llegado, o alguien más lo registró entre la
+          // confirmación y el envío (contrato BG-49, vista previa del QR)
+          <Alert className={result.status === "ALREADY_CHECKED_IN" ? "border-amber-500" : "border-green-600"}>
+            {result.status === "ALREADY_CHECKED_IN" ? <Info className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+            <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya estaba registrado" : "Llegada registrada"}</AlertTitle>
             <AlertDescription>
               <strong>{result.juror.name}</strong> · {categoryLabel(result.juror.category)}
-              <div>{result.status === "ALREADY_CHECKED_IN" ? "Registrado anteriormente: " : "Hora: "}{formatTime(result.checkedInAt)}</div>
+              <div>
+                {result.status === "ALREADY_CHECKED_IN"
+                  ? `Su llegada ya estaba registrada (${formatTime(result.checkedInAt)}). No se registró otra vez.`
+                  : `Hora: ${formatTime(result.checkedInAt)}`}
+              </div>
               <div>{result.juror.teams.length ? `Grupos: ${result.juror.teams.map((team) => team.name).join(", ")}` : "Grupos: sin asignar"}</div>
             </AlertDescription>
           </Alert>
         )}
+        <CheckInConfirmDialog
+          candidate={candidate}
+          submitting={confirmation.submitting}
+          onConfirm={() => void confirmation.confirm()}
+          onCancel={confirmation.cancel}
+        />
       </main>
     </LayoutApplication>
   );

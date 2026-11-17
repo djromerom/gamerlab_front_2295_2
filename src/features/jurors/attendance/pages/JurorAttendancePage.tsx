@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { JurorAttendanceTable } from "@/features/jurors/attendance/components/JurorAttendanceTable";
 import { WalkInJurorDialog } from "@/features/jurors/attendance/components/WalkInJurorDialog";
-import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, type JurorAttendanceResult } from "@/features/jurors/attendance/api/jurorAttendance";
+import { AnnulArrivalDialog } from "@/features/jurors/attendance/components/AnnulArrivalDialog";
+import {
+  SEARCH_MAX_LENGTH,
+  SEARCH_MIN_LENGTH,
+  type JurorAttendanceItem,
+  type JurorAttendanceResult,
+} from "@/features/jurors/attendance/api/jurorAttendance";
 import { useJurorAttendance, type AttendanceTab } from "@/features/jurors/attendance/hooks/useJurorAttendance";
 import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +44,8 @@ const JurorAttendancePage: React.FC = () => {
   const { userRole } = useAuth();
   const isAdmin = userRole === "Administrador";
   const [walkInOpen, setWalkInOpen] = useState(false);
+  // BG-49 (ARK-252): solo el Administrador anula llegadas; el Staff ve la tabla sin el botón
+  const [annulTarget, setAnnulTarget] = useState<JurorAttendanceItem | null>(null);
   const searching = search.trim().length >= SEARCH_MIN_LENGTH;
   const metadata = result?.metadata;
 
@@ -121,6 +129,7 @@ const JurorAttendancePage: React.FC = () => {
               jurors={result.data}
               emptyMessage={emptyMessage(result, searching)}
               showCategory={canSeeJurorCategory(userRole)}
+              onAnnul={isAdmin ? setAnnulTarget : undefined}
             />
             <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-center gap-2">
@@ -159,6 +168,7 @@ const JurorAttendancePage: React.FC = () => {
         ) : null}
       </main>
       {isAdmin && <WalkInJurorDialog open={walkInOpen} onOpenChange={setWalkInOpen} onChanged={() => void reload()} />}
+      {isAdmin && <AnnulArrivalDialog juror={annulTarget} onClose={() => setAnnulTarget(null)} onChanged={() => void reload()} />}
     </LayoutApplication>
   );
 };
