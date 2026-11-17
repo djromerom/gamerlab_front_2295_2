@@ -24,4 +24,4 @@ Hay ≈52 pruebas Vitest en `origin/main` y el workflow `Test-front` ejecuta `np
 
 ## Cosas que NO son deuda pero sorprenden
 - `@/` es alias a `src/`; `RoutesConfiguration` exporta `routes` (la usa su test).
-- Los juegos web (Pygame/Unity/Godot) se cargan con `GamePlayerPage` + `useGameLoader`; el servidor Vite añade COOP/COEP `credentialless`; navegadores soportados sin definir (P-23, SP-03).
+- Los juegos web (Pygame/Unity/Godot) se cargan con `GamePlayerPage` + `useGameLoader` y los sirve `src/sw.ts` (compilado a mano en `public/sw.js` con `npm exec vite build --config sw.config.ts`). Desde HU-40 (ARK-225) el iframe recibe COEP `credentialless` (Pygame carga), se juegan solo en computador (Chrome, Edge y Firefox) y siguen sin hilos: la página padre no está aislada (T1, después de la feria). En desarrollo, el servidor de Vite añade COEP `credentialless` a la página; el nginx de producción no. Lógica pura del SW en `features/games/lib/gameFiles.ts`.

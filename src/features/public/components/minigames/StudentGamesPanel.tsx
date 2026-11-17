@@ -2,20 +2,7 @@ import "@/features/public/components/minigames/StudentGamesPanel.css";
 import { useEffect, useState } from "react";
 import { fetchHighlightedGames, type StudentHighlightedGame } from "@/features/public/api/highlightedGames";
 import { editionLabel, editionsOf, playerUrl, webPlay } from "@/features/public/lib/highlightedGames";
-
-// Celulares y tabletas: los juegos de los estudiantes se juegan con teclado y mouse, así que ahí no se carga el zip
-const CONSULTA_TACTIL = "(hover: none) and (pointer: coarse)";
-function useSoloTactil(): boolean {
-  const [tactil, setTactil] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(CONSULTA_TACTIL).matches);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const consulta = window.matchMedia(CONSULTA_TACTIL);
-    const alCambiar = () => setTactil(consulta.matches);
-    consulta.addEventListener("change", alCambiar);
-    return () => consulta.removeEventListener("change", alCambiar);
-  }, []);
-  return tactil;
-}
+import { useTouchOnly } from "@/hooks/useTouchOnly";
 
 type Estado = "cargando" | "listo" | "error";
 
@@ -36,7 +23,7 @@ export default function StudentGamesPanel({ active }: StudentGamesPanelProps) {
   const [abierto, setAbierto] = useState<StudentHighlightedGame | null>(null);
   const [intento, setIntento] = useState(0);
   const [pedido, setPedido] = useState(false);
-  const tactil = useSoloTactil();
+  const tactil = useTouchOnly();
 
   // se piden la primera vez que la pestaña se ve (y otra vez con «Reintentar»)
   if (active && !pedido) setPedido(true);
@@ -141,7 +128,6 @@ export default function StudentGamesPanel({ active }: StudentGamesPanelProps) {
                   </button>
                 )}
                 {jugar === "playable" && tactil && <p className="nota-jugar">Este juego se juega en computador</p>}
-                {jugar === "historicalPending" && <p className="nota-jugar">Pronto se podrá jugar aquí</p>}
                 {jugar === "noFile" && <p className="nota-jugar">Sin versión para jugar en la web</p>}
               </li>
             );

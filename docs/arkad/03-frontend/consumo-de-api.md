@@ -13,7 +13,7 @@ Envoltorio sobre `fetch` que debe usarse en lugar de `fetch` directo:
 ## Funciones de API (una por tema)
 Compartidas, en `api/`: `editions`, `evaluationProgress`, `registrations`. El resto vive en `features/<dominio>/api/`:
 - `teams`: `editionStudents`, `teamVerification`, `teamGradable`.
-- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame`.
+- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
 - `jurors`: `juryManagement` (management), `automaticAssignment` y `jurorsExport` (assignment), `jurorEdition`, `jurorAttendance`, `jurorCheckIn`, `jurorBadges`, `jurorSurvey`, `jurorPresence`, `absenceAlert`, `absentJurorResponses`.
 - `external-presenters`: `externalPresenters`. `notifications`: `pushNotifications`.
 - `editions`: `highlightedGames` (juegos históricos de una edición archivada y destacar o quitar un histórico, ARK-230). `public`: `highlightedGames` (`GET /highlighted-games`, también lo lee el selector de destacados del admin).
@@ -30,6 +30,8 @@ Muchos tienen su `*.test.ts` al lado.
 - Datos de equipos propios: `lib/ownTeam.ts`; no asumir un solo equipo por usuario (BG-17).
 
 ## Hooks de datos
+`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useTeamVerification`, `useWorkingEdition`, `useGameLoader` (HU-40: descarga con progreso y errores visibles), `useTouchOnly` (compartido: celular o tableta), `useCriteria`.
+
 `useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useHighlightedGamesSelector` (ARK-230), `useTeamVerification`, `useWorkingEdition`, `useGameLoader`, `useCriteria`.
 
 ## Contrato front↔back

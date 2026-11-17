@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-16: jugar en el computador los juegos de los equipos (HU-40, ARK-225)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): ruta nueva `/play-game/historical/:videogameID` y el aviso de celular en `/play-game`.
+- [deuda-tecnica](../03-frontend/deuda-tecnica.md) y [consumo-de-api](../03-frontend/consumo-de-api.md): F1–F8 de SP-03 en el front (COEP `credentialless`, rutas decodificadas, tipos MIME, errores visibles, Cache Storage si el SW se detiene, solo dos juegos guardados, `allow` del iframe y límite de 200 MB con el mensaje del back), `useGameLoader`, `useTouchOnly` y `gameFrame` para juegos en vivo e históricos (back ARK-226).
+- **Pendiente aparte:** `01-negocio/juegos-web-por-motor.md` vive solo en el back; sus instrucciones para los equipos todavía dicen 100 MB y «no uses SVG ni `.mjs` hasta F3».
+
 ## 2026-11-16: destacados históricos en el selector del admin (HU-41, ARK-230)
 
 - [consumo-de-api](../03-frontend/consumo-de-api.md): `features/editions/api/highlightedGames.ts` (históricos de una edición archivada, `POST` con `historicalVideogameId` y `DELETE …/highlighted-games/historical/:id`) y el hook `useHighlightedGamesSelector`. El selector de Ediciones → Juegos Destacados lista los históricos cuando la edición está `ARCHIVED`, marca cuáles tienen zip y lee los destacados de `GET /highlighted-games?editionId=` (back ARK-229).

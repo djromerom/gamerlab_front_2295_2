@@ -7,7 +7,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 ## Públicas (sin sesión)
 | Ruta | Pantalla |
 |---|---|
-| `/` | LandingPage: portada, galería de las ferias pasadas (fotos en `public/galeria/`) y sección de juegos con dos pestañas: minijuegos Arkadash y Arkad Jam, y «De los estudiantes» (destacados por edición de `GET /highlighted-games`, HU-41; se juegan en la cabina con `/play-game/:id?embed=1`) (ARK-233; código en `features/public/components/gallery/` y `minigames/`) |
+| `/` | LandingPage: portada, galería de las ferias pasadas (fotos en `public/galeria/`) y sección de juegos con dos pestañas: minijuegos Arkadash y Arkad Jam, y «De los estudiantes» (destacados por edición de `GET /highlighted-games`, HU-41; se juegan en la cabina con `/play-game/:id?embed=1`, o `/play-game/historical/:id?embed=1` si son de una edición archivada) (ARK-233; código en `features/public/components/gallery/` y `minigames/`) |
 | `/ranking` | RankingPage (pestaña «Externos» con el podio propio de los equipos externos, HU-38) |
 | `/informacion` | InformationPage |
 | `/equipos` | VideogamesPage (galería) |
@@ -15,7 +15,8 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | `/contribuidores` | CreditsPage |
 | `/registro-equipo` | **RegistrationGate**: consulta si las inscripciones están abiertas y muestra `TeamRegisterPage` o `RegistrationClosedPage` |
 | `/login`, `/OlvidastePassword`, `/establecer-contrasena`, `/verificar-cuenta` | Acceso y cuenta |
-| `/play-game/:videogameID` | GamePlayerPage |
+| `/play-game/:videogameID` | GamePlayerPage: juego de un equipo de la edición en curso. Descarga el zip y lo abre en un iframe con el service worker (`src/sw.ts`); en celular muestra «Este juego se juega en computador» (HU-40, ARK-225) |
+| `/play-game/historical/:videogameID` | GamePlayerPage con el id de un `HistoricalVideogame` (ediciones pasadas y destacados históricos; `GET /historicals/videogames/:id/game-file`, HU-40) |
 | `/unauthorized`, `/auth-error` | Errores |
 
 ## Por rol

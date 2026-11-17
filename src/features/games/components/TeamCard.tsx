@@ -5,12 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { GameDetailModal } from "./GameDetailModal";
 import { Heart } from "lucide-react";
+import type { GameKind } from "@/features/games/lib/gameFiles";
 
 
 interface TeamCardProps {
     team: Team;
     onRefresh: () => void;
     liveLikeCount: number;
+    /** «historical» en ediciones pasadas (HU-40): «Jugar» abre /play-game/historical/:id */
+    gameKind?: GameKind;
 }
 
 // Función para extraer el semestre del código de equipo
@@ -21,7 +24,7 @@ const getSemesterFromTeamCode = (teamCode?: string): string | null => {
 };
 
 // Cartas de equipo en pagina de videojuegos
-export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
+export function TeamCard({ team, onRefresh, liveLikeCount, gameKind }: TeamCardProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const getStatusInfo = (status: TeamStatus) => {
@@ -103,6 +106,7 @@ export function TeamCard({ team, onRefresh, liveLikeCount }: TeamCardProps) {
                     onClose={() => setIsOpen(false)}
                     onRefresh={onRefresh}
                     liveCount={liveLikeCount}
+                    gameKind={gameKind}
                 />
             )}
         </>

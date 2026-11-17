@@ -1,78 +1,57 @@
 import NavBar from "@/components/NavBar";
-import { useParams, useSearchParams } from "react-router-dom";
-import fetchGameFrameURL from "@/features/games/api/gameFrame"
-import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useGameLoader } from "@/features/games/hooks/useGameLoader";
+import { GamePlayerStatus } from "@/features/games/components/GamePlayerStatus";
+import { entryUrl, type GameKind } from "@/features/games/lib/gameFiles";
+import { useTouchOnly } from "@/hooks/useTouchOnly";
 
-import '@/features/games/pages/GamePlayerPage.css';
+import "@/features/games/pages/GamePlayerPage.css";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
 
-export default function GamePlayerPage() {
+interface GamePlayerPageProps {
+  /** /play-game/:videogameID (en vivo) o /play-game/historical/:videogameID (edición archivada, HU-40) */
+  kind?: GameKind;
+}
 
-  // -> /play-game/:videogameID
+/** F7: pantalla completa, audio sin esperar otro clic y control de juego. */
+const IFRAME_ALLOW = "fullscreen; autoplay; gamepad";
+
+export default function GamePlayerPage({ kind = "live" }: GamePlayerPageProps) {
   const { videogameID } = useParams<{ videogameID: string }>();
   // ?embed=1: dentro de la cabina de la landing (ARK-233) solo se muestra el juego, sin la barra ni el fondo
   const [params] = useSearchParams();
-  const embebido = params.has("embed");
+  const embedded = params.has("embed");
+  const navigate = useNavigate();
+  // En el celular no se descarga el zip: los juegos se juegan solo en computador (HU-40)
+  const touchOnly = useTouchOnly();
+  const state = useGameLoader(kind, Number(videogameID), !touchOnly);
+  const title = state.status === "ready" && state.name ? `${state.name}, de ${state.teamName}` : "Videojuego";
 
-  //use custom hook to setup Service Worker
-  //el service worker va a descomprimir y tratar los archivos del juego
-  const [vURL, setvURL] = useState("");
-  const [gEntry, setgEntry] = useState("");
-
-  const { ready, error } = useGameLoader(videogameID, vURL);
-
-  useEffect(() => {
-
-    const load = async () => {
-      const { videogameURL, gameEntry } = await fetchGameFrameURL(+videogameID);
-      setvURL(videogameURL);
-      setgEntry(gameEntry);
-    };
-
-    load();
-
-  }, []);
-
-  if (error) return <p>Error loading game: {error}</p>;
-  //if (!ready) return <p>Loading...</p>;
-
-  if (embebido) {
-    return (
-      <div className="gameEmbed">
-        {ready ? (
-          <iframe src={`/play-game/${videogameID}/${gEntry}`} className="gameFrame gameFrame--embed" allow="fullscreen; autoplay; gamepad" allowFullScreen title="Videojuego" />
-        ) : (
-          <p>Cargando archivos del juego...</p>
-        )}
-      </div>
+  const content =
+    state.status === "ready" && !touchOnly ? (
+      <iframe
+        src={entryUrl(state.key, state.entry)}
+        className={embedded ? "gameFrame gameFrame--embed" : "gameFrame"}
+        allow={IFRAME_ALLOW}
+        allowFullScreen
+        title={title}
+      />
+    ) : (
+      <GamePlayerStatus
+        touchOnly={touchOnly}
+        state={state}
+        embedded={embedded}
+        onBack={() => (window.history.length > 1 ? navigate(-1) : navigate("/equipos"))}
+      />
     );
-  }
 
+  if (embedded) return <div className="gameEmbed">{content}</div>;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
       <ArkadBackground modo="lento" estiloNuevo />
-
       <NavBar />
-
-      {/*TODO: pasar los styles a un .css*/}
-      <div
-        className="relative z-10 text-white"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-          padding: "1rem",
-        }}
-      >
-        {ready ? <iframe
-          src={`/play-game/${videogameID}/${gEntry}`}
-          className="gameFrame"
-        /> : <p>Cargando archivos del juego...</p>}
-      </div>
+      <div className="gamePage relative z-10 text-white">{content}</div>
     </div>
-
-  )
+  );
 }

@@ -6,7 +6,7 @@ import { WizardSchema, WizardValues } from "@/features/teams/lib/validationTeams
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import type { NrcInfo, MateriaInfo, TeamRowData, NrcOption, SafeNrc, UploadInfo } from "@/features/teams/lib/teamsUtils";
-import { uploadImage, getImageUrl, uploadZip } from "@/features/teams/lib/azureFile";
+import { uploadImage, getImageUrl, uploadZip, MAX_ZIP_BYTES, MAX_ZIP_MB } from "@/features/teams/lib/azureFile";
 import { submitTeam, SubmitCtx } from "@/features/teams/lib/submitTeamsAdmin";
 import TeamWizardForm from "./TeamWizardForm";
 
@@ -554,9 +554,8 @@ export default function TeamWizardDialog({
       e.target.value = "";
       return;
     }
-    const MAX_BYTES = 500 * 1024 * 1024; // 50 MB
-    if (f.size > MAX_BYTES) {
-      toast.error("El archivo ZIP debe pesar menos de 500 MB");
+    if (f.size > MAX_ZIP_BYTES) {
+      toast.error(`El archivo ZIP supera el máximo de ${MAX_ZIP_MB} MB (pesa ${(f.size / (1024 * 1024)).toFixed(1)} MB).`);
       e.target.value = "";
       return;
     }

@@ -1,4 +1,5 @@
 import type { HighlightedEdition, StudentHighlightedGame } from "@/features/public/api/highlightedGames";
+import { playPath } from "@/features/games/lib/gameFiles";
 
 const SEMESTRES: Record<number, string> = { 10: "1er semestre", 20: "Intersemestral", 30: "2º semestre" };
 
@@ -15,18 +16,14 @@ export function editionsOf(games: StudentHighlightedGame[]): HighlightedEdition[
   return [...porId.values()].sort((a, b) => b.year - a.year || b.semester - a.semester);
 }
 
-export type WebPlay = "playable" | "noFile" | "historicalPending";
+export type WebPlay = "playable" | "noFile";
 
-/**
- * Si el destacado se puede abrir en la cabina: necesita zip, y por ahora solo los juegos vivos tienen dónde jugarse
- * (/play-game/:id). Los históricos esperan el endpoint de HU-40 (ARK-226).
- */
+/** Si el destacado se puede abrir en la cabina: necesita zip. Los en vivo y los históricos se juegan igual (HU-40). */
 export function webPlay(game: StudentHighlightedGame): WebPlay {
-  if (!game.hasGameFile) return "noFile";
-  return game.play.type === "live" ? "playable" : "historicalPending";
+  return game.hasGameFile ? "playable" : "noFile";
 }
 
-/** Página del juego dentro de la cabina (sin la barra de la app) */
+/** Página del juego dentro de la cabina (sin la barra de la app): /play-game/:id o /play-game/historical/:id */
 export function playerUrl(game: StudentHighlightedGame): string {
-  return `/play-game/${game.play.id}?embed=1`;
+  return `${playPath(game.play.type, game.play.id)}?embed=1`;
 }

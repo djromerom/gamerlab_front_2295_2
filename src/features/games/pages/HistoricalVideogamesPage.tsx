@@ -344,6 +344,7 @@ export default function HistoricalVideogamesPage() {
                         team={team}
                         liveLikeCount={team.likes || 0}
                         onRefresh={() => { }}
+                        gameKind="historical"
                       />
                     ))}
                   </div>
@@ -389,6 +390,7 @@ export default function HistoricalVideogamesPage() {
           onClose={() => setSelectedPodiumTeam(null)}
           onRefresh={() => { }}
           liveCount={selectedPodiumTeam.likes || 0}
+          gameKind="historical"
         />
       )}
     </div>
