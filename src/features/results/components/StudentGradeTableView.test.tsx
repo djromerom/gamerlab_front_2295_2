@@ -15,12 +15,12 @@ const team: GradeTeam = {
   calificacionDocente: 3.5,
   videogameId: 1,
   editionId: 8,
-  editionLabel: "2026-30",
+  editionLabel: "2026 - 2",
   canEdit: false,
   source: "current",
 };
 
-const renderView = (teams: GradeTeam[]) =>
+const renderView = (teams: GradeTeam[], pagination: { currentPage?: number; totalPages?: number; totalItems?: number; itemsPerPage?: number } = {}) =>
   render(
     <StudentGradeTableView
       teams={teams}
@@ -34,8 +34,10 @@ const renderView = (teams: GradeTeam[]) =>
       gradeResults={{}}
       savingGrade={false}
       gradeInputRefs={{ current: new Map() }}
-      currentPage={1}
-      totalPages={1}
+      currentPage={pagination.currentPage ?? 1}
+      totalPages={pagination.totalPages ?? 1}
+      totalItems={pagination.totalItems ?? teams.length}
+      itemsPerPage={pagination.itemsPerPage ?? 25}
       handlePreviousPage={vi.fn()}
       handleNextPage={vi.fn()}
     />,
@@ -96,5 +98,36 @@ describe("StudentGradeTableView: motivo de la nota de la feria (ARK-203)", () =>
     ]);
     expect(screen.queryByText(EXTERNAL)).toBeNull();
     expect(screen.queryByText(SCHOOL)).toBeNull();
+  });
+});
+
+describe("StudentGradeTableView: pie, paginación y columnas (BG-63)", () => {
+  const page = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({ ...team, teamCode: `N1-AYP-${index}`, videogameId: index }));
+
+  it("el pie muestra el total real del back, no solo los equipos de la página", () => {
+    renderView(page(25), { totalItems: 216, totalPages: 9 });
+    expect(screen.getByText("Mostrando 1-25 de 216 equipo(s)")).toBeTruthy();
+    expect(screen.getByText("Página 1 de 9")).toBeTruthy();
+    expect(screen.queryByText(/de 25 equipo/)).toBeNull();
+  });
+
+  it("en la última página cuenta desde el primer equipo de esa página", () => {
+    renderView(page(16), { currentPage: 9, totalItems: 216, totalPages: 9 });
+    expect(screen.getByText("Mostrando 201-216 de 216 equipo(s)")).toBeTruthy();
+  });
+
+  it("los botones de página tienen nombre accesible", () => {
+    renderView(page(25), { currentPage: 2, totalItems: 216, totalPages: 9 });
+    expect(screen.getByRole("button", { name: "Página anterior" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Página siguiente" })).toBeTruthy();
+  });
+
+  it("las columnas de nota van justo después del equipo para verse a 1280 px", () => {
+    renderView([team]);
+    const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
+    expect(headers).toEqual(["Team Code", "Equipo", "Calificación Feria", "Calificación Docente", "Feria", "NRC", "Videojuego", "Integrantes"]);
+    const cells = screen.getAllByRole("cell").map((cell) => cell.textContent);
+    expect(cells.slice(0, 5)).toEqual(["N1-AYP-06", "Team Rocket Wow", "3.54", expect.stringContaining("3.50"), "2026 - 2"]);
   });
 });
