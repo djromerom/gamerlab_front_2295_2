@@ -38,6 +38,7 @@ import NotFoundPage from "@/features/public/pages/NotFoundPage";
 
 import JuryManagementPage from "@/features/jurors/management/pages/JuryManagementPage";
 import { RealtimeTrackingPage } from "@/features/grading/pages/RealtimeTrackingPage";
+import SubstituteContingencyPage from "@/features/jurors/contingency/pages/SubstituteContingencyPage";
 
 import LandingPage from "@/features/public/pages/LandingPage";
 import RankingPage from "@/features/results/pages/RankingPage";
@@ -104,6 +105,12 @@ export const routes: RouteConfig[] = [
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPage />,
     roles: ["Administrador", "Profesor"],
+  },
+  {
+    // HU-14 (ARK-214): grupos en riesgo y sugerencia de suplentes
+    path: "/contingencia-suplentes",
+    element: <SubstituteContingencyPage />,
+    roles: ["Administrador"],
   },
   { path: "/jurado", element: <Navigate to="/inicio" replace />, roles: ["Jurado"] },
   {

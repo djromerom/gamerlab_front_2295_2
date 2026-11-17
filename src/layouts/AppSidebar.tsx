@@ -25,6 +25,7 @@ import {
   MessageSquareHeart,
   Presentation,
   Smartphone,
+  LifeBuoy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/layouts/NavUser";
@@ -74,6 +75,7 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Cuentas Staff", url: "/cuentas-staff", icon: UserPlus },
         { name: "Presentadores externos", url: "/presentadores-externos", icon: Presentation },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
+        { name: "Contingencia con suplentes", url: "/contingencia-suplentes", icon: LifeBuoy },
         { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
         { name: "Encuesta de Jurados", url: "/encuesta-jurados", icon: MessageSquareHeart },
       ],
