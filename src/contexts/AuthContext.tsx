@@ -22,6 +22,7 @@ import {
 import { resetOwnTeamCacheForTests } from "@/lib/ownTeam";
 import { claimLocalDrafts, clearAllLocalDrafts } from "@/lib/localDraftsOwner";
 import { unsubscribeFromPush } from "@/features/notifications/api/pushNotifications";
+import { getPushSubscription } from "@/features/notifications/lib/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -208,13 +209,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     hasSessionRef.current = false;
     setSessionExpired(false);
 
+    // La baja de los avisos va aparte: si falla (p. ej. Safari de iPhone sin la app instalada, que no tiene
+    // pushManager), igual se cierra la sesión en el back
     try {
-      const registration = await navigator.serviceWorker?.getRegistration("/");
-      const subscription = await registration?.pushManager.getSubscription();
+      const subscription = await getPushSubscription();
       if (subscription) {
         await unsubscribeFromPush(subscription.endpoint);
         await subscription.unsubscribe();
       }
+    } catch (error) {
+      console.warn("AuthContext: no se pudo dar de baja la suscripción push:", error);
+    }
+    try {
       await apiFetch(`${import.meta.env.VITE_ENDPOINT_BACKEND}/auth/logout`, {
         method: "POST",
       });

@@ -5,7 +5,7 @@
 ## Contextos
 | Contexto | Qué hace |
 |---|---|
-| `AuthContext` | `user` (perfil de `GET /auth/me`), `loading`, login/logout, renovación de sesión. Al cargar pide el perfil; mientras `loading` el router muestra `LoadingScreen` |
+| `AuthContext` | `user` (perfil de `GET /auth/me`), `loading`, login/logout, renovación de sesión. Al cargar pide el perfil; mientras `loading` el router muestra `LoadingScreen`. Al salir da de baja la suscripción push en un paso aparte, así que `POST /auth/logout` se llama aunque falle (Safari de iPhone sin la app no tiene `pushManager`) |
 | `SocketContext` | Una conexión `socket.io` única (singleton) a `VITE_ENDPOINT_BACKEND`, `withCredentials: false`; expone `socket` e `isConnected`. Lo usan los likes (`useLikesSocket`) |
 | `MultiFormContext` | Paso actual del formulario de registro (`next`, `back`, `reset`, `initialStep` restaurado del borrador) |
 | `TextSizeContext` | Tamaño de texto (accesibilidad) |
