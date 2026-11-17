@@ -30,9 +30,7 @@ Muchos tienen su `*.test.ts` al lado.
 - Datos de equipos propios: `lib/ownTeam.ts`; no asumir un solo equipo por usuario (BG-17).
 
 ## Hooks de datos
-`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useTeamVerification`, `useWorkingEdition`, `useGameLoader` (HU-40: descarga con progreso y errores visibles), `useTouchOnly` (compartido: celular o tableta), `useCriteria`.
-
-`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useHighlightedGamesSelector` (ARK-230), `useTeamVerification`, `useWorkingEdition`, `useGameLoader`, `useCriteria`.
+`useFetch` (genérico), `useTeacherDashboard`, `useAssignmentWarnings` (+ `features/jurors/assignment/lib/assignmentWarnings.ts`), `useJurorAttendance`, `useHighlightedGamesSelector` (ARK-230), `useTeamVerification`, `useWorkingEdition`, `useGameLoader` (HU-40: descarga con progreso y errores visibles), `useTouchOnly` (compartido: celular o tableta), `useCriteria`.
 
 ## Contrato front↔back
 Antes de implementar, acordar por escrito endpoints, payloads, errores y permisos en el ticket ([flujo-fullstack-y-ramas §4](../04-devops/flujo-fullstack-y-ramas.md)). El front puede avanzar con mocks.
