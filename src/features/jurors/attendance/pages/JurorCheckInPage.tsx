@@ -3,7 +3,7 @@ import {
   Html5Qrcode,
   Html5QrcodeSupportedFormats,
 } from "html5-qrcode";
-import { AlertCircle, Camera, Loader2, QrCode, Search, UserCheck } from "lucide-react";
+import { AlertCircle, Camera, Info, Loader2, QrCode, Search, UserCheck } from "lucide-react";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,12 +206,18 @@ const JurorCheckInPage = () => {
         </div>
 
         {result && (
-          <Alert className="border-green-600">
-            <UserCheck className="h-4 w-4" />
-            <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya registrado" : "Llegada registrada"}</AlertTitle>
+          // ALREADY_CHECKED_IN es un aviso, no un error: ya había llegado, o alguien más lo registró entre la
+          // confirmación y el envío (contrato BG-49, vista previa del QR)
+          <Alert className={result.status === "ALREADY_CHECKED_IN" ? "border-amber-500" : "border-green-600"}>
+            {result.status === "ALREADY_CHECKED_IN" ? <Info className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+            <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya estaba registrado" : "Llegada registrada"}</AlertTitle>
             <AlertDescription>
               <strong>{result.juror.name}</strong> · {categoryLabel(result.juror.category)}
-              <div>{result.status === "ALREADY_CHECKED_IN" ? "Registrado anteriormente: " : "Hora: "}{formatTime(result.checkedInAt)}</div>
+              <div>
+                {result.status === "ALREADY_CHECKED_IN"
+                  ? `Su llegada ya estaba registrada (${formatTime(result.checkedInAt)}). No se registró otra vez.`
+                  : `Hora: ${formatTime(result.checkedInAt)}`}
+              </div>
               <div>{result.juror.teams.length ? `Grupos: ${result.juror.teams.map((team) => team.name).join(", ")}` : "Grupos: sin asignar"}</div>
             </AlertDescription>
           </Alert>

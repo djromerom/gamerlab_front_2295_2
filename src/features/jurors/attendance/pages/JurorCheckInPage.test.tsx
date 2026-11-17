@@ -193,6 +193,17 @@ describe("Check-in de jurados: confirmar antes de registrar (ARK-252)", () => {
     await waitFor(() => expect(scanner.resume).toHaveBeenCalled());
   });
 
+  it("si otra persona lo registró entre la vista previa y «Confirmar», lo muestra como aviso, no como error", async () => {
+    previewJurorBadge.mockResolvedValue({ juror: { id: "j-2", name: "Kevin Lara", category: "Junior", teams: [] }, checkedInAt: null });
+    scanJurorBadge.mockResolvedValue({ ...checkIn, status: "ALREADY_CHECKED_IN", method: "QR", juror: { ...checkIn.juror, name: "Kevin Lara" } });
+    await startCamera();
+    scanner.onScan!("token-qr");
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar llegada" }));
+    expect(await screen.findByText("Ya estaba registrado")).toBeTruthy();
+    expect(screen.getByText(/No se registró otra vez/)).toBeTruthy();
+    expect(screen.queryByText("No se pudo completar el registro")).toBeNull();
+  });
+
   it("cancelar un QR no registra", async () => {
     previewJurorBadge.mockResolvedValue({ juror: { id: "j-2", name: "Kevin Lara", category: "Junior", teams: [] }, checkedInAt: null });
     await startCamera();

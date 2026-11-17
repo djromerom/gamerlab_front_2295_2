@@ -18,8 +18,13 @@ describe("previewJurorBadge (ARK-252)", () => {
   });
 
   it("un QR inválido muestra el mensaje del back", async () => {
-    apiFetch.mockResolvedValueOnce(json(404, { code: "BADGE_NOT_FOUND", message: "Código QR no válido o escarapela inactiva" }));
-    await expect(previewJurorBadge("x")).rejects.toThrow("Código QR no válido o escarapela inactiva");
+    apiFetch.mockResolvedValueOnce(json(404, { message: "Código QR no válido o de otra edición" }));
+    await expect(previewJurorBadge("x")).rejects.toThrow("Código QR no válido o de otra edición");
+  });
+
+  it("el 400 trae message como lista: se muestra el texto", async () => {
+    apiFetch.mockResolvedValueOnce(json(400, { statusCode: 400, message: ["El código QR es obligatorio"], error: "Bad Request" }));
+    await expect(previewJurorBadge("")).rejects.toThrow("El código QR es obligatorio");
   });
 
   it("si el back aún no tiene la ruta, dice que se busque por nombre", async () => {

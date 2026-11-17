@@ -49,8 +49,8 @@ export async function scanJurorBadge(token: string): Promise<CheckInResult> {
 
 /**
  * Jurado de una escarapela, sin registrar la llegada: el QR es un token opaco, así que hay que preguntarle al back
- * de quién es para pedir confirmación antes de registrar (ARK-252). Ruta pedida al back con ARK-252; mientras no
- * exista, el escaneo muestra el error y se puede registrar por nombre.
+ * de quién es para pedir confirmación antes de registrar (ARK-252). Ruta del back de Samuel (fix/ARK-251-badge-preview,
+ * #307; contrato BG-49, «Vista previa del QR»). En un servidor sin la ruta, el escaneo pide buscar por nombre.
  */
 export interface BadgePreview {
   juror: CheckInResult["juror"];
