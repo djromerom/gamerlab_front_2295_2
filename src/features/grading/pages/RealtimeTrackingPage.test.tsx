@@ -219,6 +219,29 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     await waitFor(() => expect(mocks.fetchAbsencePanel).toHaveBeenCalledWith("ABSENT"));
   });
 
+  it.each(["Administrador", "Profesor"])("con un nivel, la tabla por hora solo muestra los grupos de ese nivel (BG-59, %s)", async (role) => {
+    mocks.role = role;
+    const schoolGroup = { ...panel.data[0], teamId: 7, teamCode: "N0-COL-01", teamName: "Colegio Estrella", videogame: "Robot Kid", level: "N0" };
+    mocks.fetchAbsencePanel.mockResolvedValue({ ...panel, data: [...panel.data, schoolGroup] });
+    mocks.fetchEvaluationTracking.mockImplementation(async (level?: string) => (level === "N0"
+      ? { ...tracking, groups: [{ ...tracking.groups[0], teamId: 7, teamCode: "N0-COL-01", teamName: "Colegio Estrella", level: "N0", evaluationsReceived: 7, evaluationsCounted: 2 }] }
+      : tracking));
+    renderPanel();
+    expect(await screen.findByRole("row", { name: /Colegio Estrella/ })).toBeTruthy();
+    expect(screen.getByRole("row", { name: /Pixel Pioneers/ })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Filtrar por nivel"), { target: { value: "N0" } });
+
+    await waitFor(() => expect(mocks.fetchEvaluationTracking).toHaveBeenCalledWith("N0", undefined));
+    await waitFor(() => expect(screen.queryByRole("row", { name: /Pixel Pioneers/ })).toBeNull());
+    const schoolRow = screen.getByRole("row", { name: /Colegio Estrella/ });
+    expect(within(schoolRow).getByText("7")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Filtrar por nivel"), { target: { value: "" } });
+    expect(await screen.findByRole("row", { name: /Pixel Pioneers/ })).toBeTruthy();
+    expect(screen.getByRole("row", { name: /Colegio Estrella/ })).toBeTruthy();
+  });
+
   it("actualiza la alerta cada 10 segundos", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderPanel();

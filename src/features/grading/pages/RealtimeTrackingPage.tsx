@@ -16,6 +16,7 @@ import {
   type EvaluationTrackingLevel,
   type EvaluationTrackingResult,
 } from "@/features/grading/api/evaluationTracking";
+import { filterGroupsByLevel } from "@/features/grading/lib/trackingLevelFilter";
 import {
   fetchAbsentJurorHistory,
   recordAbsentJurorResponse,
@@ -260,7 +261,7 @@ export function RealtimeTrackingPage() {
 
   const visibleGroups = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return [...(panel?.data ?? [])].filter((group) =>
+    return filterGroupsByLevel(panel?.data ?? [], level).filter((group) =>
       !query || `${group.teamCode} ${group.teamName} ${group.videogame}`.toLowerCase().includes(query),
     ).sort((first, second) => {
       if (sortMode === "name") return first.teamName.localeCompare(second.teamName);
@@ -270,7 +271,7 @@ export function RealtimeTrackingPage() {
       if (sortMode === "present") return first.presentJurors - second.presentJurors || first.teamName.localeCompare(second.teamName);
       return (firstTracking?.evaluationsCounted ?? 0) - (secondTracking?.evaluationsCounted ?? 0) || first.teamName.localeCompare(second.teamName);
     });
-  }, [panel?.data, search, sortMode, tracking?.groups]);
+  }, [level, panel?.data, search, sortMode, tracking?.groups]);
 
   const alertIsDefinitive = alert?.phase === "CONTROL" || alert?.phase === "CLOSED";
   const canConfigure = isAdmin && alert?.edition.writable !== false;
