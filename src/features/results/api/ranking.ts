@@ -37,10 +37,7 @@ export interface RankedTeam {
 export interface TieGroup {
   tieKey: string;
   editionId: number;
-  /** Null en un empate del grupo Externos (HU-38), que mezcla niveles. */
-  level: number | null;
-  /** HU-38: empate dentro del grupo Externos (su clave dice `EXT`). */
-  external: boolean;
+  level: number;
   score: number;
   positions: [number, number];
   affectsPodium: boolean;
@@ -73,16 +70,13 @@ export interface RankingSnapshot {
   weighting: { configured: boolean; juniorPct: number; seniorPct: number };
   pendingTies: number;
   finalized: { at: string; matchesCurrent: boolean } | null;
-  /** Ya no traen a los equipos externos: compiten en `external` (HU-38). */
+  /** ARK-272: todo equipo compite en su nivel; ya no hay grupo «Externos». */
   levels: RankingGroup[];
-  /** HU-38 (ARK-219): grupo «Externos» con su propio podio; null si no hay externos o se pidió un nivel. */
-  external: RankingGroup | null;
 }
 
-/** Un nivel (N0 a N4) o el grupo Externos, que tiene `level: null` y `external: true`. */
+/** Un nivel (N0 a N4). */
 export interface RankingGroup {
-  level: number | null;
-  external: boolean;
+  level: number;
   label: string;
   teams: RankedTeam[];
   podium: RankedTeam[];
@@ -95,10 +89,9 @@ export interface RankingGroup {
   }>;
 }
 
-/** Podio de un nivel o del grupo Externos en `GET /ranking/winners`. */
+/** Podio de un nivel en `GET /ranking/winners`. */
 export interface WinnersGroup {
-  level: number | null;
-  external: boolean;
+  level: number;
   label: string;
   podium: RankedTeam[];
   ties: TieGroup[];
@@ -110,20 +103,18 @@ export interface RankingWinners {
   podiumSize: number;
   finalized: { at: string; matchesCurrent: boolean } | null;
   levels: WinnersGroup[];
-  external: WinnersGroup | null;
 }
 
 export interface FinalizeResult {
   editionId: number;
   teams: number;
-  levels: Array<{ level: number | null; external: boolean; label: string; teams: number }>;
+  levels: Array<{ level: number; label: string; teams: number }>;
 }
 
 export interface RankingDecision {
   id: number;
   editionId: number;
-  level: number | null;
-  external: boolean;
+  level: number;
   score: number;
   tieKey: string;
   teamIds: number[];

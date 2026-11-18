@@ -15,7 +15,7 @@
   - **Equipo normal:** se califica con profesores y jurados junior (60 % y 40 %).
   - **Colegio (N0):** es externo a Uninorte y **sí se califica**, pero solo lo califican seniors (P-08); no tiene jurados junior. Regla de nota (propuesta del 7-nov pasada al equipo; confirmar con los profesores si hay casos): su nota final es el promedio de los seniors que lo calificaron al 100 %, y no queda en «Nota en proceso» por falta de junior.
   - **Presentador externo (HU-33):** persona sin equipo, o equipo no calificable que presenta un proyecto (HU-39, 10-nov), que **nunca se califica**; no entra al ranking, a la asignación ni a las exportaciones de notas. Lo registra solo el administrador y recibe el certificado final por correo, enviado por el administrador (nadie lo descarga). **Equipo rechazado (BG-43, 10-nov):** no tiene nota final ni sale en el ranking, pero sus evaluaciones se conservan y reaparecen si se reconfirma.
-- **Marca «equipo externo» (`isExternal`):** independiente del nivel; en la nota final solo cuenta la nota de jurados junior. Qué equipos la llevan no está definido; Santiago cuenta los casos en `Arkad-test` (BG-37, HU-34). Hasta entonces no se cambia código y los casos los resuelve el administrador a mano.
+- **Marca «equipo externo» (`isExternal`):** **solo informativa** (decisión de Allison del 16-nov, ARK-272 back / ARK-273 front). En Arkad solo hay estudiantes Uninorte, colegios y presentadores externos (HU-39: no se califican y solo reciben certificado). La casilla no cambia la nota (se calcula con los porcentajes de HU-34 para todos) ni dónde compite el equipo: cada uno compite en su nivel y un colegio marcado compite en Colegios. Las ediciones congeladas, anteriores a HU-34, conservan su regla. La etiqueta «Uninorte / Externo» de la galería sigue como dato.
 - Los equipos de **colegios (N0) no tienen código de verificación** (P-25).
 - Detalle: [equipos-y-verificacion](equipos-y-verificacion.md).
 
@@ -41,7 +41,7 @@
   3. Si el profesor no quiere decidir, se aplica la inscripción.
   4. Un empate que mezcla grupos del mismo profesor con otros se resuelve por inscripción.
 - La decisión del profesor queda registrada (`TieBreakDecision`).
-- **Equipos externos (decisión de Allison del 7-nov, por confirmar con el profesor):** sí compiten por el podio, pero con uno **propio** de 3 (configurable), separado de los niveles, porque no pueden competir con los de nivel 1. Los colegios (N0) siguen en su propio nivel. Implementado en HU-38 (ARK-219 back, ARK-220 front): el ranking y los ganadores traen el grupo «Externos» aparte de los niveles; sus empates usan la clave `EXT` y el mismo desempate (P-05). Se ve en `/tiebreaker`, en `/ranking/mis-empates` y en la pestaña «Externos» de `/ranking`, donde un externo ya no aparece en su semestre.
+- **No hay podio «Externos»** (decisión de Allison del 16-nov; reemplaza la del 7-nov). HU-38 (ARK-219 / ARK-220) armó un grupo «Externos» con podio propio; ARK-272 (back) y ARK-273 (front) lo quitaron de `GET /ranking`, de los ganadores, de los desempates, de `/tiebreaker` y de la pestaña de `/ranking`. Todo equipo compite en su nivel (N0 a N4). Quien no es de Uninorte ni de un colegio se registra como presentador externo (HU-39) y no se califica.
 
 ## 5. Asignación de jurados
 | Regla | Valor | Ref. |

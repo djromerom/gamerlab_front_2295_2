@@ -17,9 +17,9 @@ Reglas de negocio: [01-negocio/reglas-de-negocio](../01-negocio/reglas-de-negoci
 `MAX_COUNTED_EVALUATIONS = 3` (`src/evaluation/counted-evaluations.ts`): se ordenan por fecha de envío (y por id si empatan) y cuentan las 3 primeras; las demás se guardan. Misma función para el seguimiento (HU-21) y la nota (HU-04).
 
 ## Nota final
-Vista SQL `vw_team_final_scores` (`TeamFinalScore`): `avgJunior`, `avgSenior`, `finalScore` (ya redondeada a 2 decimales), `juniorEvaluations`, `juniorCounted`, `seniorEvaluations`, `weightingConfigured`. Junior = jurados (solo las 3 primeras); senior = profesor. Ponderación por edición en `Weighting` (`seniorPct`, `juniorPct`). Equipos `isExternal`: solo cuenta la nota junior.
+Vista SQL `vw_team_final_scores` (`TeamFinalScore`): `avgJunior`, `avgSenior`, `finalScore` (ya redondeada a 2 decimales), `juniorEvaluations`, `juniorCounted`, `seniorEvaluations`, `weightingConfigured`. Junior = jurados (solo las 3 primeras); senior = profesor. Ponderación por edición en `Weighting` (`seniorPct`, `juniorPct`). La casilla `isExternal` ya no cambia la nota ni el nivel (ARK-272); las ediciones congeladas conservan su regla.
 > **Decidido el 6-nov (P-02, HU-34):** la nota final es 60 % el promedio de los profesores que calificaron al grupo y 40 % el promedio de los jurados junior. Si falta una de las dos partes, el grupo queda en «Nota en proceso» y sin posición en el ranking (las ediciones pasadas no cambian). Está en implementación (HU-34, Sprint 3), así que la vista y el servicio actuales pueden no reflejarlo aún.
-> **Colegios (N0) y marca `isExternal`:** un colegio solo lo califican seniors, de modo que no tiene nota junior. Propuesta pasada al equipo el 7-nov: su nota final es el promedio de los seniors al 100 %. La marca `isExternal` en equipos que no son colegios no cambia hasta tener el conteo de Santiago (BG-37). Confirmar con los profesores si existen casos.
+> **Colegios (N0) y marca `isExternal`:** un colegio solo lo califican seniors, de modo que no tiene nota junior. Propuesta pasada al equipo el 7-nov: su nota final es el promedio de los seniors al 100 %. Todo colegio compite en Colegios, tenga o no la casilla. La marca `isExternal` es solo informativa desde el 16-nov (ARK-272).
 > El rol nuevo de **presentador externo** (HU-33) no es un equipo: no se califica y no entra a esta vista.
 
 ## Progreso

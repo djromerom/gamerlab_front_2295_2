@@ -24,7 +24,7 @@
 > Nota: donde este documento o el resto de la carpeta diga «en curso» para HU-07/08, mandan los estados de Jira.
 - **P-02 cerrada el 6-nov** (60 % profesores, 40 % jurados junior; HU-34 en el Sprint 3). Sprint 3 armado en Jira el 6-nov (`Sprint 3 Asistencia y ajustes`, 157 pts tras sumar BG-43, BG-44, HU-39 y TA-24 el 10-nov y TA-25 el 11-nov): cambios de la reunión con profesores (HU-31 a HU-37) y errores del Sprint 2 (BG-35 a BG-42).
 - BG-24 (fotos de ediciones pasadas no públicas; se resuelven firmándolas).
-- Podio propio para los equipos externos (HU-38, ARK-204, backlog) y rangos de las etiquetas de nota (BG-32, decididos el 7-nov).
+- ~~Podio propio para los equipos externos (HU-38)~~: descartado el 16-nov, se quitó en ARK-272 / ARK-273; y rangos de las etiquetas de nota (BG-32, decididos el 7-nov).
 
 ## Pendientes de producción
 Prueba de humo con admin; cargar NRC y ponderados de la edición 5; script de BG-16 para escarapelas (después de HU-25 en producción); `chmod 600` del `.env`; igualar `main → dev/dev-deploy`; confirmar históricos (197/723/197).

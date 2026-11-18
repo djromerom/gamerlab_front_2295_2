@@ -15,7 +15,7 @@ import {
   type TieGroup,
 } from "@/features/results/api/ranking";
 import { formatFinalGradeWeighting } from "@/features/results/lib/finalGradeWeights";
-import { finalizeSummary, groupLabel, rankingGroups } from "@/features/results/lib/rankingGroups";
+import { finalizeSummary, groupLabel } from "@/features/results/lib/rankingGroups";
 import { RankingGroupCard } from "@/features/results/components/RankingGroupCard";
 
 const score = (value: number | null | undefined) =>
@@ -170,11 +170,8 @@ export default function TiebreakerPage() {
           ) : (
             <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
               <section className="space-y-5">
-                <h2 className="text-lg font-medium">Ganadores por nivel y externos</h2>
-                {level !== "" && (
-                  <p className="text-sm text-muted-foreground">Con un nivel elegido no se muestra el grupo Externos, que mezcla niveles.</p>
-                )}
-                {ranking && rankingGroups(ranking).map((group) => <RankingGroupCard key={group.label} group={group} />)}
+                <h2 className="text-lg font-medium">Ganadores por nivel</h2>
+                {ranking?.levels.map((group) => <RankingGroupCard key={group.label} group={group} />)}
               </section>
 
               <aside className="space-y-5">

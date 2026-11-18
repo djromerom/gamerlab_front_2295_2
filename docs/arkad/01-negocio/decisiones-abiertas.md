@@ -10,7 +10,7 @@
 | P-24 | ¿Roles, porcentajes y sesiones de producción coinciden con lo revisado? | No se pudo consultar producción en su momento |
 | P-28 | ¿La Épica V (TA-06) sigue obligatoria y se aceptan los recortes? | Abierta |
 | — | ¿El botón «Históricos» del panel del profesor muestra solo sus NRC pasados o todos? | Hoy todos, por diseño. Para la reunión del 6-nov |
-| — | ¿Los equipos externos tienen su propio podio? | Decisión de Allison del 7-nov (por confirmar con el profesor): sí compiten, con un podio propio, separado de los niveles (HU-38, en el backlog) |
+| — | ¿Los equipos externos tienen su propio podio? | **Cerrada el 16-nov (Allison): no.** No existe un grupo «Externos» calificable; cada equipo compite en su nivel y quien no es de Uninorte ni de un colegio es presentador externo (HU-39). Reemplaza la decisión del 7-nov (HU-38); se quitó en ARK-272 / ARK-273 |
 | — | ¿Qué equipos llevan la marca «externo» y qué nota tienen los colegios (N0), que solo califican seniors? | Propuesta del 7-nov: el colegio tiene el promedio de los seniors al 100 %. Santiago cuenta los casos en `Arkad-test`; confirmar con los profesores |
 | — | ¿Qué avisos exactos envía el push (HU-37)? ¿La PWA funciona bien en iPhone (HU-36)? | Avisos implementados: cambio de equipos, recordatorio de llegada y equipos pendientes; faltan pruebas en iPhone |
 | — | BG-41: ¿fue el reasignar equipos lo que sacó al jurado de ARKAD? | La sospecha del profesor Daniel no se confirmó; se revisan los logs de `Arkad-test` |

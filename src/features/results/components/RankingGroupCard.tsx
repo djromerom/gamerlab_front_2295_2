@@ -1,5 +1,4 @@
 import type { RankingGroup } from "@/features/results/api/ranking";
-import { levelFromTeamCode } from "@/features/results/lib/rankingGroups";
 
 const score = (value: number | null | undefined) =>
   value === null || value === undefined ? "Sin nota" : value.toFixed(2);
@@ -11,22 +10,12 @@ const missingScoreMessage = (missing?: Array<"PROFESSOR" | "JUROR">) => {
   return "Nota en proceso";
 };
 
-/** Podio de un nivel o del grupo Externos (HU-04, HU-38) en el panel de ranking del administrador. */
+/** Podio de un nivel (HU-04) en el panel de ranking del administrador. */
 export function RankingGroupCard({ group }: { group: RankingGroup }) {
-  const originLevel = (teamCode: string) => {
-    const level = levelFromTeamCode(teamCode);
-    return group.external && level !== null ? ` · nivel ${level}` : "";
-  };
-
   return (
     <div className="overflow-hidden rounded-lg border" aria-label={`Podio ${group.label}`} role="region">
       <div className="border-b bg-muted/40 px-4 py-3">
         <p className="font-medium">{group.label}</p>
-        {group.external && (
-          <p className="text-xs text-muted-foreground">
-            Equipos externos de cualquier nivel. Tienen su propio podio y no compiten en su nivel.
-          </p>
-        )}
       </div>
       {group.podium.length ? (
         <div className="divide-y">
@@ -36,8 +25,7 @@ export function RankingGroupCard({ group }: { group: RankingGroup }) {
               <div>
                 <p className="font-medium">{team.teamName || team.teamCode}</p>
                 <p className="text-xs text-muted-foreground">
-                  {team.teamCode}
-                  {originLevel(team.teamCode)} · {team.videogameName || "Sin videojuego"}
+                  {team.teamCode} · {team.videogameName || "Sin videojuego"}
                 </p>
                 {team.lessThanMinEvaluations && (
                   <span className="mt-1 inline-block rounded bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700">
@@ -51,7 +39,7 @@ export function RankingGroupCard({ group }: { group: RankingGroup }) {
         </div>
       ) : (
         <p className="p-4 text-sm text-muted-foreground">
-          {group.external ? "No hay equipos externos con nota." : "No hay grupos con nota en este nivel."}
+          No hay grupos con nota en este nivel.
         </p>
       )}
       {group.withoutScore.length > 0 && (

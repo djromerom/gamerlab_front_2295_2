@@ -45,55 +45,52 @@ const team = (teamId: number, teamCode: string, teamName: string, finalScore: nu
   provisional: false,
 });
 
-const group = (level: number | null, teams: RankedTeam[], external = false): RankingGroup => ({
+const group = (level: number, teams: RankedTeam[]): RankingGroup => ({
   level,
-  external,
-  label: external ? "Externos" : `N${level}`,
+  label: `N${level}`,
   teams,
   podium: teams,
   ties: [],
   withoutScore: [],
 });
 
-const N1 = group(1, [team(1, "N1-ABC-101", "Pixel Hunters", 4.5, 1), team(2, "N1-ABC-102", "Code Knights", 4.1, 2)]);
-const EXTERNAL = group(null, [team(40, "N1-EXT-001", "Indie Caribe", 4.8, 1, true), team(41, "N2-EXT-002", "Studio Norte", 4.2, 2, true)], true);
+// ARK-273: un equipo con la casilla «Externo» compite en su nivel; un colegio marcado, en Colegios (N0)
+const N0 = group(0, [team(10, "N0-COL-001", "Aventura Escolar", 3.9, 1), team(11, "N0-COL-007", "Red Invisible", 3.6, 2, true)]);
+const N1 = group(1, [team(1, "N1-ABC-101", "Pixel Hunters", 4.5, 1), team(40, "N1-DAT-435", "Operación de Datos", 3.0, 2, true)]);
 
-const snapshot = (external: RankingGroup | null = EXTERNAL): RankingSnapshot => ({
+const snapshot = (): RankingSnapshot => ({
   editionId: 3,
   podiumSize: 3,
   weighting: { configured: true, juniorPct: 40, seniorPct: 60 },
   pendingTies: 0,
   finalized: null,
-  levels: [N1],
-  external,
+  levels: [N0, N1],
 });
 
-const EXTERNAL_TIE: TieGroup = {
-  tieKey: "3:EXT:4.20:41,42",
+const N0_TIE: TieGroup = {
+  tieKey: "3:N0:3.60:11,12",
   editionId: 3,
-  level: null,
-  external: true,
-  score: 4.2,
+  level: 0,
+  score: 3.6,
   positions: [2, 3],
   affectsPodium: true,
   rule: "MANUAL",
   status: "PENDING",
   deciders: [],
   teams: [],
-  order: [41, 42],
+  order: [11, 12],
   decision: null,
-  explanation: "Empate entre externos sin profesor común: lo resuelve el administrador.",
+  explanation: "Empate sin profesor común: lo resuelve el administrador.",
 };
 
-const EXTERNAL_DECISION: RankingDecision = {
+const N0_DECISION: RankingDecision = {
   id: 7,
   editionId: 3,
-  level: null,
-  external: true,
-  score: 4.2,
-  tieKey: "3:EXT:4.20:41,42",
-  teamIds: [41, 42],
-  orderedTeamIds: [42, 41],
+  level: 0,
+  score: 3.6,
+  tieKey: "3:N0:3.60:11,12",
+  teamIds: [11, 12],
+  orderedTeamIds: [11, 12],
   method: "ADMIN",
   reason: "Mejor presentación",
   decidedBy: { id: "a1", name: "Admin Romero" },
@@ -107,7 +104,7 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
-describe("Ranking oficial con el grupo Externos (HU-38, ARK-220)", () => {
+describe("Ranking oficial solo por nivel, sin grupo «Externos» (ARK-273)", () => {
   beforeEach(() => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: false,
@@ -125,66 +122,59 @@ describe("Ranking oficial con el grupo Externos (HU-38, ARK-220)", () => {
     vi.resetAllMocks();
   });
 
-  it("muestra el podio de Externos aparte de los niveles, con el nivel de origen de cada equipo", async () => {
+  it("cada equipo marcado «Externo» sale en su nivel y no hay grupo «Externos»", async () => {
     fetchRanking.mockResolvedValue(snapshot());
-    renderPage();
-
-    const external = await screen.findByRole("region", { name: "Podio Externos" });
-    expect(within(external).getByText("Indie Caribe")).toBeTruthy();
-    expect(within(external).getByText(/N2-EXT-002 · nivel 2/)).toBeTruthy();
-    expect(within(external).getByText(/no compiten en su nivel/)).toBeTruthy();
-
-    const n1 = screen.getByRole("region", { name: "Podio N1" });
-    expect(within(n1).queryByText("Indie Caribe")).toBeNull();
-    expect(within(n1).getByText("Pixel Hunters")).toBeTruthy();
-  });
-
-  it("sin equipos externos no muestra el grupo", async () => {
-    fetchRanking.mockResolvedValue(snapshot(null));
-    renderPage();
-
-    await screen.findByRole("region", { name: "Podio N1" });
-    expect(screen.queryByRole("region", { name: "Podio Externos" })).toBeNull();
-  });
-
-  it("los empates y decisiones de externos dicen «Externos», no «Nnull»", async () => {
-    fetchRanking.mockResolvedValue({ ...snapshot(), pendingTies: 1 });
-    fetchRankingTies.mockResolvedValue([EXTERNAL_TIE]);
-    fetchRankingDecisions.mockResolvedValue([EXTERNAL_DECISION]);
     const { container } = renderPage();
 
-    expect(await screen.findByText("Externos · 4.20")).toBeTruthy();
-    expect(screen.getByText("Mejor presentación")).toBeTruthy();
-    expect(container.textContent).not.toMatch(/Nnull/);
+    const n1 = await screen.findByRole("region", { name: "Podio N1" });
+    expect(within(n1).getByText("Operación de Datos")).toBeTruthy();
+    const n0 = screen.getByRole("region", { name: "Podio N0" });
+    expect(within(n0).getByText("Red Invisible")).toBeTruthy();
+
+    expect(screen.getByRole("heading", { name: "Ganadores por nivel" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Podio Externos" })).toBeNull();
+    expect(container.textContent).not.toMatch(/Externos|externos/);
   });
 
-  it("al elegir un nivel explica que el grupo Externos no se muestra", async () => {
-    fetchRanking.mockResolvedValue(snapshot());
+  it("los empates y decisiones se llaman por su nivel", async () => {
+    fetchRanking.mockResolvedValue({ ...snapshot(), pendingTies: 1 });
+    fetchRankingTies.mockResolvedValue([N0_TIE]);
+    fetchRankingDecisions.mockResolvedValue([N0_DECISION]);
     renderPage();
-    await screen.findByRole("region", { name: "Podio Externos" });
 
-    fetchRanking.mockResolvedValue(snapshot(null));
+    expect(await screen.findByText("N0 · 3.60")).toBeTruthy();
+    expect(screen.getByText("N0", { selector: "strong" })).toBeTruthy();
+    expect(screen.getByText("Mejor presentación")).toBeTruthy();
+  });
+
+  it("al elegir un nivel no habla de ningún grupo Externos", async () => {
+    fetchRanking.mockResolvedValue(snapshot());
+    const { container } = renderPage();
+    await screen.findByRole("region", { name: "Podio N1" });
+
+    fetchRanking.mockResolvedValue({ ...snapshot(), levels: [N1] });
     fireEvent.change(screen.getByDisplayValue("Todos los niveles"), { target: { value: "1" } });
 
-    expect(await screen.findByText(/no se muestra el grupo Externos/)).toBeTruthy();
     await waitFor(() => expect(fetchRanking).toHaveBeenLastCalledWith({ level: 1, top: 3 }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Podio N0" })).toBeNull());
+    expect(container.textContent).not.toMatch(/Externos/);
   });
 
-  it("el cierre cuenta los niveles aparte del grupo Externos", async () => {
+  it("el cierre cuenta solo los niveles", async () => {
     fetchRanking.mockResolvedValue(snapshot());
     finalizeRanking.mockResolvedValue({
       editionId: 3,
       teams: 4,
       levels: [
-        { level: 1, external: false, label: "N1", teams: 2 },
-        { level: null, external: true, label: "Externos", teams: 2 },
+        { level: 0, label: "N0", teams: 2 },
+        { level: 1, label: "N1", teams: 2 },
       ],
     });
     vi.stubGlobal("confirm", () => true);
     renderPage();
-    await screen.findByRole("region", { name: "Podio Externos" });
+    await screen.findByRole("region", { name: "Podio N1" });
 
     fireEvent.click(screen.getByRole("button", { name: "Definir ranking final" }));
-    expect(await screen.findByText("Ranking final definido: 4 grupos en 1 nivel y el grupo Externos.")).toBeTruthy();
+    expect(await screen.findByText("Ranking final definido: 4 grupos en 2 niveles.")).toBeTruthy();
   });
 });

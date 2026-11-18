@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { TextSizeControl } from "@/components/TextSizeControl";
 import { DiscordButton } from "@/components/DiscordButton";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
-import { publicTabQuery, publicTeamsFor, type PublicRankingTab } from "@/features/results/lib/rankingGroups";
+import type { PublicRankingTab } from "@/features/results/lib/rankingGroups";
 
 type Team = {
   id: number;
@@ -15,7 +15,6 @@ type Team = {
   score: number;
   logo?: string;
   teamCode?: string;
-  isExternal?: boolean;
   tieBreakerScore?: number | null;
   position?: number | null;
   levelPosition?: number | null;
@@ -104,7 +103,7 @@ const glowStyles = `
   }
 `;
 
-// HU-38: «Externos» va aparte; en cada nivel no aparecen los externos (los colegios siguen en Colegios)
+// ARK-273: no hay pestaña «Externos» (decisión del 16-nov); cada equipo sale en su nivel.
 const TABS: { tab: PublicRankingTab; label: string }[] = [
   { tab: "all", label: "Todos" },
   { tab: "n1", label: "Primer Semestre" },
@@ -113,7 +112,6 @@ const TABS: { tab: PublicRankingTab; label: string }[] = [
   { tab: "n4", label: "Cuarto Semestre" },
   { tab: "n10", label: "Décimo Semestre" },
   { tab: "n0", label: "Colegios" },
-  { tab: "external", label: "Externos" },
 ];
 
 const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
@@ -191,7 +189,6 @@ export default function RankingPage() {
             team.videogame_logo_url ??
             undefined,
           teamCode: team.teamCode ?? team.team_code ?? undefined,
-          isExternal: Boolean(team.isExternal ?? team.is_external),
           tieBreakerScore: normalizeNullableNumber(
             team.tieBreakerScore ?? team.tie_breaker_score,
           ),
@@ -223,7 +220,7 @@ export default function RankingPage() {
     };
   }, []);
 
-  const sortedTeams = publicTeamsFor(activeSemester, teams);
+  const sortedTeams = teams;
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -257,7 +254,7 @@ export default function RankingPage() {
                     key={tab}
                     onClick={async () => {
                       setActiveSemester(tab);
-                      await fetchData(publicTabQuery(tab));
+                      await fetchData(tab);
                     }}
                     className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base cursor-pointer rounded-md transition-all ${
                       activeSemester === tab
