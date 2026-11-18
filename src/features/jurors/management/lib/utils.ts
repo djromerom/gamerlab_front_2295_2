@@ -1,4 +1,5 @@
 import type { JurorCategory, JurorType } from "@/features/jurors/types/jurors";
+import { EDITION_TIME_ZONE } from "@/lib/editionDate";
 
 export const mapConfirmationStatus = (statusId: number): string => {
   switch (statusId) {
@@ -8,6 +9,7 @@ export const mapConfirmationStatus = (statusId: number): string => {
   }
 };
 
+// «Última conexión» siempre en hora de Bogotá, sin importar la zona del navegador (ARK-244)
 export const formatDate = (dateString?: string | null): string => {
   if (!dateString) return "Nunca";
   const date = new Date(dateString);
@@ -18,8 +20,22 @@ export const formatDate = (dateString?: string | null): string => {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: EDITION_TIME_ZONE,
   });
 };
+
+/**
+ * Deja un jurado del backend listo para la tabla: estado legible y última conexión formateada.
+ * La usan la lista paginada y la lista completa del buscador, para que se vean igual (ARK-244).
+ */
+export const toJurorRow = (juror: JurorRowData): JurorRowData => ({
+  ...juror,
+  confirmationStatusId:
+    typeof juror.confirmationStatusId === "number"
+      ? mapConfirmationStatus(juror.confirmationStatusId)
+      : juror.confirmationStatusId,
+  lastSignInAt: formatDate(juror.lastSignInAt),
+});
 
 export interface JurorRowData {
   id: string;
