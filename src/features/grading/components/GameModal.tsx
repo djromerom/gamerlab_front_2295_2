@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  formatScore,
+  type GradedCriterion,
+} from "@/features/grading/lib/gradedGames";
 
 interface GameModalProps {
   open: boolean;
@@ -23,7 +27,9 @@ interface GameModalProps {
     descripcion: string;
     imagen?: string;
     isEvaluated: boolean;
+    totalScore?: number;
     comments?: string;
+    criteria?: GradedCriterion[];
   };
   showTotalScore?: boolean;
   showComments?: boolean;
@@ -35,6 +41,7 @@ const GameModal: React.FC<GameModalProps> = ({
   open,
   onClose,
   game,
+  showTotalScore = false,
   showComments = false,
   onCalificar,
 }) => {
@@ -111,6 +118,25 @@ const GameModal: React.FC<GameModalProps> = ({
               <strong>Descripción:</strong> {game.descripcion}
             </p>
           </div>
+
+          {/* ARK-264: el detalle de un juego calificado muestra la nota y los criterios */}
+          {showTotalScore && game.isEvaluated && (
+            <div className="mt-3 rounded-md border p-3 text-sm text-gray-700 dark:text-gray-300">
+              <p>
+                <strong>Nota:</strong> {formatScore(game.totalScore)}
+              </p>
+              {game.criteria && game.criteria.length > 0 && (
+                <ul aria-label="Puntaje por criterio" className="mt-2 space-y-0.5">
+                  {game.criteria.map((criterion) => (
+                    <li key={criterion.criterionId} className="flex justify-between gap-4">
+                      <span>{criterion.name}</span>
+                      <span className="font-medium">{formatScore(criterion.score)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {showComments && game.comments && (
             <div>
