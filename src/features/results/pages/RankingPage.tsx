@@ -8,6 +8,7 @@ import { TextSizeControl } from "@/components/TextSizeControl";
 import { DiscordButton } from "@/components/DiscordButton";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
 import type { PublicRankingTab } from "@/features/results/lib/rankingGroups";
+import { PUBLIC_FINAL_GRADE_WEIGHTING_TEXT } from "@/features/results/lib/finalGradeWeights";
 
 type Team = {
   id: number;
@@ -245,6 +246,12 @@ export default function RankingPage() {
             <span className="hidden md:inline"> - </span>
             <span className="block md:inline">Ranking de Videojuegos</span>
           </h1>
+
+          {fairEnded && (
+            <p className="-mt-5 mb-6 text-center text-sm text-gray-300">
+              {PUBLIC_FINAL_GRADE_WEIGHTING_TEXT}
+            </p>
+          )}
 
           {fairEnded && (
             <div className="w-full max-w-6xl mb-8 px-4">

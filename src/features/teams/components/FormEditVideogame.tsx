@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { fetchOwnTeam } from "@/lib/ownTeam";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchRegistrationsOpen } from "@/api/registrations";
+import { describeReviewReasons, teamEditReviewReasons } from "@/features/teams/lib/editNeedsReview";
 
 export default function FormEditVideogame (
     {
@@ -126,6 +127,14 @@ export default function FormEditVideogame (
         );
     };
 
+    const reviewReasons = () =>
+        teamEditReviewReasons({
+            isAdmin: canEditGameName,
+            originalTeamName: originalData?.teamName,
+            teamName: infoEditEquipo?.teamName,
+            newLogo: currentFiles.length > 0,
+        });
+
     // Handle save button click
     const handleSave = async () => {
         if (!registrationsOpen && !canEditGameName) {
@@ -138,9 +147,9 @@ export default function FormEditVideogame (
             return;
         }
         
-        // Check if team is confirmed and there are changes
+        // BG-38: solo avisa si el back va a devolver el juego a pendiente (nombre del equipo o logo)
         const status = data.videogame.videogameStatus.status;
-        if (status === 'CONFIRMADO' && hasChanges()) {
+        if (status === 'CONFIRMADO' && reviewReasons().length > 0) {
             setShowConfirmDialog(true);
             return;
         }
@@ -412,7 +421,7 @@ export default function FormEditVideogame (
                         </DialogTitle>
                         <DialogDescription className="space-y-2">
                             Tu videojuego está actualmente <span className="font-semibold text-blue-400">confirmado</span>.<br/>
-                            Al realizar estos cambios, tu videojuego volverá al estado <span className="font-semibold text-purple-400">pendiente</span> y requerirá aprobación del administrador nuevamente.<br/>
+                            Cambiaste {describeReviewReasons(reviewReasons())}, así que tu videojuego volverá al estado <span className="font-semibold text-purple-400">pendiente</span> hasta que el administrador lo apruebe de nuevo. Los demás cambios no cambian el estado.<br/>
                             ¿Estás seguro de que deseas continuar?
                         </DialogDescription>
                     </DialogHeader>

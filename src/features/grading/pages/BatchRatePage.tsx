@@ -543,7 +543,7 @@ export default function BatchRatePage() {
                   Equipo: {currentGame.equipo} | Materia: {currentGame.materia}
                   {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
                   {currentGame.teamCode &&
-                    ` | Código: ${currentGame.teamCode.split("-").pop() || currentGame.teamCode}`}
+                    ` | Código: ${currentGame.teamCode}`}
                 </p>
               </CardHeader>
               {!isVerified(currentGame.teamId) ? (

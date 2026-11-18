@@ -74,6 +74,20 @@ describe("Ventana «¿Sigues en la feria?» (HU-23)", () => {
     expect(screen.getByText(/Próxima pregunta hacia las 10:20/)).toBeTruthy();
   });
 
+  it("con 1 minuto para responder lo dice en singular y la próxima pregunta no lleva doble punto (ARK-255)", async () => {
+    mocks.fetchMyPresence.mockResolvedValue({ ...base, settings: { ...base.settings, responseWindowMinutes: 1 } });
+    renderPrompt();
+
+    const dialog = await screen.findByRole("alertdialog", { name: "¿Sigues en la feria?" });
+    expect(within(dialog).getByText(/Si no respondes en 1 minuto, el administrador/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sigo aquí" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    const notice = screen.getByRole("note");
+    expect(notice.textContent).toMatch(/Próxima pregunta hacia las 10:20/);
+    expect(notice.textContent).not.toMatch(/\.\.$/);
+  });
+
   it("no aparece si todavía no toca", async () => {
     mocks.fetchMyPresence.mockResolvedValue(confirmed);
     renderPrompt();

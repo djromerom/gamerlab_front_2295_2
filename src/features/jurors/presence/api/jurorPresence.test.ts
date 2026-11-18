@@ -11,8 +11,10 @@ import {
   PROMPT_ALREADY_ASKED,
   formatBogotaTime,
   isRetryableConfirmError,
+  minutesLabel,
   msUntilNextPrompt,
   nextCheckDelay,
+  nextPromptSentence,
   nextPromptLabel,
   presenceHelp,
   updatePresenceSettings,
@@ -126,9 +128,25 @@ describe("reglas de la ventana «¿Sigues en la feria?»", () => {
     expect(describeInterval(60)).toBe("cada hora");
     expect(describeInterval(120)).toBe("cada 2 horas");
     expect(describeInterval(30)).toBe("cada 30 minutos");
+    expect(describeInterval(1)).toBe("cada minuto");
     expect(presenceHelp(settings)).toBe(
       "Mantén la plataforma abierta durante la feria: cada hora te preguntaremos si sigues aquí.",
     );
+  });
+
+  it("«1 minuto» en singular (ARK-255)", () => {
+    expect(minutesLabel(1)).toBe("1 minuto");
+    expect(minutesLabel(15)).toBe("15 minutos");
+  });
+
+  it("la próxima pregunta termina en un solo punto, sin «p. m..» (ARK-255)", () => {
+    const pm = nextPromptSentence("2026-11-26T19:33:00.000Z"); // 2:33 p. m. en Bogotá
+    expect(pm).toMatch(/^Próxima pregunta hacia las 2:33/);
+    expect(pm).not.toMatch(/\.\.$/);
+    expect(pm.endsWith(".")).toBe(true);
+    const am = nextPromptSentence("2026-11-26T14:05:00.000Z");
+    expect(am).not.toMatch(/\.\.$/);
+    expect(am.endsWith(".")).toBe(true);
   });
 
   it("muestra las horas en hora de Colombia", () => {

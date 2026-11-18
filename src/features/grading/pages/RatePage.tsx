@@ -500,7 +500,7 @@ export default function RatePage() {
                     {/* [MODIFICACIÓN]: Renderizado del código del equipo extraído */}
                     {game?.teamCode && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Código: {game.teamCode.split('-').pop() || game.teamCode}
+                        Código: {game.teamCode}
                       </p>
                     )}
                   </div>

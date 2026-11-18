@@ -95,3 +95,21 @@ describe("PendingGradesGrid: detalle de un juego calificado", () => {
     expect(within(screen.getByRole("dialog")).queryByText("Nota:")).toBeNull();
   });
 });
+
+describe("Tarjeta «Calificados» del jurado (ARK-255)", () => {
+  it("muestra el puntaje con 2 decimales y el código completo", () => {
+    renderGrid({
+      games: [
+        juego({ isEvaluated: true, totalScore: 4.552, teamCode: "N1-AYP-119" }),
+        juego({ id: 2, nombre: "Ocean", isEvaluated: true, totalScore: 3, teamCode: "N2-ABC-201" }),
+      ],
+      showTotalScore: true,
+    });
+
+    expect(screen.getByText("4.55")).toBeTruthy();
+    expect(screen.getByText("3.00")).toBeTruthy();
+    expect(screen.queryByText("4.552")).toBeNull();
+    expect(screen.getByText("N1-AYP-119")).toBeTruthy();
+    expect(screen.getByText("N2-ABC-201")).toBeTruthy();
+  });
+});

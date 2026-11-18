@@ -51,20 +51,9 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
         [user?.id, teams],
     );
 
-    // [MODIFICACIÓN]: Función para extraer y mostrar solo el tercer fragmento (XXX) del código
-    // si el usuario pertenece a un equipo "NO colegio" (formato NY-AAA-XXX).
-    // [AUTOR]: IA  |  [FECHA]: 2026-05-12
-    const formatDisplayTeamCode = (code?: string) => {
-        if (!code) return "Cargando...";
-        const isUniversityTeam = /^[Nn]\d+-/.test(code);
-        if (isUniversityTeam) {
-            const parts = code.split("-");
-            if (parts.length >= 3) {
-                return parts[2];
-            }
-        }
-        return code;
-    };
+    // ARK-255: el líder ve el código completo (N1-AYP-119), el mismo que ven el jurado y el admin.
+    // Antes se mostraba solo el último fragmento («119»).
+    const formatDisplayTeamCode = (code?: string) => code || "Cargando...";
 
     if (!isStudent) {
         return null;
@@ -94,8 +83,6 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                         <p className="pl-4 p-2 font-semibold text-base text-foreground border-r-2 border-border">{team.teamName}</p>
                     )}
                     <p className={`${team?.teamName ? "" : "pl-4 "}p-2 font-semibold text-base text-foreground`}>Código del equipo:</p>
-                    {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
-                    {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
@@ -115,8 +102,6 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                 {/* Etiqueta para no confundirlo con el código de verificación que se muestra al lado */}
                 <p className="text-center text-sm text-muted-foreground pt-2">Código del equipo</p>
                 <div className="flex justify-center ">
-                    {/* [MODIFICADO]: Se usa formatDisplayTeamCode para mostrar solo el tercer fragmento a equipos NO colegio. */}
-                    {/* [ANTES]: {team?.teamCode ?? "Cargando..."} */}
                     <p className="font-bold text-[#2F4BC7] dark:text-[#A9C4FF] size-20px tracking-tighter text-4xl px-5 pb-5 pt-1 text-shadow-10xl hover:text-[#4C74FF] dark:hover:text-white rounded-lg   hover:scale-105 transition-transform duration-300">
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
