@@ -15,7 +15,9 @@ import {
  * - Una sola petición a la vez: si llega un cambio mientras hay una en vuelo, sale al terminar.
  * - Sin red o con 5xx: deja la copia en localStorage y reintenta cada `retryMs` o al volver la red.
  * - 409 por versión: se detiene hasta que el usuario elija cargar la versión guardada o sobrescribirla.
- * - 409 ya enviada o 403: se detiene para siempre.
+ * - 409 ya enviada: se detiene para siempre y borra la copia local.
+ * - 403 (le quitaron el grupo): deja de mandar al servidor, pero cada cambio se sigue guardando
+ *   en localStorage para recuperarlo si le devuelven el grupo (ARK-249, BG-41).
  */
 
 export type AutosaveStatus =
@@ -66,7 +68,7 @@ export class DraftAutosaver {
   private dirty = false; // `latest` todavía no está en el servidor
   private inFlight = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private stopped = false;
+  private stopped = false; // evaluación enviada (o ya enviada): no se guarda nada más
   private disposed = false;
   private state: AutosaveState = INITIAL_AUTOSAVE_STATE;
 
@@ -88,7 +90,7 @@ export class DraftAutosaver {
     return this.state;
   }
 
-  /** Registra un cambio del formulario y programa el guardado. */
+  /** Registra un cambio del formulario y programa el guardado. Con "blocked" o "conflict" solo guarda en local. */
   schedule(form: DraftForm): void {
     if (this.stopped || this.disposed) return;
     this.latest = form;
@@ -199,8 +201,8 @@ export class DraftAutosaver {
         this.setState({ status: "blocked", message: draftError.message });
         return;
       case "forbidden":
-        // Se conserva la copia local: puede que le devuelvan el grupo.
-        this.stopped = true;
+        // No se marca `stopped`: "blocked" ya detiene el servidor y `schedule` sigue escribiendo
+        // la copia local con lo que el jurado escriba después del aviso. Puede que le devuelvan el grupo.
         this.setState({ status: "blocked", message: draftError.message });
         return;
       case "network":

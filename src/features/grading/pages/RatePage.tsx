@@ -1,7 +1,7 @@
 "use client";
 
 import LoadingScreen from "@/components/LoadingScreen";
-import CriteriaButton from "@/features/grading/components/CriteriaButton";
+import CriterionScoreRow from "@/features/grading/components/CriterionScoreRow";
 import { GradingTextarea } from "@/features/grading/components/GradingTextarea";
 import { TeamVerificationGate } from "@/features/grading/components/TeamVerification";
 import {
@@ -22,11 +22,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -46,6 +44,13 @@ import {
   type DraftForm,
 } from "@/lib/evaluationDrafts";
 import { UiCriterion } from "@/features/grading/types/criterion";
+import {
+  apiErrorMessage,
+  criterionScoreInputId,
+  findMissingCriteria,
+  missingCriteriaMessage,
+  parseCriterionScore,
+} from "@/features/grading/lib/criteriaScores";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -87,6 +92,8 @@ export default function RatePage() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [teamWasReassigned, setTeamWasReassigned] = useState(false);
   const [showSuccessLoading, setShowSuccessLoading] = useState(false);
+  // ARK-249: criterios sin puntaje al intentar enviar (un vacío no es un 0)
+  const [missingIds, setMissingIds] = useState<number[]>([]);
 
   // HU-18: borrador en el servidor (con copia local si no hay red)
   const drafts = useDraftAutosave();
@@ -229,46 +236,13 @@ export default function RatePage() {
         return { ...c, score: sanitized };
       }),
     );
-  };
-
-  const parseScoreValue = (value: string, maxScore: number): number | null => {
-    // if (!value.trim()) {
-    //   return null;
-    // }
-
-    // const normalized = value.replace(/,/g, ".");
-    // const parsed = Number.parseFloat(normalized);
-
-    // if (Number.isNaN(parsed)) {
-    //   return null;
-    // }
-
-    // if (parsed < 0) {
-    //   return 0;
-    // }
-
-    // if (parsed > maxScore) {
-    //   return maxScore;
-    // }
-
-    // return parsed;
-
-    const raw =
-      typeof value === "number" ? String(value) : (value || "").toString();
-    if (!raw.trim()) return null;
-    const normalized = raw.replace(/,/g, ".");
-    const parsed = Number.parseFloat(normalized);
-    if (Number.isNaN(parsed)) return null;
-    if (parsed < 0) return 0;
-    if (parsed > maxScore) return maxScore;
-    return parsed;
+    if (sanitizeScoreInputValue(rawValue)) {
+      setMissingIds((prev) => prev.filter((id) => id !== criterionId));
+    }
   };
 
   const totalScore = uiCriteria.reduce((acc, criterion) => {
-    const parsed = parseScoreValue(
-      criterion.score.toString(),
-      criterion.maxScore,
-    );
+    const parsed = parseCriterionScore(criterion.score, criterion.maxScore);
     if (parsed === null) {
       return acc;
     }
@@ -280,9 +254,27 @@ export default function RatePage() {
     0,
   );
 
+  /** Marca los criterios vacíos y lleva el foco al primero. Devuelve si se puede enviar. */
+  const validateAllScored = () => {
+    const missing = findMissingCriteria(uiCriteria);
+    setMissingIds(missing.map((criterion) => criterion.id));
+    if (missing.length === 0) return true;
+    toast.error(missingCriteriaMessage(missing));
+    document.getElementById(criterionScoreInputId(missing[0].id))?.focus();
+    return false;
+  };
+
+  const openConfirmDialog = () => {
+    if (validateAllScored()) setConfirmDialogOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!game) {
       showErrorToast("Error: Información del juego no disponible.");
+      return;
+    }
+    if (!validateAllScored()) {
+      setConfirmDialogOpen(false);
       return;
     }
     setIsSubmitting(true);
@@ -300,40 +292,8 @@ export default function RatePage() {
     const currentDate = new Date().toISOString();
 
     for (const criterion of uiCriteria) {
-      //   const parsedScore = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-      //
-
-      //   if (parsedScore === null) {
-      //     setIsSubmitting(false);
-      //     showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
-      //     return;
-      //   }
-      //   const parsedScoreRaw = parseScoreValue(criterion.score.toString(), criterion.maxScore);
-      //
-
-      //   parsedDetails.push({
-      //     criterionId: criterion.id,
-      //     score: parsedScore,
-      //     createdAt: currentDate,
-      //     updatedAt: currentDate,
-      //     isActive: true,
-      //   });
-      // }
-
-      //  debug: inspeccionar el valor real que viene del UI
-
-      // parsear una sola vez (acepta number o string)
-      const parsedRaw = parseScoreValue(
-        criterion.score.toString() ?? "",
-        criterion.maxScore,
-      );
-      // Opción A (estricto): descomentar para exigir que ingresen un valor
-      // if (parsedRaw === null) {
-      //   setIsSubmitting(false);
-      //   showErrorToast(`Ingrese una puntuación válida para "${criterion.name}".`);
-      //   return;
-      // }
-      const parsedScore = parsedRaw === null ? 0 : parsedRaw;
+      // validateAllScored ya garantizó que todos tienen puntaje; el 0 solo llega si se escribió.
+      const parsedScore = parseCriterionScore(criterion.score, criterion.maxScore) as number;
 
       parsedDetails.push({
         criterionId: criterion.id,
@@ -388,15 +348,13 @@ export default function RatePage() {
       if (!res.ok) {
         let errorText = `${res.status} ${res.statusText}`;
         try {
-          const errorData = await res.json();
-          errorText =
-            errorData.message || JSON.stringify(errorData) || errorText;
-        } catch (e) {
+          // El 400 de puntajes nulos (back ARK-250) trae `message` como arreglo
+          errorText = apiErrorMessage(await res.json(), errorText);
+        } catch {
           // no-op: no JSON body
         }
         if (
           res.status === 403 &&
-          typeof errorText === "string" &&
           errorText.includes("Este grupo no está asignado al evaluador")
         ) {
           setTeamWasReassigned(true);
@@ -413,16 +371,11 @@ export default function RatePage() {
       showSuccessToast(
         `Evaluación del juego "${game.nombre}" enviada exitosamente`,
       );
-    } catch (err: any) {
-      showErrorToast(err.message || "Error guardando la evaluación");
+    } catch (err: unknown) {
+      showErrorToast((err instanceof Error && err.message) || "Error guardando la evaluación");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getCriterionDescription = (criterionName: string): string => {
-    const foundCriterion = uiCriteria.find((c) => c.name === criterionName);
-    return foundCriterion?.description || "Sin descripción detallada.";
   };
 
   if (showSuccessLoading) {
@@ -606,48 +559,13 @@ export default function RatePage() {
 
                     <TableBody>
                       {uiCriteria.map((criterion) => (
-                        <TableRow key={criterion.id}>
-                          <TableCell
-                            colSpan={2}
-                            className="font-medium text-base px-0 whitespace-normal break-words "
-                          >
-                            {criterion.name} (
-                            {(criterion.weight * 100).toFixed(0)}%)
-                            <div className="mt-2 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Puntuación:
-                              </p>
-
-                              <div className="flex items-center gap-2 w-full md:w-auto">
-                                <Input
-                                  type="text"
-                                  inputMode="decimal"
-                                  value={criterion.score ?? ""}
-                                  onFocus={() =>
-                                    handleScoreInputFocus(criterion.id)
-                                  }
-                                  onChange={(e) =>
-                                    handleScoreInputChange(
-                                      criterion.id,
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder={`0 - ${criterion.maxScore}`}
-                                  className="border rounded px-2 py-1 w-full md:w-24 bg-transparent text-sm"
-                                />
-
-                                <span className="text-sm font-medium whitespace-nowrap">
-                                  {Number(criterion.score).toFixed(2) || "—"}
-                                </span>
-                                <CriteriaButton
-                                  description={getCriterionDescription(
-                                    criterion.name,
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <CriterionScoreRow
+                          key={criterion.id}
+                          criterion={criterion}
+                          isMissing={missingIds.includes(criterion.id)}
+                          onFocus={handleScoreInputFocus}
+                          onChange={handleScoreInputChange}
+                        />
                       ))}
                     </TableBody>
                   </Table>
@@ -680,7 +598,7 @@ export default function RatePage() {
                   </div>
                   <Button
                     className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2 "
-                    onClick={() => setConfirmDialogOpen(true)}
+                    onClick={openConfirmDialog}
                     disabled={isSubmitting || uiCriteria.length === 0}
                   >
                     {isSubmitting ? (
