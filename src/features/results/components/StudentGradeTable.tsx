@@ -62,13 +62,17 @@ export default function StudentGradeTable() {
   ), [editableTeams, editedGrades]);
 
   useEffect(() => {
-    if (restoredDraft) {
-      const count = Object.keys(restoredDraft.grades).length;
+    if (!restoredDraft) return;
+    const count = Object.keys(restoredDraft.grades).length;
+    // ARK-241: el Toaster de LayoutApplication es un hermano posterior y se suscribe en su propio efecto,
+    // que corre después de este; si se avisa aquí mismo, nadie lo escucha y se pierde. Se avisa en la siguiente vuelta.
+    const timer = setTimeout(() => {
       toast.info(
         count === 1 ? "Recuperamos 1 nota que no habías guardado" : `Recuperamos ${count} notas que no habías guardado`,
         { id: "grade-draft-restored" },
       );
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [restoredDraft]);
 
   useEffect(() => {
