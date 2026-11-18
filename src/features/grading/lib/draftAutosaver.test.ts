@@ -192,6 +192,45 @@ describe("DraftAutosaver", () => {
     expect(localStorage.getItem(backupKey(ID))).not.toBeNull();
   });
 
+  it("después de un 403 sigue guardando en local lo que el jurado escribe, sin volver a llamar al servidor (ARK-249)", async () => {
+    const { save, saver, last } = setup(3);
+    save.mockRejectedValueOnce(new DraftRequestError("forbidden", "Este grupo no está asignado al evaluador"));
+
+    const sixCriteria = (upTo: number) => ({
+      scores: Object.fromEntries([1, 2, 3, 4, 5, 6].map((id) => [id, id <= upTo ? String(id % 5) : ""])),
+      comments: upTo === 6 ? "Terminado después del aviso" : "",
+    });
+
+    saver.schedule(sixCriteria(3));
+    await vi.advanceTimersByTimeAsync(2500);
+    expect(last().status).toBe("blocked");
+
+    // Después del aviso «Conservamos lo escrito…» el jurado termina los otros 3 criterios.
+    saver.schedule(sixCriteria(4));
+    saver.schedule(sixCriteria(6));
+    await vi.advanceTimersByTimeAsync(60000);
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(last().status).toBe("blocked");
+    const backup = readBackup(ID);
+    expect(backup?.scores).toEqual(sixCriteria(6).scores);
+    expect(backup?.comments).toBe("Terminado después del aviso");
+    expect(backup?.baseVersion).toBe(3);
+
+    // Al salir de la pantalla no se borra la copia ni se intenta guardar.
+    saver.dispose();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(readBackup(ID)?.scores).toEqual(sixCriteria(6).scores);
+
+    // Cuando le devuelven el grupo, la copia local gana sobre el borrador viejo del servidor.
+    const serverBefore = saved(3, { details: [1, 2, 3].map((id) => ({ criterionId: id, score: id % 5 })) });
+    const initial = pickInitialDraft(serverBefore, readBackup(ID));
+    expect(initial.source).toBe("local");
+    expect(initial.form?.scores).toEqual(sixCriteria(6).scores);
+    expect(initial.needsSync).toBe(true);
+  });
+
   it("no crea un borrador vacío", async () => {
     const { save, saver, last } = setup(0);
     saver.schedule({ scores: { 1: "" }, comments: "  " });

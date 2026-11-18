@@ -30,6 +30,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBatchBackRoute } from "@/features/grading/lib/batchRoute";
 import { toast } from "sonner";
+import { apiErrorMessage, parseCriterionScore } from "@/features/grading/lib/criteriaScores";
 
 interface BatchGame {
   id: number;
@@ -187,17 +188,6 @@ export default function BatchRatePage() {
     }
   };
 
-  const parseScoreValue = (value: string, maxScore: number): number | null => {
-    const raw = (value || "").toString().trim();
-    if (!raw) return null;
-    const normalized = raw.replace(/,/g, ".");
-    const parsed = Number.parseFloat(normalized);
-    if (Number.isNaN(parsed)) return null;
-    if (parsed < 0) return 0;
-    if (parsed > maxScore) return maxScore;
-    return parsed;
-  };
-
   const handleScoreChange = (
     gameId: number,
     criterionId: number,
@@ -255,11 +245,13 @@ export default function BatchRatePage() {
         const detail = scoreData?.details?.find(
           (d) => d.criterionId === criterion.id,
         );
-        const parsed = parseScoreValue(detail?.score ?? "", 5);
+        const parsed = parseCriterionScore(detail?.score ?? "", 5);
         if (parsed === null) {
+          // ARK-249: un vacío no es un 0; se lleva al jurado a la pestaña del juego
           toast.error(
-            `"${game.nombre}": Ingrese puntuación para "${criterion.name}"`,
+            `"${game.nombre}": califica todos los criterios antes de enviar. Falta «${criterion.name}».`,
           );
+          setActiveTab(games.indexOf(game));
           setIsSubmitting(false);
           return;
         }
@@ -276,10 +268,10 @@ export default function BatchRatePage() {
           const detail = scoreData?.details?.find(
             (d) => d.criterionId === criterion.id,
           );
-          const parsed = parseScoreValue(detail?.score ?? "", 5);
+          const parsed = parseCriterionScore(detail?.score ?? "", 5);
           return {
             criterionId: criterion.id,
-            score: parsed ?? 0,
+            score: parsed as number, // validado arriba: nunca vacío
             createdAt: currentDate,
             updatedAt: currentDate,
             isActive: true,
@@ -317,9 +309,10 @@ export default function BatchRatePage() {
         },
       );
 
-      const data = await res.json();
-      if (!res.ok)
-        throw new Error(data.message || "Error al guardar evaluaciones");
+      const data = await res.json().catch(() => null);
+      // Back ARK-250: un puntaje nulo rechaza todo el lote con 400 y `message` en arreglo, sin `results`
+      if (!res.ok || !data?.results)
+        throw new Error(apiErrorMessage(data, "Error al guardar evaluaciones"));
 
       setResult(data.results);
       pendingSubmission.current = null;
@@ -337,8 +330,8 @@ export default function BatchRatePage() {
       if (data.results.failed.length > 0) {
         toast.error(`${data.results.failed.length} evaluaciones fallaron`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Error al enviar evaluaciones");
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || "Error al enviar evaluaciones");
     } finally {
       setIsSubmitting(false);
     }
@@ -359,7 +352,7 @@ export default function BatchRatePage() {
       name: criterion.name,
       weight: criterion.weight,
       score:
-        parseScoreValue(
+        parseCriterionScore(
           scoreData?.details?.find((d) => d.criterionId === criterion.id)
             ?.score ?? "",
           5,

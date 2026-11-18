@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-18: criterio vacío no es 0 y copia local después de un 403 (BG-43 y BG-41 p3, ARK-249)
+
+- [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): `RatePage` y `SchoolRatePage` no envían con un criterio vacío y marcan cuál falta; el 0 cuenta solo si se escribe (antes `RatePage` convertía el vacío en 0). El 400 de puntajes nulos del back (ARK-250) se muestra legible, también en lote. Después de un 403 el autoguardado sigue escribiendo la copia local con todo lo que el jurado escribe.
+
 ## 2026-11-18: sin grupo «Externos» en el ranking (decisión del 16-nov, ARK-273; back ARK-272)
 
 - [reglas-de-negocio](../01-negocio/reglas-de-negocio.md), [decisiones-abiertas](../01-negocio/decisiones-abiertas.md), [glosario](glosario.md) y [evaluacion-y-ranking](../02-backend/evaluacion-y-ranking.md): la casilla «Externo» es solo informativa; no cambia la nota ni el nivel, y no hay podio «Externos». Reemplaza HU-38 (7-nov).
