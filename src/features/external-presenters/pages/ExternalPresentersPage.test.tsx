@@ -253,18 +253,71 @@ describe("Página «Presentadores externos» (HU-33)", () => {
       ).toBeTruthy();
     });
 
-    it("envía el certificado del equipo y avisa a quiénes llegó", async () => {
+    it("envía el certificado del equipo después de confirmar y deja la fecha de envío (ARK-258)", async () => {
       fetchExternalPresenters.mockResolvedValue(listOf([], false, [PIXELES]));
       let finish!: (value: unknown) => void;
       sendExternalPresenterTeamCertificate.mockReturnValue(new Promise((resolve) => (finish = resolve)));
       renderPage();
 
-      fireEvent.click(await screen.findByRole("button", { name: "Enviar certificado al equipo Los Pixeles" }));
+      const row = (await screen.findByText("Los Pixeles")).closest("tr")!;
+      expect(within(row).getByText("Sin enviar")).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: "Enviar certificado al equipo Los Pixeles" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText(/¿Enviar el certificado al equipo/)).toBeTruthy();
+      expect(within(dialog).getByText(/2 integrantes: ana@uninorte.edu.co, leo@uninorte.edu.co/)).toBeTruthy();
+      expect(sendExternalPresenterTeamCertificate).not.toHaveBeenCalled();
+
+      fireEvent.click(within(dialog).getByRole("button", { name: "Enviar" }));
       expect(await screen.findByText("Enviando...")).toBeTruthy();
       expect(sendExternalPresenterTeamCertificate).toHaveBeenCalledWith(400);
 
-      finish({ teamId: 400, sentTo: ["ana@uninorte.edu.co", "leo@uninorte.edu.co"], failed: [] });
+      finish({
+        teamId: 400,
+        sentTo: ["ana@uninorte.edu.co", "leo@uninorte.edu.co"],
+        failed: [],
+        certificateSentAt: "2026-11-18T15:30:00.000Z",
+      });
       await waitFor(() => expect(screen.queryByText("Enviando...")).toBeNull());
+      const updated = screen.getByText("Los Pixeles").closest("tr")!;
+      expect(within(updated).getByText(/Enviado el/)).toBeTruthy();
+      expect(within(updated).getByRole("button", { name: "Reenviar certificado al equipo Los Pixeles" })).toBeTruthy();
+    });
+
+    it("cancelar la confirmación no envía el certificado del equipo", async () => {
+      fetchExternalPresenters.mockResolvedValue(listOf([], false, [PIXELES]));
+      renderPage();
+
+      fireEvent.click(await screen.findByRole("button", { name: "Enviar certificado al equipo Los Pixeles" }));
+      fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Cancelar" }));
+
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      expect(sendExternalPresenterTeamCertificate).not.toHaveBeenCalled();
+    });
+
+    it("un equipo que ya lo recibió muestra la fecha y la confirmación lo dice antes de reenviar", async () => {
+      fetchExternalPresenters.mockResolvedValue(
+        listOf([], false, [{ ...PIXELES, certificateSentAt: "2026-11-08T15:30:00.000Z" }]),
+      );
+      renderPage();
+
+      const row = (await screen.findByText("Los Pixeles")).closest("tr")!;
+      expect(within(row).getByText(/Enviado el/)).toBeTruthy();
+
+      fireEvent.click(within(row).getByRole("button", { name: "Reenviar certificado al equipo Los Pixeles" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText(/¿Reenviar el certificado al equipo/)).toBeTruthy();
+      expect(within(dialog).getByText(/Ya se envió el/)).toBeTruthy();
+    });
+
+    it("en una edición de solo lectura muestra la fecha de envío del equipo", async () => {
+      fetchExternalPresenters.mockResolvedValue(
+        listOf([], true, [{ ...PIXELES, certificateSentAt: "2026-11-08T15:30:00.000Z" }]),
+      );
+      renderPage();
+
+      const row = (await screen.findByText("Los Pixeles")).closest("tr")!;
+      expect(within(row).getByText(/Enviado el/)).toBeTruthy();
     });
 
     it("descarga el PDF del equipo sin enviar correos", async () => {

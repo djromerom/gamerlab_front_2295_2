@@ -32,6 +32,8 @@ export interface ExternalPresenterTeam {
   projectTitle: string | null;
   /** Integrantes activos: cada uno recibe el certificado por correo */
   members: { firstName: string; lastName: string; email: string }[];
+  /** ARK-258: fecha del último envío del certificado del equipo; null si no se ha enviado */
+  certificateSentAt?: string | null;
 }
 
 export interface ExternalPresentersList {
@@ -96,6 +98,8 @@ export interface TeamCertificateResult {
   /** Correos de los integrantes que recibieron el certificado */
   sentTo: string[];
   failed: CertificateFailure[];
+  /** ARK-258: fecha del envío; null si no le llegó a ningún integrante */
+  certificateSentAt?: string | null;
 }
 
 export function describeCertificateFailure(failure: CertificateFailure): string {

@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TeamRowData, NrcInfo, MateriaInfo } from "@/features/teams/lib/teamsUtils";
+import { TeamRowData, NrcInfo, MateriaInfo, isConfirmedTeam } from "@/features/teams/lib/teamsUtils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import { TeamVerificationCodeDialog } from "./TeamVerificationCodeDialog";
 import { isCollegeTeamCode } from "@/features/teams/api/teamVerification";
@@ -96,7 +96,7 @@ export const TeamsManagementTable = ({
   // ARK-209: los presentadores externos no reciben participación ni podio (el back responde
   // CERTIFICATE_TEAM_NOT_GRADABLE); su certificado se envía desde Presentadores externos.
   const filteredCertTeams = certTeams.filter((t) =>
-    t.videojuego?.id_estado_videojuego === 1 &&
+    isConfirmedTeam(t) &&
     !t.notGradable &&
     (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
@@ -955,15 +955,20 @@ export const TeamsManagementTable = ({
                           >
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setGradableTarget(team)}
-                            disabled={internalIsLoading}
-                            className="cursor-pointer"
-                          >
-                            {team.notGradable ? "Quitar marca de presentador externo" : "Marcar como presentador externo"}
-                          </DropdownMenuItem>
-                          {/* Los equipos de colegios (N0) no tienen código de verificación */}
-                          {!isCollegeTeamCode(team.teamCode) && (
+                          {/* ARK-258: solo se marca un equipo con el videojuego Confirmado (el back
+                              responde 400 TEAM_NOT_CONFIRMED en los demás); quitar la marca, siempre */}
+                          {(team.notGradable || isConfirmedTeam(team)) && (
+                            <DropdownMenuItem
+                              onClick={() => setGradableTarget(team)}
+                              disabled={internalIsLoading}
+                              className="cursor-pointer"
+                            >
+                              {team.notGradable ? "Quitar marca de presentador externo" : "Marcar como presentador externo"}
+                            </DropdownMenuItem>
+                          )}
+                          {/* Sin código de verificación: equipos de colegios (N0) y presentadores
+                              externos, que no se califican (ARK-257) */}
+                          {!isCollegeTeamCode(team.teamCode) && !team.notGradable && (
                             <DropdownMenuItem
                               onClick={() =>
                                 setVerificationTeam({

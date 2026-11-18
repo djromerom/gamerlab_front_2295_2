@@ -175,6 +175,46 @@ describe("Equipos inscritos: presentador externo (ARK-210 / HU-39)", () => {
     expect(within(rowOf("Los Pixeles")).getByText("Presentador externo")).toBeTruthy();
   });
 
+  describe("menú según el estado del videojuego (ARK-258)", () => {
+    const withStatus = (base: TeamRowData, id_estado_videojuego: number): TeamRowData => ({
+      ...base,
+      videojuego: { ...base.videojuego, id_estado_videojuego },
+    });
+
+    it.each([
+      ["Pendiente", 2],
+      ["Rechazado", 3],
+    ])("no ofrece marcar un equipo %s", async (_estado, status) => {
+      const bytes = withStatus(BYTES, status);
+      renderTable({ teams: [PIXELES, bytes], allTeams: [PIXELES, bytes] });
+
+      openRowMenu("Los Bytes");
+      expect(await screen.findByRole("menuitem", { name: "Editar" })).toBeTruthy();
+      expect(screen.queryByRole("menuitem", { name: "Marcar como presentador externo" })).toBeNull();
+    });
+
+    it("deja quitar la marca aunque el equipo marcado ya no esté Confirmado", async () => {
+      const pixeles = withStatus(PIXELES, 3);
+      renderTable({ teams: [pixeles, BYTES], allTeams: [pixeles, BYTES] });
+
+      openRowMenu("Los Pixeles");
+      expect(await screen.findByRole("menuitem", { name: "Quitar marca de presentador externo" })).toBeTruthy();
+    });
+
+    it("oculta «Código de verificación» en un presentador externo y lo deja en los demás", async () => {
+      renderTable();
+
+      openRowMenu("Los Pixeles");
+      expect(await screen.findByRole("menuitem", { name: "Editar" })).toBeTruthy();
+      expect(screen.queryByRole("menuitem", { name: "Código de verificación" })).toBeNull();
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Editar" })).toBeNull());
+
+      openRowMenu("Los Bytes");
+      expect(await screen.findByRole("menuitem", { name: "Código de verificación" })).toBeTruthy();
+    });
+  });
+
   it("el diálogo de certificados de participación no ofrece equipos presentadores externos", async () => {
     renderTable();
 
