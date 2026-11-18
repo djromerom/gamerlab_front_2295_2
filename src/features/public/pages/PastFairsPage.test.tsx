@@ -43,7 +43,9 @@ describe("Ediciones pasadas: edición por defecto (ARK-248)", () => {
     renderPage();
 
     await expectEditionHeading("Edición 2025-2");
-    expect(mocks.fetchTestimonials).toHaveBeenCalledWith(4);
+    // Los datos de la edición se piden en un efecto que corre después de pintar el título: en un
+    // computador lento (el runner de GitHub) la aserción llegaba antes y la prueba fallaba al azar.
+    await waitFor(() => expect(mocks.fetchTestimonials).toHaveBeenCalledWith(4));
     expect(mocks.fetchTestimonials).not.toHaveBeenCalledWith(9);
   });
 
