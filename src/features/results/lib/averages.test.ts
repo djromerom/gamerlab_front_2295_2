@@ -38,7 +38,23 @@ describe("buildAverageChartData", () => {
     expect(r.materias).toEqual([]);
     expect(r.chart).toEqual([]);
   });
-  it("algunas materias en null: se omiten sin 0 ni NaN", () => {
+  it("ARK-265: la tabla trae todas las materias, también las sin nota (null), y el gráfico solo las que tienen nota", () => {
+    const r = buildAverageChartData({
+      materias: [{ name: "A", value: null }, { name: "B", value: 4 }, { name: "C", value: 0 }],
+      filtroMateria: "Todas", videojuegos: [], nrcs: [],
+    });
+    expect(r.materiasTabla).toEqual([{ name: "A", value: null }, { name: "B", value: 4 }, { name: "C", value: 0 }]);
+    expect(r.materias.map((m) => m.name)).toEqual(["B", "C"]);
+    expect(r.chart.map((c) => c.name)).toEqual(["B", "C"]);
+  });
+  it("ARK-265: con los promedios ocultos la tabla queda vacía", () => {
+    const r = buildAverageChartData({
+      materias: [{ name: "A", value: null }, { name: "B", value: null }],
+      filtroMateria: "Todas", videojuegos: [], nrcs: [],
+    });
+    expect(r.materiasTabla).toEqual([]);
+  });
+  it("algunas materias en null: se omiten del gráfico sin 0 ni NaN", () => {
     const r = buildAverageChartData({
       materias: [{ name: "A", value: null }, { name: "B", value: 4 }],
       filtroMateria: "Todas", videojuegos: [], nrcs: [],

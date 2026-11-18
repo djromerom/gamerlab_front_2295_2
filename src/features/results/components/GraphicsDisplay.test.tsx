@@ -72,14 +72,15 @@ describe("GraphicsDisplay con promedios", () => {
     expect(screen.getAllByText(AVISO).length).toBe(1);
   });
 
-  it("algunos null: omite los null y muestra los numéricos", () => {
+  it("algunos null: la materia sin notas dice «Sin nota» (ARK-265) y las demás su promedio", () => {
     state.value = { ...base, datosGraficoTortaMaterias: [{ name: "Álgebra", value: null }, { name: "Cálculo", value: 3.5 }] };
     const { container } = renderIt();
     expect(screen.queryByText(AVISO)).toBeNull();
     expect(screen.getByText("Cálculo")).toBeTruthy();
     expect(screen.getByText("3.50")).toBeTruthy();
-    expect(screen.queryByText("Álgebra")).toBeNull();
-    expect(container.textContent).not.toMatch(/NaN|Infinity/);
+    expect(screen.getByText("Álgebra")).toBeTruthy();
+    expect(screen.getByText("Sin nota")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/NaN|Infinity|0\.00|N\/A/);
   });
 
   it("con números: comportamiento actual", () => {

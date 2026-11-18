@@ -23,8 +23,14 @@ interface VideojuegoRef {
 }
 
 export interface AverageChartData {
-  /** Materias con promedio numérico (para la tabla). */
+  /** Materias con promedio numérico (para el gráfico). */
   materias: { name: string; value: number; color?: string }[];
+  /**
+   * ARK-265 (BG-65): todas las materias de la tabla «Promedios por Materia». Las que no tienen
+   * ninguna nota traen `value: null` y la tabla dice «Sin nota» en vez de ocultarlas o mostrar 0.00.
+   * Vacía si los promedios están ocultos (ranking sin publicar).
+   */
+  materiasTabla: { name: string; value: number | null; color?: string }[];
   /** Filas del gráfico de barras, ordenadas de mayor a menor. */
   chart: { name: string; promedio: number }[];
   /** true si hay filas y TODOS sus promedios vienen null (ranking oculto). */
@@ -47,7 +53,13 @@ export function buildAverageChartData(args: {
     const chart = materias
       .map((m) => ({ name: m.name, promedio: m.value }))
       .sort((a, b) => b.promedio - a.promedio);
-    return { materias, chart, hidden: materiasHidden, materiasHidden };
+    return {
+      materias,
+      materiasTabla: materiasHidden ? [] : rows,
+      chart,
+      hidden: materiasHidden,
+      materiasHidden,
+    };
   }
 
   const refs = args.videojuegos
@@ -63,7 +75,13 @@ export function buildAverageChartData(args: {
       promedio: isNum(nrc?.promedioxNRC) ? nrc.promedioxNRC : 0,
     }))
     .sort((a, b) => b.promedio - a.promedio);
-  return { materias: hidden ? [] : materias, chart, hidden, materiasHidden };
+  return {
+    materias: hidden ? [] : materias,
+    materiasTabla: hidden || materiasHidden ? [] : rows,
+    chart,
+    hidden,
+    materiasHidden,
+  };
 }
 
 /** true si hay videojuegos y ninguno trae `promedio` (el backend lo omite con el ranking oculto). */
