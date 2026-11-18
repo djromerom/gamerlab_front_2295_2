@@ -14,6 +14,7 @@ import {
   HighlightedGame
 } from "@/api/editions";
 import { Link } from "react-router-dom";
+import { pickDefaultPastEdition } from "@/features/public/lib/defaultPastEdition";
 
 import {
   Calendar,
@@ -298,6 +299,7 @@ export default function PastFairsPage() {
 
   const [editionsList, setEditionsList] = useState<Edition[]>([]);
   const [edicionSeleccionada, setEdicionSeleccionada] = useState<Edition | null>(null);
+  const [editionsLoaded, setEditionsLoaded] = useState(false);
   const [isEditionOpen, setIsEditionOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -332,9 +334,12 @@ export default function PastFairsPage() {
         const editions = await fetchEditions();
         const pastEditions = editions.filter(e => e.status !== 'ACTIVE');
         setEditionsList(pastEditions);
-        if (pastEditions.length > 0) setEdicionSeleccionada(pastEditions[0]);
+        // ARK-248 (BG-58): la última edición ya terminada, nunca una de prueba con fecha futura
+        setEdicionSeleccionada(pickDefaultPastEdition(pastEditions));
       } catch (error) {
         console.error("Error loading editions:", error);
+      } finally {
+        setEditionsLoaded(true);
       }
     };
     loadEditions();
@@ -391,7 +396,9 @@ export default function PastFairsPage() {
               <div className="flex items-center gap-2 min-w-0">
                 <History className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF] shrink-0" />
                 <h2 className="text-lg md:text-2xl font-bold text-left truncate">
-                  Edición {edicionSeleccionada?.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada?.semester === 10 ? '1' : edicionSeleccionada?.semester === 30 ? '2' : edicionSeleccionada?.semester}</span>
+                  {edicionSeleccionada ? (
+                    <>Edición {edicionSeleccionada.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada.semester === 10 ? '1' : edicionSeleccionada.semester === 30 ? '2' : edicionSeleccionada.semester}</span></>
+                  ) : "Ediciones pasadas"}
                 </h2>
               </div>
               <div className="relative shrink-0" ref={dropdownRef}>
@@ -420,6 +427,13 @@ export default function PastFairsPage() {
                 )}
               </div>
             </div>
+
+            {editionsLoaded && !edicionSeleccionada && (
+              <p className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-sm text-gray-300">
+                Todavía no hay ediciones terminadas.
+                {editionsList.length > 0 && " Usa «Cambiar Edición» para ver las programadas."}
+              </p>
+            )}
 
             {/* Main info about previous edition (CHECK BRITO)*/}
             {edicionSeleccionada && (

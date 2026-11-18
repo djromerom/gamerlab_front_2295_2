@@ -280,7 +280,9 @@ export function RealtimeTrackingPage() {
     <SidebarProvider>
       <PanelBackground />
       <AppSidebar />
-      <SidebarInset className="max-md:bg-transparent">
+      {/* ARK-248 (BG-58): sin min-w-0 el flex item crece al ancho de la tabla por hora y la página entera
+          hace scroll horizontal; así la tabla hace scroll dentro de su contenedor. */}
+      <SidebarInset className="min-w-0 max-md:bg-transparent">
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1 z-20" />
           <nav aria-label="breadcrumb">
@@ -292,7 +294,8 @@ export function RealtimeTrackingPage() {
           </nav>
         </header>
 
-        <main className="mx-auto w-full max-w-[1600px] px-4 pb-10">
+        {/* SidebarInset ya es el <main> de la página */}
+        <section className="mx-auto w-full max-w-[1600px] px-4 pb-10">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-xl font-medium">Seguimiento por hora</h1>
@@ -343,7 +346,9 @@ export function RealtimeTrackingPage() {
 
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 <div>
-                  <h3 className="mb-2 text-sm font-medium">Jurados sin check-in ({alert.missingJurors.length})</h3>
+                  <h3 className="mb-2 text-sm font-medium">
+                    {alertIsDefinitive ? "Jurados ausentes" : "Jurados sin check-in"} ({alert.missingJurors.length})
+                  </h3>
                   {alert.missingJurors.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No hay jurados pendientes.</p>
                   ) : (
@@ -355,6 +360,7 @@ export function RealtimeTrackingPage() {
                             {juror.type === "BACKUP" && <span className="text-xs text-muted-foreground">Suplente</span>}
                             {isAdmin && (
                               <button type="button" onClick={() => void openResponses(juror)}
+                                aria-label={`Registrar respuesta de ${juror.name}`}
                                 className="rounded border px-2 py-1 text-xs hover:bg-muted">
                                 Registrar respuesta
                               </button>
@@ -396,7 +402,8 @@ export function RealtimeTrackingPage() {
           {/* HU-22 (A1): suplentes con el aviso «Te asignaron grupos» sin leer */}
           {isAdmin && <SubstituteNoticesSection />}
 
-          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(220px,1fr)_150px_190px_180px_180px_auto]">
+          {/* En una fila los filtros miden ~1090 px: con la barra lateral abierta solo caben desde 2xl */}
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(220px,1fr)_150px_190px_180px_180px_auto]">
             <Input aria-label="Buscar grupo" value={search} onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar grupo, código o videojuego" />
             <select aria-label="Filtrar por nivel" value={level}
@@ -473,8 +480,9 @@ export function RealtimeTrackingPage() {
                     const highlight = shouldHighlightAtEleven(date) && tracked?.belowMinimumAt11;
                     return (
                     <tr key={group.teamId} className={`border-b align-top last:border-0 ${highlight ? "bg-red-500/10" : "hover:bg-muted/30"}`}>
+                      {/* La tabla hace scroll dentro de su contenedor: anchos mínimos para que no se aplaste */}
                       <td className="p-3">
-                        <div className="font-medium">{group.teamName}</div>
+                        <div className="min-w-48 font-medium">{group.teamName}</div>
                         <div className="text-xs text-muted-foreground">{group.teamCode} · {group.videogame}</div>
                       </td>
                       <td className="p-3">{group.level ?? "Sin nivel"}</td>
@@ -484,7 +492,7 @@ export function RealtimeTrackingPage() {
                       <td className="p-3 text-center">{tracking?.groups.find((item) => item.teamId === group.teamId)?.evaluationsCounted ?? 0}</td>
                       <td className="p-3 text-center">{group.missingEvaluations}</td>
                       <td className="p-3">
-                        <div className="space-y-1">
+                        <div className="min-w-60 space-y-1">
                           {(group.jurors ?? []).map((juror) => (
                             <div key={juror.jurorId} className="flex flex-wrap items-center justify-between gap-2 rounded bg-muted/30 px-2 py-1">
                               <span>{juror.name}{juror.type === "BACKUP" ? " · Suplente" : ""}</span>
@@ -496,7 +504,7 @@ export function RealtimeTrackingPage() {
                       </td>
                       {(tracking?.hours ?? []).map((hour) => {
                         const bucket = tracked?.byHour.find((item) => item.hour === hour);
-                        return <td key={hour} className="p-3 text-center">{bucket?.counted ?? 0} / {bucket?.received ?? 0}</td>;
+                        return <td key={hour} className="whitespace-nowrap p-3 text-center">{bucket?.counted ?? 0} / {bucket?.received ?? 0}</td>;
                       })}
                     </tr>
                     );
@@ -618,7 +626,7 @@ export function RealtimeTrackingPage() {
               </form>
             </div>
           )}
-        </main>
+        </section>
       </SidebarInset>
     </SidebarProvider>
   );

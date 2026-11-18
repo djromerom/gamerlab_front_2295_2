@@ -196,7 +196,7 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     renderPanel();
     await screen.findByText("Alerta informativa de inasistencia");
 
-    fireEvent.click(screen.getByRole("button", { name: "Registrar respuesta" }));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar respuesta de Luis Gómez" }));
     const responseDialog = await screen.findByRole("dialog", { name: "Registrar respuesta de Luis Gómez" });
 
     fireEvent.change(within(responseDialog).getByLabelText(/Hora estimada/), { target: { value: "2026-11-26T10:30" } });
@@ -261,6 +261,48 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
 
     expect(await screen.findByRole("dialog", { name: "Configurar cronograma" })).toBeTruthy();
     expect(screen.getByDisplayValue("2026-11-26")).toBeTruthy();
+  });
+
+  describe("pulido de pantalla (ARK-248)", () => {
+    it("en fase de alerta la lista se titula «Jurados sin check-in»", async () => {
+      renderPanel();
+
+      expect(await screen.findByRole("heading", { name: "Jurados sin check-in (1)" })).toBeTruthy();
+      expect(screen.queryByRole("heading", { name: /Jurados ausentes/ })).toBeNull();
+    });
+
+    it.each(["CONTROL", "CLOSED"])("en fase %s la lista se titula «Jurados ausentes»", async (phase) => {
+      mocks.fetchAbsenceAlert.mockResolvedValue({ ...alert, phase });
+      renderPanel();
+
+      expect(await screen.findByRole("heading", { name: "Jurados ausentes (1)" })).toBeTruthy();
+      expect(screen.queryByRole("heading", { name: /sin check-in/ })).toBeNull();
+    });
+
+    it("cada botón «Registrar respuesta» lleva el nombre de su jurado", async () => {
+      mocks.fetchAbsenceAlert.mockResolvedValue({
+        ...alert,
+        missingJurors: [
+          ...alert.missingJurors,
+          { ...alert.missingJurors[0], jurorId: "j3", name: "Marta Díaz" },
+        ],
+      });
+      renderPanel();
+
+      expect(await screen.findByRole("button", { name: "Registrar respuesta de Luis Gómez" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Registrar respuesta de Marta Díaz" })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Registrar respuesta" })).toBeNull();
+    });
+
+    it("la página tiene un solo <main> y no se estira con la tabla por hora", async () => {
+      const { container } = renderPanel();
+      await screen.findByText("Pixel Pioneers");
+
+      expect(container.querySelectorAll("main")).toHaveLength(1);
+      expect(container.querySelector("main main")).toBeNull();
+      expect(container.querySelector("main")?.className).toContain("min-w-0");
+      expect(screen.getByRole("table").parentElement?.className).toContain("overflow-x-auto");
+    });
   });
 
   it("mantiene la última lista si una actualización falla", async () => {
