@@ -17,6 +17,21 @@ describe("editionStudents (ARK-129)", () => {
     );
   });
 
+  it("los equipos mandan la búsqueda recortada y el origen al back (BG-53)", () => {
+    expect(teamsUrl("http://api", { page: 1, limit: 10, search: "  Nébula Guardianes ", origin: "externo" })).toBe(
+      "http://api/teams?page=1&limit=10&search=N%C3%A9bula+Guardianes&origin=externo",
+    );
+    expect(teamsUrl("http://api", { page: 1, limit: 10, editionId: 4, origin: "uninorte" })).toBe(
+      "http://api/teams?page=1&limit=10&editionId=4&origin=uninorte",
+    );
+  });
+
+  it("sin búsqueda (o solo espacios) ni origen la URL de equipos no cambia", () => {
+    expect(teamsUrl("http://api", { page: 1, limit: 10, search: "   ", origin: undefined })).toBe(
+      "http://api/teams?page=1&limit=10",
+    );
+  });
+
   it("la búsqueda se omite con menos de 2 caracteres y se recorta", () => {
     expect(editionStudentsQueryString({ search: " a " })).toBe("");
     expect(editionStudentsQueryString({ search: "  ana " })).toBe("search=ana");

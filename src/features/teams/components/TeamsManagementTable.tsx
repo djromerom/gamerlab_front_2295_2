@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Loader2, Users, Mail, Award, Search } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -20,6 +20,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Checkbox } from "@/components/ui/checkbox";
 import { batchErrors, batchFailureMessage, downloadCertificatePdf, runInBatches } from "@/lib/certificates";
 import { setTeamNotGradable } from "@/features/teams/api/teamGradable";
+import {
+  ROWS_PER_PAGE_OPTIONS,
+  limitFromRowsValue,
+  rowsSelectValue,
+  type TeamOriginFilter,
+} from "@/features/teams/lib/teamsListFilters";
 
 
 /* ────────────────────────────────────────────────────────────────────
@@ -39,6 +45,12 @@ export const TeamsManagementTable = ({
   readOnly = false,
   // Selector de edición y pestañas que pone la página encima de los filtros
   headerSlot = null,
+  // BG-53 (ARK-254): la búsqueda y el origen los filtra el back; aquí solo se muestran y se cambian.
+  // `teams` ya llega filtrado y paginado.
+  searchTerm = "",
+  onSearchTermChange = (() => {}) as (term: string) => void,
+  originFilter = "all" as TeamOriginFilter,
+  onOriginFilterChange = (() => {}) as (origin: TeamOriginFilter) => void,
 }) => {
 
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -89,61 +101,17 @@ export const TeamsManagementTable = ({
     (t.nombre_equipo ?? "").toLowerCase().includes(debouncedCertSearchTerm.toLowerCase())
   );
 
-  const [externalFilter, setExternalFilter] = useState<"all" | "external" | "uninorte">("all");
-  // REPLACE ABOVE WITH NEW CATEGORY FILTER
-  // const [categoryFilter, setCategoryFilter] = useState<"all" | "sem1" | "sem2" | "sem3" | "sem4" | "Externos">("all");
+  const handleFilterChange = (filter: TeamOriginFilter) => {
+    if (originFilter === filter) return;
+    onOriginFilterChange(filter); // la página vuelve a la 1 y pide al back
+  };
 
-  // Function to categorize by teamCode / isExternal
-  // const categorizeTeam = (team: TeamRowData): "sem1" | "sem2" | "sem3" | "sem4" | "Externos" | undefined => {
-  //   if ((team as any)?.isExternal) return "Externos";
-  //   const rawCode: string = (team as any)?.teamCode ?? "";
-  //   const prefix = rawCode.slice(0, 2).toUpperCase(); // N1, N2, N3, N4
-  //   switch (prefix) {
-  //     case "N1": return "sem1";
-  //     case "N2": return "sem2";
-  //     case "N3": return "sem3";
-  //     case "N4": return "sem4";
-  //     default: return undefined;
-  //   }
-  // };
-
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const handleFilterChange = useCallback((filter: "all" | "uninorte" | "external") => {
-    if (externalFilter === filter) return;
-    setTimeout(() => {
-      setExternalFilter(filter);
-      try { onPageChange(1); } catch { }
-    }, 300);
-  }, [externalFilter, onPageChange]);
-
-  const filteredTeamsGlobal = useMemo(() => {
-    const filteredByExternal = (teams ?? []).filter((team) => {
-      if (!team) return false;
-      if (externalFilter === "all") return true;
-      const isExt = (team as any)?.isExternal === true;
-      return externalFilter === "external" ? isExt : !isExt;
-    });
-
-    const term = debouncedSearchTerm.trim().toLowerCase();
-    return term
-      ? filteredByExternal.filter((t) => {
-        const teamName = (t.nombre_equipo ?? "").toLowerCase();
-        const gameName = (t.videojuego?.nombre ?? "").toLowerCase();
-        const teamCode = (t.teamCode ?? "").toLowerCase();
-        return teamName.includes(term) || gameName.includes(term) || teamCode.includes(term);
-      })
-      : filteredByExternal;
-  }, [teams, externalFilter, debouncedSearchTerm]);
+  // BG-53: antes se filtraba aquí sobre la página cargada y no se encontraba lo de otras páginas
+  const pageTeams: TeamRowData[] = (teams ?? []).filter(Boolean);
+  const hasFilters = searchTerm.trim() !== "" || originFilter !== "all";
 
   // Counters
-  // allTeams trae el total real cuando existe; teams suele venir paginado desde backend.
+  // allTeams trae el total real de la edición (sin búsqueda ni origen); teams es la página filtrada.
   const datasetForCounts = allTeams?.length ? allTeams : teams ?? [];
   const totalTeamsCount = datasetForCounts.length;
   const uninorteCount = datasetForCounts.filter(t => !(t as any)?.isExternal).length;
@@ -816,7 +784,7 @@ export const TeamsManagementTable = ({
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem
                     className={
-                      externalFilter === "all"
+                      originFilter === "all"
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
@@ -826,7 +794,7 @@ export const TeamsManagementTable = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className={
-                      externalFilter === "uninorte"
+                      originFilter === "uninorte"
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
@@ -836,11 +804,11 @@ export const TeamsManagementTable = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className={
-                      externalFilter === "external"
+                      originFilter === "externo"
                         ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground"
                         : ""
                     }
-                    onClick={() => handleFilterChange("external")}
+                    onClick={() => handleFilterChange("externo")}
                   >
                     Externos ({externalCount})
                   </DropdownMenuItem>
@@ -850,13 +818,13 @@ export const TeamsManagementTable = ({
 
             {/* Filtro Botones (Desktop) */}
             <div className="hidden lg:flex items-center gap-1 rounded-md p-1 bg-muted/10">
-              <Button size="sm" variant={externalFilter === "all" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("all")} disabled={showLoader}>
+              <Button size="sm" variant={originFilter === "all" ? "default" : "ghost"} aria-pressed={originFilter === "all"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("all")} disabled={showLoader}>
                 Todos ({totalTeamsCount})
               </Button>
-              <Button size="sm" variant={externalFilter === "uninorte" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("uninorte")} disabled={showLoader}>
+              <Button size="sm" variant={originFilter === "uninorte" ? "default" : "ghost"} aria-pressed={originFilter === "uninorte"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("uninorte")} disabled={showLoader}>
                 Uninorte ({uninorteCount})
               </Button>
-              <Button size="sm" variant={externalFilter === "external" ? "default" : "ghost"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("external")} disabled={showLoader}>
+              <Button size="sm" variant={originFilter === "externo" ? "default" : "ghost"} aria-pressed={originFilter === "externo"} className="h-8 px-3 text-sm" onClick={() => handleFilterChange("externo")} disabled={showLoader}>
                 Externos ({externalCount})
               </Button>
             </div>
@@ -866,10 +834,12 @@ export const TeamsManagementTable = ({
             <div className="flex-1 flex items-center gap-2 border rounded px-3 h-10 min-w-0">
               <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <input
+                type="search"
+                aria-label="Buscar equipos"
                 className="bg-transparent outline-none text-sm w-full min-w-0 placeholder:text-muted-foreground"
                 placeholder="Buscar equipo, código o videojuego..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => onSearchTermChange(e.target.value)}
               />
             </div>
 
@@ -933,7 +903,7 @@ export const TeamsManagementTable = ({
           </TableHeader>
 
           <TableBody>
-            {showLoader && filteredTeamsGlobal.length === 0 ? (
+            {showLoader && pageTeams.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
@@ -945,34 +915,21 @@ export const TeamsManagementTable = ({
                   </div>
                 </TableCell>
               </TableRow>
-            ) : !showLoader && filteredTeamsGlobal.length === 0 ? (
+            ) : pageTeams.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columnsToDisplay.length + 1}
                   className="h-24 text-center"
                 >
-                  No hay equipos para mostrar con el filtro seleccionado.
+                  {hasFilters
+                    ? "No hay equipos que coincidan con la búsqueda o el filtro."
+                    : "No hay equipos para mostrar."}
                 </TableCell>
               </TableRow>
             ) : (
-              // filtro por tipo + búsqueda
-              // apply client-side filter: only all / uninorte / external
+              // La búsqueda, el origen y la paginación los hace el back: teams es la página actual
               (() => {
-                // La paginación la controla el backend.
-                // Aquí NO se hace slice porque teams ya representa la página actual.
-                const pageItems = filteredTeamsGlobal;
-
-                if (pageItems.length === 0) {
-                  return (
-                    <TableRow>
-                      <TableCell colSpan={columnsToDisplay.length + 1} className="h-24 text-center">
-                        No hay equipos que coincidan con la búsqueda o filtros.
-                      </TableCell>
-                    </TableRow>
-                  );
-                }
-
-                return pageItems.map((team) => (
+                return pageTeams.map((team) => (
                   <TableRow key={team.id_equipo}>
                     {columnsToDisplay.map(({ key, renderCell }) => (
                       <TableCell key={key}>{renderCell(team)}</TableCell>
@@ -1052,20 +1009,15 @@ export const TeamsManagementTable = ({
               <div className="flex items-center gap-1 min-[450px]:gap-2">
                 <span className="w-12 min-[450px]:w-auto text-center min-[450px]:text-left leading-tight break-words">Filas</span>
                 <Select
-                  value={String(itemsPerPage)}
-                  onValueChange={(value) => {
-                    const newLimit = value === "all" ? 999999 : parseInt(value, 10);
-
-                    try { onPageChange(1); } catch { }
-                    onLimitChange(newLimit);
-                  }}
+                  value={rowsSelectValue(itemsPerPage)}
+                  onValueChange={(value) => onLimitChange(limitFromRowsValue(value))} // la página vuelve a la 1
                   disabled={showLoader}
                 >
-                  <SelectTrigger className="w-[100px] cursor-pointer">
-                    <SelectValue placeholder={itemsPerPage === 999999 ? "Todos" : String(itemsPerPage)} />
+                  <SelectTrigger className="w-[100px] cursor-pointer" aria-label="Filas por página">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 10, 15, 20].map((n) => (
+                    {ROWS_PER_PAGE_OPTIONS.map((n) => (
                       <SelectItem className="cursor-pointer" key={n} value={n.toString()}>
                         {n}
                       </SelectItem>
@@ -1089,6 +1041,7 @@ export const TeamsManagementTable = ({
                     variant="outline"
                     size="icon"
                     className="cursor-pointer"
+                    aria-label="Página anterior"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -1098,6 +1051,7 @@ export const TeamsManagementTable = ({
                     variant="outline"
                     size="icon"
                     className="cursor-pointer"
+                    aria-label="Página siguiente"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
