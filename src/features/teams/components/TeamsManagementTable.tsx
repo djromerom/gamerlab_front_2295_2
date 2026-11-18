@@ -1119,7 +1119,7 @@ export const TeamsManagementTable = ({
       </Dialog>
 
       <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
-        <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col text-sm">
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl h-auto max-h-[90vh] flex flex-col overflow-y-auto text-sm">
           <DialogHeader>
             <DialogTitle>Enviar certificados</DialogTitle>
             <DialogDescription>
@@ -1128,9 +1128,10 @@ export const TeamsManagementTable = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="flex gap-2 items-center">
-              <div className="w-50">
+          {/* ARK-242: el cuerpo encoge (min-h-0) para que la lista ocupe el espacio que sobra y el pie quede visible */}
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="w-full sm:w-50">
                 <Select value={certType} onValueChange={(v) => setCertType(v as any)}>
                   <SelectTrigger className="w-full h-8 text-xs">
                     <SelectValue />
@@ -1148,7 +1149,7 @@ export const TeamsManagementTable = ({
                 <div className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <input
-                    className="w-full p-2 border rounded"
+                    className="w-full min-w-0 p-2 border rounded"
                     placeholder="Buscar equipo por nombre..."
                     value={certSearchTerm}
                     onChange={(e) => setCertSearchTerm(e.target.value)}
@@ -1157,7 +1158,7 @@ export const TeamsManagementTable = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between ">
+            <div className="flex shrink-0 items-center justify-between gap-2">
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
@@ -1179,14 +1180,14 @@ export const TeamsManagementTable = ({
               <div className="text-sm text-muted-foreground">Seleccionados: {certSelectedTeamIds.length}</div>
             </div>
 
-            <div className="overflow-y-auto border rounded max-h-[60vh] lg:h-[220px]">
+            <div className="relative min-h-32 flex-1 overflow-y-auto rounded border lg:h-[220px] lg:flex-none">
               {filteredCertTeams.map((team) => {
                 const leaderEmail = team.integrantes?.[0]?.correo ?? "";
                 const code = String(team.teamCode ?? team.id_equipo);
                 const checked = certSelectedTeamIds.includes(code);
                 return (
-                  <label key={code} className="flex items-center justify-between p-3 border-b">
-                    <div className="flex items-center gap-3">
+                  <label key={code} className="flex flex-col gap-1 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
                       <Checkbox
                         checked={checked}
                         onChange={(e) => {
@@ -1198,12 +1199,12 @@ export const TeamsManagementTable = ({
                           if (!ch) setCertSelectAll(false);
                         }}
                       />
-                      <div>
-                        <div className="font-medium">{team.nombre_equipo}</div>
-                        <div className="text-xs text-muted-foreground">{leaderEmail || "Sin correo del líder"}</div>
+                      <div className="min-w-0">
+                        <div className="font-medium break-words">{team.nombre_equipo}</div>
+                        <div className="text-xs text-muted-foreground break-all">{leaderEmail || "Sin correo del líder"}</div>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">TeamCode: {code}</div>
+                    <div className="shrink-0 pl-7 text-xs text-muted-foreground sm:pl-0">TeamCode: {code}</div>
                   </label>
                 );
               })}
@@ -1211,9 +1212,10 @@ export const TeamsManagementTable = ({
 
           </div>
 
-          <DialogFooter className="pt-0 pb-0 mt-auto">
-            <Button variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
+          <DialogFooter className="mt-auto shrink-0 flex-row flex-wrap pt-0 pb-0">
+            <Button className="flex-1 sm:flex-none" variant="outline" onClick={() => setCertDialogOpen(false)} disabled={internalIsLoading}>Cancelar</Button>
             <Button
+              className="flex-1 sm:flex-none"
               variant="outline"
               onClick={downloadSelectedCertificate}
               disabled={internalIsLoading || certSelectedTeamIds.length !== 1}
@@ -1221,7 +1223,7 @@ export const TeamsManagementTable = ({
             >
               Descargar PDF
             </Button>
-            <Button onClick={sendCertificateEmails} disabled={internalIsLoading || certSelectedTeamIds.length === 0}>
+            <Button className="flex-1 sm:flex-none" onClick={sendCertificateEmails} disabled={internalIsLoading || certSelectedTeamIds.length === 0}>
               {internalIsLoading ? "Enviando..." : "Enviar certificados"}
             </Button>
           </DialogFooter>
