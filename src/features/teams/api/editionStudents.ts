@@ -94,12 +94,30 @@ export const fetchEditionStudents = async (
   return res.json();
 };
 
-/** `GET /teams` con la edición: sin `editionId` el back devuelve la activa. */
-export function teamsUrl(apiBase: string, params: { page?: number; limit?: number; editionId?: number }): string {
-  const search = new URLSearchParams();
-  if (params.page !== undefined) search.set('page', String(params.page));
-  if (params.limit !== undefined) search.set('limit', String(params.limit));
-  if (params.editionId) search.set('editionId', String(params.editionId));
-  const qs = search.toString();
+/** Origen de un equipo en `GET /teams?origin=` (BG-53, ARK-253): `externo` ↔ `isExternal`. */
+export type TeamOrigin = 'uninorte' | 'externo';
+
+export interface TeamsListParams {
+  page?: number;
+  limit?: number;
+  editionId?: number;
+  /** BG-53: el back busca en nombre del equipo, juego y código, sin tildes; vacío = sin filtro. */
+  search?: string;
+  origin?: TeamOrigin;
+}
+
+/**
+ * `GET /teams` con la edición: sin `editionId` el back devuelve la activa. La búsqueda y el origen
+ * se filtran en la consulta (BG-53), así que `metaData` ya trae el total y las páginas filtradas.
+ */
+export function teamsUrl(apiBase: string, params: TeamsListParams): string {
+  const query = new URLSearchParams();
+  if (params.page !== undefined) query.set('page', String(params.page));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.editionId) query.set('editionId', String(params.editionId));
+  const search = params.search?.trim();
+  if (search) query.set('search', search);
+  if (params.origin) query.set('origin', params.origin);
+  const qs = query.toString();
   return `${apiBase}/teams${qs ? `?${qs}` : ''}`;
 }

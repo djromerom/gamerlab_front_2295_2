@@ -184,3 +184,70 @@ describe("Equipos inscritos: presentador externo (ARK-210 / HU-39)", () => {
     expect(within(dialog).queryByText("Los Pixeles")).toBeNull();
   });
 });
+
+describe("Equipos inscritos: búsqueda, origen y filas del lado del servidor (BG-53 / ARK-254)", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("escribir en el buscador avisa a la página y no filtra la página cargada", () => {
+    const onSearchTermChange = vi.fn();
+    // El back ya respondió con la búsqueda aplicada: la tabla pinta lo que recibe
+    renderTable({ searchTerm: "zzz", onSearchTermChange });
+
+    expect(screen.getByText("Los Bytes")).toBeTruthy();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar equipos" }), { target: { value: "Nébula" } });
+    expect(onSearchTermChange).toHaveBeenCalledWith("Nébula");
+  });
+
+  it("las pestañas de origen piden «externo» o «uninorte» y marcan la elegida", () => {
+    const onOriginFilterChange = vi.fn();
+    const EXTERNO = team(402, "Los Externos", { isExternal: true });
+    renderTable({
+      teams: [EXTERNO],
+      allTeams: [PIXELES, BYTES, EXTERNO],
+      originFilter: "externo",
+      onOriginFilterChange,
+    });
+
+    const externos = screen.getByRole("button", { name: "Externos (1)" });
+    expect(externos.getAttribute("aria-pressed")).toBe("true");
+    // los contadores son de la edición completa, no de la página filtrada
+    fireEvent.click(screen.getByRole("button", { name: "Uninorte (2)" }));
+    expect(onOriginFilterChange).toHaveBeenCalledWith("uninorte");
+    fireEvent.click(externos); // ya elegida: no vuelve a pedir
+    expect(onOriginFilterChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("sin coincidencias con filtro lo dice", () => {
+    renderTable({ teams: [], searchTerm: "nadie" });
+
+    expect(screen.getByText("No hay equipos que coincidan con la búsqueda o el filtro.")).toBeTruthy();
+  });
+
+  it("«Filas: Todos» se ve seleccionado aunque el back responda su tope de 1000", () => {
+    renderTable({ paginationMeta: { itemsPerPage: 1000, currentPage: 1, totalPages: 1 } });
+
+    expect(screen.getByRole("combobox", { name: "Filas por página" }).textContent).toBe("Todos");
+  });
+
+  it("«Filas» muestra el número elegido", () => {
+    renderTable({ paginationMeta: { itemsPerPage: 15, currentPage: 1, totalPages: 2 } });
+
+    expect(screen.getByRole("combobox", { name: "Filas por página" }).textContent).toBe("15");
+  });
+});

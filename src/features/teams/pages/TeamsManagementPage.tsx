@@ -4,7 +4,7 @@
 import { apiFetch } from "@/lib/api";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { TeamsManagementTable } from "@/features/teams/components/TeamsManagementTable";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
 import { PaginatedTeams, TeamConfirmationStatusResponse } from "@/features/teams/lib/teamsUtils";
 import type { TeamRowData } from "@/features/teams/lib/teamsUtils";
@@ -13,7 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
-import { teamsUrl, type ListEdition } from "@/features/teams/api/editionStudents";
+import { teamsUrl, type ListEdition, type TeamOrigin } from "@/features/teams/api/editionStudents";
+import { TEAMS_SEARCH_DEBOUNCE_MS, type TeamOriginFilter } from "@/features/teams/lib/teamsListFilters";
 
 const EDITION_STATUS_LABEL: Record<EditionStatus, string> = {
   ACTIVE: "Activa",
@@ -34,6 +35,13 @@ const TeamsManagementPage = () => {
   });
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
+
+  // BG-53 (ARK-254): la búsqueda y el origen se mandan al back. `searchInput` es lo que se escribe;
+  // `filters.search` es lo que se pidió, después del debounce.
+  const [searchInput, setSearchInput] = useState("");
+  const [filters, setFilters] = useState<{ search: string; origin?: TeamOrigin }>({ search: "" });
+  // Solo se pinta la respuesta de la última petición (la búsqueda dispara varias seguidas)
+  const lastRequestRef = useRef(0);
 
   const [emailConfirmMap, setEmailConfirmMap] = useState<Record<number, TeamConfirmationStatusResponse | null>>({});
 
@@ -254,18 +262,21 @@ const TeamsManagementPage = () => {
   };
 
   const fetchTeams = async (page: number, limit: number) => {
+    const requestId = ++lastRequestRef.current;
+    const isStale = () => requestId !== lastRequestRef.current;
     setIsPageLoading(true);
     setError(null);
 
     try {
       const res = await apiFetch(
-        teamsUrl(API_ENDPOINT, { page, limit, editionId }),
+        teamsUrl(API_ENDPOINT, { page, limit, editionId, search: filters.search, origin: filters.origin }),
         {
           method: "GET",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         }
       );
+      if (isStale()) return;
 
 
       if (!res.ok) {
@@ -284,6 +295,7 @@ const TeamsManagementPage = () => {
       }
 
       const apiResponse = await res.json();
+      if (isStale()) return;
       setEdition(apiResponse?.edition ?? null);
 
       let dataRespond: PaginatedTeams;
@@ -336,13 +348,14 @@ const TeamsManagementPage = () => {
 
       setTeamsData(dataRespond);
     } catch (err: any) {
+      if (isStale()) return;
       console.error("Error fetching teams:", err);
       setError(
         err.message || "An unknown error occurred while loading the teams."
       );
       setTeamsData(null);
     } finally {
-      setIsPageLoading(false);
+      if (!isStale()) setIsPageLoading(false);
     }
   };
 
@@ -352,8 +365,31 @@ const TeamsManagementPage = () => {
 
   useEffect(() => {
     fetchTeams(pagination.page, pagination.limit);
+  }, [pagination.page, pagination.limit, refreshFlag, editionId, filters]);
+
+  // Los contadores (Todos / Uninorte / Externos) son de la edición completa: no dependen de la
+  // página, la búsqueda ni el origen.
+  useEffect(() => {
     fetchAllTeams();
-  }, [pagination.page, pagination.limit, refreshFlag, editionId]);
+  }, [refreshFlag, editionId]);
+
+  // BG-53: la búsqueda va al back después de una pausa al escribir y vuelve a la página 1
+  useEffect(() => {
+    const term = searchInput.trim();
+    if (term === filters.search) return;
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: term }));
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    }, TEAMS_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput, filters.search]);
+
+  const changeOrigin = (origin: TeamOriginFilter) => {
+    setFilters((prev) => ({ ...prev, origin: origin === "all" ? undefined : origin }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const hasFilters = filters.search !== "" || filters.origin !== undefined;
 
   const changeEdition = (value: string) => {
     setEditionId(value ? Number(value) : undefined);
@@ -460,6 +496,10 @@ const TeamsManagementPage = () => {
               allTeams={allTeams}
               readOnly={readOnly}
               headerSlot={header}
+              searchTerm={searchInput}
+              onSearchTermChange={setSearchInput}
+              originFilter={filters.origin ?? "all"}
+              onOriginFilterChange={changeOrigin}
               statusEmailLeader={(email: string) => {
                 const team = teamsData.data.find(t => t.integrantes?.[0]?.correo === email);
                 return team ? emailConfirmMap[team.id_equipo] ?? null : null;
@@ -467,7 +507,8 @@ const TeamsManagementPage = () => {
             />
           )}
 
-          {view === "teams" && !isPageLoading && !error && ((teamsData?.metadata?.totalItems ?? teamsData?.data?.length ?? 0) === 0) && (
+          {/* Con búsqueda u origen la tabla ya dice que no hay coincidencias */}
+          {view === "teams" && !isPageLoading && !error && (!hasFilters || !teamsData) && ((teamsData?.metadata?.totalItems ?? teamsData?.data?.length ?? 0) === 0) && (
             <div className="p-4 text-center text-gray-500">
               No se encontraron equipos inscritos.
             </div>
