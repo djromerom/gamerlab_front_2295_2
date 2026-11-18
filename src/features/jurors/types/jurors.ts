@@ -56,6 +56,16 @@ export interface AssignmentAuditLog {
   createdAt?: string;
   creado_en?: string;
   timestamp?: string;
+  // ARK-262 (BG-62): nombres que arma el back; null si el dato no existe (no mostrar el id)
+  actorName?: string | null;
+  jurorName?: string | null;
+  previousJurorName?: string | null;
+  newJurorName?: string | null;
+  teamName?: string | null;
+  teamCode?: string | null;
+  gameName?: string | null;
+  /** `notes` con los códigos de advertencia traducidos. */
+  notesText?: string | null;
 }
 
 export interface CurrentUser {

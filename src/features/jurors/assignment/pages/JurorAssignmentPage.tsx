@@ -46,6 +46,7 @@ import { JurorsListModal } from "@/features/jurors/assignment/components/JurorsL
 import { JurorAssignModal } from "@/features/jurors/assignment/components/JurorAssignModal";
 import { AllTeamsModal } from "@/features/jurors/assignment/components/AllTeamsModal";
 import { AuditModal } from "@/features/jurors/assignment/components/AuditModal";
+import { auditLogPath, mergeAuditLogs, parseAuditPage } from "@/features/jurors/assignment/lib/auditLog";
 import { AutomaticAssignmentModal } from "@/features/jurors/assignment/components/AutomaticAssignmentModal";
 import { CreateJurorModal } from "@/features/jurors/assignment/components/CreateJurorModal";
 import { EditJurorModal } from "@/features/jurors/assignment/components/EditJurorModal";
@@ -423,6 +424,10 @@ export function JurorAssignmentPage() {
   // HU-09: suplentes en lote
   const [showBulkSubstitutes, setShowBulkSubstitutes] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AssignmentAuditLog[]>([]);
+  // ARK-262: el historial se carga por páginas ("Cargar más")
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [loadingMoreAudit, setLoadingMoreAudit] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -939,12 +944,12 @@ export function JurorAssignmentPage() {
     try {
       setIsSubmitting(true);
 
-      const response = await apiRequest<any>(
-        "/juror/assignments/audit?page=1&limit=20",
-        { method: "GET" }
-      );
+      const response = await apiRequest<any>(auditLogPath(1), { method: "GET" });
+      const page = parseAuditPage(response, 1);
 
-      setAuditLogs(extractArray(response) as AssignmentAuditLog[]);
+      setAuditLogs(page.logs);
+      setAuditPage(page.page);
+      setAuditTotal(page.totalItems);
       setShowAuditModal(true);
     } catch (error) {
       console.error(error);
@@ -955,6 +960,30 @@ export function JurorAssignmentPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // ARK-262: la siguiente página del historial, agregada al final sin repetir registros
+  const loadMoreAuditLogs = async () => {
+    if (loadingMoreAudit) return;
+    try {
+      setLoadingMoreAudit(true);
+      const next = auditPage + 1;
+      const response = await apiRequest<unknown>(auditLogPath(next), { method: "GET" });
+      const page = parseAuditPage(response, next);
+
+      setAuditLogs((current) => mergeAuditLogs(current, page.logs));
+      setAuditPage(page.page);
+      setAuditTotal(page.totalItems);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar más registros del historial."
+      );
+    } finally {
+      setLoadingMoreAudit(false);
     }
   };
 
@@ -1218,24 +1247,24 @@ export function JurorAssignmentPage() {
 
 
 
+  // ARK-262: nombres que ya conoce la pantalla; null si no los conoce (el modal muestra
+  // «no disponible», nunca el identificador interno).
   const getJurorNameById = (id?: string | null) => {
-    if (!id) return "N/A";
-    const jurado = jurados.find((item) => item.id === id);
-    return jurado?.name || id;
+    if (!id) return null;
+    return jurados.find((item) => item.id === id)?.name || null;
   };
 
   const getTeamNameById = (id?: number | string | null) => {
-    if (id === undefined || id === null) return "N/A";
+    if (id === undefined || id === null) return null;
     const numericId = Number(id);
     const team = teams.find((item) => item.id === numericId);
-    return team ? `${team.name} (${team.game})` : String(id);
+    return team ? `${team.name} (${team.game})` : null;
   };
 
   const getActorNameById = (id?: string | null) => {
-    if (!id) return "N/A";
+    if (!id) return null;
     if (currentUser?.id === id) return getPersonDisplayName(currentUser);
-    const jurado = jurados.find((item) => item.id === id);
-    return jurado?.name || id;
+    return jurados.find((item) => item.id === id)?.name || null;
   };
 
   const breadcrumbs = [
@@ -1953,6 +1982,9 @@ export function JurorAssignmentPage() {
         {showAuditModal && (
           <AuditModal
             auditLogs={auditLogs}
+            totalItems={auditTotal}
+            loadingMore={loadingMoreAudit}
+            onLoadMore={() => void loadMoreAuditLogs()}
             onClose={() => setShowAuditModal(false)}
             getJurorNameById={getJurorNameById}
             getTeamNameById={getTeamNameById}
