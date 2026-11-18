@@ -81,7 +81,7 @@ describe("StudentGradeTable", () => {
       expect(draft!.teams[KEY].videogameId).toBe(10);
     });
 
-    it("al recargar retoma la edición con las notas marcadas como modificadas", () => {
+    it("al recargar retoma la edición con las notas marcadas como modificadas", async () => {
       localStorage.setItem(GRADE_DRAFT_KEY, JSON.stringify({ fair: "3", nrc: "7", grades: { [KEY]: "4.5" }, teams: { [KEY]: TEAM }, savedAt: 1 }));
       mockTeams = [TEAM];
       renderTable();
@@ -90,7 +90,14 @@ describe("StudentGradeTable", () => {
       expect((screen.getByRole("spinbutton") as HTMLInputElement).value).toBe("4.5");
       expect(screen.getByText("Modificada")).toBeTruthy();
       expect(screen.getByRole("button", { name: /guardar todo/i })).toBeTruthy();
-      expect(toastInfo).toHaveBeenCalledWith("Recuperamos 1 nota que no habías guardado", expect.anything());
+      await waitFor(() => expect(toastInfo).toHaveBeenCalledWith("Recuperamos 1 nota que no habías guardado", expect.anything()));
+    });
+
+    it("sin notas para recuperar no avisa", async () => {
+      mockTeams = [TEAM];
+      renderTable();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(toastInfo).not.toHaveBeenCalled();
     });
 
     it("no frena la recarga si las notas quedaron guardadas en el navegador", () => {
