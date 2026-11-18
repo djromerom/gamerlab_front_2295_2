@@ -80,6 +80,12 @@ describe("Ranking público por nivel, sin pestaña «Externos» (ARK-273)", () =
     await waitFor(() => expect(apiFetch).toHaveBeenLastCalledWith(expect.stringMatching(/by-n\/n1$/)));
   });
 
+  it("muestra la ponderación de la nota final, sin «junior» porque es pública (HU-34, HU-35)", async () => {
+    await renderPage();
+    expect(screen.getByText("Nota final: 60 % profesores y 40 % jurados")).toBeTruthy();
+    expect(screen.queryByText(/junior/)).toBeNull();
+  });
+
   it("un colegio marcado «Externo» compite en Colegios como los demás", async () => {
     await renderPage();
     fireEvent.click(screen.getByRole("button", { name: "Colegios" }));

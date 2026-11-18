@@ -208,6 +208,20 @@ export function formatBogotaTime(iso: string | null): string {
   }).format(new Date(iso));
 }
 
+/** «1 minuto», «5 minutos» (HU-23, ARK-255: antes salía «1 minutos»). */
+export function minutesLabel(minutes: number): string {
+  return `${minutes} ${minutes === 1 ? "minuto" : "minutos"}`;
+}
+
+/**
+ * «Próxima pregunta hacia las 2:33 p. m.» con un solo punto al final: la hora en es-CO ya
+ * termina en «p. m.» y antes salía «p. m..» (ARK-255).
+ */
+export function nextPromptSentence(iso: string): string {
+  const sentence = `Próxima pregunta hacia las ${formatBogotaTime(iso)}`;
+  return sentence.endsWith(".") ? sentence : `${sentence}.`;
+}
+
 export const NO_PENDING_PROMPT = "Sin pregunta pendiente";
 export const PROMPT_ALREADY_ASKED = "Ya se preguntó, sin responder";
 
@@ -225,11 +239,12 @@ export function nextPromptLabel(
   return formatBogotaDateTime(nextPromptAt, list.serverTime);
 }
 
-/** "cada hora", "cada 2 horas", "cada 30 minutos". */
+/** "cada minuto", "cada hora", "cada 2 horas", "cada 30 minutos". */
 export function describeInterval(minutes: number): string {
+  if (minutes === 1) return "cada minuto";
   if (minutes === 60) return "cada hora";
   if (minutes % 60 === 0) return `cada ${minutes / 60} horas`;
-  return `cada ${minutes} minutos`;
+  return `cada ${minutesLabel(minutes)}`;
 }
 
 /** Texto de ayuda con el intervalo real de la edición. */

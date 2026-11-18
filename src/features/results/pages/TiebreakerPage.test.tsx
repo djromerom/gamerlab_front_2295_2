@@ -136,6 +136,12 @@ describe("Ranking oficial solo por nivel, sin grupo «Externos» (ARK-273)", () 
     expect(container.textContent).not.toMatch(/Externos|externos/);
   });
 
+  it("muestra la ponderación configurada con los jurados junior (HU-34)", async () => {
+    fetchRanking.mockResolvedValue(snapshot());
+    renderPage();
+    expect(await screen.findByText("Nota final: 60 % profesores y 40 % jurados junior")).toBeTruthy();
+  });
+
   it("los empates y decisiones se llaman por su nivel", async () => {
     fetchRanking.mockResolvedValue({ ...snapshot(), pendingTies: 1 });
     fetchRankingTies.mockResolvedValue([N0_TIE]);

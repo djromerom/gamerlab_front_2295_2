@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatScore } from "@/features/grading/lib/scoreFormat";
 
 // Iconos simples usando SVG en lugar de Lucide
 const SearchIcon = () => (
@@ -183,11 +184,11 @@ export const PendingGradesGrid: React.FC<
                     <span className="text-muted-foreground">Equipo:</span>{" "}
                     {game.equipo}
                   </p>
-                  {/* [MODIFICACIÓN]: Se extrae y visualiza el último fragmento del código del equipo */}
+                  {/* ARK-255: código completo (N1-AYP-119), igual que en el resto de la plataforma */}
                   {game.teamCode && (
                     <p className="text-sm">
                       <span className="text-muted-foreground">Código:</span>{" "}
-                      {game.teamCode.split("-").pop() || game.teamCode}
+                      {game.teamCode}
                     </p>
                   )}
                   <p className="text-sm">
@@ -209,7 +210,7 @@ export const PendingGradesGrid: React.FC<
                       <span className="text-muted-foreground">
                         Puntaje Total:
                       </span>{" "}
-                      {game.totalScore}
+                      {formatScore(game.totalScore)}
                     </p>
                   )}
                 </div>

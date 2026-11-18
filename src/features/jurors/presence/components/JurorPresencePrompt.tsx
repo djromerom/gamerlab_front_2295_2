@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useJurorPresence } from "@/features/jurors/presence/contexts/JurorPresenceContext";
-import { presenceHelp } from "@/features/jurors/presence/api/jurorPresence";
+import { minutesLabel, presenceHelp } from "@/features/jurors/presence/api/jurorPresence";
 
 /**
  * Ventana "¿Sigues en la feria?" (HU-23). No se cierra con Escape ni tocando fuera: solo con
@@ -29,7 +29,7 @@ export function JurorPresencePrompt() {
           <AlertDialogDescription>
             {presenceHelp(settings)}
             {settings && (
-              <> Si no respondes en {settings.responseWindowMinutes} minutos, el administrador verá tu presencia sin confirmar.</>
+              <> Si no respondes en {minutesLabel(settings.responseWindowMinutes)}, el administrador verá tu presencia sin confirmar.</>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>

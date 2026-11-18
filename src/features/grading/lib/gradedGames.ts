@@ -51,7 +51,5 @@ export function toGradedCard(game: GradedGameApi) {
   };
 }
 
-/** Nota con 2 decimales («4.55», «3.00»); guion si no hay nota. */
-export function formatScore(score: number | null | undefined): string {
-  return typeof score === "number" && Number.isFinite(score) ? score.toFixed(2) : "—";
-}
+// Una sola regla de formato de notas en el front (ARK-255): la de `scoreFormat.ts`.
+export { formatScore } from "@/features/grading/lib/scoreFormat";

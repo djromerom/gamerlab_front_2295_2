@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-18: textos y formatos del Sprint 3 (HU-34, BG-38, HU-23, BG-30; ARK-255)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md) y [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): dónde se ve la ponderación de la nota final y por qué el `/ranking` público no dice «junior».
+- Front: el aviso «volverá a pendiente» de Editar equipo sale solo si cambia el nombre del equipo o el logo, igual que el back (`features/teams/lib/editNeedsReview.ts`); «Próxima pregunta hacia las 2:33 p. m.» sin doble punto y «1 minuto» en singular; la tarjeta «Calificados» del jurado muestra el puntaje con 2 decimales y el código completo del equipo (también el líder y las pantallas de calificación). Los certificados con un solo formato de fecha son del back (ARK-256).
+
 ## 2026-11-18: criterio vacío no es 0 y copia local después de un 403 (BG-43 y BG-41 p3, ARK-249)
 
 - [estado-auth-y-sockets](../03-frontend/estado-auth-y-sockets.md): `RatePage` y `SchoolRatePage` no envían con un criterio vacío y marcan cuál falta; el 0 cuenta solo si se escribe (antes `RatePage` convertía el vacío en 0). El 400 de puntajes nulos del back (ARK-250) se muestra legible, también en lote. Después de un 403 el autoguardado sigue escribiendo la copia local con todo lo que el jurado escribe.
