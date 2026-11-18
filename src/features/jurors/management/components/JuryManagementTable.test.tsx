@@ -14,6 +14,17 @@ vi.mock("@/features/jurors/management/api/juryManagement", () => ({
     getAllJuries: vi.fn().mockResolvedValue([]),
   },
 }));
+// Los diálogos de asignar/quitar tienen sus propias pruebas; aquí solo importa que avisen a la tabla.
+vi.mock("./ManualAssignTeamDialog", () => ({
+  ManualAssignTeamDialog: ({ juror, onAssigned }: { juror: JurorRowData; onAssigned: () => void }) => (
+    <button onClick={onAssigned}>{`Asignar a ${juror.firstName}`}</button>
+  ),
+}));
+vi.mock("./RemoveTeamDialog", () => ({
+  RemoveTeamDialog: ({ juror, onRemoved }: { juror: JurorRowData; onRemoved: () => void }) => (
+    <button onClick={onRemoved}>{`Quitar a ${juror.firstName}`}</button>
+  ),
+}));
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
@@ -125,6 +136,89 @@ describe("JuryManagementTable (Personal → Jurados)", () => {
     expect(screen.queryByRole("cell", { name: "Ana Pérez" })).toBeNull();
     expect(juryManagement.getAllJuries).toHaveBeenCalledTimes(1);
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  describe("ARK-244: con el buscador activo", () => {
+    const search = (text: string) =>
+      fireEvent.change(screen.getByPlaceholderText("Buscar jurado por nombre o email..."), { target: { value: text } });
+
+    // Así llega un jurado del backend: estado numérico y fecha ISO en UTC
+    const rawJuror = {
+      ...baseJuror,
+      confirmationStatusId: 1,
+      lastSignInAt: "2026-11-16T18:39:54.423Z",
+      evaluatedCount: 5, // distinto de los pendientes, para ubicar el botón por su número
+      unevaluatedCount: 1,
+    } as JurorRowData;
+
+    beforeEach(() => {
+      vi.mocked(juryManagement.getAllJuries).mockReset();
+    });
+
+    it("al asignar un equipo, vuelve a pedir la lista completa y la fila se actualiza", async () => {
+      vi.mocked(juryManagement.getAllJuries)
+        .mockResolvedValueOnce([rawJuror] as never)
+        .mockResolvedValueOnce([{ ...rawJuror, unevaluatedCount: 2 }] as never);
+      const { refreshData } = renderTable([baseJuror]);
+
+      search("ana");
+      await waitFor(() => expect(screen.getByRole("button", { name: "1" })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole("button", { name: "Asignar a Ana" }));
+
+      await waitFor(() => expect(screen.getByRole("button", { name: "2" })).toBeTruthy());
+      expect(juryManagement.getAllJuries).toHaveBeenCalledTimes(2);
+      expect(refreshData).toHaveBeenCalledTimes(1);
+    });
+
+    it("al quitar un equipo, vuelve a pedir la lista completa", async () => {
+      vi.mocked(juryManagement.getAllJuries)
+        .mockResolvedValueOnce([rawJuror] as never)
+        .mockResolvedValueOnce([{ ...rawJuror, unevaluatedCount: 0 }] as never);
+      const { refreshData } = renderTable([baseJuror]);
+
+      search("ana");
+      await waitFor(() => expect(screen.getByRole("button", { name: "1" })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole("button", { name: "Quitar a Ana" }));
+
+      await waitFor(() => expect(screen.getByRole("button", { name: "0" })).toBeTruthy());
+      expect(juryManagement.getAllJuries).toHaveBeenCalledTimes(2);
+      expect(refreshData).toHaveBeenCalledTimes(1);
+    });
+
+    it("no vuelve a pedir la lista completa en cada tecla", async () => {
+      vi.mocked(juryManagement.getAllJuries).mockResolvedValue([rawJuror] as never);
+      renderTable([baseJuror]);
+
+      search("a");
+      await waitFor(() => expect(screen.getByRole("cell", { name: "Ana Pérez" })).toBeTruthy());
+      search("an");
+      search("ana");
+
+      expect(juryManagement.getAllJuries).toHaveBeenCalledTimes(1);
+    });
+
+    it("sin búsqueda, asignar solo recarga la página actual", () => {
+      const { refreshData } = renderTable([baseJuror]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Asignar a Ana" }));
+
+      expect(refreshData).toHaveBeenCalledTimes(1);
+      expect(juryManagement.getAllJuries).not.toHaveBeenCalled();
+    });
+
+    it("«Última conexión» y «Estado» salen con el mismo formato que sin buscador (hora de Bogotá)", async () => {
+      vi.mocked(juryManagement.getAllJuries).mockResolvedValueOnce([rawJuror] as never);
+      renderTable([baseJuror]);
+
+      search("ana");
+
+      // 18:39 UTC = 13:39 en Bogotá (UTC-5)
+      await waitFor(() => expect(screen.getByRole("cell", { name: "16/11/2026, 13:39" })).toBeTruthy());
+      expect(screen.queryByText("2026-11-16T18:39:54.423Z")).toBeNull();
+      expect(screen.getByRole("cell", { name: "Confirmado" })).toBeTruthy();
+    });
   });
 
   it("al agregar, la categoría y el tipo quedan en Junior y Oficial por defecto y se envían", async () => {

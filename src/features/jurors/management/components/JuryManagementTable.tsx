@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_TYPE, editableJurorCategory, getApiErrorMessage } from "@/features/jurors/management/lib/utils"; // Adjust path if needed
+import { JurorRowData, Props, JurorFormData, EMPTY_JUROR_FORM, DEFAULT_JUROR_TYPE, editableJurorCategory, getApiErrorMessage, toJurorRow } from "@/features/jurors/management/lib/utils"; // Adjust path if needed
 import { juryManagement } from "@/features/jurors/management/api/juryManagement";
 import { getJurorCategoryLabel, getJurorTypeLabel } from "@/features/jurors/types/jurors";
 import { JurorCategoryTypeFields } from "./JurorCategoryTypeFields";
@@ -50,6 +50,16 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   const [searchTerm, setSearchTerm] = useState("");
   const [allJurors, setAllJurors] = useState<JurorRowData[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  // ARK-244: al cambiar, se vuelve a pedir la lista completa que usa el buscador
+  const [allJurorsVersion, setAllJurorsVersion] = useState(0);
+  const isSearching = searchTerm.trim().length > 0;
+
+  // Tras cualquier cambio en un jurado: recarga la página actual y, si hay búsqueda,
+  // también la lista completa, que es la que se pinta mientras el buscador está activo.
+  const refreshJurors = () => {
+    refreshData();
+    if (isSearching) setAllJurorsVersion((v) => v + 1);
+  };
 
   const loadIncompleteTeams = async () => {
     try {
@@ -67,7 +77,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   // Tras asignar: el equipo puede haber completado sus 3 jurados y cambian los conteos del jurado
   const handleManualAssigned = () => {
     void loadIncompleteTeams()
-    refreshData()
+    refreshJurors()
   }
   // Combina el estado de carga inicial (prop) y el estado de carga interno (CRUD)
   const showLoader = isDataLoading || internalIsLoading;
@@ -147,23 +157,23 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     });
   })();
 
-  // Fetch all jurors when a search is active so we can ignore pagination
+  // Con el buscador activo se pide la lista completa para ignorar la paginación.
+  // Se pide al activar la búsqueda (no en cada tecla) y cada vez que refreshJurors() la invalida.
   useEffect(() => {
     let cancelled = false;
-    const q = (searchTerm || "").trim();
-    if (!q) {
+    if (!isSearching) {
       // clear previously loaded full list when search is cleared
       setAllJurors(null);
       return; // nothing to do
     }
-    if (allJurors) return; // already loaded
 
     (async () => {
       setSearchLoading(true);
       try {
         const data = await juryManagement.getAllJuries();
         if (cancelled) return;
-        setAllJurors(data);
+        // Mismo formato que la lista paginada: estado legible y hora de Bogotá (ARK-244)
+        setAllJurors(data.map(toJurorRow));
       } catch (err: any) {
         console.error("Failed to fetch all jurors for search:", err);
         toast.error(err?.message || "Error loading jurados para búsqueda");
@@ -175,7 +185,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
     return () => {
       cancelled = true;
     };
-  }, [searchTerm]);
+  }, [isSearching, allJurorsVersion]);
 
   const showError = (errorMessage: string) => {
     toast.error(errorMessage);
@@ -362,7 +372,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       setAddDialogOpen(false);
       toast.success("Jurado agregado exitosamente.");
       onPageChange(1); // Go to first page to see the new juror
-      refreshData(); // Tell parent to refetch data
+      refreshJurors();
     } catch (err: any) {
       showError(err.message || "Error al agregar el jurado.");
     } finally {
@@ -406,7 +416,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       setEditDialogOpen(false);
       setEditingJuror(null);
       toast.success("Jurado actualizado exitosamente.");
-      refreshData(); // Tell parent to refetch data
+      refreshJurors();
     } catch (err: any) {
       showError(err.message || "Error al actualizar el jurado.");
     } finally {
@@ -435,7 +445,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
       setDeleteDialogOpen(false);
       setDeletingId(null);
       toast.success("Jurado eliminado exitosamente.");
-      refreshData(); // Tell parent to refetch, which handles page adjustment if needed
+      refreshJurors(); // El padre ajusta la página si quedó vacía
     } catch (err: any) {
       showError(err.message || "Error al eliminar el jurado.");
     } finally {
@@ -460,7 +470,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
         throw new Error(errorData.message || "Error al reenviar el correo");
       }
       toast.success("Correo reenviado exitosamente");
-      refreshData(); // Actualizar los datos si es necesario
+      refreshJurors();
     } catch (err: any) {
       showError(err.message || "Error al reenviar el correo de confirmación");
     } finally {
@@ -471,7 +481,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
   // HU-07: la asignación automática se previsualiza y se confirma en el modal
   const handleAutoAssignConfirmed = () => {
     setShowAutoAssignModal(false)
-    refreshData()
+    refreshJurors()
   }
 
   return (

@@ -4,11 +4,7 @@ import LayoutApplication from "@/layouts/LayoutApplication";
 import { JuryManagementTable } from "@/features/jurors/management/components/JuryManagementTable"; // Adjust path if needed
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
-import {
-  formatDate,
-  mapConfirmationStatus,
-} from "@/features/jurors/management/lib/utils"; // Adjust path if needed
-import { JurorRowData, PaginatedJurors } from "@/features/jurors/management/lib/utils";
+import { PaginatedJurors, toJurorRow } from "@/features/jurors/management/lib/utils";
 import { juryManagement } from "@/features/jurors/management/api/juryManagement";
 
 const JuryManagementPage = () => {
@@ -40,11 +36,7 @@ const JuryManagementPage = () => {
         return fetchJurors(page - 1, limit);
       }
 
-      dataRespond.data = dataRespond.data.map((jurado: any): JurorRowData => ({
-        ...jurado,
-        confirmationStatusId: mapConfirmationStatus(jurado.confirmationStatusId),
-        lastSignInAt: formatDate(jurado.lastSignInAt),
-      }));
+      dataRespond.data = dataRespond.data.map(toJurorRow);
       setJurorsData(dataRespond);
 
     } catch (err: any) {
