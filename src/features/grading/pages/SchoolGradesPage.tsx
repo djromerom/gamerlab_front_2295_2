@@ -4,28 +4,18 @@ import LayoutApplication from "@/layouts/LayoutApplication";
 import { PendingGradesGrid } from "@/features/grading/components/PendingGradesGrid";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
-
-interface VideogameDetails {
-  videogameId: number;
-  videogameName: string;
-  logoUrl: string;
-  teamName: string;
-  teamCode?: string;
-  members: { fullName: string }[];
-  nrc: string | null;
-  subject: string | null;
-  description: string | null;
-  isEvaluated: boolean;
-  totalScore: number;
-  comments: string;
-}
+import {
+  gradedGamesUrl,
+  toGradedCard,
+  type GradedGameApi,
+} from "@/features/grading/lib/gradedGames";
 
 interface teamIsSchool {
   isSchool: boolean;
 }
 
 interface PaginatedGames {
-  data: VideogameDetails[];
+  data: GradedGameApi[];
   metadata: {
     totalItems: number;
     itemsOnCurrentPage: number;
@@ -50,11 +40,9 @@ const SchoolGradesPage: React.FC = () => {
   // Para búsqueda
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<VideogameDetails[] | null>(null);
+  const [searchResults, setSearchResults] = useState<GradedGameApi[] | null>(null);
 
   const API_BASE_URL = `${import.meta.env.VITE_ENDPOINT_BACKEND}`;
-  // Si usas autenticación, obtén el jurorId del contexto, auth o props
-  const jurorId = "JUROR_ID_AQUI"; // <-- reemplaza por el valor real
 
   const fetchGames = async (page: number, limit: number) => {
     setIsPageLoading(true);
@@ -62,7 +50,7 @@ const SchoolGradesPage: React.FC = () => {
 
     try {
       const res = await apiFetch(
-        `${API_BASE_URL}/graded-games?jurorId=${jurorId}&page=${page}&limit=${limit}`,
+        gradedGamesUrl(API_BASE_URL, page, limit),
         {
           method: "GET",
           credentials: "include",
@@ -145,34 +133,8 @@ const SchoolGradesPage: React.FC = () => {
 
   // Mapeo para el grid
   const gamesToShow = searchResults !== null
-    ? searchResults.map((game) => ({
-      id: game.videogameId,
-      nombre: game.videogameName,
-      equipo: game.teamName,
-      teamCode: game.teamCode,
-      materia: game.subject || "Sin materia",
-      nrc: game.nrc || "Sin NRC",
-      participantes: game.members.map((member) => member.fullName),
-      imagen: game.logoUrl,
-      descripcion: game.description || "Sin descripción",
-      isEvaluated: game.isEvaluated,
-      totalScore: game.totalScore,
-      comments: game.comments,
-    }))
-    : gamesData?.data.map((game) => ({
-      id: game.videogameId,
-      nombre: game.videogameName,
-      equipo: game.teamName,
-      teamCode: game.teamCode,
-      materia: game.subject || "Sin materia",
-      nrc: game.nrc || "Sin NRC",
-      participantes: game.members.map((member) => member.fullName),
-      imagen: game.logoUrl,
-      descripcion: game.description || "Sin descripción",
-      isEvaluated: game.isEvaluated,
-      totalScore: game.totalScore,
-      comments: game.comments,
-    })) || [];
+    ? searchResults.map(toGradedCard)
+    : gamesData?.data.map(toGradedCard) || [];
 
     
   return (

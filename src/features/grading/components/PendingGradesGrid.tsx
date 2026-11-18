@@ -2,6 +2,7 @@
 
 import { DraftBadge } from "@/features/grading/components/EvaluationDrafts";
 import GameModal from "@/features/grading/components/GameModal";
+import type { GradedCriterion } from "@/features/grading/lib/gradedGames";
 import { GradingInput } from "@/features/grading/components/GradingInput";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -63,6 +64,7 @@ interface Game {
   comments?: string;
   hasDraft?: boolean; // HU-18: el jurado tiene un borrador guardado de este juego
   draftUpdatedAt?: string | null;
+  criteria?: GradedCriterion[]; // ARK-264: puntaje por criterio en el detalle de un calificado
 }
 
 interface PendingGamesGridProps {
@@ -160,14 +162,18 @@ export const PendingGradesGrid: React.FC<
           >
             <div className="flex justify-between mb-4">
               <div className="flex items-start gap-3">
-                {/* [MODIFICACIÓN]: Checkbox para selección múltiple de juegos */}
-                <input
-                  type="checkbox"
-                  checked={selectedGameIds?.has(game.id) ?? false}
-                  onChange={() => onToggleSelection?.(game.id)}
-                  className="mt-1 w-5 h-5 cursor-pointer accent-[var(--selected)] flex-shrink-0"
-                  title="Seleccionar este juego para calificación en lote"
-                />
+                {/* ARK-264: la casilla de lote solo sale donde la página maneja la selección
+                    (Pendientes) y en juegos sin calificar; en Calificados no aplica. */}
+                {onToggleSelection && !game.isEvaluated && (
+                  <input
+                    type="checkbox"
+                    checked={selectedGameIds?.has(game.id) ?? false}
+                    onChange={() => onToggleSelection(game.id)}
+                    className="mt-1 w-5 h-5 cursor-pointer accent-[var(--selected)] flex-shrink-0"
+                    title="Seleccionar este juego para calificación en lote"
+                    aria-label={`Seleccionar ${game.nombre} para calificación en lote`}
+                  />
+                )}
                 <div className="flex flex-col gap-1">
                   <h3 className="text-lg font-semibold">{game.nombre}</h3>
                   {game.hasDraft && !game.isEvaluated && (
