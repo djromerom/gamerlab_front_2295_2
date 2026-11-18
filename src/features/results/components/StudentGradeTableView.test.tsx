@@ -69,21 +69,9 @@ describe("StudentGradeTableView: notas con 2 decimales (BG-30)", () => {
 });
 
 describe("StudentGradeTableView: motivo de la nota de la feria (ARK-203)", () => {
-  const EXTERNAL = /Equipo externo: la nota de la feria solo cuenta los jurados junior/;
+  // ARK-273: la casilla «Externo» ya no cambia la nota; no hay motivo de «equipo externo»
+  const EXTERNAL = /Equipo externo/;
   const SCHOOL = /Colegio: la nota de la feria se calcula solo con las notas de profesores y jurados senior/;
-
-  it("un equipo externo con la nota de la feria pendiente explica que solo cuentan los jurados junior", () => {
-    renderView([{ ...team, fairGradeRule: "EXTERNAL", calificacionFeria: null, calificacionDocente: 4.2 }]);
-    expect(screen.getByText("Nota en proceso")).toBeTruthy();
-    expect(screen.getByText(EXTERNAL)).toBeTruthy();
-    expect(screen.getByText("4.20")).toBeTruthy();
-  });
-
-  it("un equipo externo con nota también muestra el motivo junto a la nota", () => {
-    renderView([{ ...team, fairGradeRule: "EXTERNAL" }]);
-    expect(screen.getByText("3.54")).toBeTruthy();
-    expect(screen.getByText(EXTERNAL)).toBeTruthy();
-  });
 
   it("un colegio explica que solo cuentan profesores y jurados senior", () => {
     renderView([{ ...team, teamCode: "N0-COL-01", fairGradeRule: "SCHOOL", calificacionFeria: null }]);

@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-18: sin grupo «Externos» en el ranking (decisión del 16-nov, ARK-273; back ARK-272)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md), [decisiones-abiertas](../01-negocio/decisiones-abiertas.md), [glosario](glosario.md) y [evaluacion-y-ranking](../02-backend/evaluacion-y-ranking.md): la casilla «Externo» es solo informativa; no cambia la nota ni el nivel, y no hay podio «Externos». Reemplaza HU-38 (7-nov).
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): `/ranking` sin pestaña «Externos»; `/tiebreaker` muestra solo «Ganadores por nivel».
+- [estado-actual](../00-inicio-rapido/estado-actual.md), [runbook de promoción](../04-devops/runbook-promocion-a-produccion.md) y [checklist de traspaso](../05-scrum-y-proceso/checklist-traspaso-v5.md): la duda del podio de externos queda cerrada; tras desplegar hay que volver a definir el ranking final.
+
 ## 2026-11-16: confirmar la llegada y anularla (BG-49, ARK-252)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en `/check-in-jurados` tocar un resultado o leer un QR abre una confirmación con el nombre; en `/asistencia-jurados` el Administrador tiene «Anular llegada» (`PATCH /juror-attendance/:attendanceId/annul`, back ARK-251). La confirmación del QR usa `GET /juror-checkin/badge?token=` (back #307, sin efectos); si entre la vista previa y «Confirmar» otra mesa registró la llegada, `ALREADY_CHECKED_IN` se muestra como aviso. En un servidor sin la ruta, el QR pide buscar por nombre.

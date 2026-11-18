@@ -22,19 +22,18 @@ const row = (teamId: number, teamCode: string, videogameName: string, finalScore
   isExternal,
 });
 
-// Lo que devuelve el back: un externo de N1 y otro de N2, con su puesto dentro de Externos
+// Lo que devuelve el back: equipos con la casilla «Externo» en N1 y en N0; compiten en su nivel (ARK-272)
 const ALL = [
-  row(40, "N1-EXT-001", "Indie Caribe", 4.8, 1, true),
   row(1, "N1-ABC-101", "Pixel Hunters", 4.5, 1),
-  row(41, "N2-EXT-002", "Studio Norte", 4.6, 2, true),
   row(2, "N1-ABC-102", "Code Knights", 4.1, 2),
-  row(3, "N1-ABC-103", "Byte Me", 3.9, 3),
-  row(50, "N0-COL-001", "Aventura Escolar", 4.0, 1, true),
+  row(40, "N1-DAT-435", "Operación de Datos", 3.0, 3, true),
+  row(50, "N0-COL-001", "Aventura Escolar", 4.0, 1),
+  row(51, "N0-COL-007", "Red Invisible", 3.6, 2, true),
 ];
 
 const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 
-describe("Ranking público con el grupo Externos (HU-38, ARK-220)", () => {
+describe("Ranking público por nivel, sin pestaña «Externos» (ARK-273)", () => {
   beforeEach(() => {
     apiFetch.mockImplementation((url: string) => {
       if (url.endsWith("/settings/show-ranking")) return Promise.resolve(json({ showRanking: true }));
@@ -55,34 +54,37 @@ describe("Ranking público con el grupo Externos (HU-38, ARK-220)", () => {
         <RankingPage />
       </MemoryRouter>,
     );
-    await screen.findByRole("button", { name: "Externos" });
+    await screen.findByRole("button", { name: "Colegios" });
   };
 
-  it("en un nivel no aparece el externo de ese nivel", async () => {
+  it("no hay pestaña «Externos»", async () => {
+    await renderPage();
+    expect(screen.queryByRole("button", { name: "Externos" })).toBeNull();
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "Todos",
+      "Primer Semestre",
+      "Segundo Semestre",
+      "Tercer Semestre",
+      "Cuarto Semestre",
+      "Décimo Semestre",
+      "Colegios",
+    ]);
+  });
+
+  it("un equipo marcado «Externo» sale en su semestre", async () => {
     await renderPage();
     fireEvent.click(screen.getByRole("button", { name: "Primer Semestre" }));
 
-    expect(await screen.findByText("Pixel Hunters")).toBeTruthy();
-    expect(screen.getByText("Code Knights")).toBeTruthy();
-    expect(screen.queryByText("Indie Caribe")).toBeNull();
+    expect(await screen.findByText("Operación de Datos")).toBeTruthy();
+    expect(screen.getByText("Pixel Hunters")).toBeTruthy();
+    await waitFor(() => expect(apiFetch).toHaveBeenLastCalledWith(expect.stringMatching(/by-n\/n1$/)));
   });
 
-  it("la pestaña Externos muestra el podio de los externos de cualquier nivel", async () => {
-    await renderPage();
-    fireEvent.click(screen.getByRole("button", { name: "Externos" }));
-
-    expect(await screen.findByText("Indie Caribe")).toBeTruthy();
-    expect(screen.getByText("Studio Norte")).toBeTruthy();
-    expect(screen.queryByText("Pixel Hunters")).toBeNull();
-    // Un colegio externo sigue en Colegios
-    expect(screen.queryByText("Aventura Escolar")).toBeNull();
-    await waitFor(() => expect(apiFetch).toHaveBeenLastCalledWith(expect.stringMatching(/by-n\/all$/)));
-  });
-
-  it("un colegio externo sigue en Colegios", async () => {
+  it("un colegio marcado «Externo» compite en Colegios como los demás", async () => {
     await renderPage();
     fireEvent.click(screen.getByRole("button", { name: "Colegios" }));
 
-    expect(await screen.findByText("Aventura Escolar")).toBeTruthy();
+    expect(await screen.findByText("Red Invisible")).toBeTruthy();
+    expect(screen.getByText("Aventura Escolar")).toBeTruthy();
   });
 });

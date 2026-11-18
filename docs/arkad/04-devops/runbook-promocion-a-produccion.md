@@ -48,6 +48,6 @@ Base desechable (`ensayo_prod`) en el Postgres de **test**: restaurar el dump co
 - `~/Arkad-api-prod/.env` con permisos 644: recomendado `chmod 600`.
 - `GET /teams` sin parámetro devuelve solo la edición activa: revisar galería pública y tablero de puntajes.
 - Igualación `main → dev` / `main → dev-deploy`.
-- Duda para el PO: ¿los equipos externos compiten por el podio?
+- ~~Duda para el PO: ¿los equipos externos compiten por el podio?~~ Resuelta el 16-nov: no hay podio «Externos»; cada equipo compite en su nivel (ARK-272 / ARK-273). Tras desplegar, volver a definir el ranking final desde `/tiebreaker`.
 
 Detalle completo: promoción 2026-11-04 y 2026-11-05.

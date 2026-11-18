@@ -45,7 +45,7 @@ describe("useTeacherDashboard", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("conserva fairGradeRule de cada fila y lo deduce de isExternal si no llega (ARK-203)", async () => {
+  it("conserva SCHOOL y cuenta todo lo demás como STANDARD, aunque el equipo tenga la casilla «Externo» (ARK-273)", async () => {
     const row = { teamCode: "N1-AYP-01", team: "A", videogame: "J", calificacionFeria: null, editionId: 3 };
     const data = [
       { ...row, fairGradeRule: "EXTERNAL", isExternal: true },
@@ -60,7 +60,7 @@ describe("useTeacherDashboard", () => {
         : json(200, { ...LIST, data, metadata: { ...LIST.metadata, totalItems: 5, itemsOnCurrentPage: 5, totalPages: 1 } }));
     const { result } = renderHook(() => useTeacherDashboard());
     await waitFor(() => expect(result.current.teams).toHaveLength(5));
-    expect(result.current.teams.map((t) => t.fairGradeRule)).toEqual(["EXTERNAL", "SCHOOL", "STANDARD", "EXTERNAL", "STANDARD"]);
+    expect(result.current.teams.map((t) => t.fairGradeRule)).toEqual(["STANDARD", "SCHOOL", "STANDARD", "STANDARD", "STANDARD"]);
   });
 
   it("abre con la feria y el NRC iniciales y los pide al backend (BG-27)", async () => {
