@@ -75,6 +75,7 @@ const errorMessage = (err: unknown, fallback: string) =>
 
 const presentersLabel = (n: number) => `${n} presentador${n !== 1 ? "es" : ""}`;
 const teamsLabel = (n: number) => `${n} equipo${n !== 1 ? "s" : ""}`;
+const membersLabel = (n: number) => `${n} integrante${n !== 1 ? "s" : ""}`;
 
 const ExternalPresentersPage: React.FC = () => {
   const [editions, setEditions] = useState<Edition[]>([]);
@@ -97,6 +98,8 @@ const ExternalPresentersPage: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   // ARK-209: equipo cuyo certificado se está enviando o descargando
   const [teamAction, setTeamAction] = useState<{ id: number; kind: "send" | "download" } | null>(null);
+  // ARK-258: equipo al que se le va a enviar el certificado (pide confirmación)
+  const [confirmTeam, setConfirmTeam] = useState<ExternalPresenterTeam | null>(null);
 
   const edition = list?.edition ?? null;
   const writable = Boolean(edition && !edition.readOnly);
@@ -138,6 +141,14 @@ const ExternalPresentersPage: React.FC = () => {
     setList((prev) =>
       prev
         ? { ...prev, presenters: prev.presenters.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)) }
+        : prev,
+    );
+
+  // ARK-258: deja en la fila del equipo la fecha de envío que devuelve el back
+  const replaceTeam = (teamId: number, certificateSentAt: string) =>
+    setList((prev) =>
+      prev?.teams
+        ? { ...prev, teams: prev.teams.map((t) => (t.id === teamId ? { ...t, certificateSentAt } : t)) }
         : prev,
     );
 
@@ -191,10 +202,14 @@ const ExternalPresentersPage: React.FC = () => {
     }
   };
 
-  const sendTeamCertificate = async (team: ExternalPresenterTeam) => {
+  const sendTeamCertificate = async () => {
+    if (!confirmTeam) return;
+    const team = confirmTeam;
+    setConfirmTeam(null);
     setTeamAction({ id: team.id, kind: "send" });
     try {
       const result = await sendExternalPresenterTeamCertificate(team.id);
+      if (result.certificateSentAt) replaceTeam(team.id, result.certificateSentAt);
       const failed = result.failed ?? [];
       if (result.sentTo.length > 0) {
         toast.success("Certificado del equipo enviado", {
@@ -530,7 +545,8 @@ const ExternalPresentersPage: React.FC = () => {
                         <TableHead>Equipo</TableHead>
                         <TableHead>Proyecto</TableHead>
                         <TableHead>Integrantes</TableHead>
-                        {writable && <TableHead className="text-right">Certificado</TableHead>}
+                        <TableHead>Certificado</TableHead>
+                        {writable && <TableHead className="text-right">Acciones</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -557,22 +573,32 @@ const ExternalPresentersPage: React.FC = () => {
                                 </ul>
                               )}
                             </TableCell>
+                            <TableCell className="text-xs">
+                              {t.certificateSentAt ? (
+                                <span className="flex items-center gap-1">
+                                  <MailCheck className="h-3 w-3 text-emerald-500" aria-hidden />
+                                  Enviado el {formatSentAt(t.certificateSentAt)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">Sin enviar</span>
+                              )}
+                            </TableCell>
                             {writable && (
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-1">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => sendTeamCertificate(t)}
+                                    onClick={() => setConfirmTeam(t)}
                                     disabled={busy || t.members.length === 0}
-                                    aria-label={`Enviar certificado al equipo ${t.teamName}`}
+                                    aria-label={`${t.certificateSentAt ? "Reenviar" : "Enviar"} certificado al equipo ${t.teamName}`}
                                   >
                                     {sending ? (
                                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                                     ) : (
                                       <Mail className="h-4 w-4 mr-1" />
                                     )}
-                                    {sending ? "Enviando..." : "Enviar certificado"}
+                                    {sending ? "Enviando..." : t.certificateSentAt ? "Reenviar" : "Enviar certificado"}
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -623,6 +649,31 @@ const ExternalPresentersPage: React.FC = () => {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleRemove}>Quitar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* ARK-258: el certificado del equipo llega a cada integrante; se confirma antes de enviarlo */}
+        <AlertDialog open={confirmTeam !== null} onOpenChange={(open) => !open && setConfirmTeam(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                ¿{confirmTeam?.certificateSentAt ? "Reenviar" : "Enviar"} el certificado al equipo{" "}
+                {confirmTeam?.teamName}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Se enviará por correo a {membersLabel(confirmTeam?.members.length ?? 0)}:{" "}
+                {confirmTeam?.members.map((m) => m.email).join(", ")}.
+                {confirmTeam?.certificateSentAt && (
+                  <> Ya se envió el {formatSentAt(confirmTeam.certificateSentAt)}.</>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={sendTeamCertificate}>
+                {confirmTeam?.certificateSentAt ? "Reenviar" : "Enviar"}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

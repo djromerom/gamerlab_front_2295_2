@@ -7,7 +7,10 @@ const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000'
 export interface MyVerificationCode {
   teamId: number;
   teamCode: string;
-  verificationCode: string | null; // null en equipos de colegios (N0)
+  /** null en equipos de colegios (N0) y en presentadores externos (ARK-257) */
+  verificationCode: string | null;
+  /** ARK-257: presentador externo, no se califica ni tiene código. Un back anterior no lo envía. */
+  notGradable?: boolean;
 }
 
 export interface TeamVerificationCode {

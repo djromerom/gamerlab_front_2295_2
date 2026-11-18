@@ -41,6 +41,13 @@ export interface IntegranteData {
   nrcs?: any[];
 }
 
+/** Estado del videojuego en la tabla de equipos: 1 Confirmado, 2 Pendiente, 3 Rechazado. */
+export const CONFIRMED_VIDEOGAME_STATUS = 1;
+
+/** El videojuego del equipo está Confirmado (ARK-258: solo así se puede marcar como presentador). */
+export const isConfirmedTeam = (team: Pick<TeamRowData, "videojuego">): boolean =>
+  team.videojuego?.id_estado_videojuego === CONFIRMED_VIDEOGAME_STATUS;
+
 export interface VideojuegoData {
   id_videojuego: number;
   nombre: string;

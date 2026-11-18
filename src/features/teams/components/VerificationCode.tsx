@@ -2,26 +2,50 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchMyVerificationCode } from "@/features/teams/api/teamVerification";
 
+export const EXTERNAL_PRESENTER_NOTICE =
+    "Tu equipo participa como presentador externo: no recibe calificación.";
+
 /**
  * Código de verificación del equipo (HU-19). El estudiante se lo dice al jurado en el stand
  * para que pueda calificar su grupo. Los equipos de colegios (N0) no tienen código.
+ * ARK-258: un presentador externo no se califica; en vez del código ve un aviso.
  */
 export default function VerificationCode() {
     const { userRole } = useAuth();
     const [code, setCode] = useState<string | null | undefined>(undefined);
+    const [notGradable, setNotGradable] = useState(false);
 
     useEffect(() => {
         if (userRole !== "Estudiante") return;
 
         fetchMyVerificationCode()
-            .then((data) => setCode(data.verificationCode))
+            .then((data) => {
+                setNotGradable(data.notGradable === true);
+                setCode(data.verificationCode);
+            })
             .catch((error) => {
                 console.error(error);
                 setCode(null);
             });
     }, [userRole]);
 
-    if (userRole !== "Estudiante" || code === null) {
+    if (userRole !== "Estudiante") {
+        return null;
+    }
+
+    if (notGradable) {
+        return (
+            <div
+                role="status"
+                className="flex flex-col border-2 rounded-2xl p-4 h-full justify-center gap-2 border-border bg-card max-w-[320px] dark:bg-[rgba(8,15,48,0.8)] dark:border-[rgba(201,214,255,0.18)]"
+            >
+                <h1 className="font-bold tracking-tighter text-center text-2xl">Presentador externo</h1>
+                <p className="text-center text-sm text-muted-foreground">{EXTERNAL_PRESENTER_NOTICE}</p>
+            </div>
+        );
+    }
+
+    if (code === null) {
         return null;
     }
 
