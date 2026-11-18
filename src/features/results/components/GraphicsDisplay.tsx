@@ -141,7 +141,7 @@ const GraphicsDisplay = () => {
     }, [columnasCriterios, criteriosSeleccionado]);
 
     // Promedios por materia / NRC; con el ranking oculto el backend los envía en null.
-    const { materias: promediosGeneralesPorMateria, chart: barChartHorizontalData, hidden: promediosOcultos, materiasHidden } = useMemo(
+    const { materiasTabla: promediosGeneralesPorMateria, chart: barChartHorizontalData, hidden: promediosOcultos, materiasHidden } = useMemo(
         () => buildAverageChartData({
             materias: Array.isArray(datosGraficoTortaMaterias) ? datosGraficoTortaMaterias : [],
             filtroMateria,
@@ -555,7 +555,10 @@ const GraphicsDisplay = () => {
                                             <div style={{ backgroundColor: item.color || `hsl(var(--chart-${index + 1}))` }} className="w-3 h-3 rounded-full flex-shrink-0"></div>
                                             <span className="text-sm font-medium truncate" title={item.name}>{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-semibold">{formatAverage(item.value, 2) ?? 'N/A'}</span>
+                                        {/* ARK-265 (BG-65): una materia sin notas dice «Sin nota», no 0.00 ni N/A */}
+                                        {formatAverage(item.value, 2) === null
+                                            ? <span className="text-sm text-muted-foreground">Sin nota</span>
+                                            : <span className="text-sm font-semibold">{formatAverage(item.value, 2)}</span>}
                                     </div>
                                 ))}
                             </div>
