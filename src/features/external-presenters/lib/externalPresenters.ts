@@ -13,7 +13,8 @@ export const MAX_EMAIL = 50;
 export const MAX_ORGANIZATION = 150;
 export const MAX_PRESENTATION_TITLE = 200;
 
-const NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ\s'-]+$/;
+// ARK-247 (BG-57): acepta dígitos, igual que el DTO del back desde ARK-257 (un nombre artístico puede tenerlos)
+const NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ0-9\s'-]+$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -45,7 +46,7 @@ function nameError(value: string, label: string): string | undefined {
   const name = value.trim();
   if (!name) return `El ${label} es obligatorio`;
   if (name.length > MAX_NAME) return `El ${label} no puede superar los ${MAX_NAME} caracteres`;
-  if (!NAME_PATTERN.test(name)) return `El ${label} solo puede contener letras y espacios`;
+  if (!NAME_PATTERN.test(name)) return `El ${label} solo puede contener letras, números y espacios`;
   return undefined;
 }
 
