@@ -34,12 +34,16 @@ describe("Presentadores externos: validación del formulario (HU-33)", () => {
     );
   });
 
-  it("exige nombre y apellido con solo letras y hasta 50 caracteres", () => {
+  it("exige nombre y apellido con letras, números o espacios y hasta 50 caracteres", () => {
     expect(validatePresenter({ ...VALID, firstName: "  " }).firstName).toBe("El nombre es obligatorio");
-    expect(validatePresenter({ ...VALID, lastName: "P3rez" }).lastName).toBe(
-      "El apellido solo puede contener letras y espacios",
+    expect(validatePresenter({ ...VALID, lastName: "Pérez!" }).lastName).toBe(
+      "El apellido solo puede contener letras, números y espacios",
     );
     expect(validatePresenter({ ...VALID, firstName: "a".repeat(51) }).firstName).toMatch(/50 caracteres/);
+  });
+
+  it("acepta números en el nombre y el apellido, igual que el back (ARK-247 / BG-57)", () => {
+    expect(validatePresenter({ ...VALID, firstName: "DJ 2Pac", lastName: "Pérez 3" })).toEqual({});
   });
 
   it("limita la organización a 150 y el título a 200 caracteres", () => {
