@@ -2,8 +2,6 @@ export type JurorType = "OFFICIAL" | "BACKUP";
 export type JurorCategory = "JUNIOR" | "SENIOR";
 export type DashboardFilter =
   | "todos"
-  | "oficiales"
-  | "remanentes"
   | "asignados"
   | "equipos-ok"
   | "remanentes-uso";

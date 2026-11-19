@@ -282,7 +282,8 @@ const ExternalPresentersPage: React.FC = () => {
               certificado de presentador externo por correo.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          {/* BG-66: a 360 px el título largo de la edición ensanchaba el selector y se cortaba */}
+          <div className="flex min-w-0 items-center gap-2 text-sm">
             <span className="shrink-0" aria-hidden>
               Edición
             </span>
@@ -293,7 +294,7 @@ const ExternalPresentersPage: React.FC = () => {
                 setEditionId(e.target.value ? Number(e.target.value) : undefined);
                 setSendAllResult(null);
               }}
-              className="h-10 rounded-md border border-input bg-background px-2 text-sm"
+              className="h-10 w-full min-w-0 truncate rounded-md border border-input bg-background px-2 text-sm sm:w-auto sm:max-w-xs"
             >
               <option value="">Edición activa</option>
               {editions.map((e) => (

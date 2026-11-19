@@ -1,4 +1,5 @@
 "use client";
+import { editionSemesterLabel } from "@/lib/semesterLabel";
 import { useEffect, useState } from "react";
 import {
   Calendar,
@@ -295,7 +296,7 @@ export default function InformationPage() {
         <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
           <h1 className="mb-6 md:mb-8 text-center text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
-            <span className="block sm:inline"> - {activeEdition ? `Edición ${activeEdition.year}-${activeEdition.semester === 10 ? '1' : activeEdition.semester === 30 ? '2' : activeEdition.semester}` : "Edición Actual"}</span>
+            <span className="block sm:inline"> - {activeEdition ? `Edición ${editionSemesterLabel(activeEdition)}` : "Edición Actual"}</span>
           </h1>
 
           {/* Hero Section */}

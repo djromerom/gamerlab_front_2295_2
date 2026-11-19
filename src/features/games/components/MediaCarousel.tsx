@@ -36,10 +36,8 @@ export function MediaCarousel({ video, images }: MediaCarouselProps) {
     if (mediaItems.length === 0) {
         return (
             <div className="w-full aspect-video rounded-xl overflow-hidden max-h-[550px] bg-gray-800 flex items-center justify-center">
-                <p className="text-gray-400 text-center px-4">
-                    Sin multimedia disponible<br />
-                    <span className="text-sm opacity-75">Sube un video o imágenes adicionales</span>
-                </p>
+                {/* BG-66: lo ven los visitantes; no se les pide subir nada */}
+                <p className="text-gray-400 text-center px-4">Sin video ni imágenes adicionales</p>
             </div>
         );
     }

@@ -13,6 +13,10 @@ import { TeamSkeletonGrid } from "@/features/teams/components/TeamSkeleton";
 import { Filters } from "@/features/games/components/Filters";
 import { motion } from "framer-motion";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
+import { ProjectsEmptyState } from "@/features/games/components/ProjectsEmptyState";
+import { stripTeamCodePrefix } from "@/features/games/lib/gameName";
+import { parseRouteId } from "@/lib/routeId";
+import { editionSemesterLabel } from "@/lib/semesterLabel";
 
 const glowStyles = `
   @property --angle{
@@ -76,8 +80,11 @@ const glowStyles = `
 const discordSupportUrl = "https://discord.gg/RzAvUdspaT";
 
 export default function HistoricalVideogamesPage() {
-  const { editionId } = useParams<{ editionId: string }>();
-  const [loading, setLoading] = useState(true);
+  const { editionId: editionParam } = useParams<{ editionId: string }>();
+  // BG-66 (ARK-266): /ediciones-pasadas/abc/juegos mandaba NaN y el back respondía 500
+  const editionId = parseRouteId(editionParam);
+  const [loading, setLoading] = useState(editionId !== null);
+  const [notFound, setNotFound] = useState(editionId === null);
   const [teams, setTeams] = useState<Team[]>([]);
 
   // Filters state
@@ -110,23 +117,36 @@ export default function HistoricalVideogamesPage() {
   }, []);
 
   useEffect(() => {
-    if (!editionId) return;
+    if (editionId === null) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
 
     const loadData = async () => {
       setLoading(true);
-      try {
-        const [hTeamsData, editionData] = await Promise.all([
-          fetchHistoricalTeamsWithScores(Number(editionId)),
-          fetchEditionById(Number(editionId))
-        ]);
+      setNotFound(false);
+      // La edición y sus proyectos se piden por separado: una edición sin proyectos igual muestra su título
+      const [teamsResult, editionResult] = await Promise.allSettled([
+        fetchHistoricalTeamsWithScores(editionId),
+        fetchEditionById(editionId),
+      ]);
 
-        setEdition(editionData);
+      if (editionResult.status === "fulfilled") {
+        setEdition(editionResult.value);
+      } else {
+        console.error("Error loading edition:", editionResult.reason);
+        setNotFound(true);
+      }
 
+      if (teamsResult.status === "fulfilled") {
+        const hTeamsData = teamsResult.value;
         const mappedTeams: Team[] = hTeamsData.map((t: any) => ({
           id: t.id,
           videogameId: t.videogame?.id || 0,
-          gameName: t.videogame?.name || t.teamName,
-          teamName: t.teamName,
+          // BG-66: en 2025-10 y 2025-30 los nombres se importaron con el código del equipo delante
+          gameName: stripTeamCodePrefix(t.videogame?.name || t.teamName, t.teamCode),
+          teamName: stripTeamCodePrefix(t.teamName, t.teamCode),
           teamCode: t.teamCode || "",
           status: "CONFIRMADO",
           video: t.videogame?.videoUrl,
@@ -142,11 +162,11 @@ export default function HistoricalVideogamesPage() {
           finalScore: t.videogame?.finalScore || null
         }));
         setTeams(mappedTeams);
-      } catch (error) {
-        console.error("Error loading historical teams with scores:", error);
-      } finally {
-        setLoading(false);
+      } else {
+        console.error("Error loading historical teams with scores:", teamsResult.reason);
+        setTeams([]);
       }
+      setLoading(false);
     };
 
     loadData();
@@ -226,13 +246,20 @@ export default function HistoricalVideogamesPage() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center">
             Proyectos de la Edición{' '}
             <span className="text-[#AC7CFF] block md:inline mt-2 md:mt-0">
-              {edition ? `${edition.year}-${edition.semester}` : ''}
+              {edition ? editionSemesterLabel(edition) : ''}
             </span>
           </h1>
         </div>
 
         {loading ? (
           <TeamSkeletonGrid />
+        ) : notFound ? (
+          <div role="status" className="text-center p-12 border border-dashed border-gray-800 rounded-xl">
+            <p className="text-gray-300 text-lg">No encontramos esta edición.</p>
+            <Link to="/ediciones-pasadas" className="mt-4 inline-block text-[#AC7CFF] underline underline-offset-4">
+              Ver las ediciones pasadas
+            </Link>
+          </div>
         ) : (
           <>
             {/* Podium Section */}
@@ -323,6 +350,7 @@ export default function HistoricalVideogamesPage() {
                 ¡Explora todos los proyectos!
               </h1>
 
+              {restOfTeams.length > 0 && (
               <Filters
                 onFilter={handleFilter}
                 initialFilter={searchQuery}
@@ -334,6 +362,7 @@ export default function HistoricalVideogamesPage() {
                   externo: restOfTeams.filter(t => t.isExternal).length
                 }}
               />
+              )}
 
               {currentTeams.length > 0 ? (
                 <div className="mt-8">
@@ -373,11 +402,14 @@ export default function HistoricalVideogamesPage() {
                   )}
                 </div>
               ) : (
-                <div className="text-center p-12 border border-dashed border-gray-800 rounded-xl mt-8">
-                  <p className="text-gray-400 text-lg">
-                    No se encontraron proyectos que coincidan con la búsqueda.
-                  </p>
-                </div>
+                <ProjectsEmptyState
+                  filtering={restOfTeams.length > 0}
+                  emptyText={
+                    podium.length > 0
+                      ? "Todos los proyectos de esta edición están en el podio."
+                      : "Esta edición no tiene proyectos registrados."
+                  }
+                />
               )}
             </section>
           </>

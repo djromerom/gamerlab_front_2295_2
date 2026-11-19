@@ -41,7 +41,7 @@ const HomePage: React.FC = () => {
 
             </div>
             <h1 className="text-3xl text-foreground font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-              ¡Bienvenido a Arkad!
+              ¡Te damos la bienvenida a Arkad!
             </h1>
             
             <p className="mx-auto max-w-[700px] text-foreground md:text-xl">

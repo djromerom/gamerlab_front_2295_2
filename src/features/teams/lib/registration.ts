@@ -154,3 +154,17 @@ export function clearRegistrationDraft(): void {
     /* nada que limpiar */
   }
 }
+
+export const NETWORK_ERROR_MESSAGE =
+  "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
+
+/**
+ * BG-66 (ARK-266): mensaje de un error para el alumno. Sin conexión, `fetch` lanza «Failed to fetch» (Chrome),
+ * «NetworkError when attempting to fetch resource.» (Firefox) o «Load failed» (Safari): se cambia por un texto
+ * en español.
+ */
+export function friendlyErrorMessage(error: unknown, fallback = "Ocurrió un error inesperado."): string {
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) return NETWORK_ERROR_MESSAGE;
+  return message || fallback;
+}

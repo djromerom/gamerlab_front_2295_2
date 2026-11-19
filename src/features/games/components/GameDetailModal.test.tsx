@@ -66,3 +66,30 @@ describe("GameDetailModal · Jugar (HU-40)", () => {
     expect(screen.queryByText("Este juego se juega en computador")).toBeNull();
   });
 });
+
+describe("GameDetailModal · detalle público (BG-66)", () => {
+  it("muestra el estado como «Confirmado» y no en mayúsculas crudas", () => {
+    renderModal();
+    expect(screen.getByText("Confirmado")).toBeTruthy();
+    expect(screen.queryByText("CONFIRMADO")).toBeNull();
+  });
+
+  it("sin video ni imágenes no le pide al visitante que suba nada", () => {
+    renderModal();
+    expect(screen.getByText("Sin video ni imágenes adicionales")).toBeTruthy();
+    expect(screen.queryByText(/Sube un video/)).toBeNull();
+  });
+
+  it("se cierra con Escape", () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("queda por encima de los botones flotantes (z-50)", () => {
+    renderModal();
+    const overlay = screen.getByRole("dialog").parentElement!;
+    expect(overlay.className).toContain("z-[60]");
+  });
+});

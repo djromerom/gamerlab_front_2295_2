@@ -1,3 +1,4 @@
+import { pageLabel } from "@/lib/pagination";
 import React, { useEffect, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -239,7 +240,7 @@ export const EditionStudentsPanel: React.FC<EditionStudentsPanelProps> = ({ edit
             </label>
             <div className="flex items-center gap-3">
               <span>
-                Página {metadata.currentPage} de {Math.max(metadata.totalPages, 1)}
+                Página {pageLabel(metadata.currentPage, metadata.totalPages)}
               </span>
               <Button
                 variant="outline"

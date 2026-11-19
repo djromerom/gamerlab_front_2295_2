@@ -1,3 +1,4 @@
+import { pageLabel } from "@/lib/pagination";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -279,14 +280,15 @@ const EditionJurorsPage: React.FC = () => {
               Quién participa como jurado en cada edición: Pendiente, Confirmado o Declinó.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
+          <div className="flex min-w-0 flex-col sm:flex-row sm:items-center gap-3">
+            {/* BG-66: a 360 px el título largo de la edición ensanchaba el selector y se cortaba */}
+            <div className="flex min-w-0 items-center gap-2 text-sm">
               <span className="shrink-0" aria-hidden>Edición</span>
               <select
                 aria-label="Edición"
                 value={editionId ?? ""}
                 onChange={(e) => changeEdition(e.target.value)}
-                className={selectClass}
+                className={`${selectClass} w-full min-w-0 sm:w-auto sm:max-w-xs truncate`}
               >
                 <option value="">Edición activa</option>
                 {editions.map((e) => (
@@ -482,7 +484,7 @@ const EditionJurorsPage: React.FC = () => {
                 </label>
                 <div className="flex items-center gap-3">
                   <span>
-                    Página {metadata.currentPage} de {metadata.totalPages}
+                    Página {pageLabel(metadata.currentPage, metadata.totalPages)}
                   </span>
                   <Button
                     variant="outline"

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { createEdition, buildISODateTime } from "@/api/editions";
+import { SEMESTER_OPTIONS } from "@/lib/semesterLabel";
 
 interface CreateEditionModalProps {
   open: boolean;
@@ -127,9 +128,11 @@ export const CreateEditionModal: React.FC<CreateEditionModalProps> = ({
                 onChange={handleChange}
                 className="flex h-[44px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AC7CFF]"
               >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="30">30</option>
+                {SEMESTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

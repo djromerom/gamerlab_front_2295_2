@@ -83,6 +83,22 @@ async function waitForController(registration: ServiceWorkerRegistration): Promi
   return controller;
 }
 
+/** `serviceWorker.ready` no tiene tiempo límite: si el SW no se activa, se avisa en vez de esperar para siempre. */
+async function waitForReady(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new LoaderError("unsupported", "No se pudo preparar el reproductor. Recarga la página (sin Ctrl/Shift).")),
+      CONTROLLER_TIMEOUT_MS,
+    );
+  });
+  try {
+    await Promise.race([navigator.serviceWorker.ready, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Manda el zip al SW y espera ZIP_READY o ZIP_ERROR (F4). */
 function unzipInWorker(controller: ServiceWorker, key: string, entry: string, zip: ArrayBuffer, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -140,6 +156,9 @@ export function useGameLoader(kind: GameKind, id: number, enabled = true): GameL
       if (!Number.isInteger(id) || id <= 0) {
         throw new GameFileError("notFound", "No encontramos este videojuego. Revisa el enlace.");
       }
+      // BG-66 (ARK-266): primero se pregunta por el juego. Antes se esperaba al service worker y, si este no
+      // quedaba listo, un juego que no existe se quedaba cargando para siempre.
+      const file = await fetchGameFile(kind, id);
       if (!("serviceWorker" in navigator)) {
         throw new LoaderError(
           "unsupported",
@@ -147,9 +166,8 @@ export function useGameLoader(kind: GameKind, id: number, enabled = true): GameL
         );
       }
       const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-      await navigator.serviceWorker.ready;
+      await waitForReady();
 
-      const file = await fetchGameFile(kind, id);
       set({ status: "loading", phase: "download", progress: 0 });
       const zip = await downloadZip(file.gameFileURL, signal, (progress) =>
         set({ status: "loading", phase: "download", progress }),

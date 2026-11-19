@@ -3,7 +3,9 @@ import {
   buildRegistrationPayload,
   cleanApiMessage,
   clearRegistrationDraft,
+  friendlyErrorMessage,
   loadRegistrationDraft,
+  NETWORK_ERROR_MESSAGE,
   nameCheckUrl,
   nrcLabel,
   saveRegistrationDraft,
@@ -229,5 +231,18 @@ describe("registro de equipos: borrador", () => {
     saveRegistrationDraft(0, form());
     clearRegistrationDraft();
     expect(loadRegistrationDraft()).toBeNull();
+  });
+});
+
+describe("friendlyErrorMessage (BG-66)", () => {
+  it("cambia el «Failed to fetch» del navegador por un mensaje en español", () => {
+    expect(friendlyErrorMessage(new TypeError("Failed to fetch"))).toBe(NETWORK_ERROR_MESSAGE);
+    expect(friendlyErrorMessage(new TypeError("NetworkError when attempting to fetch resource."))).toBe(NETWORK_ERROR_MESSAGE);
+    expect(friendlyErrorMessage(new TypeError("Load failed"))).toBe(NETWORK_ERROR_MESSAGE);
+  });
+
+  it("deja pasar los mensajes de la API y usa el respaldo si no hay mensaje", () => {
+    expect(friendlyErrorMessage(new Error("Ya existe un videojuego con ese nombre"))).toBe("Ya existe un videojuego con ese nombre");
+    expect(friendlyErrorMessage(null, "Error desconocido")).toBe("Error desconocido");
   });
 });

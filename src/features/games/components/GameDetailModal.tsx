@@ -13,6 +13,7 @@ import { Team } from "@/types/team";
 import { MediaCarousel } from "./MediaCarousel";
 import { playPath, type GameKind } from "@/features/games/lib/gameFiles";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
+import { teamStatusLabel } from "@/features/games/lib/teamStatus";
 
 interface GameDetailModalProps {
   team: Team;
@@ -59,6 +60,15 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
       document.body.style.overflow = "unset";
     };
   }, []);
+
+  // BG-66 (ARK-266): Escape cierra el detalle, como los demás diálogos
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   // Keep the counter in sync with the parent's WebSocket map
   useEffect(() => {
@@ -154,12 +164,16 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
         }} />
       <AnimatePresence>
         <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 flex justify-center items-center px-4 pb-4 pt-[80px] md:pt-[96px]"
+          // BG-66: por encima de los botones flotantes (z-50), que a 360 px tapaban «Cerrar»
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex justify-center items-center px-4 pb-4 pt-[80px] md:pt-[96px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={team.gameName}
             className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl h-[calc(100dvh-110px)] md:h-[550px] max-h-[calc(100dvh-110px)] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -169,6 +183,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             {/* Botón X de cerrar */}
             <button
               onClick={handleClose}
+              aria-label="Cerrar"
               className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-white transition z-50"
             >
               <X className="w-5 h-5 md:w-6 md:h-6" />
@@ -242,7 +257,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                   </p>
                   <p className="text-sm text-gray-400 mb-4">
                     Estado:{" "}
-                    <span className="capitalize text-gray-200">{team.status}</span>
+                    <span className="text-gray-200">{teamStatusLabel(team.status)}</span>
                   </p>
 
                   <div className="mt-2">

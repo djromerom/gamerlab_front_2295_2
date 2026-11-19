@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editionSemesterLabel, semesterLabel } from "./semesterLabel";
+import { editionSemesterLabel, SEMESTER_OPTIONS, semesterLabel, semesterName } from "./semesterLabel";
 
 describe("semesterLabel (BG-63)", () => {
   it("10 es el primer semestre, 20 el intersemestral y 30 el segundo", () => {
@@ -19,5 +19,18 @@ describe("editionSemesterLabel (BG-63)", () => {
     expect(editionSemesterLabel({ year: 2026, semester: 30 })).toBe("2026 - 2");
     expect(editionSemesterLabel({ year: 2026, semester: 10 })).toBe("2026 - 1");
     expect(editionSemesterLabel({ year: 2026, semester: 20 })).toBe("2026 - Intersemestral");
+  });
+});
+
+describe("semesterName y SEMESTER_OPTIONS (BG-66)", () => {
+  it("nombra el semestre en vez de mostrar 10, 20 o 30", () => {
+    expect(semesterName(10)).toBe("Primer semestre");
+    expect(semesterName(20)).toBe("Intersemestral");
+    expect(semesterName(30)).toBe("Segundo semestre");
+    expect(SEMESTER_OPTIONS).toEqual([
+      { value: 10, label: "Primer semestre" },
+      { value: 20, label: "Intersemestral" },
+      { value: 30, label: "Segundo semestre" },
+    ]);
   });
 });

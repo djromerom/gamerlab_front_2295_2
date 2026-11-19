@@ -1,6 +1,7 @@
 "use client";
 
 
+import { pageLabel } from "@/lib/pagination";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -820,7 +821,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
               <span className="text-center min-[450px]:text-left leading-tight">
                 <span className="block min-[450px]:inline">Página </span>
                 <span className="block min-[450px]:inline">
-                  {paginationMeta.totalPages > 0 ? paginationMeta.currentPage : 0} de {paginationMeta.totalPages}
+                  {pageLabel(paginationMeta.currentPage, paginationMeta.totalPages)}
                 </span>
               </span>
               <div className="flex gap-1 shrink-0">
@@ -836,7 +837,7 @@ export const JuryManagementTable: React.FC<Props> = ({ jurors, paginationMeta, a
                 <Button
                   onClick={() => onPageChange(paginationMeta.currentPage + 1)}
                   disabled={
-                    paginationMeta.currentPage === paginationMeta.totalPages ||
+                    paginationMeta.currentPage >= paginationMeta.totalPages ||
                     paginationMeta.totalPages === 0 ||
                     showLoader
                   }
