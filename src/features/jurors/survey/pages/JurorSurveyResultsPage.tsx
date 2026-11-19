@@ -1,3 +1,4 @@
+import { editionSemesterLabel } from "@/lib/semesterLabel";
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Download, Loader2, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
@@ -132,12 +133,12 @@ const JurorSurveyResultsPage = () => {
                 id="survey-edition"
                 value={editionId ?? ""}
                 onChange={(e) => setEditionId(e.target.value ? Number(e.target.value) : null)}
-                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm sm:w-64"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm sm:w-64"
               >
                 <option value="">Edición activa</option>
                 {editions.map((edition) => (
                   <option key={edition.id} value={edition.id}>
-                    {edition.title} ({edition.year}-{edition.semester})
+                    {edition.title} ({editionSemesterLabel(edition)})
                   </option>
                 ))}
               </select>
@@ -167,7 +168,7 @@ const JurorSurveyResultsPage = () => {
         {!loading && summary && totals && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {summary.edition.title} · {summary.edition.year}-{summary.edition.semester}
+              {summary.edition.title} · {editionSemesterLabel(summary.edition)}
             </p>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -226,7 +227,7 @@ const JurorSurveyResultsPage = () => {
                 ) : (
                   <ul className="space-y-3">
                     {summary.comments.map((comment) => (
-                      <li key={`${comment.email}-${comment.createdAt}`} className="rounded-lg border p-3">
+                      <li key={`${comment.email}-${comment.createdAt}`} className="rounded-lg border p-4 sm:px-5">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                           <p className="font-medium">
                             {comment.jurorName}{" "}
@@ -237,7 +238,7 @@ const JurorSurveyResultsPage = () => {
                           </time>
                         </div>
                         <p className="break-all text-xs text-muted-foreground">{comment.email}</p>
-                        <p className="mt-2 whitespace-pre-line break-words text-sm">{comment.comments}</p>
+                        <p className="mt-3 whitespace-pre-line break-words text-sm leading-relaxed">{comment.comments}</p>
                       </li>
                     ))}
                   </ul>
