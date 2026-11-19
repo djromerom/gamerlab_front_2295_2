@@ -14,7 +14,7 @@ import {
   type NrcOption,
   type SubjectInfo,
 } from "@/features/teams/lib/nrcSubjects";
-import { blockedReason, COMBINATION_HINT, subjectFamilies } from "@/features/teams/lib/subjectRules";
+import { blockedReason, combinationHint, subjectFamilies } from "@/features/teams/lib/subjectRules";
 
 interface SubjectNrcPickerProps {
   options: NrcOption[];
@@ -98,7 +98,7 @@ const SubjectNrcPicker = forwardRef<HTMLButtonElement, SubjectNrcPickerProps>(fu
         })}
       </div>
 
-      {someBlocked && <p className="text-muted-foreground text-xs">{COMBINATION_HINT}</p>}
+      {someBlocked && <p className="text-muted-foreground text-xs">{combinationHint(families)}</p>}
 
       {marked.length === 0 ? (
         <p className="text-muted-foreground text-xs">

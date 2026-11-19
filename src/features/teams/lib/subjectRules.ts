@@ -49,6 +49,17 @@ export function subjectFamilies(options: NrcOption[]): Map<string, Family> {
 export const COMBINATION_HINT =
   "Solo se pueden marcar juntas Programación Orientada a Objetos y una Estructura de Datos.";
 
+export const SINGLE_SUBJECT_HINT = "Cada integrante marca una sola materia.";
+
+/**
+ * BG-66 (ARK-266): la ayuda solo nombra POO y Estructura de Datos si las dos se ofrecen en esta edición; si no,
+ * no hay ninguna combinación posible y la ayuda no menciona materias que el alumno no ve.
+ */
+export function combinationHint(families: Map<string, Family>): string {
+  const offered = new Set(families.values());
+  return offered.has("POO") && offered.has("EDD") ? COMBINATION_HINT : SINGLE_SUBJECT_HINT;
+}
+
 /** Si un integrante puede marcar las dos materias a la vez: POO con una Estructura de Datos. */
 export function canCombine(a: SubjectInfo, b: SubjectInfo, families: Map<string, Family>): boolean {
   if (a.id === b.id) return true;
@@ -67,7 +78,7 @@ export function blockedReason(
 ): string | null {
   const conflict = marked.find((subject) => !canCombine(subject, candidate, families));
   if (!conflict) return null;
-  return `No se puede marcar junto con ${conflict.name}. ${COMBINATION_HINT}`;
+  return `No se puede marcar junto con ${conflict.name}. ${combinationHint(families)}`;
 }
 
 /** El primer par de materias marcadas que no se puede combinar, si lo hay. */

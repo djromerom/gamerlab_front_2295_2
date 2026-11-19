@@ -115,4 +115,26 @@ describe("HighlightedGamesSelector", () => {
     expect(JSON.parse(calls.find((c) => c.method === "POST")!.body!)).toEqual({ videogameId: 12 });
     expect(calls.some((c) => c.url.includes("historical-videogames"))).toBe(false);
   });
+
+  it("BG-66: una edición sin juegos lo dice y no que «todos ya están destacados»", async () => {
+    stubBackend({
+      "GET /highlighted-games?editionId=6": () => json([]),
+      "GET /editions/6/videogames": () => json([]),
+    });
+    render(<HighlightedGamesSelector editionId={6} editionStatus="ACTIVE" />);
+
+    expect(await screen.findByText("Esta edición no tiene juegos confirmados.")).toBeTruthy();
+    expect(screen.queryByText(/ya están destacados/)).toBeNull();
+  });
+
+  it("BG-66: una edición archivada sin volcado histórico (404) tampoco dice que todos están destacados", async () => {
+    stubBackend({
+      "GET /highlighted-games?editionId=7": () => json([]),
+      "GET /historicals/historical-videogames/7": () => json({ message: "Not found" }, 404),
+    });
+    render(<HighlightedGamesSelector editionId={7} editionStatus="ARCHIVED" />);
+
+    expect(await screen.findByText("Esta edición no tiene juegos históricos.")).toBeTruthy();
+    expect(screen.queryByText(/ya están destacados/)).toBeNull();
+  });
 });

@@ -16,10 +16,12 @@ import {
   buildRegistrationPayload,
   cleanApiMessage,
   clearRegistrationDraft,
+  friendlyErrorMessage,
   loadRegistrationDraft,
   nameCheckUrl,
   saveRegistrationDraft,
 } from "@/features/teams/lib/registration";
+import { useRevalidateOnChange } from "@/features/teams/hooks/useRevalidateOnChange";
 
 const EMPTY_MEMBER = {
   nombre: "",
@@ -77,6 +79,7 @@ export default function MultiStepWizard() {
       dataConsent: false,
     },
   });
+  useRevalidateOnChange(methods);
 
   async function uploadOnce(file: File): Promise<string> {
     const cached = uploadedUrls.current.get(file);
@@ -154,7 +157,7 @@ export default function MultiStepWizard() {
       throw new Error(apiMessage);
     } catch (e) {
       if (uploadToastId !== undefined) toast.dismiss(uploadToastId);
-      let description = e instanceof Error ? e.message : String(e);
+      let description = friendlyErrorMessage(e);
       if (description.includes("413")) {
         description = "Uno de los archivos es demasiado grande. El tamaño máximo permitido es 1 MB.";
       }

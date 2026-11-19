@@ -11,6 +11,10 @@ import type {
   JurorCategory,
 } from "@/features/jurors/types/jurors";
 import {
+  JUROR_LIST_FILTER_LABEL,
+  type JurorListFilter,
+} from "@/features/jurors/assignment/lib/jurorsListFilter";
+import {
   getInitials,
   formatDate,
   getJurorTypeLabel,
@@ -19,6 +23,9 @@ import {
 
 interface JuradosListModalProps {
   juradosFiltrados: Jurado[];
+  /** BG-66: tipo con el que se abrió la lista (desde «Oficiales» o «Suplentes») */
+  typeFilter?: JurorListFilter;
+  onClearTypeFilter?: () => void;
   jurorSearch: string;
   onJurorSearchChange: (value: string) => void;
   openJurorMenuId: string | null;
@@ -38,6 +45,8 @@ interface JuradosListModalProps {
 
 export function JurorsListModal({
   juradosFiltrados,
+  typeFilter = "todos",
+  onClearTypeFilter,
   jurorSearch,
   onJurorSearchChange,
   openJurorMenuId,
@@ -110,6 +119,23 @@ export function JurorsListModal({
               <span className="hidden sm:inline text-sm font-medium">Registrar</span>
             </button>
           </div>
+
+          {typeFilter !== "todos" && (
+            <div className="-mt-3 mb-4 flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
+                Mostrando solo: {JUROR_LIST_FILTER_LABEL[typeFilter]}
+              </span>
+              {onClearTypeFilter && (
+                <button
+                  type="button"
+                  onClick={onClearTypeFilter}
+                  className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Ver todos
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="max-h-[58vh] overflow-y-auto space-y-3 pr-1">
             {juradosFiltrados.map((jurado) => (

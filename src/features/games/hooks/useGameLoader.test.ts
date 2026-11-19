@@ -104,4 +104,13 @@ describe("useGameLoader", () => {
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current).toMatchObject({ reason: "notFound" });
   });
+
+  it("BG-66: un juego que no existe lo dice aunque el service worker nunca quede listo", async () => {
+    fakeServiceWorker({ reply: () => null });
+    (navigator.serviceWorker as unknown as { ready: Promise<unknown> }).ready = new Promise(() => {});
+    fetchGameFile.mockRejectedValueOnce(new GameFileError("notFound", "No encontramos este videojuego. Revisa el enlace."));
+    const { result } = renderHook(() => useGameLoader("live", 99999));
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current).toMatchObject({ reason: "notFound" });
+  });
 });

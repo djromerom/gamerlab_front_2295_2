@@ -14,3 +14,17 @@ export function semesterLabel(semester: number): string {
 export function editionSemesterLabel(edition: { year: number; semester: number }): string {
   return `${edition.year} - ${semesterLabel(edition.semester)}`;
 }
+
+/** BG-66 (ARK-266): nombre largo del semestre: «Primer semestre», «Intersemestral», «Segundo semestre». */
+export function semesterName(semester: number | null | undefined): string {
+  if (semester === 10) return "Primer semestre";
+  if (semester === 20) return "Intersemestral";
+  if (semester === 30) return "Segundo semestre";
+  return semester == null ? "" : `Semestre ${semester}`;
+}
+
+/** Opciones del selector de semestre al crear o editar una edición (antes decían «10», «20» y «30»). */
+export const SEMESTER_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [10, 20, 30].map((value) => ({
+  value,
+  label: semesterName(value),
+}));

@@ -73,4 +73,11 @@ describe("GamePlayerPage", () => {
     expect(screen.getByText("Este juego se juega en computador")).toBeTruthy();
     expect(screen.queryByTitle(/Videojuego|, de /)).toBeNull();
   });
+
+  it("BG-66: «1e3» no es un id (antes se pedía el juego 1000)", () => {
+    loader.mockReturnValue({ status: "error", reason: "notFound", message: "No encontramos este videojuego. Revisa el enlace." });
+    renderAt("/play-game/1e3");
+    expect(loader).toHaveBeenCalledWith("live", Number.NaN, true);
+    expect(screen.getByRole("alert").textContent).toContain("No encontramos este videojuego");
+  });
 });

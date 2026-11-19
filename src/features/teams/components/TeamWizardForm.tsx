@@ -728,7 +728,7 @@ export default function TeamWizardForm(props: any) {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex flex-col gap-1 sm:w-2/3">
-                          <Label>Correo {idx === 0 ? "(Lider del equipo)" : ""}</Label>
+                          <Label>Correo {idx === 0 ? "(líder del equipo)" : ""}</Label>
                           <Input {...methods.register(`integrantes.${idx}.correo` as const)} placeholder="example@example.com" />
                           <FieldError message={memErrors?.correo?.message} />
                         </div>

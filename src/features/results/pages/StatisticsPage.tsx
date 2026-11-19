@@ -44,7 +44,7 @@ export default function StatisticsPage() {
   // La página debe mostrar loading si está en carga inicial O si está cargando datos del contexto
   const shouldShowLoading = isPageLoading || isLoading;
 
-  const breadcrumbs = [{ label: "Estadisticas", href: "/estadisticas" }];
+  const breadcrumbs = [{ label: "Estadísticas", href: "/estadisticas" }];
 
   // Lógica para las cards de resumen (basadas en la lista completa)
   const totalVideojuegos = listaVideojuegos.length;

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   blockedReason,
   canCombine,
+  combinationHint,
+  COMBINATION_HINT,
+  SINGLE_SUBJECT_HINT,
   invalidCombination,
   membersWithoutSharedSubject,
   subjectFamilies,
@@ -96,5 +99,17 @@ describe("cada integrante comparte una materia con los anteriores (ARK-193)", ()
 
   it("no exige nada a quien todavía no tiene materias", () => {
     expect(membersWithoutSharedSubject([["4"], []])).toEqual([]);
+  });
+});
+
+describe("ayuda de combinación según las materias ofrecidas (BG-66)", () => {
+  it("nombra POO y Estructura de Datos solo si las dos se ofrecen", () => {
+    expect(combinationHint(families)).toBe(COMBINATION_HINT);
+  });
+
+  it("sin Estructura de Datos en la edición no la menciona", () => {
+    const sinEdd = subjectFamilies(TEST_OPTIONS.filter((o) => o.subject.abrevName !== "EDD"));
+    expect(combinationHint(sinEdd)).toBe(SINGLE_SUBJECT_HINT);
+    expect(blockedReason([AYP1], POO, sinEdd)).not.toContain("Estructura");
   });
 });

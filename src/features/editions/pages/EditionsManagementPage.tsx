@@ -6,12 +6,16 @@ import { CreateEditionModal } from "@/features/editions/components/modals/Create
 import { CalendarRange, Loader2, AlertCircle } from "lucide-react";
 import { fetchEditions, type Edition } from "@/api/editions";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
+import { parseRouteId } from "@/lib/routeId";
 
-type View = "list" | "detail";
+/** BG-66 (ARK-266): el detalle de una edición vive en `?edicion=<id>`, así «Atrás» vuelve a la lista. */
+const EDITION_PARAM = "edicion";
 
 const EditionsManagementPage: React.FC = () => {
-    const [view, setView] = useState<View>("list");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = parseRouteId(searchParams.get(EDITION_PARAM));
+  const view = selectedId === null ? "list" : "detail";
   const [createOpen, setCreateOpen] = useState(false);
 
   const [editions, setEditions] = useState<Edition[]>([]);
@@ -40,13 +44,11 @@ const EditionsManagementPage: React.FC = () => {
   const selectedEdition = editions.find((e) => e.id === selectedId) ?? null;
 
   const handleSelectEdition = (id: number) => {
-    setSelectedId(id);
-    setView("detail");
+    setSearchParams({ [EDITION_PARAM]: String(id) });
   };
 
   const handleBack = () => {
-    setView("list");
-    setSelectedId(null);
+    setSearchParams({});
   };
 
   const handleEditionActivated = () => {
@@ -93,14 +95,25 @@ const EditionsManagementPage: React.FC = () => {
               />
             )}
           </>
+        ) : selectedEdition ? (
+          <EditionDetailView
+            edition={selectedEdition}
+            onBack={handleBack}
+            onActivated={handleEditionActivated}
+          />
+        ) : loadingList ? (
+          <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Cargando edición...</span>
+          </div>
         ) : (
-          selectedEdition && (
-            <EditionDetailView
-              edition={selectedEdition}
-              onBack={handleBack}
-              onActivated={handleEditionActivated}
-            />
-          )
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <AlertCircle className="w-8 h-8" />
+            <p className="text-sm">No se encontró la edición.</p>
+            <button type="button" onClick={handleBack} className="text-sm underline underline-offset-2 hover:text-foreground">
+              Volver a la lista de ediciones
+            </button>
+          </div>
         )}
 
         {/* Modal creación */}

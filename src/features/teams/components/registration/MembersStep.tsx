@@ -24,12 +24,13 @@ import {
   type NrcOption,
 } from "@/features/teams/lib/nrcSubjects";
 import {
-  COMBINATION_HINT,
+  combinationHint,
   invalidCombination,
   membersWithoutSharedSubject,
   SHARED_SUBJECT_MESSAGE,
   subjectFamilies,
 } from "@/features/teams/lib/subjectRules";
+import { friendlyErrorMessage } from "@/features/teams/lib/registration";
 
 /**
  * Los dos campos de correo no aceptan texto pegado (teclado, menú contextual o el menú del
@@ -146,7 +147,7 @@ export default function MembersStep() {
     const badCombination = combinationByMember.findIndex((pair) => pair !== null);
     if (badCombination >= 0) {
       const [first, second] = combinationByMember[badCombination]!;
-      const message = `${first.name} y ${second.name} no se pueden marcar juntas. ${COMBINATION_HINT}`;
+      const message = `${first.name} y ${second.name} no se pueden marcar juntas. ${combinationHint(families)}`;
       setError(`members.${badCombination}.nrc`, { type: "manual", message });
       setFocus(`members.${badCombination}.nrc`);
       toast.error(`Integrante ${badCombination + 1}: ${message}`);
@@ -210,7 +211,7 @@ export default function MembersStep() {
     } catch (error) {
       console.error("Error validating members:", error);
       toast.error("No se pudieron validar los integrantes", {
-        description: error instanceof Error ? error.message : "Error desconocido",
+        description: friendlyErrorMessage(error, "Error desconocido"),
       });
     } finally {
       setIsValidatingEmails(false);
@@ -235,7 +236,7 @@ export default function MembersStep() {
         });
 
         if (!res.ok) {
-          let errorMsg = `Error ${res.status}: Failed to fetch subjects`;
+          let errorMsg = `Error ${res.status}: no se pudieron cargar las materias`;
           try {
             const errorBody = await res.json();
             errorMsg = `Error ${res.status}: ${errorBody.message || errorMsg}`;

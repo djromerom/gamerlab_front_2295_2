@@ -1,3 +1,4 @@
+import { pageLabel } from "@/lib/pagination";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -518,7 +519,7 @@ export const TeamsManagementTable = ({
 
     {
       key: "emailConfirm",
-      label: "Confirmación del Lider",
+      label: "Confirmación del líder",
       renderCell: (team: TeamRowData) => {
         const primaryEmail = (team.integrantes?.[0]?.correo)?.toLowerCase() ?? "";
         statusEmailLeader = statusEmailLeader ?? (() => null);
@@ -1036,7 +1037,7 @@ export const TeamsManagementTable = ({
                 <span className="text-center min-[450px]:text-left leading-tight">
                   <span className="block min-[450px]:inline">Página </span>
                   <span className="block min-[450px]:inline">
-                    {totalPages === 0 ? 0 : currentPage} de {totalPages}
+                    {pageLabel(currentPage, totalPages)}
                   </span>
                 </span>
                 <div className="flex gap-1 shrink-0">
@@ -1209,7 +1210,7 @@ export const TeamsManagementTable = ({
                         <div className="text-xs text-muted-foreground break-all">{leaderEmail || "Sin correo del líder"}</div>
                       </div>
                     </div>
-                    <div className="shrink-0 pl-7 text-xs text-muted-foreground sm:pl-0">TeamCode: {code}</div>
+                    <div className="shrink-0 pl-7 text-xs text-muted-foreground sm:pl-0">Código del equipo: {code}</div>
                   </label>
                 );
               })}

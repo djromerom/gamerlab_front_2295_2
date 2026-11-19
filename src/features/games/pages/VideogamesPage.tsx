@@ -9,6 +9,7 @@ import { useLikesSocket } from "@/features/games/hooks/useLikesSocket";
 import { Team, TeamStatus } from "@/types/team";
 import { TeamCard } from "@/features/games/components/TeamCard";
 import { Filters } from "@/features/games/components/Filters";
+import { ProjectsEmptyState } from "@/features/games/components/ProjectsEmptyState";
 
 import { useLocation } from "react-router-dom";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
@@ -258,6 +259,11 @@ export default function VideogamesPage() {
         <div className="relative">
           {loading ? (
             <TeamSkeletonGrid />
+          ) : filteredTeams.length === 0 ? (
+            <ProjectsEmptyState
+              filtering={teams.length > 0}
+              emptyText="Todavía no hay videojuegos inscritos en esta edición."
+            />
           ) : (
             <div className="grid grid-cols-1 min-[780px]:grid-cols-2 min-[1230px]:grid-cols-3 gap-6">
               {filteredTeams.map((team) => (

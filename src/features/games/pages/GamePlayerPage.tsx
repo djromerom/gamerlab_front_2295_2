@@ -4,6 +4,7 @@ import { useGameLoader } from "@/features/games/hooks/useGameLoader";
 import { GamePlayerStatus } from "@/features/games/components/GamePlayerStatus";
 import { entryUrl, type GameKind } from "@/features/games/lib/gameFiles";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
+import { parseRouteId } from "@/lib/routeId";
 
 import "@/features/games/pages/GamePlayerPage.css";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
@@ -24,7 +25,8 @@ export default function GamePlayerPage({ kind = "live" }: GamePlayerPageProps) {
   const navigate = useNavigate();
   // En el celular no se descarga el zip: los juegos se juegan solo en computador (HU-40)
   const touchOnly = useTouchOnly();
-  const state = useGameLoader(kind, Number(videogameID), !touchOnly);
+  // BG-66: «12abc» o «1e3» no son ids; el cargador los toma como «no encontrado» sin llamar a la API
+  const state = useGameLoader(kind, parseRouteId(videogameID) ?? Number.NaN, !touchOnly);
   const title = state.status === "ready" && state.name ? `${state.name}, de ${state.teamName}` : "Videojuego";
 
   const content =

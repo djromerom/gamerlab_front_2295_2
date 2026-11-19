@@ -114,7 +114,7 @@ describe("StudentGradeTableView: pie, paginación y columnas (BG-63)", () => {
   it("las columnas de nota van justo después del equipo para verse a 1280 px", () => {
     renderView([team]);
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
-    expect(headers).toEqual(["Team Code", "Equipo", "Calificación Feria", "Calificación Docente", "Feria", "NRC", "Videojuego", "Integrantes"]);
+    expect(headers).toEqual(["Código del equipo", "Equipo", "Calificación Feria", "Calificación Docente", "Feria", "NRC", "Videojuego", "Integrantes"]);
     const cells = screen.getAllByRole("cell").map((cell) => cell.textContent);
     expect(cells.slice(0, 5)).toEqual(["N1-AYP-06", "Team Rocket Wow", "3.54", expect.stringContaining("3.50"), "2026 - 2"]);
   });

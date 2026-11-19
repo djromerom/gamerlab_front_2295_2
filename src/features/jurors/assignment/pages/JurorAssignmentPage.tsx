@@ -43,6 +43,7 @@ import {
   getPersonDisplayName,
 } from "@/features/jurors/types/jurors";
 import { JurorsListModal } from "@/features/jurors/assignment/components/JurorsListModal";
+import { countLabel, filterJurorsList, type JurorListFilter } from "@/features/jurors/assignment/lib/jurorsListFilter";
 import { JurorAssignModal } from "@/features/jurors/assignment/components/JurorAssignModal";
 import { AllTeamsModal } from "@/features/jurors/assignment/components/AllTeamsModal";
 import { AuditModal } from "@/features/jurors/assignment/components/AuditModal";
@@ -439,6 +440,7 @@ export function JurorAssignmentPage() {
   const [jurorSearch, setJurorSearch] = useState("");
   const [openJurorMenuId, setOpenJurorMenuId] = useState<string | null>(null);
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>("todos");
+  const [jurorListFilter, setJurorListFilter] = useState<JurorListFilter>("todos");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [reassignContext, setReassignContext] = useState<{
     teamId: number;
@@ -471,10 +473,6 @@ export function JurorAssignmentPage() {
         return "Equipos completos";
       case "remanentes-uso":
         return "Con suplentes en uso";
-      case "oficiales":
-        return "Oficiales";
-      case "remanentes":
-        return "Suplentes";
       default:
         return "Todos los equipos";
     }
@@ -687,24 +685,10 @@ export function JurorAssignmentPage() {
     return teams;
   }, [teams, dashboardFilter]);
 
-  const juradosFiltrados = useMemo(() => {
-    const term = jurorSearch.trim().toLowerCase();
-
-    return jurados.filter((jurado) => {
-      const matchesTerm =
-        !term ||
-        jurado.name.toLowerCase().includes(term) ||
-        jurado.email.toLowerCase().includes(term);
-
-      const matchesDashboard =
-        dashboardFilter === "todos" ||
-        (dashboardFilter === "oficiales" && jurado.tipo === "OFFICIAL") ||
-        (dashboardFilter === "remanentes" && jurado.tipo === "BACKUP") ||
-        !["oficiales", "remanentes"].includes(dashboardFilter);
-
-      return matchesTerm && matchesDashboard;
-    });
-  }, [jurados, jurorSearch, dashboardFilter]);
+  const juradosFiltrados = useMemo(
+    () => filterJurorsList(jurados, jurorSearch, jurorListFilter),
+    [jurados, jurorSearch, jurorListFilter],
+  );
 
   const juradosDisponiblesParaModal = useMemo(() => {
     if (!selectedTeam) return [];
@@ -1413,24 +1397,24 @@ export function JurorAssignmentPage() {
             <div className="grid grid-cols-1 min-[350px]:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2 mt-1">
               <button
                 onClick={() => {
-                  setDashboardFilter("oficiales");
+                  setJurorListFilter("oficiales");
                   setShowJuradosListModal(true);
                 }}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl border border-border bg-background/50 hover:bg-accent text-xs font-medium text-foreground transition-colors"
               >
                 <Shield className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                <span>{juradosOficialesDisponibles.length} Oficiales</span>
+                <span>{countLabel(juradosOficialesDisponibles.length, "Oficial", "Oficiales")}</span>
               </button>
 
               <button
                 onClick={() => {
-                  setDashboardFilter("remanentes");
+                  setJurorListFilter("suplentes");
                   setShowJuradosListModal(true);
                 }}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl border border-border bg-background/50 hover:bg-accent text-xs font-medium text-foreground transition-colors"
               >
                 <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                <span>{juradosRemanentesDisponibles.length} Suplentes</span>
+                <span>{countLabel(juradosRemanentesDisponibles.length, "Suplente", "Suplentes")}</span>
               </button>
             </div>
           </div>
@@ -1527,7 +1511,10 @@ export function JurorAssignmentPage() {
 
         <div className="w-full grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-3 lg:mb-6 md:mb-4">
           <button
-            onClick={() => setShowJuradosListModal(true)}
+            onClick={() => {
+              setJurorListFilter("todos");
+              setShowJuradosListModal(true);
+            }}
             disabled={isLoading || isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-md border bg-card hover:bg-accent text-foreground px-4 py-2 text-sm disabled:opacity-50"
           >
@@ -1934,12 +1921,17 @@ export function JurorAssignmentPage() {
         {showJuradosListModal && (
           <JurorsListModal
             juradosFiltrados={juradosFiltrados}
+            typeFilter={jurorListFilter}
+            onClearTypeFilter={() => setJurorListFilter("todos")}
             jurorSearch={jurorSearch}
             onJurorSearchChange={setJurorSearch}
             openJurorMenuId={openJurorMenuId}
             onOpenJurorMenuIdChange={setOpenJurorMenuId}
             isSubmitting={isSubmitting}
-            onClose={() => setShowJuradosListModal(false)}
+            onClose={() => {
+              setShowJuradosListModal(false);
+              setJurorListFilter("todos");
+            }}
             onExport={exportJurors}
             onOpenCreateJuror={handleOpenCreateJuror}
             onEditJuror={handleEditJuror}

@@ -1,5 +1,6 @@
 "use client";
 
+import { pageLabel } from "@/lib/pagination";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -589,7 +590,7 @@ export const NrcsTable: React.FC<Props> = ({
             <span className="text-center min-[450px]:text-left leading-tight">
               <span className="block min-[450px]:inline">Página </span>
               <span className="block min-[450px]:inline">
-                {pagination.totalPages > 0 ? pagination.currentPage : 0} de {pagination.totalPages}
+                {pageLabel(pagination.currentPage, pagination.totalPages)}
               </span>
             </span>
             <div className="flex gap-1 shrink-0">
@@ -609,7 +610,7 @@ export const NrcsTable: React.FC<Props> = ({
               <Button
                 onClick={() => onPageChange(pagination.currentPage + 1)}
                 disabled={
-                  pagination.currentPage === pagination.totalPages ||
+                  pagination.currentPage >= pagination.totalPages ||
                   pagination.totalPages === 0 ||
                   showLoader ||
                   !nrcs?.length

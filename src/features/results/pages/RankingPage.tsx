@@ -253,7 +253,8 @@ export default function RankingPage() {
       <div className="relative min-h-screen overflow-hidden">
         <ArkadBackground modo="lento" estiloNuevo />
 
-        <div className="relative z-10 flex flex-col items-center p-4 pb-12 pt-30 text-white">
+        {/* BG-66: en el celular deja espacio bajo la tabla para que los botones flotantes no tapen las notas */}
+        <div className="relative z-10 flex flex-col items-center p-4 pb-40 sm:pb-12 pt-30 text-white">
           <h1 className="mb-8 text-center text-4xl font-bold tracking-tight">
             <span className="text-[#AC7CFF]">Feria Gamer Uninorte</span>
             <span className="hidden md:inline"> - </span>

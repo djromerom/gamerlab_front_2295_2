@@ -42,7 +42,7 @@ describe("Ediciones pasadas: edición por defecto (ARK-248)", () => {
   it("abre la última edición terminada y no la de prueba con fecha futura", async () => {
     renderPage();
 
-    await expectEditionHeading("Edición 2025-2");
+    await expectEditionHeading("Edición 2025 - 2");
     // Los datos de la edición se piden en un efecto que corre después de pintar el título: en un
     // computador lento (el runner de GitHub) la aserción llegaba antes y la prueba fallaba al azar.
     await waitFor(() => expect(mocks.fetchTestimonials).toHaveBeenCalledWith(4));
@@ -51,12 +51,12 @@ describe("Ediciones pasadas: edición por defecto (ARK-248)", () => {
 
   it("la edición futura sigue en la lista para elegirla a mano", async () => {
     renderPage();
-    await expectEditionHeading("Edición 2025-2");
+    await expectEditionHeading("Edición 2025 - 2");
 
     fireEvent.click(screen.getByRole("button", { name: /Cambiar Edición/ }));
-    fireEvent.click(screen.getByRole("button", { name: /2099-10/ }));
+    fireEvent.click(screen.getByRole("button", { name: /2099 - 1 \(Primer semestre\)/ }));
 
-    await expectEditionHeading("Edición 2099-1");
+    await expectEditionHeading("Edición 2099 - 1");
   });
 
   it("si ninguna edición terminó, lo dice en vez de abrir una futura", async () => {
@@ -66,5 +66,32 @@ describe("Ediciones pasadas: edición por defecto (ARK-248)", () => {
     expect(await screen.findByText(/Todavía no hay ediciones terminadas/)).toBeTruthy();
     await expectEditionHeading("Ediciones pasadas");
     expect(mocks.fetchTestimonials).not.toHaveBeenCalled();
+  });
+});
+
+describe("Ediciones pasadas: formato del semestre (BG-66, ARK-266)", () => {
+  beforeEach(() => {
+    mocks.fetchTestimonials.mockReset().mockResolvedValue([]);
+    mocks.fetchEducationalFocuses.mockReset().mockResolvedValue([]);
+    mocks.fetchHighlightedGames.mockReset().mockResolvedValue([]);
+  });
+
+  afterEach(() => cleanup());
+
+  it("el intersemestral se titula igual que los demás y no como «2024-20»", async () => {
+    mocks.fetchEditions.mockReset().mockResolvedValue([
+      edition(7, 2024, 20, "2024-07-10T13:00:00.000Z", "2024-07-10T22:00:00.000Z"),
+    ]);
+    renderPage();
+
+    await expectEditionHeading("Edición 2024 - Intersemestral");
+  });
+
+  it("dice «videojuegos» (sin la errata «videouegos»)", async () => {
+    mocks.fetchEditions.mockReset().mockResolvedValue([feria2025S2]);
+    renderPage();
+
+    expect(await screen.findByText(/muestras de videojuegos/)).toBeTruthy();
+    expect(screen.queryByText(/videouegos/)).toBeNull();
   });
 });

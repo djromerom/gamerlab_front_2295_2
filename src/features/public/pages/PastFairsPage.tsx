@@ -15,6 +15,7 @@ import {
 } from "@/api/editions";
 import { Link } from "react-router-dom";
 import { pickDefaultPastEdition } from "@/features/public/lib/defaultPastEdition";
+import { semesterLabel, semesterName } from "@/lib/semesterLabel";
 
 import {
   Calendar,
@@ -290,13 +291,6 @@ const glowStyles = `
   }
 `;
 export default function PastFairsPage() {
-  const getSemesterText = (sem?: number) => {
-    if (sem === 10) return "Primer Semestre";
-    if (sem === 20) return "Periodo Intersemestral";
-    if (sem === 30) return "Segundo Semestre";
-    return `Semestre ${sem}`;
-  };
-
   const [editionsList, setEditionsList] = useState<Edition[]>([]);
   const [edicionSeleccionada, setEdicionSeleccionada] = useState<Edition | null>(null);
   const [editionsLoaded, setEditionsLoaded] = useState(false);
@@ -397,7 +391,7 @@ export default function PastFairsPage() {
                 <History className="w-5 h-5 md:w-6 md:h-6 text-[#AC7CFF] shrink-0" />
                 <h2 className="text-lg md:text-2xl font-bold text-left truncate">
                   {edicionSeleccionada ? (
-                    <>Edición {edicionSeleccionada.year}-<span className="text-[#AC7CFF]">{edicionSeleccionada.semester === 10 ? '1' : edicionSeleccionada.semester === 30 ? '2' : edicionSeleccionada.semester}</span></>
+                    <>Edición {edicionSeleccionada.year} - <span className="text-[#AC7CFF]">{semesterLabel(edicionSeleccionada.semester)}</span></>
                   ) : "Ediciones pasadas"}
                 </h2>
               </div>
@@ -420,7 +414,7 @@ export default function PastFairsPage() {
                         onClick={() => { setEdicionSeleccionada(ed); setIsEditionOpen(false); }}
                         className={`cursor-pointer px-4 py-2 rounded-xl transition-all text-sm font-medium w-full text-left ${edicionSeleccionada?.id === ed.id ? "bg-[#AC7CFF] text-white shadow-md shadow-[#AC7CFF]/20" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
                       >
-                        {ed.year}-{ed.semester} ({getSemesterText(ed.semester)})
+                        {ed.year} - {semesterLabel(ed.semester)} ({semesterName(ed.semester)})
                       </button>
                     ))}
                   </div>
@@ -499,7 +493,7 @@ export default function PastFairsPage() {
                     </div>
                     <h3 className="text-lg font-bold mb-2">Exhibición</h3>
                     <p className="text-gray-300">
-                      +30 stands con muestras de videouegos a jurados y asistentes.
+                      +30 stands con muestras de videojuegos a jurados y asistentes.
                     </p>
                   </div>
                 </div>
@@ -605,7 +599,7 @@ export default function PastFairsPage() {
                       {index === 1 && (
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                           <h3 className="text-white font-bold">
-                            Feria Gamer {edicionSeleccionada.year}-{edicionSeleccionada.semester === 10 ? '1' : edicionSeleccionada.semester === 30 ? '2' : edicionSeleccionada.semester}
+                            Feria Gamer {edicionSeleccionada.year} - {semesterLabel(edicionSeleccionada.semester)}
                           </h3>
                         </div>
                       )}

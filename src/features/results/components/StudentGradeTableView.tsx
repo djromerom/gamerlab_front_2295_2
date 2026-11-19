@@ -37,7 +37,7 @@ export default function StudentGradeTableView({ teams, filteredTeams, initialLoa
     <div className="rounded-md border bg-[var(--card)] shadow-sm overflow-hidden">
       <Table>
         <TableHeader className="bg-[var(--color-primary)] [&_th]:!text-white dark:bg-blue-900/30 dark:text-[var(--card-foreground)] border-b border-border">
-          <TableRow><TableHead>Team Code</TableHead><TableHead>Equipo</TableHead><TableHead className="text-center">Calificación Feria</TableHead><TableHead className="text-center">Calificación Docente</TableHead><TableHead>Feria</TableHead><TableHead>NRC</TableHead><TableHead>Videojuego</TableHead><TableHead>Integrantes</TableHead></TableRow>
+          <TableRow><TableHead>Código del equipo</TableHead><TableHead>Equipo</TableHead><TableHead className="text-center">Calificación Feria</TableHead><TableHead className="text-center">Calificación Docente</TableHead><TableHead>Feria</TableHead><TableHead>NRC</TableHead><TableHead>Videojuego</TableHead><TableHead>Integrantes</TableHead></TableRow>
         </TableHeader>
         <TableBody>
           {initialLoading || isLoading ? Array.from({ length: 5 }).map((_, index) => (
