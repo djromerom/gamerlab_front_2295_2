@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-18: equipos sin nota fuera del podio en /ranking (HU-34 p3, ARK-238)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en `/ranking` un equipo con `finalScore: null` ya no sale con 0.00 ni con puesto, ni en el podio: va al final de la tabla con «—» y «Nota en proceso». Los equipos con nota mantienen el orden y la posición que manda el back. La lógica de «Sin nota» y «Nota en proceso» pasó de `RankingGroupCard` a `features/results/lib/rankingScore.ts`. A 360 px la tabla usa menos relleno para que «Calificación» no se corte.
+
 ## 2026-11-18: textos y formatos del Sprint 3 (HU-34, BG-38, HU-23, BG-30; ARK-255)
 
 - [reglas-de-negocio](../01-negocio/reglas-de-negocio.md) y [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): dónde se ve la ponderación de la nota final y por qué el `/ranking` público no dice «junior».

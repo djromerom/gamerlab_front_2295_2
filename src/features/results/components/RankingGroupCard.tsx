@@ -1,14 +1,5 @@
 import type { RankingGroup } from "@/features/results/api/ranking";
-
-const score = (value: number | null | undefined) =>
-  value === null || value === undefined ? "Sin nota" : value.toFixed(2);
-
-const missingScoreMessage = (missing?: Array<"PROFESSOR" | "JUROR">) => {
-  if (missing?.length === 2) return "Faltan las dos notas";
-  if (missing?.includes("PROFESSOR")) return "Falta la nota de profesores";
-  if (missing?.includes("JUROR")) return "Falta la nota de jurados";
-  return "Nota en proceso";
-};
+import { formatFinalScore, missingScoreMessage } from "@/features/results/lib/rankingScore";
 
 /** Podio de un nivel (HU-04) en el panel de ranking del administrador. */
 export function RankingGroupCard({ group }: { group: RankingGroup }) {
@@ -33,7 +24,7 @@ export function RankingGroupCard({ group }: { group: RankingGroup }) {
                   </span>
                 )}
               </div>
-              <span className="text-right text-lg font-semibold">{score(team.finalScore)}</span>
+              <span className="text-right text-lg font-semibold">{formatFinalScore(team.finalScore)}</span>
             </div>
           ))}
         </div>
