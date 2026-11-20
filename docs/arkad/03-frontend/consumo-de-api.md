@@ -13,7 +13,7 @@ Envoltorio sobre `fetch` que debe usarse en lugar de `fetch` directo:
 ## Funciones de API (una por tema)
 Compartidas, en `api/`: `editions`, `evaluationProgress`, `registrations`. El resto vive en `features/<dominio>/api/`:
 - `teams`: `editionStudents`, `teamVerification`, `teamGradable`.
-- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
+- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`, `publicPodium` (podio público de `/ranking`, HU-48). `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
 - `jurors`: `juryManagement` (management), `automaticAssignment` y `jurorsExport` (assignment), `jurorEdition`, `jurorAttendance`, `jurorCheckIn`, `jurorBadges`, `jurorSurvey`, `jurorPresence`, `absenceAlert`, `absentJurorResponses`.
 - `editions`: `eventSettings` (interruptores de la configuración del evento; muestra el 400 `RANKING_REQUIRES_FINAL_GRADE` de BG-67).
 - `external-presenters`: `externalPresenters`. `notifications`: `pushNotifications`.
