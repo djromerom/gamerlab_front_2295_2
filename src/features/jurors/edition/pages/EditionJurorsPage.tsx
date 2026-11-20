@@ -4,7 +4,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Download,
+  FileSpreadsheet,
   Info,
   Loader2,
   Lock,
@@ -28,13 +28,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditionJurorsTable } from "@/features/jurors/edition/components/EditionJurorsTable";
 import { EnrollJurorDialog } from "@/features/jurors/edition/components/EnrollJurorDialog";
+import { ImportJurorsDialog } from "@/features/jurors/edition/components/ImportJurorsDialog";
 import { fetchEditions, type Edition, type EditionStatus } from "@/api/editions";
 import {
   JurorEditionError,
   MAX_STATUS_ITEMS,
   TYPE_LABEL,
   fetchEditionJurors,
-  importPreviousJurors,
   pendingToDecline,
   updateJurorStatuses,
   type EditionJurorItem,
@@ -93,13 +93,14 @@ const EditionJurorsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   const [importOpen, setImportOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [declineCount, setDeclineCount] = useState<number | null>(null);
   const [countingPending, setCountingPending] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
 
   const edition = list?.edition;
   const writable = edition?.writable ?? false;
+  // HU-49: el back solo importa en la edición activa
+  const canImport = writable && edition?.status === "ACTIVE";
 
   useEffect(() => {
     fetchEditions()
@@ -230,26 +231,9 @@ const EditionJurorsPage: React.FC = () => {
     }
   };
 
-  const handleImport = async () => {
-    if (!edition) return;
-    setImportOpen(false);
-    setImporting(true);
-    try {
-      const result = await importPreviousJurors(edition.id);
-      toast.success(
-        `Se agregaron ${jurorsLabel(result.created)} como pendientes (${result.skipped} ya estaban)`,
-        {
-          description: result.fallback
-            ? "La edición anterior no tenía lista: se trajeron todos los jurados activos."
-            : undefined,
-        },
-      );
-      loadJurors();
-    } catch (err) {
-      toast.error("Error", { description: errorMessage(err, "No se pudieron traer los jurados.") });
-    } finally {
-      setImporting(false);
-    }
+  // El informe queda en el diálogo; aquí solo se recarga la lista
+  const handleImported = () => {
+    loadJurors();
   };
 
   const handleEnrolled = (juror: EditionJurorItem) => {
@@ -300,19 +284,16 @@ const EditionJurorsPage: React.FC = () => {
             </div>
             {writable && (
               <>
-                <Button
-                  variant="outline"
-                  className="bg-card hover:bg-accent text-foreground h-10"
-                  onClick={() => setImportOpen(true)}
-                  disabled={importing}
-                >
-                  {importing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  Traer de la edición anterior
-                </Button>
+                {canImport && (
+                  <Button
+                    variant="outline"
+                    className="bg-card hover:bg-accent text-foreground h-10"
+                    onClick={() => setImportOpen(true)}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Importar desde Excel
+                  </Button>
+                )}
                 <Button className="h-10" onClick={() => setEnrollOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Inscribir por correo
@@ -331,7 +312,14 @@ const EditionJurorsPage: React.FC = () => {
               <li>Cargue primero los NRC de la edición: los profesores con NRC activo quedan como jurados automáticamente.</li>
               <li>Los profesores senior sin NRC en esta edición se inscriben por correo.</li>
               <li>Solo los jurados confirmados y los profesores con NRC tendrán escarapela, check-in y asignación.</li>
-              <li>Si un jurado no tiene cuenta, créelo en Personal → Jurados y luego inscríbalo aquí.</li>
+              <li>
+                Con «Importar desde Excel» se carga la lista de los que confirmaron: quedan Confirmados en
+                la edición activa y se crean las cuentas que falten.
+              </li>
+              <li>
+                Para inscribir a uno solo que no tiene cuenta, créelo en Personal → Jurados y luego
+                inscríbalo aquí.
+              </li>
             </ul>
           </AlertDescription>
         </Alert>
@@ -517,21 +505,12 @@ const EditionJurorsPage: React.FC = () => {
           onEnrolled={handleEnrolled}
         />
 
-        <AlertDialog open={importOpen} onOpenChange={setImportOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Traer jurados de la edición anterior?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Se agregarán como pendientes los jurados de la edición anterior. Los que ya están en
-                esta edición no se duplican.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleImport}>Traer jurados</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ImportJurorsDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          editionTitle={edition?.title}
+          onImported={handleImported}
+        />
 
         <AlertDialog
           open={declineCount !== null}
