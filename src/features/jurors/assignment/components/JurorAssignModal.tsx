@@ -86,6 +86,13 @@ export function JurorAssignModal({
             <div className="text-sm text-muted-foreground">
               {selectedTeam.jurados.length}/{selectedTeam.requiredJurados} jurados asignados
             </div>
+            {!reassignContext &&
+              selectedTeam.jurados.length >= selectedTeam.requiredJurados && (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+                  El equipo ya tiene los jurados requeridos: el que elijas quedará
+                  como jurado adicional.
+                </div>
+              )}
             {isColegioTeam(selectedTeam) && (
               <div className="mt-2 text-xs text-blue-500">
                 Equipo de colegio: los jurados Junior no aparecerán como opción disponible.

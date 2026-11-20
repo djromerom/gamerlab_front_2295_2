@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Users,
   UserX,
-  UserPlus,
   Shield,
   AlertTriangle,
   ChevronRight,
@@ -45,6 +44,7 @@ import {
 import { JurorsListModal } from "@/features/jurors/assignment/components/JurorsListModal";
 import { countLabel, filterJurorsList, type JurorListFilter } from "@/features/jurors/assignment/lib/jurorsListFilter";
 import { JurorAssignModal } from "@/features/jurors/assignment/components/JurorAssignModal";
+import { TeamAssignButtons } from "@/features/jurors/assignment/components/TeamAssignButtons";
 import { AllTeamsModal } from "@/features/jurors/assignment/components/AllTeamsModal";
 import { AuditModal } from "@/features/jurors/assignment/components/AuditModal";
 import { auditLogPath, mergeAuditLogs, parseAuditPage } from "@/features/jurors/assignment/lib/auditLog";
@@ -1301,7 +1301,14 @@ export function JurorAssignmentPage() {
                         equipos.
                       </div>
                       <div>
-                        3. Usa{" "}
+                        3. ¿El equipo ya tiene 3? Usa{" "}
+                        <span className="text-foreground font-semibold">
+                          Asignar jurado manualmente
+                        </span>{" "}
+                        para sumar uno más.
+                      </div>
+                      <div>
+                        4. Usa{" "}
                         <span className="text-foreground font-semibold">
                           Reasignar
                         </span>{" "}
@@ -1777,23 +1784,13 @@ export function JurorAssignmentPage() {
                           </div>
                         ))}
 
-                        {Array.from({
-                          length: Math.max(
-                            0,
-                            team.requiredJurados - team.jurados.length
-                          ),
-                        }).map((_, idx) => (
-                          <button
-                            key={`empty-${team.id}-${idx}`}
-                            onClick={() => openJuradoModal(team, false)}
-                            disabled={isSubmitting}
-                            className="w-full h-12 md:h-16 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                          >
-                            <UserPlus className="w-4 md:w-5 h-4 md:h-5" />
-                            <span className="hidden md:inline">Agregar Jurado</span>
-                            <span className="md:hidden">Agregar</span>
-                          </button>
-                        ))}
+                        <TeamAssignButtons
+                          teamId={team.id}
+                          assignedCount={team.jurados.length}
+                          requiredCount={team.requiredJurados}
+                          disabled={isSubmitting}
+                          onAssign={() => openJuradoModal(team, false)}
+                        />
                       </div>
                     </div>
                   );
