@@ -294,6 +294,18 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
       expect(screen.queryByRole("button", { name: "Registrar respuesta" })).toBeNull();
     });
 
+    it.each([
+      ["Recibidas", "Evaluaciones de jurados enviadas al grupo. No incluye la nota del profesor."],
+      ["Cuentan", "Evaluaciones de jurados que cuentan para el seguimiento (las 3 primeras). No incluye la nota del profesor."],
+    ])("la ayuda de la columna «%s» dice que no incluye la nota del profesor (BG-73)", async (label, help) => {
+      renderPanel();
+      await screen.findByText("Pixel Pioneers");
+
+      fireEvent.click(screen.getByRole("button", { name: `Qué significa ${label}` }));
+
+      expect(await screen.findByText(help)).toBeTruthy();
+    });
+
     it("la página tiene un solo <main> y no se estira con la tabla por hora", async () => {
       const { container } = renderPanel();
       await screen.findByText("Pixel Pioneers");
