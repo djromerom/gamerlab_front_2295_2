@@ -17,7 +17,8 @@ import {
   formatSavedAgo,
   type ServerDraft,
 } from "@/lib/evaluationDrafts";
-import { AlertTriangle, Check, CloudOff, FileText, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, CloudOff, FileText, Loader2, MapPin } from "lucide-react";
+import { NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -63,6 +64,14 @@ export function DraftSaveIndicator({ state }: { state: AutosaveState }) {
       return (
         <p className={`${base} text-amber-700 dark:text-amber-400`} role="status">
           <AlertTriangle className="h-3.5 w-3.5" /> El borrador cambió en otra pestaña o dispositivo
+        </p>
+      );
+    case "not-checked-in":
+      // BG-71: no es un error del jurado ni se pierde nada; se resuelve en la mesa de ARKAD.
+      return (
+        <p className={`${base} text-amber-700 dark:text-amber-400`} role="status">
+          <MapPin className="h-3.5 w-3.5 shrink-0" /> {state.message ?? NOT_CHECKED_IN_MESSAGE} El borrador
+          quedó en este dispositivo.
         </p>
       );
     case "error":

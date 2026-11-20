@@ -43,6 +43,7 @@ import {
   fromServerDraft,
   type DraftForm,
 } from "@/lib/evaluationDrafts";
+import { isJurorNotCheckedIn, NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
 import { UiCriterion } from "@/features/grading/types/criterion";
 import {
   apiErrorMessage,
@@ -347,11 +348,17 @@ export default function RatePage() {
 
       if (!res.ok) {
         let errorText = `${res.status} ${res.statusText}`;
+        let errorBody: unknown = null;
         try {
           // El 400 de puntajes nulos (back ARK-250) trae `message` como arreglo
-          errorText = apiErrorMessage(await res.json(), errorText);
+          errorBody = await res.json();
+          errorText = apiErrorMessage(errorBody, errorText);
         } catch {
           // no-op: no JSON body
+        }
+        // BG-71: sin llegada registrada no se guarda nada; lo escrito se conserva para reintentar
+        if (isJurorNotCheckedIn(res.status, errorBody)) {
+          throw new Error(NOT_CHECKED_IN_MESSAGE);
         }
         if (
           res.status === 403 &&

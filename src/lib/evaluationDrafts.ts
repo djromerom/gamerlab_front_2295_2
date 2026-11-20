@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { isJurorNotCheckedIn, NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
 
 /**
  * HU-18 (ARK-105): borradores de evaluación guardados en el servidor (ARK-104).
@@ -41,6 +42,7 @@ export type DraftErrorKind =
   | "network" // sin red o 5xx: reintentar, conservar en local
   | "conflict" // 409 DRAFT_VERSION_CONFLICT
   | "submitted" // 409 EVALUATION_ALREADY_SUBMITTED
+  | "not-checked-in" // 409 JUROR_NOT_CHECKED_IN: sin llegada registrada en la mesa (BG-71)
   | "forbidden" // 403: el grupo no se puede calificar
   | "invalid" // 400
   | "session" // 401 que el interceptor no pudo recuperar
@@ -60,6 +62,7 @@ const FALLBACK_MESSAGES: Record<DraftErrorKind, string> = {
   network: "Sin conexión con el servidor",
   conflict: "El borrador cambió en otra pestaña o dispositivo",
   submitted: "Ya enviaste la evaluación de este grupo",
+  "not-checked-in": NOT_CHECKED_IN_MESSAGE,
   forbidden: "Este grupo no se puede calificar",
   invalid: "El borrador tiene datos inválidos",
   session: "Tu sesión venció; vuelve a iniciar sesión",
@@ -83,6 +86,7 @@ async function toDraftError(res: Response): Promise<DraftRequestError> {
   if (res.status >= 500) kind = "network";
   else if (res.status === 409 && body.code === "DRAFT_VERSION_CONFLICT") kind = "conflict";
   else if (res.status === 409 && body.code === "EVALUATION_ALREADY_SUBMITTED") kind = "submitted";
+  else if (isJurorNotCheckedIn(res.status, body)) kind = "not-checked-in";
   else if (res.status === 403) kind = "forbidden";
   else if (res.status === 400) kind = "invalid";
   else if (res.status === 401) kind = "session";
