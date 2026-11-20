@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { TextSizeProvider } from "./contexts/TextSizeContext.tsx";
-import { GlobalStateProvider } from "./fetchs/grupo 1/GlobalStateContext.tsx";
+import { GlobalStateProvider } from "@/contexts/GlobalStateContext";
 import "./index.css";
 import { initializePwaInstallPrompt, registerServiceWorker } from "./lib/pwa";
 

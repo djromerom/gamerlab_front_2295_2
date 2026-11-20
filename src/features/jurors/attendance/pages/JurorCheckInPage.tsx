@@ -1,0 +1,236 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Html5Qrcode,
+  Html5QrcodeSupportedFormats,
+} from "html5-qrcode";
+import { AlertCircle, Camera, Info, Loader2, QrCode, Search, UserCheck } from "lucide-react";
+import LayoutApplication from "@/layouts/LayoutApplication";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useLockViewportZoom } from "@/hooks/useLockViewportZoom";
+import { useAuth } from "@/contexts/AuthContext";
+import { jurorCategoryForViewer } from "@/lib/jurorLabel";
+import {
+  searchJurors,
+  type CheckInResult,
+  type JurorSearchItem,
+} from "@/features/jurors/attendance/api/jurorCheckIn";
+import { CheckInConfirmDialog } from "@/features/jurors/attendance/components/CheckInConfirmDialog";
+import { useCheckInConfirmation } from "@/features/jurors/attendance/hooks/useCheckInConfirmation";
+
+const SCANNER_ID = "juror-checkin-scanner";
+
+const formatTime = (iso: string) =>
+  new Intl.DateTimeFormat("es-CO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  }).format(new Date(iso));
+
+const JurorCheckInPage = () => {
+  useLockViewportZoom();
+  // HU-35: el registro se hace frente al jurado; el Staff ve solo «Jurado», el administrador la categoría
+  const { userRole } = useAuth();
+  const categoryLabel = useCallback((category: string) => jurorCategoryForViewer(category, userRole), [userRole]);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRunningRef = useRef(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<CheckInResult | null>(null);
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<JurorSearchItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const clearError = useCallback(() => setError(null), []);
+  // ARK-252: el registro se confirma viendo el nombre (búsqueda y QR)
+  const confirmation = useCheckInConfirmation({
+    categoryLabel,
+    onResult: (checkIn) => {
+      setError(null);
+      setResult(checkIn);
+    },
+    onError: setError,
+    onStart: clearError,
+  });
+  const { askForQr, candidate } = confirmation;
+  const processing = confirmation.submitting || confirmation.previewing;
+
+  const stopScanner = useCallback(async () => {
+    const scanner = scannerRef.current;
+    if (scanner && scannerRunningRef.current) await scanner.stop();
+    scannerRunningRef.current = false;
+    setScanning(false);
+  }, []);
+
+  // Leer un QR ya no registra: abre la confirmación con el nombre del jurado leído. El hook ignora las lecturas
+  // mientras hay una confirmación abierta y el mismo QR durante unos segundos después de cerrarla.
+  const submitToken = useCallback(async (rawToken: string) => {
+    const token = rawToken.trim();
+    if (!token) return;
+    await askForQr(token);
+  }, [askForQr]);
+
+  const startScanner = useCallback(async () => {
+    setCameraError(null);
+    if (!window.isSecureContext && location.hostname !== "localhost") {
+      setCameraError("La cámara requiere HTTPS. Abre Arkad-test con una conexión segura.");
+      return;
+    }
+    try {
+      const scanner = scannerRef.current ?? new Html5Qrcode(SCANNER_ID, {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        verbose: false,
+      });
+      scannerRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        (token) => void submitToken(token),
+        () => undefined,
+      );
+      scannerRunningRef.current = true;
+      setScanning(true);
+    } catch (err) {
+      setCameraError(err instanceof Error ? err.message : "No se pudo iniciar la cámara.");
+    }
+  }, [submitToken]);
+
+  // Con la confirmación abierta la cámara se pausa, para no leer el QR de al lado mientras tanto
+  useEffect(() => {
+    const scanner = scannerRef.current;
+    if (!scanner || !scannerRunningRef.current) return;
+    try {
+      if (candidate) scanner.pause(true);
+      else scanner.resume();
+    } catch {
+      // pause/resume lanzan si el escáner no estaba en ese estado
+    }
+  }, [candidate]);
+
+  useEffect(() => {
+    return () => {
+      const scanner = scannerRef.current;
+      if (scanner && scannerRunningRef.current) void scanner.stop();
+      void scanner?.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(async () => {
+      if (query.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      setSearching(true);
+      try {
+        setSearchResults(await searchJurors(query));
+      } catch (err) {
+        setSearchResults([]);
+        setError(err instanceof Error ? err.message : "No se pudo buscar al jurado");
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  return (
+    <LayoutApplication breadcrumbs={[{ label: "Check-in de jurados", href: "/check-in-jurados" }]}>
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10">
+        <div>
+          <h1 className="text-2xl font-bold">Registrar llegada</h1>
+          <p className="text-muted-foreground">Escanea la escarapela o busca al jurado manualmente. Antes de registrar se confirma el nombre.</p>
+        </div>
+
+        {cameraError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Cámara no disponible</AlertTitle>
+            <AlertDescription>{cameraError}</AlertDescription>
+          </Alert>
+        )}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No se pudo completar el registro</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
+          <Card className="min-w-0 py-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><QrCode /> Escanear QR</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div id={SCANNER_ID} className="mx-auto aspect-square max-h-[420px] w-full max-w-[420px] overflow-hidden rounded-lg bg-muted" />
+              <div className="flex justify-center">
+                <Button type="button" onClick={scanning ? () => void stopScanner() : () => void startScanner()} disabled={processing}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  {scanning ? "Detener cámara" : "Activar cámara"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0 py-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Search /> Registro manual</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* 16 px o más: con menos, iOS hace zoom al enfocar el campo */}
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre (mínimo 2 letras)" className="text-base" />
+              {searching && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" /> Buscando...</div>}
+              {!searching && query.trim().length >= 2 && searchResults.length === 0 && (
+                <p className="text-sm text-muted-foreground">No se encontraron jurados.</p>
+              )}
+              <div className="space-y-2">
+                {searchResults.map((juror) => (
+                  <button key={juror.id} type="button" onClick={() => confirmation.askForSearchResult(juror)} disabled={processing}
+                    className="w-full touch-manipulation rounded-md border p-3 text-left hover:bg-accent disabled:opacity-50">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 break-words font-medium">{juror.name}</span>
+                      {juror.checkedInAt && <Badge variant="secondary">Ya llegó</Badge>}
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {categoryLabel(juror.category)} · {juror.hasBadge ? "Tiene escarapela" : "Sin escarapela"}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {result && (
+          // ALREADY_CHECKED_IN es un aviso, no un error: ya había llegado, o alguien más lo registró entre la
+          // confirmación y el envío (contrato BG-49, vista previa del QR)
+          <Alert className={result.status === "ALREADY_CHECKED_IN" ? "border-amber-500" : "border-green-600"}>
+            {result.status === "ALREADY_CHECKED_IN" ? <Info className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+            <AlertTitle>{result.status === "ALREADY_CHECKED_IN" ? "Ya estaba registrado" : "Llegada registrada"}</AlertTitle>
+            <AlertDescription>
+              <strong>{result.juror.name}</strong> · {categoryLabel(result.juror.category)}
+              <div>
+                {result.status === "ALREADY_CHECKED_IN"
+                  ? `Su llegada ya estaba registrada (${formatTime(result.checkedInAt)}). No se registró otra vez.`
+                  : `Hora: ${formatTime(result.checkedInAt)}`}
+              </div>
+              <div>{result.juror.teams.length ? `Grupos: ${result.juror.teams.map((team) => team.name).join(", ")}` : "Grupos: sin asignar"}</div>
+            </AlertDescription>
+          </Alert>
+        )}
+        <CheckInConfirmDialog
+          candidate={candidate}
+          submitting={confirmation.submitting}
+          onConfirm={() => void confirmation.confirm()}
+          onCancel={confirmation.cancel}
+        />
+      </main>
+    </LayoutApplication>
+  );
+};
+
+export default JurorCheckInPage;

@@ -70,20 +70,38 @@ describe("pickInitialDraft", () => {
     expect(initial.form).toEqual({ scores: { 1: "4.5" }, comments: "Buen arte" });
   });
 
-  it("prefiere lo local si se escribió después del último guardado del servidor (sin red)", () => {
-    const local = { scores: { 1: "2" }, comments: "offline", savedAt: Date.parse("2026-11-08T03:00:00Z") };
+  it("lo local escrito sobre la versión actual del servidor se recupera aunque su hora sea anterior", () => {
+    // Reloj del navegador atrasado: savedAt queda antes de updatedAt aunque se escribió después.
+    const local = { scores: { 1: "2" }, comments: "offline", savedAt: Date.parse("2026-11-08T02:14:40Z"), baseVersion: 2 };
     const initial = pickInitialDraft(serverDraft(), local);
     expect(initial).toMatchObject({ source: "local", version: 2, needsSync: true });
     expect(initial.form?.comments).toBe("offline");
   });
 
-  it("el servidor manda si su versión es más nueva que la copia local", () => {
-    const local = { scores: { 1: "2" }, comments: "vieja", savedAt: Date.parse("2026-11-08T01:00:00Z") };
+  it("si el servidor cambió después (otro dispositivo), sube lo local con la versión vieja para que el 409 deje elegir", () => {
+    const local = { scores: { 1: "2" }, comments: "en este equipo", savedAt: Date.parse("2026-11-08T03:00:00Z"), baseVersion: 1 };
+    expect(pickInitialDraft(serverDraft(), local)).toMatchObject({ source: "local", version: 1, needsSync: true });
+  });
+
+  it("si lo local ya está en el servidor (llegó el guardado, no la respuesta), manda el servidor", () => {
+    const local = { scores: { 1: "4.5" }, comments: "Buen arte", savedAt: Date.parse("2026-11-08T03:00:00Z"), baseVersion: 1 };
+    expect(pickInitialDraft(serverDraft(), local)).toMatchObject({ source: "server", version: 2, needsSync: false });
+  });
+
+  it("respaldo de antes de baseVersion: prefiere lo local si se escribió después del último guardado", () => {
+    const local = { scores: { 1: "2" }, comments: "offline", savedAt: Date.parse("2026-11-08T03:00:00Z"), baseVersion: null };
+    const initial = pickInitialDraft(serverDraft(), local);
+    expect(initial).toMatchObject({ source: "local", version: 2, needsSync: true });
+    expect(initial.form?.comments).toBe("offline");
+  });
+
+  it("respaldo de antes de baseVersion: el servidor manda si se guardó después", () => {
+    const local = { scores: { 1: "2" }, comments: "vieja", savedAt: Date.parse("2026-11-08T01:00:00Z"), baseVersion: null };
     expect(pickInitialDraft(serverDraft(), local).source).toBe("server");
   });
 
   it("sin borrador en el servidor, sube lo local con versión 0", () => {
-    const local = { scores: { 1: "2" }, comments: "", savedAt: 1 };
+    const local = { scores: { 1: "2" }, comments: "", savedAt: 1, baseVersion: 3 };
     expect(pickInitialDraft(null, local)).toMatchObject({ source: "local", version: 0, needsSync: true });
     expect(pickInitialDraft(null, null)).toMatchObject({ source: "none", form: null, version: 0 });
   });
@@ -101,13 +119,21 @@ describe("respaldo local", () => {
       JSON.stringify({ criteria: [{ id: 5, score: "2" }, { id: 6, score: "" }], comments: "c" }),
     );
 
-    expect(readBackup(1)).toEqual({ scores: { 5: "4" }, comments: "a", savedAt: 0 });
-    expect(readBackup(2)).toEqual({ scores: { 5: "3" }, comments: "b", savedAt: 0 });
-    expect(readBackup(3)).toEqual({ scores: { 5: "2" }, comments: "c", savedAt: 0 });
+    expect(readBackup(1)).toEqual({ scores: { 5: "4" }, comments: "a", savedAt: 0, baseVersion: null });
+    expect(readBackup(2)).toEqual({ scores: { 5: "3" }, comments: "b", savedAt: 0, baseVersion: null });
+    expect(readBackup(3)).toEqual({ scores: { 5: "2" }, comments: "c", savedAt: 0, baseVersion: null });
+  });
+
+  it("guarda y lee la versión del servidor sobre la que se escribió", () => {
+    writeBackup(7, { scores: { 1: "3" }, comments: "x" }, 4);
+    expect(readBackup(7)).toMatchObject({ scores: { 1: "3" }, comments: "x", baseVersion: 4 });
+    // Respaldo escrito antes de este campo
+    localStorage.setItem(backupKey(8), JSON.stringify({ scores: { 1: "3" }, comments: "", savedAt: 5 }));
+    expect(readBackup(8)).toMatchObject({ savedAt: 5, baseVersion: null });
   });
 
   it("al cerrar sesión borra todos los borradores locales y deja lo demás", () => {
-    writeBackup(10, { scores: { 1: "4" }, comments: "" });
+    writeBackup(10, { scores: { 1: "4" }, comments: "" }, 0);
     localStorage.setItem("rate-draft-11", "{}");
     localStorage.setItem("theme", "dark");
 

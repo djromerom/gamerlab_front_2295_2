@@ -5,11 +5,11 @@
 ## Contextos
 | Contexto | Qué hace |
 |---|---|
-| `AuthContext` | `user` (perfil de `GET /auth/me`), `loading`, login/logout, renovación de sesión. Al cargar pide el perfil; mientras `loading` el router muestra `LoadingScreen` |
+| `AuthContext` | `user` (perfil de `GET /auth/me`), `loading`, login/logout, renovación de sesión. Al cargar pide el perfil; mientras `loading` el router muestra `LoadingScreen`. Al salir da de baja la suscripción push en un paso aparte, así que `POST /auth/logout` se llama aunque falle (Safari de iPhone sin la app no tiene `pushManager`) |
 | `SocketContext` | Una conexión `socket.io` única (singleton) a `VITE_ENDPOINT_BACKEND`, `withCredentials: false`; expone `socket` e `isConnected`. Lo usan los likes (`useLikesSocket`) |
 | `MultiFormContext` | Paso actual del formulario de registro (`next`, `back`, `reset`, `initialStep` restaurado del borrador) |
 | `TextSizeContext` | Tamaño de texto (accesibilidad) |
-| `fetchs/grupo 1/GlobalStateContext` | Estado global de criterios |
+| `contexts/GlobalStateContext` | Datos de `/estadisticas` y permisos del evento (`canViewJudges`, `canViewScores`, `canViewRanking`). `GlobalDataAuthSync` (dentro de `AuthProvider`) sigue la sesión: los jurados de `/reports/JuradosData` se piden con sesión y las notas de `/reports/videojuegoData`, `NRCData` y `DatosGraficoMateria` solo con el rol Administrador; al salir se borran de memoria (BG-67, ARK-269). `materiaData` es pública |
 
 ## Sesión (HU-05, HU-06)
 - Cookies HttpOnly del backend; el front **no** guarda el token en `localStorage`.
@@ -22,14 +22,16 @@ El `setInterval` fijo de 14 minutos de la copia local de mayo ya no existe en `m
 ## Sockets
 Los sockets **solo se usan para los likes** de los videojuegos: `useLikesSocket` emite `subscribe:likes` / `unsubscribe:likes` y escucha `likes:updated`; `GameDetailModal` también escucha `likes:updated`. No hay sockets en seguimiento ni asistencia.
 
-Esas pantallas usan **sondeo (polling)**: `RealtimeTrackingPanel` recarga cada `REFRESH_SECONDS` (según el backlog, 10 s) y `useJurorAttendance` cada `pollMs`. Los demás `setInterval` son de animaciones (confeti, carrusel, cuenta regresiva, créditos).
+Esas pantallas usan **sondeo (polling)**: `RealtimeTrackingPage` recarga cada `REFRESH_SECONDS` (según el backlog, 10 s) y `useJurorAttendance` cada `pollMs`. Los demás `setInterval` son de animaciones (confeti, carrusel, cuenta regresiva, créditos).
 
 ## Borradores y persistencia local
 - Registro de equipos: borrador en `sessionStorage` (BG-11).
-- **Borradores de calificación (HU-18, ARK-105; back ARK-104):** `RatePage`, `SchoolRate` y `BatchRatePage` guardan en el servidor (`/evaluation/drafts`).
+- **Borradores de calificación (HU-18, ARK-105; back ARK-104):** `RatePage`, `SchoolRatePage` y `BatchRatePage` guardan en el servidor (`/evaluation/drafts`).
   - Al abrir: `GET /evaluation/drafts/:id` (individual) o un solo `GET /evaluation/drafts` (lote).
-  - Autoguardado (`lib/draftAutosaver.ts`, hook `useDraftAutosave`): `PUT` con el formulario completo y la `version` tras 2,5 s sin cambios; una petición a la vez por juego. Indicador «Guardando… / Guardado hace X».
-  - 409 `DRAFT_VERSION_CONFLICT`: diálogo «Cargar la versión guardada / Sobrescribir». 409 ya enviada o 403: deja de autoguardar y muestra el mensaje.
-  - `localStorage` (`evaluation-draft-<id>`) solo guarda lo que no se pudo sincronizar (sin red o 5xx); reintenta cada 15 s y al volver la red. Al abrir, gana el servidor salvo que la copia local sea más nueva. Las claves antiguas (`rate-draft-`, `batch-rate-draft-`, `school-rate-draft-`) se leen una vez y se borran.
+  - Autoguardado (`features/grading/lib/draftAutosaver.ts`, hook `useDraftAutosave`): `PUT` con el formulario completo y la `version` tras 2,5 s sin cambios; una petición a la vez por juego. Indicador «Guardando… / Guardado hace X».
+  - 409 `DRAFT_VERSION_CONFLICT`: diálogo «Cargar la versión guardada / Sobrescribir». 409 ya enviada: deja de autoguardar, borra la copia local y muestra el mensaje.
+  - 403 (le quitaron el grupo al jurado): deja de mandar al servidor y muestra el mensaje, pero **cada cambio se sigue escribiendo en `localStorage`**, también lo que el jurado escribe después del aviso. Si le devuelven el grupo, al abrir el juego la copia local gana sobre el borrador viejo del servidor y se sube. Antes se dejaba de guardar también en local y se perdía lo escrito después del aviso (BG-41 p3, corregido en ARK-249).
+  - `localStorage` (`evaluation-draft-<id>`) solo guarda lo que no se pudo sincronizar (sin red, 5xx o sesión perdida), junto con la `version` del servidor sobre la que se escribió (`baseVersion`); reintenta cada 15 s y al volver la red. Al abrir (`pickInitialDraft`, `lib/evaluationDrafts.ts`) **decide la versión, no la hora**: si hay copia local distinta de lo que tiene el servidor, se sube con su `baseVersion`; si el servidor cambió desde otro dispositivo, el 409 abre el diálogo de conflicto. Si la copia es igual a lo del servidor, manda el servidor. Antes se comparaba la hora del navegador con la del servidor y, con el reloj del navegador atrasado, se perdía lo último escrito (corregido el 2026-11-14, front #310; los respaldos viejos sin `baseVersion` todavía se deciden por hora). Las claves antiguas (`rate-draft-`, `batch-rate-draft-`, `school-rate-draft-`) se leen una vez y se borran.
+  - Envío (`RatePage`, `SchoolRatePage` y `BatchRatePage`): no se puede enviar con un criterio vacío; un vacío **no** es un 0 y el 0 solo cuenta si el jurado lo escribe. En la calificación individual se marca en rojo cada criterio que falta («Falta calificar este criterio. Si la nota es 0, escribe 0.») y el foco va al primero; en lote se abre la pestaña del juego que falta. Junto al campo vacío se ve «—», no «0.00». Reglas en `features/grading/lib/criteriaScores.ts`; la fila del criterio es `components/CriterionScoreRow.tsx`. El back también rechaza con 400 un puntaje nulo, vacío o en texto (ARK-250); su `message` llega en arreglo y el front lo muestra sin la ruta del campo (`apiErrorMessage`). En lote, ese 400 rechaza todo el lote y no trae `results` (BG-43, ARK-249).
   - Al enviar, el back cierra el borrador; el front detiene el autoguardado y borra la copia local. Al cerrar sesión se borran todas las copias locales (BG-08).
   - Pendientes (`/pendientes-calificar`, `/colegios-calificar`): etiqueta «Borrador · guardado hace X» con `hasDraft`/`draftUpdatedAt`, y panel «Mis borradores» (Continuar, o Descartar si ya se envió o se reasignó el grupo).

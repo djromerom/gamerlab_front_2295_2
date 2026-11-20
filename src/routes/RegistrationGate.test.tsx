@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import RegistrationGate from "@/routes/RegistrationGate";
 
-vi.mock("@/pages/teams/TeamRegisterPage", () => ({
+vi.mock("@/features/teams/pages/TeamRegisterPage", () => ({
   default: () => <p>Formulario de registro</p>,
 }));
 

@@ -1,4 +1,4 @@
-import type { GradeTeam } from "@/components/grupo 5/student-grade-table-types";
+import type { GradeTeam } from "@/features/results/types/studentGradeTable";
 
 /**
  * BG-27 (ARK-146): notas del profesor editadas y aún sin guardar, conservadas en el

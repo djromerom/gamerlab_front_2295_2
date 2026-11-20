@@ -1,4 +1,4 @@
-import type { Team } from "@/types/Team";
+import type { Team } from "@/types/team";
 
 /** Devuelve el equipo del usuario autenticado según `isMine` (el back lo marca; sin sesión no existe). */
 export function findMyTeam(teams: Team[]): Team | null {

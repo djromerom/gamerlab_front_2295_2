@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/lib/api";
 import { fetchOwnTeam, resetOwnTeamCacheForTests } from "./ownTeam";
-import type { Team } from "@/types/Team";
+import type { Team } from "@/types/team";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));
 

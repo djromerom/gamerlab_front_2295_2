@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import LoadingScreen from "@/components/grupo 5/LoadingScreen";
-import RegistrationClosedPage from "@/pages/RegistrationClosedPage";
-import TeamRegisterPage from "@/pages/teams/TeamRegisterPage";
-import { fetchRegistrationsOpen } from "@/fetchs/registrations";
+import LoadingScreen from "@/components/LoadingScreen";
+import RegistrationClosedPage from "@/features/public/pages/RegistrationClosedPage";
+import TeamRegisterPage from "@/features/teams/pages/TeamRegisterPage";
+import { fetchRegistrationsOpen } from "@/api/registrations";
 
 /** Muestra el registro de equipos solo si las inscripciones están abiertas. */
 export default function RegistrationGate() {

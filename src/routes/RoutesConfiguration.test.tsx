@@ -5,7 +5,7 @@ import { TextSizeProvider } from "@/contexts/TextSizeContext";
 import RoutesConfiguration, { routes } from "@/routes/RoutesConfiguration";
 
 // HomePage depende de matchMedia y de otras peticiones: aquí solo importa a dónde se llega
-vi.mock("@/pages/grupo 9/HomePage", () => ({
+vi.mock("@/features/home/pages/HomePage", () => ({
   default: () => <p>Inicio del rol</p>,
 }));
 
@@ -132,6 +132,12 @@ describe("routes", () => {
     const duplicated = paths.filter((p, i) => paths.indexOf(p) !== i);
     expect(duplicated).toEqual([]);
     expect(paths.filter((p) => p === "/materias")).toHaveLength(1);
+  });
+
+  it("HU-40: los juegos en vivo e históricos se abren sin sesión", () => {
+    const route = (path: string) => routes.find((r) => r.path === path);
+    expect(route("/play-game/:videogameID")?.roles).toBeUndefined();
+    expect(route("/play-game/historical/:videogameID")?.roles).toBeUndefined();
   });
 
   it("HU-33: la pantalla de presentadores es del administrador y /mi-registro del presentador", () => {

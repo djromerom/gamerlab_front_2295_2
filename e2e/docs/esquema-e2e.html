@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Esquema e2e</title>
+<style>
+  html,body{margin:0;background:#fff}
+  svg{display:block;font-family:"Segoe UI",Arial,sans-serif}
+  .t{font-size:22px;font-weight:700;fill:#1f2328}
+  .h{font-size:17px;font-weight:700;fill:#1f2328}
+  .s{font-size:14px;fill:#3d444d}
+  .m{font-size:13px;fill:#3d444d;font-family:Consolas,"Cascadia Mono",monospace}
+  .lbl{font-size:13px;fill:#1f2328;font-weight:600}
+  .note{font-size:12.5px;fill:#59636e}
+</style></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1010" viewBox="0 0 1600 1010">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3d444d"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="40" y="48" class="t">Pruebas e2e bajo demanda contra Arkad-test (ARK-42 · workflow e2e.yml)</text>
+  <text x="40" y="74" class="s">Se prueba lo que esté desplegado en test en ese momento. El contenedor solo trae Node y Chromium; la app no se levanta en GitHub.</text>
+
+  <!-- Columna izquierda: quién lanza -->
+  <rect x="40" y="110" width="320" height="86" rx="10" fill="#f6f8fa" stroke="#d1d9e0"/>
+  <text x="60" y="142" class="h">Persona del equipo</text>
+  <text x="60" y="166" class="s">Avisa al equipo antes de correr</text>
+  <text x="60" y="186" class="s">(datos e2e- visibles ≈ 2–4 min)</text>
+
+  <line x1="200" y1="196" x2="200" y2="232" stroke="#3d444d" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="40" y="236" width="320" height="196" rx="10" fill="#ddf4ff" stroke="#54aeff"/>
+  <text x="60" y="268" class="h">GitHub · Actions</text>
+  <text x="60" y="292" class="s">E2E-Arkad-test → Run workflow</text>
+  <text x="60" y="320" class="m">rama:   dev-deploy (specs)</text>
+  <text x="60" y="342" class="m">acción: suite | limpiar</text>
+  <text x="60" y="364" class="m">filtro: (opcional) drafts…</text>
+  <text x="60" y="394" class="note">Solo manual: nunca en PR ni en push.</text>
+  <text x="60" y="414" class="note">Una corrida a la vez (concurrency).</text>
+
+  <rect x="40" y="470" width="320" height="196" rx="10" fill="#fff8c5" stroke="#d4a72c"/>
+  <text x="60" y="502" class="h">Secretos del repo front</text>
+  <text x="60" y="530" class="m">E2E_SSH_TARGET</text>
+  <text x="60" y="552" class="m">E2E_SSH_PRIVATE_KEY</text>
+  <text x="60" y="574" class="m">E2E_SSH_HOST_KEY</text>
+  <text x="60" y="596" class="m">E2E_JUROR_PASSWORD</text>
+  <text x="60" y="618" class="m">E2E_JUROR_PASSWORD_HASH</text>
+  <text x="60" y="648" class="note">Valores solo en GitHub; ver variables-y-accesos.</text>
+
+  <!-- Flechas hacia el runner -->
+  <line x1="360" y1="334" x2="416" y2="334" stroke="#0969da" stroke-width="2.5" marker-end="url(#ab)"/>
+  <line x1="360" y1="568" x2="416" y2="568" stroke="#9a6700" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a)"/>
+
+  <!-- Centro: runner + contenedor -->
+  <rect x="420" y="110" width="560" height="556" rx="12" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="440" y="140" class="h">Runner de GitHub (ubuntu-latest)</text>
+  <rect x="440" y="156" width="520" height="490" rx="10" fill="#ffffff" stroke="#0969da" stroke-width="1.5"/>
+  <text x="460" y="186" class="h">Contenedor Playwright</text>
+  <text x="460" y="208" class="m">mcr.microsoft.com/playwright:v1.64.1-noble</text>
+
+  <g class="s">
+    <text x="460" y="244">1. Checkout de la rama elegida + Node 22</text>
+    <text x="460" y="270">2. Cliente SSH; llave y huella del servidor</text>
+    <text x="478" y="290" class="note">(si falta un secreto, la corrida para aquí)</text>
+    <text x="460" y="316">3. npm ci</text>
+    <text x="460" y="342">4. Estado de la base (antes): e2e:verify</text>
+    <text x="460" y="368">5. npx playwright test  ·  o e2e:cleanup si «limpiar»</text>
+    <text x="460" y="394">6. Limpieza de respaldo (solo si quedó la marca)</text>
+    <text x="460" y="420">7. Estado de la base (después)</text>
+    <text x="460" y="446">8. Resumen + artefacto playwright-report (14 días)</text>
+  </g>
+
+  <!-- Puertos de salida -->
+  <rect x="460" y="496" width="230" height="64" rx="8" fill="#ddf4ff" stroke="#54aeff"/>
+  <text x="476" y="522" class="lbl">Chromium · HTTPS</text>
+  <text x="476" y="544" class="note">hace de jurado en el navegador</text>
+
+  <rect x="710" y="496" width="230" height="64" rx="8" fill="#dafbe1" stroke="#4ac26b"/>
+  <text x="726" y="522" class="lbl">SSH (llave del CI) · db.ts</text>
+  <text x="726" y="544" class="note">siembra, resetea y limpia</text>
+
+  <rect x="460" y="572" width="480" height="62" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+  <text x="476" y="597" class="note">Marca E2E_SEED_MARKER: la crea global-setup al sembrar y la borra</text>
+  <text x="476" y="617" class="note">global-teardown al limpiar. Sin marca, el paso 6 no toca nada.</text>
+
+  <!-- Derecha: servidor de test -->
+  <rect x="1040" y="110" width="520" height="556" rx="12" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="1060" y="140" class="h">Servidor de test (compartido)</text>
+
+  <rect x="1060" y="160" width="230" height="72" rx="8" fill="#ffffff" stroke="#54aeff"/>
+  <text x="1076" y="188" class="lbl">Front Arkad-test</text>
+  <text x="1076" y="210" class="note">arkad-test.openlab…</text>
+
+  <rect x="1310" y="160" width="230" height="72" rx="8" fill="#ffffff" stroke="#54aeff"/>
+  <text x="1326" y="188" class="lbl">API Arkad-test</text>
+  <text x="1326" y="210" class="note">arkad-app-test.openlab…</text>
+
+  <line x1="1290" y1="196" x2="1306" y2="196" stroke="#3d444d" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1060" y="300" width="480" height="118" rx="8" fill="#ffffff" stroke="#4ac26b"/>
+  <text x="1076" y="328" class="lbl">authorized_keys · llave arkad-e2e-ci</text>
+  <text x="1076" y="352" class="m">command="docker exec -i arkad_db psql …"</text>
+  <text x="1076" y="374" class="note">Pida lo que pida, solo se ejecuta ese psql.</text>
+  <text x="1076" y="396" class="note">Sin shell, sin pty, sin túneles.</text>
+
+  <rect x="1060" y="470" width="480" height="96" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="1076" y="500" class="lbl">arkad_db (PostgreSQL de test)</text>
+  <text x="1076" y="524" class="note">Datos con prefijo e2e-: 2 jurados, 5 equipos y videojuegos.</text>
+  <text x="1076" y="546" class="note">Los scripts abortan si la base no es arkad_db.</text>
+
+  <!-- API → BD -->
+  <path d="M1425 232 L1425 286" stroke="#3d444d" stroke-width="2" fill="none"/>
+  <path d="M1425 286 L1555 286 L1555 518 L1544 518" stroke="#3d444d" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="1268" y="278" class="note">la app guarda en la BD</text>
+
+  <!-- authorized_keys → BD -->
+  <line x1="1300" y1="418" x2="1300" y2="466" stroke="#1a7f37" stroke-width="2.5" marker-end="url(#ag)"/>
+  <text x="1312" y="448" class="note">seed · reset · cleanup</text>
+
+  <!-- Prod tachada -->
+  <rect x="1060" y="590" width="480" height="58" rx="8" fill="#ffebe9" stroke="#cf222e" stroke-dasharray="6 5"/>
+  <text x="1076" y="616" class="lbl" fill="#82071e">arkad_db_prod (producción)</text>
+  <text x="1076" y="636" class="note">Nunca: ni la llave ni los scripts llegan ahí.</text>
+  <line x1="1068" y1="642" x2="1532" y2="596" stroke="#cf222e" stroke-width="2"/>
+
+  <!-- Flechas contenedor → servidor -->
+  <path d="M575 496 L575 480 L1000 480 L1000 196 L1056 196" stroke="#0969da" stroke-width="2.5" fill="none" marker-end="url(#ab)"/>
+  <text x="600" y="474" class="note" fill="#0969da">HTTPS al front y la API: lo desplegado en ese momento</text>
+  <path d="M940 528 L1024 528 L1024 358 L1056 358" stroke="#1a7f37" stroke-width="2.5" fill="none" marker-end="url(#ag)"/>
+
+  <!-- Franja inferior: ciclo de una corrida -->
+  <text x="40" y="716" class="h">Ciclo de una corrida «suite»</text>
+  <g>
+    <rect x="40"   y="734" width="190" height="92" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+    <text x="54" y="762" class="lbl">Estado antes</text>
+    <text x="54" y="784" class="note">e2e:verify: ¿quedan</text>
+    <text x="54" y="802" class="note">restos e2e-?</text>
+
+    <rect x="262"  y="734" width="210" height="92" rx="8" fill="#dafbe1" stroke="#4ac26b"/>
+    <text x="276" y="762" class="lbl">global-setup</text>
+    <text x="276" y="784" class="note">espera a que test responda,</text>
+    <text x="276" y="802" class="note">seed.sql y crea la marca</text>
+
+    <rect x="504"  y="734" width="250" height="92" rx="8" fill="#ddf4ff" stroke="#54aeff"/>
+    <text x="518" y="762" class="lbl">Por cada prueba (8 + 1 fixme)</text>
+    <text x="518" y="784" class="note">reset.sql → prueba en Chromium</text>
+    <text x="518" y="802" class="note">smoke · consecutive · drafts · lote · sesión</text>
+
+    <rect x="786"  y="734" width="220" height="92" rx="8" fill="#dafbe1" stroke="#4ac26b"/>
+    <text x="800" y="762" class="lbl">global-teardown</text>
+    <text x="800" y="784" class="note">cleanup.sql (aunque fallen</text>
+    <text x="800" y="802" class="note">pruebas) y borra la marca</text>
+
+    <rect x="1038" y="734" width="240" height="92" rx="8" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="1052" y="762" class="lbl">Respaldo</text>
+    <text x="1052" y="784" class="note">si la corrida se cortó y la marca</text>
+    <text x="1052" y="802" class="note">sigue: cleanup; si no, nada</text>
+
+    <rect x="1310" y="734" width="250" height="92" rx="8" fill="#f6f8fa" stroke="#d1d9e0"/>
+    <text x="1324" y="762" class="lbl">Estado después + resumen</text>
+    <text x="1324" y="784" class="note">todo en 0; informe HTML y</text>
+    <text x="1324" y="802" class="note">trazas como artefacto</text>
+  </g>
+  <g stroke="#3d444d" stroke-width="2" marker-end="url(#a)">
+    <line x1="230" y1="780" x2="258" y2="780"/>
+    <line x1="472" y1="780" x2="500" y2="780"/>
+    <line x1="754" y1="780" x2="782" y2="780"/>
+    <line x1="1006" y1="780" x2="1034" y2="780"/>
+    <line x1="1278" y1="780" x2="1306" y2="780"/>
+  </g>
+
+  <!-- Pie -->
+  <text x="40" y="876" class="note">«limpiar» solo ejecuta cleanup.sql: borra restos e2e- de una corrida interrumpida. No usarla si alguien está corriendo la suite en su máquina.</text>
+  <text x="40" y="900" class="note">Si se cambia el comando de psql en e2e/support/db.ts, hay que cambiar también la línea command="…" en authorized_keys del servidor.</text>
+  <text x="40" y="924" class="note">El botón «Run workflow» aparece cuando e2e.yml está en la rama por defecto (main). Alta, baja y rotación de la llave: e2e/README.md, «Correr desde GitHub».</text>
+  <text x="40" y="970" class="note">Arkad V4 · ARK-42 (TA-06) · noviembre 2026</text>
+</svg>
+</body></html>

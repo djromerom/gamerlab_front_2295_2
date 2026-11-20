@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findMyTeam, isOwnLikeEvent, resolveMyTeam } from "@/lib/opaqueKeys";
-import type { Team } from "@/types/Team";
+import type { Team } from "@/types/team";
 
 const team = (id: number, extra: Partial<Team> = {}): Team => ({
   id,

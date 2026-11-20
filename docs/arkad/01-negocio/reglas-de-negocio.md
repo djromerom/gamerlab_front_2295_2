@@ -15,7 +15,7 @@
   - **Equipo normal:** se califica con profesores y jurados junior (60 % y 40 %).
   - **Colegio (N0):** es externo a Uninorte y **sí se califica**, pero solo lo califican seniors (P-08); no tiene jurados junior. Regla de nota (propuesta del 7-nov pasada al equipo; confirmar con los profesores si hay casos): su nota final es el promedio de los seniors que lo calificaron al 100 %, y no queda en «Nota en proceso» por falta de junior.
   - **Presentador externo (HU-33):** persona sin equipo, o equipo no calificable que presenta un proyecto (HU-39, 10-nov), que **nunca se califica**; no entra al ranking, a la asignación ni a las exportaciones de notas. Lo registra solo el administrador y recibe el certificado final por correo, enviado por el administrador (nadie lo descarga). **Equipo rechazado (BG-43, 10-nov):** no tiene nota final ni sale en el ranking, pero sus evaluaciones se conservan y reaparecen si se reconfirma.
-- **Marca «equipo externo» (`isExternal`):** independiente del nivel; en la nota final solo cuenta la nota de jurados junior. Qué equipos la llevan no está definido; Santiago cuenta los casos en `Arkad-test` (BG-37, HU-34). Hasta entonces no se cambia código y los casos los resuelve el administrador a mano.
+- **Marca «equipo externo» (`isExternal`):** **solo informativa** (decisión de Allison del 16-nov, ARK-272 back / ARK-273 front). En Arkad solo hay estudiantes Uninorte, colegios y presentadores externos (HU-39: no se califican y solo reciben certificado). La casilla no cambia la nota (se calcula con los porcentajes de HU-34 para todos) ni dónde compite el equipo: cada uno compite en su nivel y un colegio marcado compite en Colegios. Las ediciones congeladas, anteriores a HU-34, conservan su regla. La etiqueta «Uninorte / Externo» de la galería sigue como dato.
 - Los equipos de **colegios (N0) no tienen código de verificación** (P-25).
 - Detalle: [equipos-y-verificacion](equipos-y-verificacion.md).
 
@@ -24,12 +24,12 @@
 |---|---|---|
 | Escala | 0 a 5, **2 decimales**; la nota final se redondea a 2 decimales antes de comparar empates | P-04 |
 | Evaluaciones mínimas por grupo | **3**. Puede recibir más (suplentes, jurados tardíos) pero **solo cuentan las 3 primeras** (por hora de envío); las demás se guardan. Un grupo con menos de 3 sigue siendo válido y se marca | P-10 |
-| Ponderación profesor/jurados | **Decidida el 6-nov (P-02):** **60 %** el promedio de las notas de los profesores que hayan calificado al grupo y **40 %** el promedio de las notas de los jurados junior. Parámetro por edición con esos valores por defecto (HU-34, Sprint 3, en implementación) | P-02, HU-34 |
+| Ponderación profesor/jurados | **Decidida el 6-nov (P-02):** **60 %** el promedio de las notas de los profesores que hayan calificado al grupo y **40 %** el promedio de las notas de los jurados junior. Parámetro por edición con esos valores por defecto (HU-34, Sprint 3, en implementación). El texto «Nota final: 60 % profesores y 40 % jurados junior» sale en `/tiebreaker` (con lo configurado) y en el Panel de Calificaciones del profesor; en el `/ranking` público dice «jurados», sin «junior» (HU-35). Fuera de `/tiebreaker` el front usa 60/40 fijo, porque solo el Administrador puede leer `GET /settings/weights` (ARK-255) | P-02, HU-34 |
 | Nota incompleta | Si a un grupo le falta la nota de los profesores o la de los jurados junior, queda en **«Nota en proceso»** y sin posición en el ranking. Las ediciones pasadas no cambian. El administrador ve los grupos incompletos antes de liberar la nota (HU-20). Excepción propuesta: colegios (N0), ver sección 2 | HU-34 |
 | Cálculo | Se **unifican** los dos cálculos antiguos (vista del ranking: 50/50 por defecto y promedio ausente = 0; servicio: 60/40 y, si falta un grupo, usa solo el otro) en uno solo con la regla de arriba (SP-02, HU-04, HU-34) | §4.2 #6 |
 | Nota del profesor | Debe validarse 0–5 con 2 decimales en pantalla y backend (hoy solo `>= 0`) | HU-01 |
 | Nota visible al estudiante | Solo la **nota final** (sin desglose), liberada por el administrador **desde las 12:00** | HU-20, HU-30 |
-| Etiqueta de la nota | Decidida el 7-nov (BG-32): **Excelente** 4.50 a 5.00 · **Muy bueno** 4.00 a 4.49 · **Bueno** 3.50 a 3.99 · **Aceptable** 3.00 a 3.49 · **Insuficiente** 0.00 a 2.99. Límite inferior incluido; la nota se redondea a 2 decimales antes de elegir la etiqueta; acompaña solo a la nota final. En el front: `gradeLabel` de `src/lib/grades.ts`, junto a la nota del panel del estudiante (`Scoreboard.tsx`) | BG-32 |
+| Etiqueta de la nota | Decidida el 7-nov (BG-32): **Excelente** 4.50 a 5.00 · **Muy bueno** 4.00 a 4.49 · **Bueno** 3.50 a 3.99 · **Aceptable** 3.00 a 3.49 · **Insuficiente** 0.00 a 2.99. Límite inferior incluido; la nota se redondea a 2 decimales antes de elegir la etiqueta; acompaña solo a la nota final. En el front: `gradeLabel` de `src/features/results/lib/grades.ts`, junto a la nota del panel del estudiante (`Scoreboard.tsx`) | BG-32 |
 
 ## 4. Ranking y desempate
 - **Ranking oficial por nivel (N0–N4).** El ranking general se conserva como vista informativa (P-03).
@@ -41,7 +41,7 @@
   3. Si el profesor no quiere decidir, se aplica la inscripción.
   4. Un empate que mezcla grupos del mismo profesor con otros se resuelve por inscripción.
 - La decisión del profesor queda registrada (`TieBreakDecision`).
-- **Equipos externos (decisión de Allison del 7-nov, por confirmar con el profesor):** sí compiten por el podio, pero con uno **propio** de 3 (configurable), separado de los niveles, porque no pueden competir con los de nivel 1 (HU-38, en el backlog; hoy no está implementado). Los colegios (N0) siguen en su propio nivel.
+- **No hay podio «Externos»** (decisión de Allison del 16-nov; reemplaza la del 7-nov). HU-38 (ARK-219 / ARK-220) armó un grupo «Externos» con podio propio; ARK-272 (back) y ARK-273 (front) lo quitaron de `GET /ranking`, de los ganadores, de los desempates, de `/tiebreaker` y de la pestaña de `/ranking`. Todo equipo compite en su nivel (N0 a N4). Quien no es de Uninorte ni de un colegio se registra como presentador externo (HU-39) y no se califica.
 
 ## 5. Asignación de jurados
 | Regla | Valor | Ref. |

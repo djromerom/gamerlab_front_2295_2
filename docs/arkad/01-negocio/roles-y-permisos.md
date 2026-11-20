@@ -27,6 +27,7 @@
 | Panel de seguimiento (solo lectura para el profesor) | Sí | No | Sí | Solo si es senior | No |
 | Check-in por QR o nombre | Sí | No | No | No | Sí |
 | Tabla de asistencia de jurados (HU-29) | Sí | No | No | No | Sí (solo lectura) |
+| Agregar jurado del día y asignarle grupos automáticamente (HU-24) | Sí | No | No | No | No |
 
 > **Rol nuevo, pendiente (HU-33, Sprint 3): Presentador externo.** Persona que va a la feria y no se califica; solo se registra para obtener el certificado. Puede ser una persona sin equipo (HU-33) o un equipo no calificable que presenta un proyecto (HU-39, 10-nov). La registra **solo el administrador** (no hay auto-registro). No califica, no entra al ranking ni a la asignación, y al entrar solo ve su perfil y si ya se le envió el certificado. El certificado lo envía por correo el administrador; nadie lo descarga desde su cuenta. No aparece en la matriz de arriba hasta que se implemente.
 
