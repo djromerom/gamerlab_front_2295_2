@@ -21,7 +21,6 @@ type Team = {
   tieBreakerScore?: number | null;
   position?: number | null;
   levelPosition?: number | null;
-  tiePending?: boolean;
 };
 
 const glowStyles = `
@@ -208,7 +207,6 @@ export default function RankingPage() {
           levelPosition: normalizeNullableNumber(
             team.levelPosition ?? team.level_position ?? team.position,
           ),
-          tiePending: Boolean(team.tiePending ?? team.tie_pending),
         };
       });
 
@@ -401,11 +399,6 @@ export default function RankingPage() {
                                 <span className="min-w-0 text-gray-200 [overflow-wrap:anywhere]">
                                   {team.name}
                                 </span>
-                                {team.tiePending && (
-                                  <span className="ml-2 rounded-full border border-amber-400/50 px-2 py-0.5 text-xs text-amber-300">
-                                    Empate pendiente
-                                  </span>
-                                )}
                               </div>
                             </td>
 

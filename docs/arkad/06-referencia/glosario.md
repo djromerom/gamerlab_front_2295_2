@@ -23,7 +23,7 @@
 | **Evaluación que cuenta** | De todas las que recibe un grupo, solo las 3 primeras (por hora de envío) entran al promedio |
 | **Código de verificación** | Código del equipo (panel del estudiante) que el jurado digita para calificar ese grupo; N0 no lo tiene |
 | **Hora de alerta / de control** | 10:00 aviso informativo de jurados ausentes; 11:00 control definitivo y suplentes |
-| **Desempate** | Regla para ordenar el ranking con la misma nota (mismo profesor decide; si no, gana la inscripción más antigua) |
+| **Desempate** | Regla para ordenar el ranking con la misma nota: gana la inscripción más antigua y, con la misma fecha, el id de equipo menor (HU-47; antes decidía el profesor) |
 | **Podio** | Los 3 primeros de cada nivel (configurable). No hay podio «Externos» (decisión del 16-nov, ARK-272 / ARK-273) |
 | **Etiqueta de la nota** | Texto junto a la nota final: Excelente (4.50–5.00), Muy bueno (4.00–4.49), Bueno (3.50–3.99), Aceptable (3.00–3.49), Insuficiente (0.00–2.99); BG-32 |
 | **Ponderación** | Porcentajes por edición (`Weighting`). Definida el 6-nov (P-02): **60 %** promedio de los profesores que calificaron al grupo y **40 %** promedio de los jurados junior (HU-34) |

@@ -6,7 +6,7 @@
 
 ## Para qué sirve
 - Los **estudiantes** de 1.º a 4.º semestre (cuyo proyecto final de la materia es el juego que muestran) **inscriben su equipo y su videojuego**, ven a sus jurados y, al final, su nota. También participan **colegios invitados** (nivel N0).
-- Los **profesores** de las materias suben las notas de sus estudiantes por NRC, califican y deciden empates.
+- Los **profesores** de las materias suben las notas de sus estudiantes por NRC, y califican. Los empates del ranking se resuelven solos por fecha de inscripción (HU-47).
 - Los **jurados** califican los juegos en la feria (con un código de verificación del grupo).
 - El **staff** de la mesa de escarapelas registra la llegada de los jurados con un QR.
 - Los **administradores** (organizadores) gestionan ediciones, NRC, jurados, asignaciones, ranking y la página pública.
