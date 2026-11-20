@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: panel del profesor usable a 360 px (BG-76, ARK-295)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): las pantallas del Profesor se usan a 360, 390 y 768 px sin scroll horizontal. En el Panel de Calificaciones, «Cancelar», «Guardar todo» y «Exportar» van en una fila que se envuelve (el título queda arriba hasta 1024 px), igual que las pestañas y el pie de paginación. El buscador de `/colegios-calificar` y `/colegios-evaluados` (también el del jurado) encoge para dejar visible «Buscar». En `/colegios-calificar/:id` la caja «Nota Final» ocupa el ancho en celular (se quitó la clase inválida `w-80px`) y «Enviar Evaluación» va a todo el ancho. La tabla de notas sigue con su propio scroll horizontal dentro de la tarjeta.
+
 ## 2026-11-20: liberar la nota final desde Configuración del evento (HU-46, ARK-302; back ARK-301)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): se borró `/notas-finales` (`FinalGradeReleasePage`) y su enlace «Notas Finales» del menú. La nota final se libera con la tarjeta «Notas finales para los estudiantes» de `/configuracion-evento` (`EventSetupCard`, como las demás): deshabilitada antes de la hora de cierre de la feria con «Se puede activar desde las 12:00 del 26/11/2026 (hora de Colombia).», confirmación con diálogo de la app si hay equipos con la nota en proceso, «Liberada el …» en hora de Bogotá y, si el back rechaza el cambio, vuelve a su estado y muestra su mensaje. Ocultarla vuelve a leer «Ranking público», que el back también apaga (BG-67).

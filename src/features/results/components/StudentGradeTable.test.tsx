@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GRADE_DRAFT_KEY, readGradeDraft } from "@/lib/gradeDrafts";
@@ -139,5 +139,25 @@ describe("StudentGradeTable", () => {
       fireEvent.click(screen.getByRole("button", { name: /guardar todo/i }));
       await waitFor(() => expect(localStorage.getItem(GRADE_DRAFT_KEY)).toBeNull());
     });
+  });
+});
+
+describe("StudentGradeTable · celular a 360 px (ARK-295)", () => {
+  it("en edición, Cancelar, Guardar todo y Exportar van en una fila que se envuelve", () => {
+    mockTeams = [TEAM];
+    renderTable();
+    fireEvent.click(screen.getByRole("button", { name: /editar notas/i }));
+
+    const actions = screen.getByRole("group", { name: "Acciones del panel" });
+    expect(actions.classList).toContain("flex-wrap");
+    const group = within(actions);
+    expect(group.getByRole("button", { name: /cancelar/i })).toBeTruthy();
+    expect(group.getByRole("button", { name: /guardar todo/i })).toBeTruthy();
+    expect(group.getByRole("button", { name: /exportar resultados filtrados/i })).toBeTruthy();
+  });
+
+  it("las pestañas Feria activa e Históricos se envuelven", () => {
+    renderTable();
+    expect(screen.getByRole("tablist", { name: "Vista del panel" }).classList).toContain("flex-wrap");
   });
 });
