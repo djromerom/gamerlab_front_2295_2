@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const apiFetch = vi.fn();
 vi.mock("@/lib/api", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
 
-import { EventSettingError, RANKING_REQUIRES_FINAL_GRADE, updateEventSetting } from "@/features/editions/api/eventSettings";
+import { EventSettingError, RANKING_REQUIRES_FINAL_GRADE, fetchShowRanking, updateEventSetting } from "@/features/editions/api/eventSettings";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
@@ -31,5 +31,20 @@ describe("updateEventSetting", () => {
   it("sin mensaje del back usa uno genérico con el código HTTP", async () => {
     apiFetch.mockResolvedValue(new Response("<html>", { status: 502 }));
     await expect(updateEventSetting("/settings/show-evaluations", "show", true)).rejects.toThrow("error 502");
+  });
+});
+
+describe("fetchShowRanking", () => {
+  it("lee showRanking del objeto o del booleano", async () => {
+    apiFetch.mockResolvedValueOnce(json({ showRanking: true }));
+    await expect(fetchShowRanking()).resolves.toBe(true);
+    expect(apiFetch.mock.calls[0][0]).toBe("http://api.test/settings/show-ranking");
+    apiFetch.mockResolvedValueOnce(json(false));
+    await expect(fetchShowRanking()).resolves.toBe(false);
+  });
+
+  it("si falla, lanza EventSettingError con el código HTTP", async () => {
+    apiFetch.mockResolvedValueOnce(json({}, 500));
+    await expect(fetchShowRanking()).rejects.toMatchObject({ status: 500 });
   });
 });

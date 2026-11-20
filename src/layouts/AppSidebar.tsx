@@ -76,7 +76,6 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Presentadores externos", url: "/presentadores-externos", icon: Presentation },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
         { name: "Contingencia con suplentes", url: "/contingencia-suplentes", icon: LifeBuoy },
-        { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
         { name: "Encuesta de Jurados", url: "/encuesta-jurados", icon: MessageSquareHeart },
       ],
     },

@@ -27,7 +27,6 @@ import JurorCheckInPage from "@/features/jurors/attendance/pages/JurorCheckInPag
 import JurorAttendancePage from "@/features/jurors/attendance/pages/JurorAttendancePage";
 import StaffAccountsPage from "@/features/staff-accounts/pages/StaffAccountsPage";
 import PushNotificationsPage from "@/features/notifications/pages/PushNotificationsPage";
-import FinalGradeReleasePage from "@/features/results/pages/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/features/jurors/survey/pages/JurorSurveyResultsPage";
 import ExternalPresentersPage from "@/features/external-presenters/pages/ExternalPresentersPage";
 import MyRegistrationPage from "@/features/external-presenters/pages/MyRegistrationPage";
@@ -226,11 +225,6 @@ export const routes: RouteConfig[] = [
     path: "/mi-registro",
     element: <MyRegistrationPage />,
     roles: ["Presentador externo"],
-  },
-  {
-    path: "/notas-finales",
-    element: <FinalGradeReleasePage />,
-    roles: ["Administrador"],
   },
   {
     path: "/encuesta-jurados",
