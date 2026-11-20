@@ -14,6 +14,3 @@ export function finalizeSummary(result: { teams: number; levels: unknown[] }): s
   const levels = result.levels.length;
   return `Ranking final definido: ${result.teams} grupos en ${levels} ${levels === 1 ? "nivel" : "niveles"}.`;
 }
-
-/** Pestaña de la vista pública (/ranking): «all» o un prefijo de nivel («n1», «n0»…), que es lo que se le pide al back. */
-export type PublicRankingTab = "all" | `n${number}`;

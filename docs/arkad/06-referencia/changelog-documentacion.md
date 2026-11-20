@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: podio público sin notas en /ranking (HU-48, ARK-307; back ARK-306)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md): el `/ranking` público muestra solo los 3 primeros de cada nivel, sin notas ni ponderación; el ranking completo sigue en `/tiebreaker`.
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md) y [consumo-de-api](../03-frontend/consumo-de-api.md): `/ranking` sin «Todos», sin lista debajo del podio, sin nota en el podio y sin «Nota final: 60 % profesores y 40 % jurados». Una sola consulta a `by-n/all`, pestañas solo de los niveles que llegan, puestos por `levelPosition`, error con «Reintentar». La página ya no llama a `apiFetch` directamente. Se borraron `PUBLIC_FINAL_GRADE_WEIGHTING_TEXT`, `splitByFinalScore` y `PublicRankingTab`, que solo usaba esta página.
+
 ## 2026-11-20: el profesor ya no ve el panel de seguimiento (ARK-297)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md) y [roles-y-permisos](../01-negocio/roles-y-permisos.md): `/realtime-tracking-panel` queda solo para el Administrador; el Profesor que abre la URL llega a «Acceso No Autorizado». Su menú pierde «Seguimiento → Avance por hora» («Empates del ranking» ya salió con HU-47, ARK-305). Pedido del profesor del 19-nov. Los endpoints de lectura que HU-12 abrió al profesor siguen igual en el back; solo se quitó la pantalla.

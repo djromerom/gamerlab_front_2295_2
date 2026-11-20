@@ -19,9 +19,3 @@ export const DEFAULT_FINAL_GRADE_WEIGHTING_TEXT = formatFinalGradeWeighting(
   DEFAULT_FINAL_GRADE_WEIGHTS.seniorPct,
   DEFAULT_FINAL_GRADE_WEIGHTS.juniorPct,
 );
-
-/**
- * Versión para el público (`/ranking`): HU-35 (6-nov) pide que en lo que ven los jurados y los
- * usuarios finales solo diga «jurados», sin junior ni senior.
- */
-export const PUBLIC_FINAL_GRADE_WEIGHTING_TEXT = `Nota final: ${DEFAULT_FINAL_GRADE_WEIGHTS.seniorPct} % profesores y ${DEFAULT_FINAL_GRADE_WEIGHTS.juniorPct} % jurados`;

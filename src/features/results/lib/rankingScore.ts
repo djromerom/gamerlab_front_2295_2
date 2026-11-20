@@ -23,14 +23,3 @@ export function missingScoreMessage(missing?: MissingScore[]): string {
   if (missing?.includes("JUROR")) return "Falta la nota de jurados";
   return "Nota en proceso";
 }
-
-/** Separa los equipos con nota de los que no tienen, sin cambiar el orden en que llegaron. */
-export function splitByFinalScore<T extends { finalScore: number | null }>(teams: T[]) {
-  const scored: (T & { finalScore: number })[] = [];
-  const unscored: T[] = [];
-  for (const team of teams) {
-    if (hasFinalScore(team.finalScore)) scored.push(team as T & { finalScore: number });
-    else unscored.push(team);
-  }
-  return { scored, unscored };
-}

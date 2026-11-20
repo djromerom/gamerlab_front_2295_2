@@ -3,7 +3,6 @@ import {
   formatFinalScore,
   hasFinalScore,
   missingScoreMessage,
-  splitByFinalScore,
 } from "@/features/results/lib/rankingScore";
 
 describe("nota final en el ranking (ARK-238)", () => {
@@ -26,17 +25,5 @@ describe("nota final en el ranking (ARK-238)", () => {
     expect(missingScoreMessage(["PROFESSOR"])).toBe("Falta la nota de profesores");
     expect(missingScoreMessage(["JUROR"])).toBe("Falta la nota de jurados");
     expect(missingScoreMessage()).toBe("Nota en proceso");
-  });
-
-  it("separa a los equipos sin nota y conserva el orden de los dos grupos", () => {
-    const teams = [
-      { id: 1, finalScore: 4.4 },
-      { id: 2, finalScore: null },
-      { id: 3, finalScore: 0 },
-      { id: 4, finalScore: null },
-    ];
-    const { scored, unscored } = splitByFinalScore(teams);
-    expect(scored.map((t) => t.id)).toEqual([1, 3]);
-    expect(unscored.map((t) => t.id)).toEqual([2, 4]);
   });
 });
