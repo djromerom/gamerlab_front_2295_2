@@ -48,7 +48,7 @@ function setup(version = 0) {
     onChange: (state) => states.push(state),
   });
   const last = () => states[states.length - 1];
-  return { save, saver, last };
+  return { save, saver, last, states };
 }
 
 const form = (score: string, comments = "") => ({ scores: { 1: score }, comments });
@@ -229,6 +229,70 @@ describe("DraftAutosaver", () => {
     expect(initial.source).toBe("local");
     expect(initial.form?.scores).toEqual(sixCriteria(6).scores);
     expect(initial.needsSync).toBe(true);
+  });
+
+  describe("sin llegada registrada en la mesa (BG-71, ARK-286)", () => {
+    const notCheckedIn = () =>
+      new DraftRequestError("not-checked-in", "Registra tu llegada en la mesa de ARKAD para poder calificar.");
+
+    it("conserva lo escrito en local, muestra el aviso y guarda solo cuando registran la llegada", async () => {
+      const { save, saver, last } = setup(0);
+      save.mockRejectedValueOnce(notCheckedIn()).mockRejectedValueOnce(notCheckedIn()).mockResolvedValueOnce(saved(1));
+
+      saver.schedule(form("4", "Buen arte"));
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(last()).toMatchObject({
+        status: "not-checked-in",
+        message: "Registra tu llegada en la mesa de ARKAD para poder calificar.",
+      });
+      expect(readBackup(ID)).toMatchObject({ scores: { 1: "4" }, comments: "Buen arte", baseVersion: 0 });
+
+      // Reintenta solo, sin que el jurado escriba: todavía no hay llegada.
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(save).toHaveBeenCalledTimes(2);
+      expect(last().status).toBe("not-checked-in");
+      expect(readBackup(ID)).not.toBeNull();
+
+      // La mesa registró la llegada: el siguiente reintento guarda y borra la copia local.
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(save).toHaveBeenCalledTimes(3);
+      expect(save.mock.calls[2][1]).toMatchObject({ version: 0, comments: "Buen arte" });
+      expect(last()).toMatchObject({ status: "saved", message: null });
+      expect(localStorage.getItem(backupKey(ID))).toBeNull();
+    });
+
+    it("lo que escribe después del aviso queda en local y sale con el siguiente guardado, sin pasar por «Guardando…»", async () => {
+      const { save, saver, last, states } = setup(2);
+      save.mockRejectedValueOnce(notCheckedIn()).mockRejectedValueOnce(notCheckedIn());
+
+      saver.schedule(form("1"));
+      await vi.advanceTimersByTimeAsync(2500);
+      const warnedAt = states.length;
+
+      saver.schedule(form("3", "Sigue escribiendo"));
+      expect(readBackup(ID)).toMatchObject({ scores: { 1: "3" }, comments: "Sigue escribiendo", baseVersion: 2 });
+      await vi.advanceTimersByTimeAsync(2500);
+
+      expect(save).toHaveBeenCalledTimes(2);
+      expect(save.mock.calls[1][1]).toMatchObject({ version: 2, comments: "Sigue escribiendo" });
+      // El aviso no parpadea entre reintentos.
+      expect(states.slice(warnedAt).map((state) => state.status)).not.toContain("saving");
+      expect(states.slice(warnedAt).map((state) => state.status)).not.toContain("pending");
+      expect(last().status).toBe("not-checked-in");
+    });
+
+    it("al salir de la pantalla no reintenta y la copia local queda para la próxima vez", async () => {
+      const { save, saver } = setup(0);
+      save.mockRejectedValue(notCheckedIn());
+
+      saver.schedule(form("4"));
+      await vi.advanceTimersByTimeAsync(2500);
+      saver.dispose();
+      await vi.advanceTimersByTimeAsync(60000);
+
+      expect(save).toHaveBeenCalledTimes(2); // el del aviso y el de dispose; ningún reintento
+      expect(readBackup(ID)?.scores).toEqual({ 1: "4" });
+    });
   });
 
   it("no crea un borrador vacío", async () => {

@@ -15,6 +15,8 @@ import {
   type InitialDraft,
   type ServerDraft,
 } from "@/lib/evaluationDrafts";
+import { NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
+import { toast } from "sonner";
 
 export interface LoadedDraft extends InitialDraft {
   remote: ServerDraft | null;
@@ -52,20 +54,38 @@ export async function loadInitialDrafts(videogameIds: number[]): Promise<Map<num
   return new Map(videogameIds.map((id) => [id, resolveInitial(id, byId.get(id) ?? null)]));
 }
 
+/** Id fijo del toast «Registra tu llegada…»: si ya está en pantalla, no se apila otro. */
+export const NOT_CHECKED_IN_TOAST_ID = "juror-not-checked-in";
+
 /**
  * HU-18: un autoguardador por juego. `start` lo crea con la versión cargada;
  * `schedule` se llama con el formulario completo en cada cambio.
+ * BG-71: sin llegada registrada, el autoguardado avisa con un toast una sola vez por pantalla
+ * (no uno por cada reintento ni por cada juego del lote). Si después guarda y vuelve a pasar
+ * (por ejemplo, anularon la llegada), avisa otra vez.
  */
 export function useDraftAutosave() {
   const savers = useRef(new Map<number, DraftAutosaver>());
   const [states, setStates] = useState<Record<number, AutosaveState>>({});
+  const warnedNotCheckedIn = useRef(false);
 
   const start = useCallback((videogameId: number, initial: Pick<LoadedDraft, "version" | "form" | "needsSync">) => {
     savers.current.get(videogameId)?.dispose();
     const saver = new DraftAutosaver({
       videogameId,
       version: initial.version,
-      onChange: (state) => setStates((prev) => ({ ...prev, [videogameId]: state })),
+      onChange: (state) => {
+        setStates((prev) => ({ ...prev, [videogameId]: state }));
+        if (state.status === "saved") {
+          warnedNotCheckedIn.current = false;
+        } else if (state.status === "not-checked-in" && !warnedNotCheckedIn.current) {
+          warnedNotCheckedIn.current = true;
+          toast.warning(state.message ?? NOT_CHECKED_IN_MESSAGE, {
+            id: NOT_CHECKED_IN_TOAST_ID,
+            description: "Lo que escribas queda guardado en este dispositivo y se sube cuando registren tu llegada.",
+          });
+        }
+      },
     });
     savers.current.set(videogameId, saver);
     // Lo escrito sin red se sube apenas se abre la pantalla.

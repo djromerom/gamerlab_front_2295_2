@@ -8,12 +8,13 @@ import { INITIAL_AUTOSAVE_STATE } from "@/features/grading/lib/draftAutosaver";
 const mocks = vi.hoisted(() => ({
   apiFetch: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
   initialForm: null as { scores: Record<number, string>; comments: string } | null,
 }));
 
 vi.mock("@/lib/api", () => ({ apiFetch: mocks.apiFetch }));
 vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError, info: vi.fn(), success: vi.fn() },
+  toast: { error: mocks.toastError, info: vi.fn(), success: mocks.toastSuccess },
 }));
 vi.mock("@/layouts/LayoutApplication", () => ({
   default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
@@ -61,6 +62,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  mocks.apiFetch.mockReset();
 });
 
 describe("RatePage · criterios vacíos (ARK-249)", () => {
@@ -126,5 +128,68 @@ describe("RatePage · criterios vacíos (ARK-249)", () => {
     const message =
       "Cada puntaje debe ser un número entre 0 y 5: no puede ser nulo, vacío ni texto. Un 0 debe enviarse de forma explícita.";
     await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(message));
+  });
+});
+
+describe("RatePage · sin llegada registrada en la mesa (BG-71, ARK-286)", () => {
+  const notCheckedIn = () =>
+    new Response(
+      JSON.stringify({
+        statusCode: 409,
+        code: "JUROR_NOT_CHECKED_IN",
+        message: "Registra tu llegada en la mesa de ARKAD para poder calificar.",
+      }),
+      { status: 409 },
+    );
+  const MESSAGE = "Registra tu llegada en la mesa de ARKAD para poder calificar.";
+  const scoreInput = (id: number) => document.getElementById(`criterion-score-${id}`) as HTMLInputElement;
+
+  it("muestra el aviso, conserva lo escrito y al reintentar envía lo mismo con la misma clave", async () => {
+    mocks.initialForm = { scores: { 1: "4", 2: "3.5", 3: "5" }, comments: "Muy buen arte" };
+    mocks.apiFetch
+      .mockResolvedValueOnce(notCheckedIn())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ evaluationId: 1 }), { status: 201 }));
+    renderPage();
+    await screen.findByText("Criterios de Evaluación");
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar Evaluación" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar Envío" }));
+
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(MESSAGE));
+    // No se envió nada y el formulario queda igual.
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    expect([1, 2, 3].map((id) => scoreInput(id).value)).toEqual(["4", "3.5", "5"]);
+    expect((screen.getByPlaceholderText("Escribe tus comentarios sobre el juego...") as HTMLTextAreaElement).value).toBe(
+      "Muy buen arte",
+    );
+
+    // La mesa registró la llegada: reintenta con el mismo formulario.
+    fireEvent.click(screen.getByRole("button", { name: "Enviar Evaluación" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar Envío" }));
+    await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalled());
+
+    expect(mocks.apiFetch).toHaveBeenCalledTimes(2);
+    const [first, second] = mocks.apiFetch.mock.calls.map((call) => call[1]);
+    expect(second.headers["Idempotency-Key"]).toBe(first.headers["Idempotency-Key"]);
+    expect(second.body).toBe(first.body);
+  });
+
+  it("un 409 con otro code no se confunde con la falta de llegada", async () => {
+    mocks.initialForm = { scores: { 1: "4", 2: "3", 3: "5" }, comments: "" };
+    mocks.apiFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ statusCode: 409, message: "Ya existe una evaluación para este videojuego con contenido distinto." }), {
+        status: 409,
+      }),
+    );
+    renderPage();
+    await screen.findByText("Criterios de Evaluación");
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar Evaluación" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar Envío" }));
+
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith("Ya existe una evaluación para este videojuego con contenido distinto."),
+    );
+    expect(mocks.toastError).not.toHaveBeenCalledWith(MESSAGE);
   });
 });
