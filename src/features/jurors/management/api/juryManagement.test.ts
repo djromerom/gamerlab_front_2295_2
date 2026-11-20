@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/lib/api";
-import { juryManagement } from "./juryManagement";
+import { BULK_SAVE_FAILED_MESSAGE, juryManagement } from "./juryManagement";
 
 vi.mock("@/lib/api", () => ({ apiFetch: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), loading: vi.fn() } }));
@@ -150,6 +150,113 @@ describe("juryManagement: asignación manual con nivel (ARK-189)", () => {
       success: false,
       message: "El jurado ya está asignado a este equipo.",
     });
+  });
+});
+
+describe("juryManagement.bulkAssignment: varios equipos a un jurado (HU-42, ARK-276)", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  const bulkResult = {
+    message: "Se asignaron 2 equipos al jurado. 1 equipo no se asignó por un bloqueo.",
+    edicion: { id: 5, title: "Feria Gamer 2026-30" },
+    jurado: { id: "j-1", nombre: "Ana Pérez" },
+    resultados: [
+      { equipoId: 12, codigo: "N1-AYP-06", nombre: "Los Pixeles", videojuego: "Pixel Quest", estado: "ASSIGNED", advertencias: [], cantidadJurados: 3, bloqueo: null },
+    ],
+    totales: { solicitados: 1, asignados: 1, bloqueados: 0 },
+    advertenciasAceptadas: [],
+  };
+
+  it("llama a POST /juror/assignments/bulk sin confirmWarnings y devuelve el resultado", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json(bulkResult, 200));
+
+    expect(await juryManagement.bulkAssignment("j-1", [12, 15])).toEqual({
+      success: true,
+      message: bulkResult.message,
+      result: bulkResult,
+    });
+    const [url, init] = vi.mocked(apiFetch).mock.calls[0];
+    expect(String(url)).toBe("http://api.test/juror/assignments/bulk");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({ jurorId: "j-1", teamIds: [12, 15] });
+  });
+
+  it("al confirmar envía confirmWarnings: true", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json(bulkResult, 200));
+
+    await juryManagement.bulkAssignment("j-1", [12, 15], true);
+
+    expect(JSON.parse(vi.mocked(apiFetch).mock.calls[0][1].body as string)).toEqual({
+      jurorId: "j-1",
+      teamIds: [12, 15],
+      confirmWarnings: true,
+    });
+  });
+
+  it("con todos bloqueados (200) también devuelve el resultado, no un error", async () => {
+    const allBlocked = {
+      ...bulkResult,
+      message: "No se asignó ningún equipo: 1 equipo tiene un bloqueo.",
+      resultados: [{ ...bulkResult.resultados[0], estado: "BLOCKED", cantidadJurados: null, bloqueo: { code: "DUPLICATE_ASSIGNMENT", message: "Ya asignado." } }],
+      totales: { solicitados: 1, asignados: 0, bloqueados: 1 },
+    };
+    vi.mocked(apiFetch).mockResolvedValueOnce(json(allBlocked, 200));
+
+    const res = await juryManagement.bulkAssignment("j-1", [12, 15]);
+    expect(res.success).toBe(true);
+  });
+
+  it("un 409 ASSIGNMENT_WARNINGS devuelve las advertencias y los equipos que no se asignarán", async () => {
+    const warning = { code: "JUROR_OVER_LIMIT", message: "Quedaría con 5 grupos", jurorId: "j-1" };
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json(
+        {
+          statusCode: 409,
+          code: "ASSIGNMENT_WARNINGS",
+          message: "La asignación rompe reglas de asignación.",
+          warnings: [warning],
+          blocked: [{ teamId: 18, codigo: "N0-COLEGIOS-01", code: "SCHOOL_REQUIRES_SENIOR", message: "Solo senior." }],
+        },
+        409,
+      ),
+    );
+
+    expect(await juryManagement.bulkAssignment("j-1", [12, 18])).toEqual({
+      success: false,
+      message: "La asignación rompe reglas de asignación.",
+      warnings: [warning],
+      blocked: [{ teamId: 18, codigo: "N0-COLEGIOS-01", code: "SCHOOL_REQUIRES_SENIOR", message: "Solo senior." }],
+    });
+  });
+
+  it("un 400 del jurado devuelve el mensaje del back; si es una lista la une", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json({ statusCode: 400, code: "MISSING_JUROR_CATEGORY", message: "El jurado no tiene categoría." }, 400),
+    );
+    expect(await juryManagement.bulkAssignment("j-1", [1, 2])).toEqual({
+      success: false,
+      message: "El jurado no tiene categoría.",
+    });
+
+    vi.mocked(apiFetch).mockResolvedValueOnce(
+      json({ statusCode: 400, message: ["teamIds no debe tener repetidos", "teamIds debe tener como máximo 50"] }, 400),
+    );
+    expect((await juryManagement.bulkAssignment("j-1", [1, 1])).message).toBe(
+      "teamIds no debe tener repetidos. teamIds debe tener como máximo 50",
+    );
+  });
+
+  it("un 500 dice que no cambió nada y que se puede reintentar; un 403 que solo puede el administrador", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "Internal server error" }, 500));
+    expect(await juryManagement.bulkAssignment("j-1", [1, 2])).toEqual({
+      success: false,
+      message: BULK_SAVE_FAILED_MESSAGE,
+    });
+
+    vi.mocked(apiFetch).mockResolvedValueOnce(json({ message: "Forbidden resource" }, 403));
+    expect((await juryManagement.bulkAssignment("j-1", [1, 2])).message).toBe(
+      "Solo el administrador puede asignar equipos a los jurados.",
+    );
   });
 });
 
