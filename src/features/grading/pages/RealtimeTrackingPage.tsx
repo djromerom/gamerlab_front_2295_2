@@ -93,8 +93,8 @@ const columnHelp = {
   level: "Nivel del grupo.",
   assigned: "Jurados asignados al grupo.",
   present: "Jurados asignados que ya llegaron.",
-  received: "Evaluaciones enviadas al grupo.",
-  counted: "Evaluaciones que cuentan para el seguimiento.",
+  received: "Evaluaciones de jurados enviadas al grupo. No incluye la nota del profesor.",
+  counted: "Evaluaciones de jurados que cuentan para el seguimiento (las 3 primeras). No incluye la nota del profesor.",
 };
 
 function ColumnHeader({ label, help }: { label: string; help: string }) {
