@@ -309,6 +309,77 @@
     .arkad-landing .reglas { font-size: 13px; gap: 8px; margin: 10px 0 14px; } .arkad-landing .ico { width: 26px; height: 26px; }
     .arkad-landing .pildora { padding: 5px 10px; font-size: 11px; } .arkad-landing .energia .txt { display: none; }
   }
+  /* ── Récords globales (HU-52): top 5 de cada juego bajo las portadas y panel en las tarjetas de fin ── */
+  .arkad-landing #zona-arkad { flex-direction: column; }
+  .arkad-landing .records-zona { flex-shrink: 0; }
+  .arkad-landing .records-zona[hidden], .arkad-landing .records-globales[hidden] { display: none; }
+  .arkad-landing .records-globales { margin-top: clamp(8px,1.4vh,14px); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px,1.6vw,22px); }
+  .arkad-landing .records-juego { min-width: 0; padding: 8px 10px 10px; border-radius: 16px; background: rgba(5,10,36,.6); border: 1px solid rgba(255,255,255,.2); }
+  .arkad-landing .records-titulo { margin: 0 0 6px 2px; font-size: 10px; font-weight: 700; letter-spacing: .16em; color: #C9D6FF; }
+  .arkad-landing .records-vacio { margin: 0 0 0 2px; font-size: 13px; color: #D5DDFA; }
+  .arkad-landing .records-lista { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .arkad-landing .records-lista li { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 7px; align-items: center; padding: 5px 8px; border-radius: 10px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); }
+  .arkad-landing .records-lista li:first-child { border-color: rgba(255,229,138,.6); background: rgba(255,229,138,.1); }
+  .arkad-landing .records-lista .puesto { grid-row: span 2; font: 800 13px/1 Unbounded, sans-serif; color: #C9D6FF; }
+  .arkad-landing .records-lista li:first-child .puesto { color: #FFE58A; }
+  .arkad-landing .records-lista .quien { min-width: 0; display: flex; flex-direction: column; }
+  .arkad-landing .records-lista .alias, .arkad-landing .records-lista small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arkad-landing .records-lista .alias { font-size: 12px; font-weight: 700; color: #fff; }
+  .arkad-landing .records-lista small { font-size: 10px; color: #C9D6FF; }
+  .arkad-landing .records-lista b { font: 800 13px/1.2 Unbounded, sans-serif; color: #fff; }
+  /* solo el Administrador: «x» para quitar un alias grosero o un puntaje falso */
+  .arkad-landing .records-lista li { position: relative; }
+  .arkad-landing .records-quitar { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border-radius: 8px;
+    border: 1px solid rgba(255,154,168,.6); background: rgba(5,10,36,.85); color: #ffb3bf; cursor: pointer; }
+  .arkad-landing .records-quitar:hover { background: #ff5d73; color: #fff; }
+  .arkad-landing .records-quitar:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+  .arkad-landing .records-quitar:disabled { opacity: .5; cursor: default; }
+  .arkad-landing .records-aviso { grid-column: 1 / -1; margin: 0; font-size: 13px; font-weight: 600; color: #ffb3bf; }
+  @media (max-width: 767px) {
+    /* celular: los dos juegos lado a lado, cada top se desliza de lado (la página no se mueve) */
+    .arkad-landing .records-globales { gap: 8px; }
+    .arkad-landing .records-lista { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .arkad-landing .records-lista li { scroll-snap-align: start; }
+    .arkad-landing .records-titulo { letter-spacing: .08em; }
+  }
+  /* celular acostado: no hay alto para el top; se ve al terminar cada partida */
+  @media (orientation: landscape) and (max-height: 520px) { .arkad-landing .records-zona { display: none; } }
+
+  /* tarjetas de fin con el panel del récord global: si no cabe, la tarjeta se desplaza por dentro */
+  .arkad-landing #jFin .tarjeta-juego, .arkad-landing #jamResultado .tarjeta-juego { max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+  .arkad-landing .record-global { margin: 0 0 16px; display: grid; gap: 8px; text-align: left; }
+  .arkad-landing .record-global[hidden] { display: none; }
+  .arkad-landing .resultado + .record-global { margin-top: -6px; }
+  .arkad-landing .record-global-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; padding: 8px 14px; border-radius: 12px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); }
+  .arkad-landing .record-global-fila small { flex-shrink: 0; font-size: 11px; font-weight: 600; letter-spacing: .12em; color: #C9D6FF; }
+  .arkad-landing .record-global-fila b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 18px/1.2 Unbounded, sans-serif; }
+  .arkad-landing .record-global-alias { margin-left: 4px; font: 700 13px Inter, sans-serif; color: #FFE58A; }
+  .arkad-landing .record-global-vacio { font-size: 13px; color: #D5DDFA; text-align: right; }
+  .arkad-landing .record-global-nota { margin: 0; font-size: 13px; line-height: 1.4; color: #D5DDFA; }
+  .arkad-landing .record-global-form { display: grid; gap: 6px; padding: 12px; border-radius: 14px; border: 1px solid rgba(255,229,138,.55); background: rgba(255,229,138,.08); }
+  .arkad-landing .record-global-form label { font-size: 13px; font-weight: 700; color: #FFE58A; }
+  .arkad-landing .record-global-campo { display: flex; gap: 8px; }
+  /* la cabina no deja seleccionar texto (para tocar el juego): el campo sí (en iOS, sin esto no se puede escribir) */
+  .arkad-landing .record-global-campo input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.4); background: rgba(5,10,36,.75);
+    color: #fff; font: 600 16px Inter, sans-serif; cursor: text; user-select: text; -webkit-user-select: text; }
+  .arkad-landing .record-global-campo input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .arkad-landing .record-global-campo input[aria-invalid="true"] { border-color: #ff9aa8; }
+  .arkad-landing .record-global-guardar { flex-shrink: 0; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #FFE58A; color: #050a24;
+    font: 700 14px Inter, sans-serif; cursor: pointer; }
+  .arkad-landing .record-global-guardar:disabled { opacity: .7; cursor: default; }
+  .arkad-landing .record-global-guardar:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .arkad-landing .record-global-ayuda, .arkad-landing .record-global-error { margin: 0; font-size: 12px; line-height: 1.4; color: #C9D6FF; }
+  .arkad-landing .record-global-error { font-weight: 600; color: #ffb3bf; }
+  .arkad-landing .record-global-logro { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.35; color: #FFE58A; outline: none; }
+  .arkad-landing .record-global-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .arkad-landing .record-global-top li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px;
+    background: rgba(255,255,255,.06); font-size: 13px; }
+  .arkad-landing .record-global-top li[aria-current] { background: rgba(255,229,138,.18); box-shadow: inset 0 0 0 1px rgba(255,229,138,.6); }
+  .arkad-landing .record-global-top .puesto { font: 800 12px Unbounded, sans-serif; color: #C9D6FF; }
+  .arkad-landing .record-global-top .alias { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .arkad-landing .record-global-top b { font: 800 13px Unbounded, sans-serif; }
   /* ── Pie de página: créditos al final ── */
   .arkad-landing .pie-pagina { flex-shrink: 0; margin: clamp(8px,1.4vh,14px) 0 0; text-align: center; font-size: 12px; line-height: 1.4; color: #C9D6FF; }
   /* en celular, a la izquierda: no queda debajo de los botones flotantes */

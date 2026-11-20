@@ -108,6 +108,7 @@ export function mountMiniGames(seccion: HTMLElement): MiniGamesHandle {
     if (anterior) controles[anterior]?.desactivar();
     juegoActivo = id;
     portadas.hidden = !!id;
+    $j("recordsGlobales").hidden = !!id; // el top 5 global va con las portadas
     cabina.hidden = !id;
     volver.hidden = !id;
     $j("volumen").hidden = !id;

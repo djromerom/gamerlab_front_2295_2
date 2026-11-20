@@ -18,6 +18,7 @@ import { WHITE_KEYS, SONGS, FREE_LANES, NOTE_COLORS, LEVELS, lanesFor } from "./
 import { accompaniment } from "./accompaniment";
 import type { GameContext } from "./gameContext";
 import type { Instrument } from "./songs";
+import { announceMinigameFinished, jamTrack } from "@/features/public/lib/minigameRecords";
 
 
 export function mountArkadJam(c: GameContext) {
@@ -313,6 +314,8 @@ export function mountArkadJam(c: GameContext) {
     $j('jamResDetalle').textContent = `${c.perfectos} perfectas · ${c.bienes} bien · ${c.fallos} fallos · ${c.sostOk}/${c.sostTotal} sostenidas · combo máximo ${c.maxCombo}`;
     mostrar(pResultado, true); $j('jamOtra').focus({ preventScroll: true });
     $j('jAnuncio').textContent = `${c.def.nombre}: ${c.puntos} puntos, precisión ${Math.round(precision * 100)} por ciento.`;
+    // récord global de la canción (HU-52): la pista es el mismo sufijo de la clave local (arkadjam-guitarra-3 → guitarra-3)
+    announceMinigameFinished({ game: 'ARKAD_JAM', track: jamTrack(actual, c.indice), score: c.puntos, best: Math.max(antes, c.puntos) });
   }
   let ultimaCancion = 0;
   on($j('jamOtra'), 'click', () => empezarCancion(ultimaCancion));
