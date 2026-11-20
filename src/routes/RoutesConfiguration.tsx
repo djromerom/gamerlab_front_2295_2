@@ -103,7 +103,8 @@ export const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPage />,
-    roles: ["Administrador", "Profesor"],
+    // ARK-297: el seguimiento es solo de la organización; el profesor ya no lo ve.
+    roles: ["Administrador"],
   },
   {
     // HU-14 (ARK-214): grupos en riesgo y sugerencia de suplentes
