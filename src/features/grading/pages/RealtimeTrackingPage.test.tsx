@@ -305,6 +305,88 @@ describe("Panel de alertas HU-12 (ARK-180)", () => {
     });
   });
 
+  describe("«No podrá asistir» y grupos de cada ausente (HU-44, ARK-294)", () => {
+    const withGroups = {
+      groups: [{ teamId: 41, teamCode: "N2-AYP-07", level: "N2", evaluated: false }],
+      pendingGroups: 1,
+    };
+    const notComing = {
+      ...alert.missingJurors[0],
+      ...withGroups,
+      jurorId: "j9",
+      name: "Ana Ruiz",
+      state: "ABSENT",
+      notComing: true,
+      notComingSince: "2026-11-26T14:40:00.000Z",
+    };
+
+    it("cada ausente muestra sus grupos con el nivel y cuántos le faltan", async () => {
+      mocks.fetchAbsenceAlert.mockResolvedValue({
+        ...alert,
+        missingJurors: [{ ...alert.missingJurors[0], ...withGroups }],
+      });
+      renderPanel();
+
+      expect(await screen.findByText("Grupos: N2-AYP-07 · N2")).toBeTruthy();
+      expect(screen.getByText("Le faltan 1 por calificar")).toBeTruthy();
+    });
+
+    it("el bloque «No vendrán» sale aunque la alerta no esté activa, con sus grupos y el botón a Contingencia", async () => {
+      mocks.fetchAbsenceAlert.mockResolvedValue({
+        ...alert,
+        phase: "BEFORE_ALERT",
+        alertActive: false,
+        totals: { present: 42, missing: 70, notComing: 1, total: 113 },
+        missingJurors: [],
+        notComingJurors: [notComing],
+      });
+      renderPanel();
+
+      const block = (await screen.findByRole("heading", { name: "No vendrán (1)" })).closest("section")!;
+      expect(within(block).getByText("Ana Ruiz")).toBeTruthy();
+      expect(within(block).getByText("Grupos: N2-AYP-07 · N2")).toBeTruthy();
+      expect(within(block).getByText(/Desde las/)).toBeTruthy();
+      expect(within(block).getByRole("link", { name: /Cubrir con suplentes/ }).getAttribute("href"))
+        .toBe("/contingencia-suplentes");
+      expect(within(block).getByRole("button", { name: "Registrar respuesta de Ana Ruiz" })).toBeTruthy();
+      expect(screen.getByText("70")).toBeTruthy();
+    });
+
+    it("el profesor ve el bloque sin botones", async () => {
+      mocks.role = "Profesor";
+      mocks.fetchAbsenceAlert.mockResolvedValue({ ...alert, notComingJurors: [notComing] });
+      renderPanel();
+
+      const block = (await screen.findByRole("heading", { name: "No vendrán (1)" })).closest("section")!;
+      expect(within(block).queryByRole("link", { name: /Cubrir con suplentes/ })).toBeNull();
+      expect(within(block).queryByRole("button")).toBeNull();
+    });
+
+    it("sin jurados que no vendrán (o con un back anterior) no aparece el bloque", async () => {
+      renderPanel();
+      await screen.findByText("Alerta informativa de inasistencia");
+      expect(screen.queryByRole("heading", { name: /No vendrán/ })).toBeNull();
+    });
+
+    it("el diálogo explica cada respuesta y al guardar recarga la alerta", async () => {
+      renderPanel();
+      await screen.findByText("Alerta informativa de inasistencia");
+      fireEvent.click(screen.getByRole("button", { name: "Registrar respuesta de Luis Gómez" }));
+      const dialog = await screen.findByRole("dialog", { name: "Registrar respuesta de Luis Gómez" });
+
+      expect(within(dialog).getAllByText(/Solo queda como nota/)).toHaveLength(2);
+      expect(within(dialog).getByText(/Pasa a «No vendrán»/)).toBeTruthy();
+
+      const callsBefore = mocks.fetchAbsenceAlert.mock.calls.length;
+      fireEvent.click(within(dialog).getByLabelText(/No podrá asistir/));
+      fireEvent.click(within(dialog).getByRole("button", { name: "Registrar respuesta" }));
+
+      await screen.findByText("Respuesta registrada.");
+      expect(mocks.recordAbsentJurorResponse).toHaveBeenCalledWith({ jurorId: "j1", result: "CANNOT_ATTEND" });
+      await waitFor(() => expect(mocks.fetchAbsenceAlert.mock.calls.length).toBeGreaterThan(callsBefore));
+    });
+  });
+
   it("mantiene la última lista si una actualización falla", async () => {
     renderPanel();
     await screen.findByText("Pixel Pioneers");

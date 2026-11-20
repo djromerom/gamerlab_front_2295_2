@@ -156,6 +156,18 @@ describe("Contingencia con suplentes (HU-14, ARK-214)", () => {
     expect(screen.getByText(/Aún no es la hora de control \(11:00\): se cuentan todos los asignados/)).toBeTruthy();
   });
 
+  it("marca al jurado que avisó que no vendrá (HU-44)", async () => {
+    const withNotComing = {
+      ...pixelHunters,
+      jurados: pixelHunters.jurados.map((juror) => (juror.id === "j-ana" ? { ...juror, noVendra: true } : juror)),
+    };
+    api.fetchContingencySuggestions.mockResolvedValue(resultOf([withNotComing], { fase: "ALERT", base: "ASSIGNED" }));
+    renderPage();
+    await flush();
+
+    expect(within(card("N1-AYP-06")).getByText("No vendrá")).toBeTruthy();
+  });
+
   it("sin grupos en riesgo muestra el estado vacío y desactiva «Aceptar todo»", async () => {
     api.fetchContingencySuggestions.mockResolvedValue(resultOf([]));
     renderPage();

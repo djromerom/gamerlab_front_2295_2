@@ -21,6 +21,15 @@ export interface FairSchedule {
   closeTime: string;
 }
 
+/** HU-44 (ARK-293): un grupo asignado a un jurado de la alerta. */
+export interface AlertJurorGroup {
+  teamId: number;
+  teamCode: string;
+  level: string | null;
+  /** El jurado ya envió su evaluación de este grupo. */
+  evaluated: boolean;
+}
+
 export interface AlertJuror {
   jurorId: string;
   name: string;
@@ -30,6 +39,15 @@ export interface AlertJuror {
   state: JurorAttendanceState;
   checkedInAt: string | null;
   hasEvaluated?: boolean;
+  /**
+   * HU-44: «No podrá asistir» vigente (ausente confirmado). Opcionales hasta que el back de
+   * ARK-293 esté en el ambiente: sin ellos la pantalla se ve como antes.
+   */
+  notComing?: boolean;
+  notComingSince?: string | null;
+  /** HU-44: sus grupos y cuántos le faltan por calificar (solo en la alerta, no en el panel). */
+  groups?: AlertJurorGroup[];
+  pendingGroups?: number;
 }
 
 export interface AlertGroup {
@@ -51,8 +69,11 @@ export interface AbsenceAlertResult {
   phase: FairPhase;
   alertActive: boolean;
   generatedAt: string;
-  totals: { present: number; missing: number; total: number };
+  /** `missing` ya no cuenta a los que no vendrán; `notComing` los cuenta aparte (HU-44). */
+  totals: { present: number; missing: number; notComing?: number; total: number };
   missingJurors: AlertJuror[];
+  /** HU-44: «No vendrán», a cualquier hora. */
+  notComingJurors?: AlertJuror[];
   groups: AlertGroup[];
 }
 
