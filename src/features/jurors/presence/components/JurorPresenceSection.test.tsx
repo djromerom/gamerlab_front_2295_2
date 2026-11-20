@@ -94,7 +94,7 @@ describe("Presencia de los jurados en el panel (HU-23)", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Posible salida" }));
     await waitFor(() => expect(mocks.fetchJurorPresence).toHaveBeenLastCalledWith("POSSIBLE_LEFT"));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Todos los que llegaron" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Todos con equipos por calificar" }));
     await waitFor(() => expect(mocks.fetchJurorPresence).toHaveBeenLastCalledWith(undefined));
   });
 
@@ -174,5 +174,50 @@ describe("Presencia de los jurados en el panel (HU-23)", () => {
     await screen.findByText("Ana Pérez");
 
     expect(screen.queryByRole("button", { name: /Parámetros de presencia/ })).toBeNull();
+  });
+
+  describe("solo los que tienen equipos por calificar (BG-72)", () => {
+    const withPending: JurorPresenceList = {
+      ...list,
+      totals: { ...list.totals, withPendingTeams: 30, finished: 12 },
+      data: [
+        { ...list.data[0], pendingTeams: 2 },
+        { ...list.data[0], jurorId: "j-2", name: "Beto Ruiz", isProfessor: false, category: "Junior", pendingTeams: 1, indicators: [] },
+      ],
+    };
+
+    it("dice cuántos equipos le faltan a cada uno y cuántos ya terminaron", async () => {
+      mocks.fetchJurorPresence.mockResolvedValue(withPending);
+      render(<JurorPresenceSection />);
+
+      const ana = (await screen.findByText("Ana Pérez")).closest("tr")!;
+      expect(within(ana).getByText("Le faltan 2 equipos")).toBeTruthy();
+      const beto = screen.getByText("Beto Ruiz").closest("tr")!;
+      expect(within(beto).getByText("Le falta 1 equipo")).toBeTruthy();
+      const total = (text: string) => screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === text);
+      expect(total("30 con equipos por calificar")).toBeTruthy();
+      expect(total("12 ya terminaron")).toBeTruthy();
+      expect(screen.getByText(/Solo se listan los jurados que llegaron y todavía tienen equipos por calificar/)).toBeTruthy();
+    });
+
+    it("si todos los que llegaron ya calificaron, lo dice en lugar de «no ha llegado nadie»", async () => {
+      mocks.fetchJurorPresence.mockResolvedValue({
+        ...withPending,
+        totals: { ...withPending.totals, checkedIn: 12, withPendingTeams: 0, finished: 12, withAnyIndicator: 0 },
+        data: [],
+      });
+      render(<JurorPresenceSection />);
+      await screen.findByText("Ningún jurado tiene alertas de presencia.");
+
+      fireEvent.click(screen.getByRole("tab", { name: "Todos con equipos por calificar" }));
+      expect(await screen.findByText("Todos los que llegaron ya calificaron sus equipos.")).toBeTruthy();
+    });
+
+    it("con un back anterior (sin los campos nuevos) no muestra el contador", async () => {
+      render(<JurorPresenceSection />);
+      const row = (await screen.findByText("Ana Pérez")).closest("tr")!;
+      expect(within(row).queryByText(/Le falta/)).toBeNull();
+      expect(screen.queryByText("ya terminaron")).toBeNull();
+    });
   });
 });
