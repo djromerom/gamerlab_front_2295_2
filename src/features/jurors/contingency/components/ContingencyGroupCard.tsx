@@ -64,6 +64,7 @@ export function ContingencyGroupCard({ group, minimum, disabled, onAccept, onRej
                   </span>
                   <span className="flex items-center gap-1.5">
                     {juror.evaluo && <Badge variant="outline">Ya evaluó</Badge>}
+                    {juror.noVendra && <Badge variant="outline">No vendrá</Badge>}
                     <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusClass[juror.estado]}`}>
                       {jurorStatusLabel[juror.estado]}
                     </span>
