@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: liberar la nota final desde Configuración del evento (HU-46, ARK-302; back ARK-301)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): se borró `/notas-finales` (`FinalGradeReleasePage`) y su enlace «Notas Finales» del menú. La nota final se libera con la tarjeta «Notas finales para los estudiantes» de `/configuracion-evento` (`EventSetupCard`, como las demás): deshabilitada antes de la hora de cierre de la feria con «Se puede activar desde las 12:00 del 26/11/2026 (hora de Colombia).», confirmación con diálogo de la app si hay equipos con la nota en proceso, «Liberada el …» en hora de Bogotá y, si el back rechaza el cambio, vuelve a su estado y muestra su mensaje. Ocultarla vuelve a leer «Ranking público», que el back también apaga (BG-67).
+- [consumo-de-api](../03-frontend/consumo-de-api.md): `fetchShowRanking` en `editions/api/eventSettings.ts` y el hook `editions/hooks/useFinalGradeRelease`. El método es `PATCH /final-grade/release` en los dos lados (el front ya lo usaba; `PUT` responde 404).
+
 ## 2026-11-20: podio público sin notas en /ranking (HU-48, ARK-307; back ARK-306)
 
 - [reglas-de-negocio](../01-negocio/reglas-de-negocio.md): el `/ranking` público muestra solo los 3 primeros de cada nivel, sin notas ni ponderación; el ranking completo sigue en `/tiebreaker`.

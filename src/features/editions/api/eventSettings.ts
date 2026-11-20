@@ -38,3 +38,15 @@ export async function updateEventSetting(path: string, field: string, value: boo
     typeof body?.code === "string" ? body.code : undefined,
   );
 }
+
+/** GET /settings/show-ranking: si el ranking público está publicado. */
+export async function fetchShowRanking(): Promise<boolean> {
+  const res = await apiFetch(`${API_URL}/settings/show-ranking`, {
+    credentials: "include",
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" },
+  });
+  if (!res.ok) throw new EventSettingError(`No se pudo leer el ranking público (error ${res.status}).`, res.status);
+  const body = await res.json();
+  return typeof body === "boolean" ? body : body?.showRanking === true;
+}

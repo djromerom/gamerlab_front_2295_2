@@ -14,7 +14,7 @@ const props = {
   url: "/settings/show-ranking",
   title: "Ranking Público",
   subtitle: "Hace visible el ranking general de los equipos para el público.",
-  hint: "Se habilita después de liberar la nota final (Notas finales).",
+  hint: "Se habilita después de activar «Notas finales para los estudiantes».",
 };
 
 beforeEach(() => updateEventSetting.mockReset());
@@ -49,5 +49,32 @@ describe("EventSetupCard", () => {
     const { rerender } = render(<EventSetupCard {...props} value={false} />);
     rerender(<EventSetupCard {...props} value={true} />);
     expect(screen.getByRole("switch", { name: "Ranking Público" }).getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("deshabilitado no deja cambiar el valor", () => {
+    render(<EventSetupCard {...props} value={false} disabled />);
+    const toggle = screen.getByRole("switch", { name: "Ranking Público" });
+    expect(toggle.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(toggle);
+    expect(updateEventSetting).not.toHaveBeenCalled();
+  });
+
+  it("con save propio no llama a /settings", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    render(<EventSetupCard title="Notas" subtitle="x" value={false} save={save} />);
+    fireEvent.click(screen.getByRole("switch", { name: "Notas" }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(true));
+    expect(updateEventSetting).not.toHaveBeenCalled();
+  });
+
+  it("si confirm devuelve un diálogo, guarda solo al aceptar", async () => {
+    updateEventSetting.mockResolvedValue(undefined);
+    const confirm = vi.fn((value: boolean) => (value ? { title: "¿Seguro?", description: "Texto", action: "Sí" } : null));
+    render(<EventSetupCard {...props} value={false} confirm={confirm} />);
+    fireEvent.click(screen.getByRole("switch", { name: "Ranking Público" }));
+    expect(await screen.findByRole("alertdialog")).toBeTruthy();
+    expect(updateEventSetting).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Sí" }));
+    await waitFor(() => expect(updateEventSetting).toHaveBeenCalledWith("/settings/show-ranking", "show", true));
   });
 });
