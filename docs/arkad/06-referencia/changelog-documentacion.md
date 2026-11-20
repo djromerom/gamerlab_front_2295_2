@@ -2,6 +2,12 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: empates resueltos por fecha de inscripción y /tiebreaker en solo lectura (HU-47, ARK-305; back ARK-304)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md), [glosario](glosario.md) y [que-es-arkad](../00-inicio-rapido/que-es-arkad.md): todo empate se resuelve por `fecha_registro` (con la misma fecha, el id menor); el profesor ya no decide. Reemplaza P-05.
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): se borró `/ranking/mis-empates` (`ProfessorRankingTiesPage`) y su enlace «Empates del ranking» del menú del profesor. `/tiebreaker` carga todos los empates (`GET /ranking/ties` sin `status`) y los muestra en el orden de `order`, con la fecha de inscripción en hora de Bogotá y el motivo, sin controles para decidir; «Definir ranking final» ya no se bloquea; las decisiones guardadas salen como «Decisiones anteriores» (no cambian el orden). El filtro de nivel incluye N10. `/ranking` ya no tiene la etiqueta «Empate pendiente».
+- `features/results/api/ranking.ts`: sin `fetchMyTies` ni `decideTie`; `TieRule` es `"REGISTRATION"` y se dejan de leer `deciders`, `decision`, `provisional` y `pendingTies`. Lógica pura en `features/results/lib/tieResolution.ts`.
+
 ## 2026-11-18: equipos sin nota fuera del podio en /ranking (HU-34 p3, ARK-238)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en `/ranking` un equipo con `finalScore: null` ya no sale con 0.00 ni con puesto, ni en el podio: va al final de la tabla con «—» y «Nota en proceso». Los equipos con nota mantienen el orden y la posición que manda el back. La lógica de «Sin nota» y «Nota en proceso» pasó de `RankingGroupCard` a `features/results/lib/rankingScore.ts`. A 360 px la tabla usa menos relleno para que «Calificación» no se corte.

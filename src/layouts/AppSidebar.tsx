@@ -136,12 +136,6 @@ const MENU: Record<Role, MenuItem[]> = {
       ],
     },
     {
-      title: "Ranking",
-      items: [
-        { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
-      ],
-    },
-    {
       title: "Cuenta",
       items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },

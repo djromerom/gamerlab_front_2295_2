@@ -20,7 +20,6 @@ import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import TeamsManagementPage from "@/features/teams/pages/TeamsManagementPage";
 import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
 import TiebreakerPage from "@/features/results/pages/TiebreakerPage";
-import ProfessorRankingTiesPage from "@/features/results/pages/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/features/editions/pages/EditionsManagementPage";
 import JurorBadgesPage from "@/features/jurors/badges/pages/JurorBadgesPage";
 import EditionJurorsPage from "@/features/jurors/edition/pages/EditionJurorsPage";
@@ -284,11 +283,6 @@ export const routes: RouteConfig[] = [
     path: "/tiebreaker",
     element: <TiebreakerPage />,
     roles: ["Administrador"],
-  },
-  {
-    path: "/ranking/mis-empates",
-    element: <ProfessorRankingTiesPage />,
-    roles: ["Profesor"],
   },
   {
     path: "/profesores",

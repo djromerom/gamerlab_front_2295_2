@@ -2,7 +2,8 @@ import { apiFetch } from "@/lib/api";
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || "http://localhost:3000";
 
-export type TieRule = "PROFESSOR" | "REGISTRATION" | "MANUAL";
+/** HU-47 (ARK-304): todo empate se resuelve por fecha de inscripción; nadie decide. */
+export type TieRule = "REGISTRATION";
 export type TieStatus = "PENDING" | "RESOLVED";
 
 export interface Person {
@@ -31,7 +32,6 @@ export interface RankedTeam {
   registrationDate: string;
   podium: boolean;
   tieKey: string | null;
-  provisional: boolean;
 }
 
 export interface TieGroup {
@@ -43,24 +43,16 @@ export interface TieGroup {
   affectsPodium: boolean;
   rule: TieRule;
   status: TieStatus;
-  deciders: Person[];
   teams: Array<{
     teamId: number;
     teamCode: string;
     teamName: string | null;
     videogameName: string | null;
-    registrationDate: string;
-    professors: Person[];
+    /** Puede faltar: el equipo va después de los que sí la tienen (HU-47) */
+    registrationDate: string | null;
   }>;
+  /** Orden ya resuelto: primero el inscrito antes; con la misma fecha, el id menor */
   order: number[];
-  decision: {
-    id: number;
-    method: "PROFESSOR" | "REGISTRATION" | "ADMIN";
-    reason: string;
-    orderedTeamIds: number[];
-    decidedBy: Person;
-    decidedAt: string;
-  } | null;
   explanation: string;
 }
 
@@ -68,7 +60,6 @@ export interface RankingSnapshot {
   editionId: number;
   podiumSize: number;
   weighting: { configured: boolean; juniorPct: number; seniorPct: number };
-  pendingTies: number;
   finalized: { at: string; matchesCurrent: boolean } | null;
   /** ARK-272: todo equipo compite en su nivel; ya no hay grupo «Externos». */
   levels: RankingGroup[];
@@ -95,7 +86,6 @@ export interface WinnersGroup {
   label: string;
   podium: RankedTeam[];
   ties: TieGroup[];
-  pendingTies: number;
 }
 
 export interface RankingWinners {
@@ -109,6 +99,8 @@ export interface FinalizeResult {
   editionId: number;
   teams: number;
   levels: Array<{ level: number; label: string; teams: number }>;
+  /** Decisiones nuevas guardadas como historial (0 si se repite el cierre) */
+  registeredDecisions?: number;
 }
 
 export interface RankingDecision {
@@ -161,9 +153,12 @@ export async function fetchWinners(options: { editionId?: number; level?: number
   return responseBody(response, `No se pudieron cargar los ganadores (${response.status})`) as Promise<RankingWinners>;
 }
 
-export async function fetchRankingTies(status: "PENDING" | "RESOLVED" = "PENDING", podiumOnly = false, editionId?: number) {
-  const params = new URLSearchParams({ status, podiumOnly: String(podiumOnly) });
-  if (editionId) params.set("editionId", String(editionId));
+/** GET /ranking/ties. Sin `status` trae todos (desde HU-47 todos llegan resueltos). */
+export async function fetchRankingTies(options: { status?: TieStatus; podiumOnly?: boolean; editionId?: number } = {}) {
+  const params = new URLSearchParams();
+  if (options.status) params.set("status", options.status);
+  if (options.podiumOnly) params.set("podiumOnly", "true");
+  if (options.editionId) params.set("editionId", String(options.editionId));
   const response = await apiFetch(rankingUrl("/ties", params));
   return responseBody(response, `No se pudieron cargar los empates (${response.status})`) as Promise<TieGroup[]>;
 }
@@ -173,26 +168,6 @@ export async function fetchRankingDecisions(editionId?: number) {
   if (editionId) params.set("editionId", String(editionId));
   const response = await apiFetch(rankingUrl("/decisions", params));
   return responseBody(response, `No se pudieron cargar las decisiones (${response.status})`) as Promise<RankingDecision[]>;
-}
-
-export async function fetchMyTies() {
-  const response = await apiFetch(rankingUrl("/my-ties"));
-  return responseBody(response, `No se pudieron cargar tus empates (${response.status})`) as Promise<TieGroup[]>;
-}
-
-export async function decideTie(payload: {
-  tieKey: string;
-  orderedTeamIds?: number[];
-  useRegistration?: boolean;
-  reason?: string;
-  editionId?: number;
-}) {
-  const response = await apiFetch(rankingUrl("/ties/decision"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return responseBody(response, `No se pudo guardar la decisión (${response.status})`);
 }
 
 export async function finalizeRanking(editionId?: number) {
