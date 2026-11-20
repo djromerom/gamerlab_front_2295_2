@@ -113,3 +113,15 @@ describe("Tarjeta «Calificados» del jurado (ARK-255)", () => {
     expect(screen.getByText("N2-ABC-201")).toBeTruthy();
   });
 });
+
+describe("PendingGradesGrid: buscador a 360 px (ARK-295)", () => {
+  it("el campo encoge para dejar visible el botón Buscar", () => {
+    renderGrid({ games: [juego()] });
+    const input = screen.getByPlaceholderText("Buscar");
+    const field = input.parentElement!;
+    expect(field.classList).toContain("min-w-0");
+    expect(field.classList).toContain("flex-1");
+    expect(input.className).not.toMatch(/(^|\s)w-80(\s|$)/);
+    expect(screen.getByRole("button", { name: "Buscar" }).classList).toContain("shrink-0");
+  });
+});
