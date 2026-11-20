@@ -243,14 +243,20 @@ function MiniGamesSection() {
           </div>
           <div className="pantalla centro oculta" id="jamResultado">
             <div className="tarjeta-juego">
-              <p className="ceja" id="jamResCancion"></p>
-              <p className="titulo-juego" id="jamResTitulo">¡Canción completa!</p>
-              <p className="estrellas" id="jamEstrellas" aria-label=""></p>
-              <div className="resultado"><div><small>PUNTOS</small><b id="jamResPuntos">0</b></div><div><small>PRECISIÓN</small><b id="jamResPrecision">0%</b></div></div>
-              <p className="detalle" id="jamResDetalle"></p>
+              {/* tres grupos: con el récord global a la vista y espacio de ancho, el resultado y los botones van a la
+                  izquierda y el récord a la derecha (en celular, una columna en este mismo orden) */}
+              <div className="res-info">
+                <p className="ceja" id="jamResCancion"></p>
+                <p className="titulo-juego" id="jamResTitulo">¡Canción completa!</p>
+                <p className="estrellas" id="jamEstrellas" aria-label=""></p>
+                <div className="resultado"><div><small>PUNTOS</small><b id="jamResPuntos">0</b></div><div><small>PRECISIÓN</small><b id="jamResPrecision">0%</b></div></div>
+                <p className="detalle" id="jamResDetalle"></p>
+              </div>
               <GlobalRecordPanel game="ARKAD_JAM" />
-              <button className="btn btn-blanco" type="button" id="jamOtra">Tocar otra vez</button>
-              <button className="btn btn-vidrio" type="button" id="jamOtraCancion">Elegir otra canción</button>
+              <div className="res-botones">
+                <button className="btn btn-blanco" type="button" id="jamOtra">Tocar otra vez</button>
+                <button className="btn btn-vidrio" type="button" id="jamOtraCancion">Elegir otra canción</button>
+              </div>
             </div>
           </div>
           <div className="cargando" id="jamCargando"><span className="giro"></span><span id="jamCargaTxt">Afinando instrumentos…</span></div>

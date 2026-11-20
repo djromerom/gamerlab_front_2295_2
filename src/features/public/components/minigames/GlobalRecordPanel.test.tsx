@@ -18,7 +18,7 @@ const fila = (position: number, alias: string, score: number, track = "global"):
 const LLENO = [fila(1, "Pixel", 80), fila(2, "Nova", 60), fila(3, "Byte", 40), fila(4, "Luz", 30), fila(5, "Eco", 20)];
 
 const terminar = (fin: MinigameFinish) => act(() => announceMinigameFinished(fin));
-const campoAlias = () => screen.getByLabelText(/Entras al top 5 global/);
+const campoAlias = () => screen.getByLabelText(/Entras al top 5/);
 
 beforeEach(() => {
   fetchMinigameTop.mockReset();
@@ -54,7 +54,7 @@ describe("GlobalRecordPanel", () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKAD_JAM", track: "guitarra-3", top: [] });
     render(<GlobalRecordPanel game="ARKAD_JAM" />);
     terminar({ game: "ARKAD_JAM", track: "guitarra-3", score: 41250, best: 30000 });
-    expect(await screen.findByText(/Aún no hay/)).toBeTruthy();
+    expect(await screen.findByText("¡Sé el primero!")).toBeTruthy();
     expect(screen.getByText("TU MEJOR")).toBeTruthy();
     expect(screen.getByText("41.250")).toBeTruthy();
     expect(fetchMinigameTop).toHaveBeenCalledWith("ARKAD_JAM", "guitarra-3");
