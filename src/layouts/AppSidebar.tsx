@@ -130,12 +130,6 @@ const MENU: Record<Role, MenuItem[]> = {
 
     },
     {
-      title: "Seguimiento",
-      items: [
-        { name: "Avance por hora", url: "/realtime-tracking-panel", icon: ChartLine },
-      ],
-    },
-    {
       title: "Cuenta",
       items: [{ name: "Notificaciones", url: "/notificaciones", icon: Bell }],
     },

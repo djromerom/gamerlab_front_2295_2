@@ -2,6 +2,11 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: el profesor ya no ve el panel de seguimiento (ARK-297)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md) y [roles-y-permisos](../01-negocio/roles-y-permisos.md): `/realtime-tracking-panel` queda solo para el Administrador; el Profesor que abre la URL llega a «Acceso No Autorizado». Su menú pierde «Seguimiento → Avance por hora» («Empates del ranking» ya salió con HU-47, ARK-305). Pedido del profesor del 19-nov. Los endpoints de lectura que HU-12 abrió al profesor siguen igual en el back; solo se quitó la pantalla.
+- **Pendiente aparte:** la copia de `01-negocio/roles-y-permisos.md` del back todavía dice que el profesor ve el seguimiento en solo lectura.
+
 ## 2026-11-20: empates resueltos por fecha de inscripción y /tiebreaker en solo lectura (HU-47, ARK-305; back ARK-304)
 
 - [reglas-de-negocio](../01-negocio/reglas-de-negocio.md), [glosario](glosario.md) y [que-es-arkad](../00-inicio-rapido/que-es-arkad.md): todo empate se resuelve por `fecha_registro` (con la misma fecha, el id menor); el profesor ya no decide. Reemplaza P-05.

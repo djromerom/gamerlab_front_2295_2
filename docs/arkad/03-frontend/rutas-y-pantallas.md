@@ -23,9 +23,9 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | Rol | Rutas |
 |---|---|
 | **Todos con sesión** | `/inicio` (HomePage, con Staff incluido) |
-| **Administrador** | `/estadisticas`, `/jurados`, `/jurados-assignment`, `/jurados-edicion` (jurados de la edición), `/escarapelas`, `/cuentas-staff`, `/gestionar-ediciones`, `/materias`, `/nrcs`, `/criterios`, `/profesores`, `/equipos-inscritos`, `/tiebreaker` (solo lectura desde HU-47: ganadores por nivel, empates resueltos por fecha de inscripción con su motivo y las decisiones anteriores como historial), `/ponderado-calificaciones`, `/configuracion-evento`, `/encuesta-jurados` (resultados de la encuesta de experiencia, HU-17) |
+| **Administrador** | `/estadisticas`, `/jurados`, `/jurados-assignment`, `/jurados-edicion` (jurados de la edición), `/escarapelas`, `/cuentas-staff`, `/gestionar-ediciones`, `/materias`, `/nrcs`, `/criterios`, `/profesores`, `/equipos-inscritos`, `/tiebreaker` (solo lectura desde HU-47: ganadores por nivel, empates resueltos por fecha de inscripción con su motivo y las decisiones anteriores como historial), `/ponderado-calificaciones`, `/configuracion-evento`, `/encuesta-jurados` (resultados de la encuesta de experiencia, HU-17), `/realtime-tracking-panel` (seguimiento; solo de la organización, el Profesor ya no entra desde ARK-297) |
 | **Administrador + Staff** | `/check-in-jurados` (la llegada se registra solo después de confirmar el nombre, por búsqueda o por QR con `GET /juror-checkin/badge`; ARK-252), `/asistencia-jurados` (el administrador ve además «Agregar jurado del día», HU-24, y «Anular llegada», BG-49) |
-| **Administrador + Profesor** | `/profesor`, `/realtime-tracking-panel` (seguimiento) |
+| **Administrador + Profesor** | `/profesor` (redirige a `/inicio`) |
 | **Profesor** | `/home-profesor`, `/colegios-calificar`, `/colegios-calificar/:id`, `/colegios-evaluados` (sin «Mis empates» desde HU-47, ARK-305) |
 | **Profesor + Jurado** | `/calificar-lote` |
 | **Profesor + Estudiante** | `/mi-equipo` |
