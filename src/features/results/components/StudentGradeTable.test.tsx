@@ -31,6 +31,8 @@ const TEAM: GradeTeam = {
 const KEY = gradeKey(TEAM);
 // Referencia estable: la tabla vuelve a sincronizar sus filas cuando cambia `teams`.
 let mockTeams: GradeTeam[] = [];
+// Cambios por prueba sobre lo que devuelve useTeacherDashboard (NRC elegido, carga…).
+let mockDashboard: Record<string, unknown> = {};
 
 vi.mock("@/features/results/hooks/useTeacherDashboard", () => ({
   useTeacherDashboard: (args: unknown) => {
@@ -40,6 +42,7 @@ vi.mock("@/features/results/hooks/useTeacherDashboard", () => ({
       availableFairs: [], currentPage: 1, setCurrentPage: vi.fn(), paginationMetadata: { totalPages: 1 }, availableNRCs: [],
       isLoading: false, initialLoading: false, error: null, noStudents: false, teams: mockTeams, handlePreviousPage: vi.fn(),
       handleNextPage: vi.fn(), reloadProjects: vi.fn(), retryLoad: vi.fn(),
+      ...mockDashboard,
     };
   },
 }));
@@ -49,6 +52,7 @@ const renderTable = () => render(<TooltipProvider><StudentGradeTable /></Tooltip
 beforeEach(() => {
   localStorage.clear();
   mockTeams = [];
+  mockDashboard = {};
   fetchMock.mockReset();
   dashboardArgs.mockReset();
   toastInfo.mockReset();
@@ -159,5 +163,62 @@ describe("StudentGradeTable · celular a 360 px (ARK-295)", () => {
   it("las pestañas Feria activa e Históricos se envuelven", () => {
     renderTable();
     expect(screen.getByRole("tablist", { name: "Vista del panel" }).classList).toContain("flex-wrap");
+  });
+});
+
+describe("StudentGradeTable · «Editar notas» explica qué falta (HU-45, ARK-296)", () => {
+  const editButton = () => screen.getByRole("button", { name: "Editar notas" });
+
+  it("con NRC y equipos editables no está atenuado y activa la edición", () => {
+    mockTeams = [TEAM];
+    renderTable();
+    expect(editButton().getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(editButton());
+    expect(screen.getByRole("spinbutton")).toBeTruthy();
+    expect(toastInfo).not.toHaveBeenCalled();
+  });
+
+  it("sin NRC dice «Editar notas», se ve atenuado y al tocarlo pide elegir un NRC", () => {
+    mockTeams = [TEAM];
+    mockDashboard = { selectedNRC: "" };
+    renderTable();
+    expect(screen.queryByText("Selecciona un NRC")).toBeNull();
+    const button = editButton();
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect((button as HTMLButtonElement).disabled).toBe(false); // sigue recibiendo foco, toque y teclado
+    expect(button.classList).toContain("opacity-50");
+    fireEvent.click(button);
+    expect(toastInfo).toHaveBeenCalledWith("Elige un NRC para editar sus notas", { id: "edit-grades-blocked" });
+    expect(screen.queryByRole("spinbutton")).toBeNull();
+  });
+
+  it("en históricos pide volver a la feria actual", () => {
+    mockTeams = [TEAM];
+    renderTable();
+    fireEvent.click(screen.getByRole("tab", { name: "Históricos" }));
+    expect(editButton().getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(editButton());
+    expect(toastInfo).toHaveBeenCalledWith("Estás viendo históricos: vuelve a la feria actual", { id: "edit-grades-blocked" });
+    expect(screen.queryByRole("button", { name: /guardar todo/i })).toBeNull();
+  });
+
+  it("un NRC sin notas editables lo avisa", () => {
+    mockTeams = [{ ...TEAM, canEdit: false }];
+    renderTable();
+    fireEvent.click(editButton());
+    expect(toastInfo).toHaveBeenCalledWith("Este NRC no tiene notas editables", { id: "edit-grades-blocked" });
+    expect(screen.queryByRole("button", { name: /guardar todo/i })).toBeNull();
+  });
+
+  it("mientras carga queda atenuado y no muestra aviso", () => {
+    mockTeams = [TEAM];
+    mockDashboard = { isLoading: true };
+    renderTable();
+    const button = editButton();
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(button);
+    expect(toastInfo).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /guardar todo/i })).toBeNull();
   });
 });

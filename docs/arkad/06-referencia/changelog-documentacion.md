@@ -2,6 +2,10 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: «Editar notas» explica qué falta (HU-45, ARK-296)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en el Panel de Calificaciones el botón dice siempre «Editar notas» (antes «Selecciona un NRC» y deshabilitado). Si no se puede usar, queda con `aria-disabled` y atenuado, pero recibe toque, clic y teclado y muestra un aviso (toast, leído por el lector de pantalla): «Elige un NRC para editar sus notas», «Estás viendo históricos: vuelve a la feria actual» o «Este NRC no tiene notas editables». Mientras carga no avisa. La causa la decide `features/results/lib/editGradesBlock.ts`.
+
 ## 2026-11-20: panel del profesor usable a 360 px (BG-76, ARK-295)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): las pantallas del Profesor se usan a 360, 390 y 768 px sin scroll horizontal. En el Panel de Calificaciones, «Cancelar», «Guardar todo» y «Exportar» van en una fila que se envuelve (el título queda arriba hasta 1024 px), igual que las pestañas y el pie de paginación. El buscador de `/colegios-calificar` y `/colegios-evaluados` (también el del jurado) encoge para dejar visible «Buscar». En `/colegios-calificar/:id` la caja «Nota Final» ocupa el ancho en celular (se quitó la clase inválida `w-80px`) y «Enviar Evaluación» va a todo el ancho. La tabla de notas sigue con su propio scroll horizontal dentro de la tarjeta.
