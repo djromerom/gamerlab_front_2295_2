@@ -373,7 +373,9 @@
      width 0 + flex 1: el campo toma el espacio que queda y no impone su ancho propio (unos 20 caracteres) */
   .arkad-landing .record-global-campo input { flex: 1 1 0; width: 0; min-width: 0; height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.4); background: rgba(5,10,36,.75);
     color: #fff; font: 600 16px Inter, sans-serif; cursor: text; user-select: text; -webkit-user-select: text; }
-  .arkad-landing .record-global-campo input::placeholder { color: rgba(201,214,255,.6); font-weight: 500; font-size: 14px; }
+  /* iniciales de arcade (1 a 3): grandes, espaciadas y centradas */
+  .arkad-landing .record-global-campo input { font: 800 20px Unbounded, sans-serif; letter-spacing: .3em; text-align: center; text-transform: uppercase; }
+  .arkad-landing .record-global-campo input::placeholder { color: rgba(201,214,255,.35); }
   .arkad-landing .record-global-campo input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .arkad-landing .record-global-campo input[aria-invalid="true"] { border-color: #ff9aa8; }
   .arkad-landing .record-global-guardar { flex-shrink: 0; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #FFE58A; color: #050a24;

@@ -9,7 +9,6 @@ import {
   ALIAS_INVALID_MESSAGE,
   ALIAS_MAX_LENGTH,
   ALIAS_OFFENSIVE_MESSAGE,
-  ALIAS_PERSONAL_DATA_MESSAGE,
   MINIGAME_FINISHED_EVENT,
   aliasProblem,
   announceMinigameRecordSaved,
@@ -30,7 +29,6 @@ type Estado =
 
 const MENSAJES_ALIAS: Record<string, string> = {
   MINIGAME_ALIAS_INVALID: ALIAS_INVALID_MESSAGE,
-  MINIGAME_ALIAS_PERSONAL_DATA: ALIAS_PERSONAL_DATA_MESSAGE,
   MINIGAME_ALIAS_OFFENSIVE: ALIAS_OFFENSIVE_MESSAGE,
 };
 
@@ -168,14 +166,16 @@ export default function GlobalRecordPanel({ game }: GlobalRecordPanelProps) {
               type="text"
               value={alias}
               onChange={(e) => {
-                setAlias(e.target.value);
+                setAlias(e.target.value.toLocaleUpperCase("es")); // iniciales de arcade: en mayúsculas
                 if (error) setError(null);
               }}
               maxLength={ALIAS_MAX_LENGTH}
               autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
               spellCheck={false}
               enterKeyHint="done"
-              placeholder="De 3 a 12 letras"
+              placeholder="ABC"
               aria-invalid={error ? true : undefined}
               aria-describedby={ayudaId}
               disabled={estado.fase === "guardando"}
@@ -191,7 +191,7 @@ export default function GlobalRecordPanel({ game }: GlobalRecordPanelProps) {
             </p>
           ) : (
             <span id={ayudaId} className="sr">
-              De 3 a 12 letras o números. Se verá en la página principal.
+              De 1 a 3 letras o números, sin espacios ni signos. Se verá en la página principal.
             </span>
           )}
         </form>

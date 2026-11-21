@@ -15,7 +15,8 @@ vi.mock("@/features/public/api/minigameRecords", async (original) => ({
 const fila = (position: number, alias: string, score: number, track = "global"): MinigameRecordRow => ({
   position, alias, score, track, createdAt: "2026-11-26T15:02:11.000Z",
 });
-const LLENO = [fila(1, "Pixel", 80), fila(2, "Nova", 60), fila(3, "Byte", 40), fila(4, "Luz", 30), fila(5, "Eco", 20)];
+// «PixelMaster» es de antes del cambio a 1-3 caracteres: se muestra tal cual
+const LLENO = [fila(1, "PixelMaster", 80), fila(2, "NOV", 60), fila(3, "BYT", 40), fila(4, "LUZ", 30), fila(5, "ECO", 20)];
 
 const terminar = (fin: MinigameFinish) => act(() => announceMinigameFinished(fin));
 const campoAlias = () => screen.getByLabelText(/Entras al top 5/);
@@ -31,7 +32,7 @@ describe("GlobalRecordPanel", () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: LLENO });
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 5 });
-    expect(await screen.findByText("Pixel")).toBeTruthy();
+    expect(await screen.findByText("PixelMaster")).toBeTruthy();
     expect(screen.getByText("RÉCORD GLOBAL")).toBeTruthy();
     expect(fetchMinigameTop).toHaveBeenCalledWith("ARKADASH", undefined);
   });
@@ -46,7 +47,7 @@ describe("GlobalRecordPanel", () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: LLENO });
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 20 });
-    await screen.findByText("Pixel");
+    await screen.findByText("PixelMaster");
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
@@ -60,34 +61,43 @@ describe("GlobalRecordPanel", () => {
     expect(fetchMinigameTop).toHaveBeenCalledWith("ARKAD_JAM", "guitarra-3");
   });
 
-  it("un alias de 2 caracteres o con 6 dígitos muestra el mensaje y no se envía", async () => {
+  it("un alias vacío, de 4 caracteres, con un espacio o con un signo muestra el mensaje y no se envía", async () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: [] });
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 9 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "Pi" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    expect(screen.getByRole("alert").textContent).toBe("El alias lleva de 3 a 12 letras o números.");
-    fireEvent.change(campoAlias(), { target: { value: "Ana 200123" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    expect(screen.getByRole("alert").textContent).toBe("No uses tu código, documento ni teléfono.");
+    const campo = await waitFor(campoAlias);
+    expect(campo.getAttribute("maxLength")).toBe("3");
+    for (const alias of ["", "   ", "ABCD", "A B", "A-1", "J.P"]) {
+      fireEvent.change(campoAlias(), { target: { value: alias } });
+      fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+      expect(screen.getByRole("alert").textContent).toBe("El alias lleva de 1 a 3 letras o números.");
+    }
     expect(saveMinigameRecord).not.toHaveBeenCalled();
+  });
+
+  it("el alias se escribe en mayúsculas, como las iniciales de un arcade", async () => {
+    fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: [] });
+    render(<GlobalRecordPanel game="ARKADASH" />);
+    terminar({ game: "ARKADASH", score: 9 });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: "ñu7" } });
+    expect((campoAlias() as HTMLInputElement).value).toBe("ÑU7");
   });
 
   it("al guardar muestra el puesto y el top que vuelve, y avisa a la franja de la landing", async () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: LLENO });
     saveMinigameRecord.mockResolvedValue({
       game: "ARKADASH", track: "global", saved: true, position: 2,
-      top: [fila(1, "Pixel", 80), fila(2, "Yo Mismo", 70), fila(3, "Nova", 60), fila(4, "Byte", 40), fila(5, "Luz", 30)],
+      top: [fila(1, "PixelMaster", 80), fila(2, "YO", 70), fila(3, "NOV", 60), fila(4, "BYT", 40), fila(5, "LUZ", 30)],
     });
     const guardado = vi.fn();
     window.addEventListener(MINIGAME_RECORD_SAVED_EVENT, guardado);
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 70 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "  Yo   Mismo " } });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: " yo " } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
 
     expect(await screen.findByText("¡Quedaste en el puesto 2 del top global!")).toBeTruthy();
-    expect(saveMinigameRecord).toHaveBeenCalledWith({ game: "ARKADASH", track: undefined, alias: "Yo Mismo", score: 70 });
+    expect(saveMinigameRecord).toHaveBeenCalledWith({ game: "ARKADASH", track: undefined, alias: "YO", score: 70 });
     const filas = screen.getAllByRole("listitem");
     expect(filas).toHaveLength(5);
     expect(filas[1].getAttribute("aria-current")).toBe("true");
@@ -100,20 +110,20 @@ describe("GlobalRecordPanel", () => {
     saveMinigameRecord.mockResolvedValue({ game: "ARKADASH", track: "global", saved: false, position: null, top: LLENO });
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 15 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "Pixel" } });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: "PIX" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(await screen.findByText(/Alguien superó ese puntaje/)).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(5);
   });
 
-  it("el mensaje del back sobre el alias se muestra junto al campo", async () => {
+  it("si el back rechaza el alias, su mensaje se muestra junto al campo", async () => {
     fetchMinigameTop.mockResolvedValue({ game: "ARKADASH", track: "global", top: [] });
-    saveMinigameRecord.mockRejectedValue(new MinigameRecordError(400, "MINIGAME_ALIAS_PERSONAL_DATA"));
+    saveMinigameRecord.mockRejectedValue(new MinigameRecordError(400, "MINIGAME_ALIAS_INVALID"));
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 15 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "Pixel" } });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: "PIX" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    expect((await screen.findByRole("alert")).textContent).toBe("No uses tu código, documento ni teléfono.");
+    expect((await screen.findByRole("alert")).textContent).toBe("El alias lleva de 1 a 3 letras o números.");
     expect(campoAlias()).toBeTruthy();
   });
 
@@ -123,14 +133,14 @@ describe("GlobalRecordPanel", () => {
     saveMinigameRecord.mockRejectedValueOnce(new MinigameRecordError(400, "MINIGAME_ALIAS_OFFENSIVE", delBack));
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 15 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "p.u.t.a" } });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: "HPT" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect((await screen.findByRole("alert")).textContent).toBe(delBack);
     expect(campoAlias()).toBeTruthy();
 
     // sin mensaje del back, el del front
     saveMinigameRecord.mockRejectedValueOnce(new MinigameRecordError(400, "MINIGAME_ALIAS_OFFENSIVE"));
-    fireEvent.change(campoAlias(), { target: { value: "Mi3rda" } });
+    fireEvent.change(campoAlias(), { target: { value: "P7A" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Elige otro alias: este no se puede mostrar en la pantalla principal."));
   });
@@ -148,7 +158,7 @@ describe("GlobalRecordPanel", () => {
     saveMinigameRecord.mockRejectedValue(new MinigameRecordError(429));
     render(<GlobalRecordPanel game="ARKADASH" />);
     terminar({ game: "ARKADASH", score: 90 });
-    fireEvent.change(await waitFor(campoAlias), { target: { value: "Pixel" } });
+    fireEvent.change(await waitFor(campoAlias), { target: { value: "PIX" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(await screen.findByText(/Tu récord en este equipo sigue guardado/)).toBeTruthy();
     expect(screen.queryByRole("listitem")).toBeNull();
