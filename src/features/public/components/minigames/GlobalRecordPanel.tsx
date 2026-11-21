@@ -154,13 +154,13 @@ export default function GlobalRecordPanel({ game }: GlobalRecordPanelProps) {
               {formatScore(primero.score)} <span className="record-global-alias">{primero.alias}</span>
             </b>
           ) : (
-            <span className="record-global-vacio">Aún no hay: ¡puede ser tuyo!</span>
+            <span className="record-global-vacio">¡Sé el primero!</span>
           )}
         </div>
       )}
       {entra && (
         <form className="record-global-form" onSubmit={guardar} noValidate>
-          <label htmlFor={`${id}-alias`}>¡Entras al top 5 global! Escribe tu alias</label>
+          <label htmlFor={`${id}-alias`}>¡Entras al top 5! Escribe tu alias</label>
           <div className="record-global-campo">
             <input
               id={`${id}-alias`}
@@ -175,6 +175,7 @@ export default function GlobalRecordPanel({ game }: GlobalRecordPanelProps) {
               autoComplete="off"
               spellCheck={false}
               enterKeyHint="done"
+              placeholder="De 3 a 12 letras"
               aria-invalid={error ? true : undefined}
               aria-describedby={ayudaId}
               disabled={estado.fase === "guardando"}
@@ -183,9 +184,16 @@ export default function GlobalRecordPanel({ game }: GlobalRecordPanelProps) {
               {estado.fase === "guardando" ? "Guardando…" : "Guardar"}
             </button>
           </div>
-          <p id={ayudaId} className={error ? "record-global-error" : "record-global-ayuda"} role={error ? "alert" : undefined}>
-            {error ?? "De 3 a 12 letras o números. Se verá en la página principal."}
-          </p>
+          {/* la regla va en el placeholder; la línea visible es solo para el error (así la tarjeta cabe en el celular) */}
+          {error ? (
+            <p id={ayudaId} className="record-global-error" role="alert">
+              {error}
+            </p>
+          ) : (
+            <span id={ayudaId} className="sr">
+              De 3 a 12 letras o números. Se verá en la página principal.
+            </span>
+          )}
         </form>
       )}
       {resultado && (
