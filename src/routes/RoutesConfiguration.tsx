@@ -273,7 +273,12 @@ export const routes: RouteConfig[] = [
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
-  { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  // HU-53 (ARK-325): jurados y profesores consultan las rúbricas en solo lectura
+  {
+    path: "/criterios",
+    element: <CriteriaPage />,
+    roles: ["Administrador", "Jurado", "Profesor"],
+  },
   {
     path: "/tiebreaker",
     element: <TiebreakerPage />,

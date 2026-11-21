@@ -162,6 +162,11 @@ describe("routes", () => {
     expect(routes.some((r) => r.path === "/ranking/mis-empates")).toBe(false);
   });
 
+  it("HU-53: /criterios es del administrador, el jurado y el profesor (solo lectura)", () => {
+    const rolesOf = (path: string) => routes.find((r) => r.path === path)?.roles;
+    expect(rolesOf("/criterios")).toEqual(["Administrador", "Jurado", "Profesor"]);
+  });
+
   it("restringe la guía de instalación al rol Jurado", () => {
     const installGuide = routes.find((route) => route.path === "/instalar-app");
     expect(installGuide?.roles).toEqual(["Jurado"]);

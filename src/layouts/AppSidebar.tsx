@@ -26,6 +26,7 @@ import {
   Presentation,
   Smartphone,
   LifeBuoy,
+  ClipboardList,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/layouts/NavUser";
@@ -94,6 +95,8 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
+        // HU-53: criterios de calificación en solo lectura
+        { name: "Rúbricas", url: "/criterios", icon: ClipboardList },
       ],
     },
     {
@@ -125,6 +128,8 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/colegios-evaluados",
           icon: BookCheck
         },
+        // HU-53: criterios de calificación en solo lectura
+        { name: "Rúbricas", url: "/criterios", icon: ClipboardList },
       ],
 
     },
