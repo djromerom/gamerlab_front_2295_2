@@ -45,6 +45,7 @@ import { JurorsListModal } from "@/features/jurors/assignment/components/JurorsL
 import { countLabel, filterJurorsList, type JurorListFilter } from "@/features/jurors/assignment/lib/jurorsListFilter";
 import { JurorAssignModal } from "@/features/jurors/assignment/components/JurorAssignModal";
 import { TeamAssignButtons } from "@/features/jurors/assignment/components/TeamAssignButtons";
+import { AvailableJurorsPanel } from "@/features/jurors/assignment/components/AvailableJurorsPanel";
 import { AllTeamsModal } from "@/features/jurors/assignment/components/AllTeamsModal";
 import { AuditModal } from "@/features/jurors/assignment/components/AuditModal";
 import { auditLogPath, mergeAuditLogs, parseAuditPage } from "@/features/jurors/assignment/lib/auditLog";
@@ -448,6 +449,9 @@ export function JurorAssignmentPage() {
     currentJurorName: string;
   } | null>(null);
 
+  // El panel de disponibilidad (AvailableJurorsPanel) es sticky en `lg`: con
+  // `overflow-x-hidden` el layout se vuelve contenedor de scroll y el sticky no
+  // funciona; `overflow-x-clip` recorta igual sin crear ese contenedor.
   useEffect(() => {
     const inset = document.getElementById("sidebar-insert");
     if (inset) {
@@ -1799,120 +1803,12 @@ export function JurorAssignmentPage() {
             )}
           </div>
 
-          <div className={`lg:col-span-1 order-1 lg:order-2 lg:sticky lg:top-6 self-start lg:mb-0 transition-all duration-200 ${showAvailableJurorsMobile ? "mb-6" : "mb-1.5"}`}>
-            {/* Toggle Button for Available Jurors on Mobile/Tablet */}
-            <button
-              onClick={() => setShowAvailableJurorsMobile(!showAvailableJurorsMobile)}
-              className={`w-full flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-accent text-foreground transition-all lg:hidden ${showAvailableJurorsMobile ? "mb-3" : "mb-0"}`}
-            >
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold">Disponibilidad de Jurados</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {juradosOficialesDisponibles.length + juradosRemanentesDisponibles.length} libres
-                </span>
-                <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showAvailableJurorsMobile ? "rotate-90" : ""}`} />
-              </div>
-            </button>
-
-            {/* Collapsible Panel Content */}
-            <div className={`space-y-4 md:space-y-6 ${showAvailableJurorsMobile ? "block animate-in fade-in duration-200" : "hidden lg:block"}`}>
-              <div>
-                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Oficiales</span>
-                </h3>
-
-                <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                  <p className="text-xs text-muted-foreground">
-                    Disponibles:{" "}
-                    <span className="font-bold text-lg text-foreground">
-                      {juradosOficialesDisponibles.length}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {juradosOficialesDisponibles.map((jurado) => (
-                    <div
-                      key={jurado.id}
-                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
-                    >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                          {getInitials(jurado.name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs md:text-sm font-medium truncate">
-                            {jurado.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {juradosOficialesDisponibles.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados oficiales disponibles
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-base md:text-xl mb-3 md:mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>Jurados Suplentes</span>
-                </h3>
-
-                <div className="bg-card border border-border rounded-xl p-3 mb-3">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    Disponibles:{" "}
-                    <span className="font-bold text-lg text-foreground">
-                      {juradosRemanentesDisponibles.length}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Úsalos solo si un oficial no llega
-                  </p>
-                </div>
-
-                <div className="space-y-2 md:space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {juradosRemanentesDisponibles.map((jurado) => (
-                    <div
-                      key={jurado.id}
-                      className="bg-card border border-border rounded-xl p-2 md:p-3 transition-all"
-                    >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-border flex items-center justify-center bg-muted text-xs font-medium">
-                          {getInitials(jurado.name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs md:text-sm font-medium truncate">
-                            {jurado.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getJurorCategoryLabel(jurado.jurorCategory)} • {getJurorTypeLabel(jurado.tipo)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {juradosRemanentesDisponibles.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8 text-sm">
-                      No hay jurados suplentes disponibles
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <AvailableJurorsPanel
+            oficiales={juradosOficialesDisponibles}
+            suplentes={juradosRemanentesDisponibles}
+            expandedMobile={showAvailableJurorsMobile}
+            onToggleMobile={() => setShowAvailableJurorsMobile((prev) => !prev)}
+          />
         </div>
 
         {showJuradosListModal && (
