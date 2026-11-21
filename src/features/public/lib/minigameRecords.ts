@@ -1,34 +1,34 @@
 /**
  * Récords globales de los minijuegos de la landing (HU-52, ARK-316). Reglas puras que repiten las del back (ARK-315)
- * para avisar antes de enviar: alias de 3 a 12 caracteres sin datos personales, cuándo un puntaje entra al top 5 y
- * cómo se nombra la pista de cada canción de Arkad Jam. También, el aviso de «terminó una partida» que los juegos
- * (Three.js, fuera de React) le mandan a los paneles de récords.
+ * para avisar antes de enviar: alias de 1 a 3 letras o números (como las iniciales de las máquinas arcade), cuándo un
+ * puntaje entra al top 5 y cómo se nombra la pista de cada canción de Arkad Jam. También, el aviso de «terminó una
+ * partida» que los juegos (Three.js, fuera de React) le mandan a los paneles de récords.
  */
 
 export type MinigameGame = "ARKADASH" | "ARKAD_JAM";
 
 export const TOP_SIZE = 5;
-export const ALIAS_MIN_LENGTH = 3;
-export const ALIAS_MAX_LENGTH = 12;
+export const ALIAS_MIN_LENGTH = 1;
+export const ALIAS_MAX_LENGTH = 3;
 /** Puntaje máximo que acepta el back en cada juego */
 export const SCORE_CAP: Record<MinigameGame, number> = { ARKADASH: 10_000, ARKAD_JAM: 100_000 };
 
 export const ALIAS_INVALID_MESSAGE = `El alias lleva de ${ALIAS_MIN_LENGTH} a ${ALIAS_MAX_LENGTH} letras o números.`;
-export const ALIAS_PERSONAL_DATA_MESSAGE = "No uses tu código, documento ni teléfono.";
 /**
- * Alias con una grosería (MINIGAME_ALIAS_OFFENSIVE): la lista vive solo en el back, así que el front no la revisa antes;
- * se muestra el mensaje que manda el back y, si no llega, este.
+ * Alias grosero (MINIGAME_ALIAS_OFFENSIVE: HPT, P7A, WTF…): la lista vive solo en el back, así que el front no la revisa
+ * antes; se muestra el mensaje que manda el back y, si no llega, este.
  */
 export const ALIAS_OFFENSIVE_MESSAGE = "Elige otro alias: este no se puede mostrar en la pantalla principal.";
 
-// Letras (con tildes y ñ), números, espacio, punto, guion y guion bajo
-const ALIAS_PATTERN = /^[\p{L}\p{N} ._-]+$/u;
-// 6 dígitos o más seguidos, o algo con forma de teléfono: código estudiantil, cédula o teléfono
-const PERSONAL_DATA_PATTERN = /\d{6,}|(?:\d[ .-]?){7,}/;
+// Solo letras y números: sin espacios ni signos
+const ALIAS_PATTERN = /^[\p{L}\p{N}]+$/u;
 
-/** El alias como lo guarda el back: sin espacios al inicio ni al final y con los repetidos unidos */
+/**
+ * El alias como se envía: sin espacios al inicio ni al final y en mayúsculas, como las iniciales de un arcade
+ * (el campo ya lo escribe así mientras se teclea)
+ */
 export function normalizeAlias(alias: string): string {
-  return alias.normalize("NFC").trim().replace(/\s+/g, " ");
+  return alias.normalize("NFC").trim().toLocaleUpperCase("es");
 }
 
 /** Qué tiene de malo el alias (el mensaje para mostrar), o null si se puede enviar */
@@ -36,7 +36,6 @@ export function aliasProblem(alias: string): string | null {
   const valor = normalizeAlias(alias);
   const largo = [...valor].length;
   if (largo < ALIAS_MIN_LENGTH || largo > ALIAS_MAX_LENGTH || !ALIAS_PATTERN.test(valor)) return ALIAS_INVALID_MESSAGE;
-  if (PERSONAL_DATA_PATTERN.test(valor)) return ALIAS_PERSONAL_DATA_MESSAGE;
   return null;
 }
 

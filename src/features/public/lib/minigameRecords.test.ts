@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ALIAS_INVALID_MESSAGE,
-  ALIAS_PERSONAL_DATA_MESSAGE,
   MINIGAME_FINISHED_EVENT,
   aliasProblem,
   announceMinigameFinished,
@@ -14,21 +13,17 @@ import {
 const top = (...puntajes: number[]) => puntajes.map((score) => ({ score }));
 
 describe("aliasProblem", () => {
-  it("acepta de 3 a 12 letras o números, con tildes, espacio, punto y guiones", () => {
-    for (const alias of ["Pix", "Nova_99", "José Ñ.", "a-b-c", "DoceLetrasXY"]) expect(aliasProblem(alias)).toBeNull();
+  it("acepta de 1 a 3 letras o números, como las iniciales de un arcade", () => {
+    for (const alias of ["A", "JP", "PIX", "R2D", "007", "ÑÚ1", " ab "]) expect(aliasProblem(alias)).toBeNull();
   });
 
-  it("rechaza alias cortos, largos o con símbolos", () => {
-    for (const alias of ["Pi", "  ab  ", "TreceLetrasXY", "hola!", "<b>x</b>", ""]) expect(aliasProblem(alias)).toBe(ALIAS_INVALID_MESSAGE);
+  it("rechaza alias vacíos, de más de 3 caracteres o con espacios o signos", () => {
+    for (const alias of ["", "   ", "ABCD", "A B", "A-1", "J.P", "A_B", "<b>"]) expect(aliasProblem(alias)).toBe(ALIAS_INVALID_MESSAGE);
   });
 
-  it("rechaza códigos, documentos y teléfonos", () => {
-    for (const alias of ["Ana 200123", "300 123 4567", "1.234.567"]) expect(aliasProblem(alias)).toBe(ALIAS_PERSONAL_DATA_MESSAGE);
-  });
-
-  it("cuenta el largo como el back: sin espacios de los bordes y con los repetidos unidos", () => {
-    expect(normalizeAlias("  Pixel   Nova ")).toBe("Pixel Nova");
-    expect(aliasProblem("   Pixel   ")).toBeNull();
+  it("el alias se envía sin espacios en los bordes y en mayúsculas", () => {
+    expect(normalizeAlias("  pix ")).toBe("PIX");
+    expect(normalizeAlias("ñu7")).toBe("ÑU7");
   });
 });
 
