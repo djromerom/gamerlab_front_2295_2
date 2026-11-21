@@ -98,12 +98,54 @@ describe("Menú lateral del profesor sin seguimiento ni «Mis empates» (ARK-297
     expect(screen.queryByText("Empates del ranking")).toBeNull();
     expect(menuLinks()).not.toContain("/realtime-tracking-panel");
     expect(menuLinks()).not.toContain("/ranking/mis-empates");
-    expect(menuLinks()).toEqual(["/home-profesor", "/colegios-calificar", "/colegios-evaluados", "/notificaciones"]);
+    expect(menuLinks()).toEqual(["/home-profesor", "/colegios-calificar", "/colegios-evaluados", "/criterios", "/notificaciones"]);
   });
 
   it("el administrador sigue viendo el Panel de Seguimiento", () => {
     renderAs("Administrador");
 
     expect(screen.getByRole("link", { name: /Panel de Seguimiento/ }).getAttribute("href")).toBe("/realtime-tracking-panel");
+  });
+});
+
+describe("Menú lateral: rúbricas en solo lectura (HU-53)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it.each<Role>(["Jurado", "Profesor"])("el rol %s tiene «Rúbricas» hacia /criterios", (role) => {
+    renderAs(role);
+
+    expect(screen.getByRole("link", { name: /Rúbricas/ }).getAttribute("href")).toBe("/criterios");
+  });
+
+  it("el jurado ve «Rúbricas» junto a sus proyectos", () => {
+    renderAs("Jurado");
+
+    expect(menuLinks()).toEqual(["/pendientes-calificar", "/calificados", "/criterios", "/instalar-app", "/notificaciones"]);
+  });
+
+  it.each<Role>(["Estudiante", "Staff", "Consultor", "Presentador externo"])("el rol %s no la ve", (role) => {
+    renderAs(role);
+
+    expect(screen.queryByText("Rúbricas")).toBeNull();
+    expect(menuLinks()).not.toContain("/criterios");
+  });
+
+  it("el administrador conserva «Criterios de Calificación»", () => {
+    renderAs("Administrador");
+
+    expect(screen.getByRole("link", { name: /Criterios de Calificación/ }).getAttribute("href")).toBe("/criterios");
+    expect(screen.queryByText("Rúbricas")).toBeNull();
   });
 });
