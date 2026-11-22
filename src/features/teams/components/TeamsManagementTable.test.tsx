@@ -12,6 +12,13 @@ vi.mock("@/features/teams/api/teamGradable", () => ({
 
 vi.mock("sonner", () => ({ toast }));
 
+// HU-50 (ARK-311): se conserva isCollegeTeamCode y solo se simula el PATCH
+const setTeamVerificationRequired = vi.fn();
+vi.mock("@/features/teams/api/teamVerification", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/teams/api/teamVerification")>()),
+  setTeamVerificationRequired: (...args: unknown[]) => setTeamVerificationRequired(...args),
+}));
+
 // Carga de materias al montar: aquí no importa
 vi.mock("@/lib/api", () => ({
   apiFetch: vi.fn(async () => new Response(JSON.stringify({ data: [] }), { status: 200 })),
@@ -289,5 +296,100 @@ describe("Equipos inscritos: búsqueda, origen y filas del lado del servidor (BG
     renderTable({ paginationMeta: { itemsPerPage: 15, currentPage: 1, totalPages: 2 } });
 
     expect(screen.getByRole("combobox", { name: "Filas por página" }).textContent).toBe("15");
+  });
+});
+
+describe("Equipos inscritos: desactivar el código de verificación (HU-50 / ARK-311)", () => {
+  const SIN_CODIGO = team(402, "Los Glitch", { verificationRequired: false });
+  const COLEGIO = team(403, "Los Peques", { teamCode: "N0-XYZ-403" });
+  const renderHu50 = (props: Record<string, unknown> = {}) =>
+    renderTable({
+      teams: [PIXELES, BYTES, SIN_CODIGO, COLEGIO],
+      allTeams: [PIXELES, BYTES, SIN_CODIGO, COLEGIO],
+      ...props,
+    });
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("marca con «Código desactivado» solo a los equipos con el código desactivado", () => {
+    renderHu50();
+
+    expect(within(rowOf("Los Glitch")).getByText("Código desactivado")).toBeTruthy();
+    expect(within(rowOf("Los Bytes")).queryByText("Código desactivado")).toBeNull();
+    expect(within(rowOf("Los Peques")).queryByText("Código desactivado")).toBeNull();
+  });
+
+  it("desactiva el código de un equipo después de confirmar y recarga la lista", async () => {
+    setTeamVerificationRequired.mockResolvedValue({ teamId: 401, verificationRequired: false, changed: true });
+    const { refreshData } = renderHu50();
+
+    openRowMenu("Los Bytes");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Desactivar código de verificación" }));
+    expect(await screen.findByText("¿Desactivar el código de verificación de Los Bytes?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar código" }));
+
+    await waitFor(() => expect(setTeamVerificationRequired).toHaveBeenCalledWith(401, false));
+    await waitFor(() => expect(refreshData).toHaveBeenCalled());
+    expect(toast.success).toHaveBeenCalledWith("Los jurados calificarán a Los Bytes sin pedir el código.");
+  });
+
+  it("vuelve a activarlo en un equipo con el código desactivado, sin regenerarlo", async () => {
+    setTeamVerificationRequired.mockResolvedValue({ teamId: 402, verificationRequired: true, changed: true });
+    renderHu50();
+
+    openRowMenu("Los Glitch");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Activar código de verificación" }));
+    expect(await screen.findByText(/no se regenera/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Activar código" }));
+
+    await waitFor(() => expect(setTeamVerificationRequired).toHaveBeenCalledWith(402, true));
+  });
+
+  it("si el back lo rechaza muestra el motivo y no recarga", async () => {
+    setTeamVerificationRequired.mockRejectedValue(new Error("No tienes permiso para esta acción"));
+    const { refreshData } = renderHu50();
+
+    openRowMenu("Los Bytes");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Desactivar código de verificación" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Desactivar código" }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("No tienes permiso para esta acción"));
+    expect(refreshData).not.toHaveBeenCalled();
+    expect(screen.getByText("¿Desactivar el código de verificación de Los Bytes?")).toBeTruthy();
+  });
+
+  it("no ofrece la opción en colegios (N0) ni en presentadores externos", async () => {
+    renderHu50();
+
+    for (const name of ["Los Peques", "Los Pixeles"]) {
+      openRowMenu(name);
+      expect(await screen.findByRole("menuitem", { name: "Editar" })).toBeTruthy();
+      expect(screen.queryByRole("menuitem", { name: /código de verificación$/ })).toBeNull();
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Editar" })).toBeNull());
+    }
+  });
+
+  it("en solo lectura no hay menú, pero se sigue viendo el indicador", () => {
+    renderHu50({ readOnly: true });
+
+    expect(screen.queryByRole("button", { name: "Abrir menú" })).toBeNull();
+    expect(within(rowOf("Los Glitch")).getByText("Código desactivado")).toBeTruthy();
   });
 });

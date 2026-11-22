@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamRowData, NrcInfo, MateriaInfo, isConfirmedTeam } from "@/features/teams/lib/teamsUtils";
 import TeamWizardDialog, { toInitialValuesFromTeam } from "./TeamWizardDialog";
 import { TeamVerificationCodeDialog } from "./TeamVerificationCodeDialog";
+import { TeamVerificationRequiredDialog, type VerificationRequiredTarget } from "./TeamVerificationRequiredDialog";
 import { isCollegeTeamCode } from "@/features/teams/api/teamVerification";
 import type { WizardValues } from "@/features/teams/lib/validationTeamsAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -65,6 +66,8 @@ export const TeamsManagementTable = ({
 
   // HU-19: equipo cuyo código de verificación se está consultando
   const [verificationTeam, setVerificationTeam] = useState<{ id: number; name: string; teamCode?: string } | null>(null);
+  // HU-50 (ARK-311): equipo al que se le va a desactivar o activar el código de verificación
+  const [requiredTarget, setRequiredTarget] = useState<VerificationRequiredTarget | null>(null);
 
   const [internalIsLoading, setInternalIsLoading] = useState(false);
 
@@ -374,6 +377,16 @@ export const TeamsManagementTable = ({
                   title="No calificable: no entra al ranking, a la asignación de jurados ni a las notas"
                 >
                   Presentador externo
+                </Badge>
+              )}
+              {/* HU-50 (ARK-311): los jurados lo califican sin digitar el código */}
+              {team.verificationRequired === false && !team.notGradable && !isCollegeTeamCode(team.teamCode) && (
+                <Badge
+                  variant="outline"
+                  className="mt-1 border-sky-500 text-sky-700 dark:text-sky-300"
+                  title="Los jurados califican este equipo sin digitar su código de verificación"
+                >
+                  Código desactivado
                 </Badge>
               )}
             </div>
@@ -983,6 +996,22 @@ export const TeamsManagementTable = ({
                               Código de verificación
                             </DropdownMenuItem>
                           )}
+                          {!isCollegeTeamCode(team.teamCode) && !team.notGradable && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setRequiredTarget({
+                                  id: team.id_equipo,
+                                  name: team.nombre_equipo ?? "Equipo",
+                                  verificationRequired: team.verificationRequired !== false,
+                                })
+                              }
+                              className="cursor-pointer"
+                            >
+                              {team.verificationRequired === false
+                                ? "Activar código de verificación"
+                                : "Desactivar código de verificación"}
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => {
                               setDeletingId(team.id_equipo);
@@ -1239,6 +1268,12 @@ export const TeamsManagementTable = ({
       <TeamVerificationCodeDialog
         team={verificationTeam}
         onClose={() => setVerificationTeam(null)}
+      />
+
+      <TeamVerificationRequiredDialog
+        team={requiredTarget}
+        onClose={() => setRequiredTarget(null)}
+        onChanged={refreshData}
       />
 
       {/* HU-39 (ARK-209): marcar o desmarcar como presentador externo */}

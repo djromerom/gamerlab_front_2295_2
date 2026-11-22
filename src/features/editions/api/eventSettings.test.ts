@@ -48,3 +48,43 @@ describe("fetchShowRanking", () => {
     await expect(fetchShowRanking()).rejects.toMatchObject({ status: 500 });
   });
 });
+
+describe("verification-codes (HU-50, ARK-311)", () => {
+  it("GET normaliza la respuesta y sin el campo asume encendido", async () => {
+    const { fetchVerificationCodesSetting } = await import("@/features/editions/api/eventSettings");
+    apiFetch.mockResolvedValueOnce(json({}));
+    await expect(fetchVerificationCodesSetting()).resolves.toEqual({
+      verificationCodesEnabled: true,
+      changedAt: null,
+      changedBy: null,
+    });
+    expect(apiFetch.mock.calls[0][0]).toBe("http://api.test/settings/verification-codes");
+  });
+
+  it("PATCH envía {enabled} y devuelve quién y cuándo", async () => {
+    const { updateVerificationCodesSetting } = await import("@/features/editions/api/eventSettings");
+    const body = {
+      verificationCodesEnabled: false,
+      changedAt: "2026-11-21T20:10:00.000Z",
+      changedBy: { id: "a1", name: "Allison Ruiz" },
+    };
+    apiFetch.mockResolvedValueOnce(json(body));
+    await expect(updateVerificationCodesSetting(false)).resolves.toEqual(body);
+    const [url, init] = apiFetch.mock.calls[0];
+    expect(url).toBe("http://api.test/settings/verification-codes");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({ enabled: false });
+  });
+
+  it("PATCH rechazado lanza EventSettingError con el código del back", async () => {
+    const { updateVerificationCodesSetting } = await import("@/features/editions/api/eventSettings");
+    apiFetch.mockResolvedValueOnce(
+      json({ code: "EVENT_CONFIGURATION_NOT_FOUND", message: "La edición activa no tiene configuración" }, 404),
+    );
+    await expect(updateVerificationCodesSetting(false)).rejects.toMatchObject({
+      status: 404,
+      code: "EVENT_CONFIGURATION_NOT_FOUND",
+      message: "La edición activa no tiene configuración",
+    });
+  });
+});

@@ -18,7 +18,7 @@ export interface TeamVerificationCode {
   code: string;
 }
 
-/** { [teamId]: true } si el jurado ya verificó el grupo o si el grupo no exige código (N0). */
+/** { [teamId]: true } si el jurado ya verificó el grupo o si el grupo no exige código (N0 o desactivado, HU-50). */
 export type TeamVerificationStatus = Record<number, boolean>;
 
 /** Error HTTP que conserva el status para distinguir el bloqueo por intentos (429). */
@@ -42,6 +42,18 @@ export interface TeamVerificationState {
   status: TeamVerificationStatus;
   /** Vacío si el backend no envía `locks` (versión anterior). */
   locks: Record<number, TeamVerificationLock>;
+  /**
+   * HU-50 (ARK-311): false si hoy no se le pide el código al jurado (interruptor global apagado o
+   * código del equipo desactivado). Vacío si el backend es anterior: se sigue pidiendo.
+   */
+  required: Record<number, boolean>;
+}
+
+export interface TeamVerificationRequiredResult {
+  teamId: number;
+  verificationRequired: boolean;
+  /** false si el equipo ya tenía ese valor (el back no registra nada). */
+  changed: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -106,9 +118,11 @@ export const fetchTeamVerificationState = async (
   const data = await res.json();
   if (data && typeof data.status === 'object' && data.status !== null) {
     const locks = typeof data.locks === 'object' && data.locks !== null ? data.locks : {};
-    return { status: data.status, locks };
+    const required =
+      typeof data.required === 'object' && data.required !== null ? data.required : {};
+    return { status: data.status, locks, required };
   }
-  return { status: data ?? {}, locks: {} };
+  return { status: data ?? {}, locks: {}, required: {} };
 };
 
 /**
@@ -144,6 +158,23 @@ export const regenerateTeamVerificationCode = async (
 ): Promise<TeamVerificationCode> => {
   const res = await apiFetch(`${API_URL}/team-verification/${teamId}/regenerate`, {
     method: 'POST',
+  });
+  if (!res.ok) throw await toError(res);
+  return res.json();
+};
+
+/**
+ * HU-50 (ARK-311): desactiva (`required: false`) o vuelve a exigir el código de un equipo.
+ * No regenera el código ni borra las verificaciones hechas; el back registra quién y cuándo.
+ */
+export const setTeamVerificationRequired = async (
+  teamId: number,
+  required: boolean,
+): Promise<TeamVerificationRequiredResult> => {
+  const res = await apiFetch(`${API_URL}/team-verification/${teamId}/required`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ required }),
   });
   if (!res.ok) throw await toError(res);
   return res.json();

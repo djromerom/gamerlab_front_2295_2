@@ -284,3 +284,66 @@ describe("TeamVerificationForm: bloqueo por intentos", () => {
     expect(input().disabled).toBe(false);
   });
 });
+
+describe("TeamVerificationGate: código desactivado (HU-50, ARK-311)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it("con required: false muestra el formulario de calificación sin pedir el código", async () => {
+    mockBackend({
+      status: () => json(200, { status: { 7: false }, locks: {}, required: { 7: false } }),
+    });
+    await renderGate();
+
+    expect(screen.getByText("FORMULARIO DE CALIFICACION")).toBeTruthy();
+    expect(screen.queryByLabelText("Código de verificación")).toBeNull();
+    expect(String(vi.mocked(apiFetch).mock.calls[0][0])).toContain("includeLocks=true");
+  });
+
+  it("con required: true y sin verificar sigue pidiendo el código", async () => {
+    mockBackend({
+      status: () => json(200, { status: { 7: false }, locks: {}, required: { 7: true } }),
+    });
+    await renderGate();
+
+    expect(screen.queryByText("FORMULARIO DE CALIFICACION")).toBeNull();
+    expect(input()).toBeTruthy();
+  });
+
+  it("un back sin `required` sigue pidiendo el código", async () => {
+    mockBackend({ status: () => json(200, { status: { 7: false }, locks: {} }) });
+    await renderGate();
+
+    expect(screen.queryByText("FORMULARIO DE CALIFICACION")).toBeNull();
+    expect(input()).toBeTruthy();
+  });
+
+  it("en un lote solo se salta el código de los grupos con required: false", async () => {
+    mockBackend({
+      status: () =>
+        json(200, { status: { 1: false, 2: false }, locks: {}, required: { 1: false, 2: true } }),
+    });
+    const seen: Record<number, boolean> = {};
+    function Harness() {
+      const v = useTeamVerification([1, 2]);
+      if (!v.isLoading) {
+        seen[1] = v.isVerified(1);
+        seen[2] = v.isVerified(2);
+      }
+      return null;
+    }
+    render(<Harness />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(seen).toEqual({ 1: true, 2: false });
+  });
+});

@@ -8,6 +8,8 @@ import {
 /**
  * Estado de verificación (HU-19) de los grupos que el jurado va a calificar.
  * Un grupo sin teamId no se bloquea en el front: el backend valida al guardar la evaluación.
+ * HU-50 (ARK-311): un grupo con `required: false` (código desactivado por el administrador, para
+ * ese equipo o para todos) cuenta como verificado y se califica sin digitar el código.
  */
 export function useTeamVerification(teamIds: (number | undefined)[]) {
   const ids = [...new Set(teamIds.filter((id): id is number => id !== undefined))];
@@ -15,6 +17,7 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
 
   const [status, setStatus] = useState<TeamVerificationStatus>({});
   const [locks, setLocks] = useState<Record<number, TeamVerificationLock>>({});
+  const [required, setRequired] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(ids.length > 0);
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
         if (cancelled) return;
         setStatus(data.status);
         setLocks(data.locks);
+        setRequired(data.required);
       })
       // Si falla la consulta se pide el código; verify responde bien si el grupo ya estaba verificado.
       .catch((error) => console.error("Error consultando la verificación de grupos:", error))
@@ -42,8 +46,9 @@ export function useTeamVerification(teamIds: (number | undefined)[]) {
   }, [idsKey]);
 
   const isVerified = useCallback(
-    (teamId?: number) => teamId === undefined || status[teamId] === true,
-    [status],
+    (teamId?: number) =>
+      teamId === undefined || status[teamId] === true || required[teamId] === false,
+    [status, required],
   );
 
   const markVerified = useCallback((teamId: number) => {
