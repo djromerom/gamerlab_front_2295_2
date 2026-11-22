@@ -221,6 +221,8 @@ const TeamsManagementPage = () => {
       materia_info,
       isExternal: (t as any).isExternal,
       notGradable: t.notGradable === true,
+      // HU-50: un back anterior no lo envía y el código se sigue exigiendo
+      verificationRequired: t.verificationRequired !== false,
       team_nrc_global_id: (t as any).teamNrcGlobal ?? (t as any).team_nrc_global_id,
     } as TeamRowData;
   };
