@@ -6,6 +6,8 @@ import LayoutApplication from "@/layouts/LayoutApplication";
 import { CriterionTable } from "@/features/academic/components/CriterionTable";
 import { useState, useEffect } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
+import { useAuth } from "@/contexts/AuthContext";
+import RubricsReadOnly from "@/features/academic/components/RubricsReadOnly";
 
 interface CriterionRowData {
   id: number;
@@ -29,7 +31,7 @@ interface PaginatedCriteria {
   };
 }
 
-const CriteriaPage = () => {
+const AdminCriteriaPage = () => {
   const [criteriaData, setCriteriaData] = useState<PaginatedCriteria | null>(
     null
   );
@@ -140,6 +142,19 @@ const CriteriaPage = () => {
             )}
         </>
       )}
+    </LayoutApplication>
+  );
+};
+
+// HU-53 (ARK-325): jurados y profesores ven las rúbricas en solo lectura; el Administrador, la tabla de siempre.
+const CriteriaPage = () => {
+  const { userRole } = useAuth();
+
+  if (userRole === "Administrador") return <AdminCriteriaPage />;
+
+  return (
+    <LayoutApplication breadcrumbs={[{ label: "Rúbricas", href: "/criterios" }]}>
+      <RubricsReadOnly />
     </LayoutApplication>
   );
 };
