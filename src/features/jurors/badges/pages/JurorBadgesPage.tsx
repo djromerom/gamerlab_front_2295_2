@@ -2,6 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -15,10 +22,13 @@ import { JurorBadgesTable } from "@/features/jurors/badges/components/JurorBadge
 import { GenerateResultDialog } from "@/features/jurors/badges/components/GenerateResultDialog";
 import { AlertCircle, Download, IdCard, Loader2 } from "lucide-react";
 import {
+  BADGE_PAPER_OPTIONS,
+  DEFAULT_BADGE_PAPER_SIZE,
   downloadJurorBadgesPdf,
   fetchJurorBadges,
   generateJurorBadges,
   regenerateJurorBadge,
+  type BadgePaperSize,
   type GenerateBadgesResult,
   type JurorBadge,
 } from "@/features/jurors/badges/api/jurorBadges";
@@ -35,6 +45,7 @@ const JurorBadgesPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [paper, setPaper] = useState<BadgePaperSize>(DEFAULT_BADGE_PAPER_SIZE);
   const [generateResult, setGenerateResult] = useState<GenerateBadgesResult | null>(null);
 
   const [toRegenerate, setToRegenerate] = useState<JurorBadge | null>(null);
@@ -87,6 +98,7 @@ const JurorBadgesPage: React.FC = () => {
       const allSelected = selectedIds.size === badges.length;
       await downloadJurorBadgesPdf(
         selectedIds.size && !allSelected ? [...selectedIds] : undefined,
+        paper,
       );
     } catch (err) {
       toast.error("Error", { description: errorMessage(err, "No se pudo descargar el PDF.") });
@@ -144,12 +156,32 @@ const JurorBadgesPage: React.FC = () => {
 
           {/* Fila 2: Contador y acciones */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-            <div className="text-sm text-muted-foreground">
-              {badges.length} escarapela{badges.length !== 1 ? "s" : ""}
-              {selectedIds.size > 0 && ` · ${selectedIds.size} seleccionada${selectedIds.size !== 1 ? "s" : ""}`}
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                {badges.length} escarapela{badges.length !== 1 ? "s" : ""}
+                {selectedIds.size > 0 && ` · ${selectedIds.size} seleccionada${selectedIds.size !== 1 ? "s" : ""}`}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Imprime al 100 % (tamaño real, sin «ajustar a la página») para que el QR mida 5 cm.
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <Select value={paper} onValueChange={(value) => setPaper(value as BadgePaperSize)}>
+                <SelectTrigger
+                  className="h-10 w-[200px] bg-card cursor-pointer"
+                  aria-label="Tamaño de hoja"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BADGE_PAPER_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label} ({option.perPage} por hoja)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 className="bg-card hover:bg-accent text-foreground h-10"
