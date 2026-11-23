@@ -82,6 +82,15 @@ describe("GamePlayerPage", () => {
     expect(screen.queryByText("Este juego se juega en computador")).toBeNull();
   });
 
+  it("BG-77: con el juego listo hay un botón para salir (solo se ve en el celular, por CSS); en la cabina no", () => {
+    loader.mockReturnValue({ status: "ready", key: "294", entry: "index.html", name: "Brainrot Breakout", teamName: "Scroll Studios" });
+    renderAt("/play-game/294");
+    expect(screen.getByRole("button", { name: "Salir del juego" })).toBeTruthy();
+    cleanup();
+    renderAt("/play-game/294?embed=1");
+    expect(screen.queryByRole("button", { name: "Salir del juego" })).toBeNull();
+  });
+
   it("BG-66: «1e3» no es un id (antes se pedía el juego 1000)", () => {
     loader.mockReturnValue({ status: "error", reason: "notFound", message: "No encontramos este videojuego. Revisa el enlace." });
     renderAt("/play-game/1e3");

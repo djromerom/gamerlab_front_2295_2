@@ -31,21 +31,31 @@ export default function GamePlayerPage({ kind = "live" }: GamePlayerPageProps) {
   const state = useGameLoader(kind, id, !touchOnly);
   const title = state.status === "ready" && state.name ? `${state.name}, de ${state.teamName}` : "Videojuego";
 
+  const onBack = () => (window.history.length > 1 ? navigate(-1) : navigate("/equipos"));
+
   const content =
     state.status === "ready" && !touchOnly ? (
-      <iframe
-        src={entryUrl(state.key, state.entry)}
-        className={embedded ? "gameFrame gameFrame--embed" : "gameFrame"}
-        allow={IFRAME_ALLOW}
-        allowFullScreen
-        title={title}
-      />
+      <>
+        <iframe
+          src={entryUrl(state.key, state.entry)}
+          className={embedded ? "gameFrame gameFrame--embed" : "gameFrame"}
+          allow={IFRAME_ALLOW}
+          allowFullScreen
+          title={title}
+        />
+        {/* BG-77: en el celular el juego va a pantalla completa, tapando la barra; este botón (solo visible ahí) permite salir */}
+        {!embedded && (
+          <button type="button" className="gameExit" onClick={onBack} aria-label="Salir del juego">
+            Salir
+          </button>
+        )}
+      </>
     ) : (
       <GamePlayerStatus
         touchOnly={touchOnly}
         state={state}
         embedded={embedded}
-        onBack={() => (window.history.length > 1 ? navigate(-1) : navigate("/equipos"))}
+        onBack={onBack}
       />
     );
 
