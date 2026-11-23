@@ -26,6 +26,50 @@
     border: 0;
 }
 
+/*
+ * BG-77: en celulares y tabletas (la misma consulta de useTouchOnly), el juego ocupa toda la pantalla, por encima de
+ * la barra de navegación (z-50). Con 80vw × 90vh y la barra, en horizontal quedaba una franja demasiado pequeña.
+ * 100dvh descuenta la barra del navegador del celular; 100vh queda de respaldo.
+ */
+.gameExit {
+    display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    /* el contenedor lleva «relative z-10» (Tailwind), que encierra el z-index del iframe debajo de la barra */
+    div.gamePage {
+        position: static;
+        z-index: auto;
+    }
+
+    .gameFrame:not(.gameFrame--embed) {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        max-width: none;
+        margin: 0;
+        border: 0;
+    }
+
+    .gameExit {
+        display: block;
+        position: fixed;
+        top: max(0.5rem, env(safe-area-inset-top));
+        left: max(0.5rem, env(safe-area-inset-left));
+        z-index: 61;
+        padding: 0.35rem 0.8rem;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font: 500 0.8rem Inter, system-ui, sans-serif;
+        opacity: 0.75;
+    }
+}
+
 /* Página del juego: el iframe o el estado (HU-40) centrados */
 .gamePage {
     display: flex;
