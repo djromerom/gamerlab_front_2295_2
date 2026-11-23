@@ -5,6 +5,7 @@ import { GamePlayerStatus } from "@/features/games/components/GamePlayerStatus";
 import { entryUrl, type GameKind } from "@/features/games/lib/gameFiles";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
 import { parseRouteId } from "@/lib/routeId";
+import { isMobileFriendly } from "@/features/games/lib/mobileFriendly";
 
 import "@/features/games/pages/GamePlayerPage.css";
 import { ArkadBackground } from "@/components/background/ArkadBackground";
@@ -23,10 +24,11 @@ export default function GamePlayerPage({ kind = "live" }: GamePlayerPageProps) {
   const [params] = useSearchParams();
   const embedded = params.has("embed");
   const navigate = useNavigate();
-  // En el celular no se descarga el zip: los juegos se juegan solo en computador (HU-40)
-  const touchOnly = useTouchOnly();
   // BG-66: «12abc» o «1e3» no son ids; el cargador los toma como «no encontrado» sin llamar a la API
-  const state = useGameLoader(kind, parseRouteId(videogameID) ?? Number.NaN, !touchOnly);
+  const id = parseRouteId(videogameID) ?? Number.NaN;
+  // En el celular no se descarga el zip: los juegos se juegan solo en computador (HU-40), salvo las excepciones de ARK-317
+  const touchOnly = useTouchOnly() && !isMobileFriendly(kind, id);
+  const state = useGameLoader(kind, id, !touchOnly);
   const title = state.status === "ready" && state.name ? `${state.name}, de ${state.teamName}` : "Videojuego";
 
   const content =
