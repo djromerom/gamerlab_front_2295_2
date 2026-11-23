@@ -49,6 +49,8 @@ export interface JurorPresenceItem {
   /** Última evaluación enviada desde su llegada. */
   lastActivityAt: string | null;
   nextPromptAt: string;
+  /** BG-72: equipos asignados que le faltan por calificar (1 o más). No viene con un back anterior. */
+  pendingTeams?: number;
   /** [] = sin alertas. */
   indicators: PresenceIndicator[];
 }
@@ -58,9 +60,15 @@ export interface JurorPresenceList {
   serverTime: string;
   evaluationsOpen: boolean;
   settings: PresenceSettings;
-  /** No cambian con el filtro. */
+  /**
+   * No cambian con el filtro. BG-72: la lista solo trae a los que tienen equipos por calificar;
+   * `checkedIn` cuenta a todos los que llegaron, `withPendingTeams` a los listados y `finished` a
+   * los que ya terminaron. Los totales de indicadores cuentan solo a los listados.
+   */
   totals: {
     checkedIn: number;
+    withPendingTeams?: number;
+    finished?: number;
     presenceUnconfirmed: number;
     possibleLeft: number;
     withAnyIndicator: number;

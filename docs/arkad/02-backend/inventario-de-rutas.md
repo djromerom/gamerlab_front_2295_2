@@ -198,7 +198,8 @@
 | GET | `/juror-edition` | Permiso `ListEditionJurors` | Administrador |  |
 | PATCH | `/juror-edition/status` | Permiso `ManageEditionJurors` | Administrador |  |
 | POST | `/juror-edition/enroll` | Permiso `ManageEditionJurors` | Administrador |  |
-| POST | `/juror-edition/import-previous` | Permiso `ManageEditionJurors` | Administrador |  |
+| POST | `/juror-edition/import` | Permiso `ManageEditionJurors` | Administrador | HU-49: Excel en multipart (campo `file`), solo en la edición activa |
+| GET | `/juror-edition/import/template` | Permiso `ManageEditionJurors` | Administrador | HU-49: plantilla `.xlsx` |
 
 ## NrcsController
 

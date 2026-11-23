@@ -2,6 +2,8 @@ import type React from "react";
 import LayoutApplication from "@/layouts/LayoutApplication";
 import EventSetupCard from "@/features/editions/components/EventSetupCard";
 import RegistrationsToggleCard from "@/features/editions/components/RegistrationsToggleCard";
+import FinalGradeReleaseCard from "@/features/editions/components/FinalGradeReleaseCard";
+import VerificationCodesCard from "@/features/editions/components/VerificationCodesCard";
 
 import { useNavigate } from "react-router-dom";
 import { GradingButton } from "@/features/grading/components/GradingButton";
@@ -27,9 +29,13 @@ const EventConfigurationPage: React.FC = () => {
 
             <div className="grid gap-4 max-[500px]:gap-4 md:grid:gap-4:grid-cols-[repeat(auto-fill,minmax(370px,1fr))] min-w-[200px] mb-8  max-w-full">
                 <EventSetupCard value={canViewJudges} onChange={setCanViewJudges} url="/settings/evaluations-status" field="open" title="Evaluación de Jurados" subtitle="Permite que los jurados califiquen a los equipos del evento."/>
+                {/* HU-50 (ARK-311): apagado, ningún equipo pide el código de verificación al jurado */}
+                <VerificationCodesCard />
                 <EventSetupCard value={canViewScores} onChange={setCanViewScores} url="/settings/show-evaluations" title="Resultados de Evaluación" subtitle="Permite que los equipos vean las calificaciones que recibieron."/>
+                {/* HU-46 (ARK-302): la nota final se libera aquí; ocultarla también apaga el ranking (BG-67) */}
+                <FinalGradeReleaseCard onRankingChange={setCanViewRanking} />
                 {/* BG-67 (ARK-269): el back no deja publicar el ranking sin la nota final liberada */}
-                <EventSetupCard value={canViewRanking} onChange={setCanViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público." hint="Se habilita después de liberar la nota final (Notas finales). Mientras el ranking no esté publicado, ninguna página pública muestra notas."/>
+                <EventSetupCard value={canViewRanking} onChange={setCanViewRanking} url="/settings/show-ranking" title="Ranking Público" subtitle="Hace visible el ranking general de los equipos para el público." hint="Se habilita después de activar «Notas finales para los estudiantes». Mientras el ranking no esté publicado, ninguna página pública muestra notas."/>
                 <RegistrationsToggleCard />
                 <div className="sm:flex-[0_1_10%] md:mb-6 space-y-2 border-2 rounded-lg overflow-hidden  md:w-full shadow-sm ">
                 <div className="border-b last:border-b-0">

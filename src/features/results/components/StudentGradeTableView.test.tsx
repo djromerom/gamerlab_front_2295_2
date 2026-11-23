@@ -119,3 +119,13 @@ describe("StudentGradeTableView: pie, paginación y columnas (BG-63)", () => {
     expect(cells.slice(0, 5)).toEqual(["N1-AYP-06", "Team Rocket Wow", "3.54", expect.stringContaining("3.50"), "2026 - 2"]);
   });
 });
+
+describe("StudentGradeTableView: paginación a 360 px (ARK-295)", () => {
+  it("el pie de página se envuelve y conserva los botones de página", () => {
+    renderView([team], { totalPages: 3 });
+    const pagination = screen.getByRole("navigation", { name: "Paginación" });
+    expect(pagination.classList).toContain("flex-wrap");
+    expect(screen.getByRole("button", { name: "Página anterior" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Página siguiente" })).toBeTruthy();
+  });
+});

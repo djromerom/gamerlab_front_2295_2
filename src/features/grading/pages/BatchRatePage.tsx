@@ -24,6 +24,7 @@ import { useTeamVerification } from "@/features/teams/hooks/useTeamVerification"
 import LayoutApplication from "@/layouts/LayoutApplication";
 import { apiFetch } from "@/lib/api";
 import { fromServerDraft, type DraftForm } from "@/lib/evaluationDrafts";
+import { isJurorNotCheckedIn, NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
 import { ArrowLeft, CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -310,6 +311,9 @@ export default function BatchRatePage() {
       );
 
       const data = await res.json().catch(() => null);
+      // BG-71: sin llegada registrada el back rechaza todo el lote (409, no filas en `failed`);
+      // no se guarda ninguna y lo escrito se conserva para reintentar
+      if (isJurorNotCheckedIn(res.status, data)) throw new Error(NOT_CHECKED_IN_MESSAGE);
       // Back ARK-250: un puntaje nulo rechaza todo el lote con 400 y `message` en arreglo, sin `results`
       if (!res.ok || !data?.results)
         throw new Error(apiErrorMessage(data, "Error al guardar evaluaciones"));

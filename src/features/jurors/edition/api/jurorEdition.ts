@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import type { EditionStatus, PaginatedResult } from '@/api/editions';
+import { fileNameFromDisposition, saveBlobAsFile } from '@/features/jurors/assignment/api/jurorsExport';
 
 const API_URL = import.meta.env.VITE_ENDPOINT_BACKEND || 'http://localhost:3000';
 
@@ -42,12 +43,63 @@ export interface EditionJurorsQuery {
   limit?: number;
 }
 
-export interface ImportPreviousResult {
-  sourceEditionId: number;
-  created: number;
-  skipped: number;
-  fallback: boolean;
+// ─── Importar desde Excel (contrato HU-49, ARK-280) ─────────────────────────
+
+export type JurorImportResultCode = 'CREATED' | 'CONFIRMED' | 'ALREADY_CONFIRMED' | 'ERROR';
+/** QUEUED = el correo para crear la contraseña (o verificar la cuenta) quedó en cola */
+export type JurorImportEmailStatus = 'QUEUED' | 'NOT_NEEDED';
+export type JurorImportRowError =
+  | 'MISSING_FIELD'
+  | 'INVALID_EMAIL'
+  | 'INVALID_NAME'
+  | 'INVALID_TYPE'
+  | 'DUPLICATE_IN_FILE'
+  | 'WRONG_ROLE'
+  | 'ACCOUNT_DISABLED'
+  | 'ACCOUNT_CREATION_FAILED'
+  | 'UNEXPECTED';
+
+export interface JurorImportRow {
+  /** Número de fila en el Excel (la 1 es el encabezado) */
+  row: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  /** null cuando la fila falló antes de leer el tipo */
+  type: JurorEditionType | null;
+  result: JurorImportResultCode;
+  accountCreated: boolean;
+  emailStatus: JurorImportEmailStatus;
+  /** Solo con result ERROR; `message` ya viene en español */
+  error?: JurorImportRowError;
+  message?: string;
 }
+
+export interface JurorImportReport {
+  edition: { id: number; title: string };
+  summary: {
+    total: number;
+    created: number;
+    confirmed: number;
+    alreadyConfirmed: number;
+    errors: number;
+    emailsQueued: number;
+  };
+  rows: JurorImportRow[];
+}
+
+export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
+export const MAX_IMPORT_ROWS = 500;
+export const TEMPLATE_FALLBACK_NAME = 'plantilla-jurados.xlsx';
+/** Pausa por defecto del back entre correo y correo (JUROR_IMPORT_EMAIL_DELAY_MS) */
+export const IMPORT_EMAIL_DELAY_MS = 2500;
+
+export const IMPORT_RESULT_LABEL: Record<JurorImportResultCode, string> = {
+  CREATED: 'Creado',
+  CONFIRMED: 'Confirmado',
+  ALREADY_CONFIRMED: 'Ya estaba',
+  ERROR: 'Error',
+};
 
 // NOT_ENROLLED = sin fila en la edición (un profesor sin NRC se inscribe por correo)
 // IS_PROFESSOR = profesor automático: tiene NRC activo en la edición
@@ -139,13 +191,41 @@ export const fetchEditionJurors = async (
   return res.json();
 };
 
-export const importPreviousJurors = async (editionId?: number): Promise<ImportPreviousResult> => {
-  const res = await apiFetch(
-    `${API_URL}/juror-edition/import-previous`,
-    jsonRequest('POST', editionId ? { editionId } : {}),
-  );
-  if (!res.ok) throw await toError(res, 'No se pudieron traer los jurados de la edición anterior.');
+/**
+ * Valida el archivo antes de subirlo (el back repite la validación).
+ * Devuelve el motivo para mostrar, o null si se puede subir.
+ */
+export function importFileProblem(file: File): string | null {
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    return 'El archivo debe ser un Excel .xlsx (use la plantilla).';
+  }
+  if (file.size > MAX_IMPORT_FILE_BYTES) return 'El archivo pesa más de 2 MB.';
+  if (file.size === 0) return 'El archivo está vacío.';
+  return null;
+}
+
+/** Importa el Excel en la edición activa (el back no recibe `editionId`). */
+export const importJurorsFromExcel = async (file: File): Promise<JurorImportReport> => {
+  const form = new FormData();
+  form.append('file', file);
+  // Sin Content-Type: el navegador arma el multipart con su boundary
+  const res = await apiFetch(`${API_URL}/juror-edition/import`, { method: 'POST', body: form });
+  if (res.status === 413) throw new JurorEditionError('El archivo pesa más de 2 MB.', 413);
+  if (res.status === 403) {
+    throw new JurorEditionError('Solo el Administrador puede importar jurados.', 403);
+  }
+  if (!res.ok) throw await toError(res, 'No se pudo importar el archivo.');
   return res.json();
+};
+
+/** La plantilla exige sesión: se pide con la cookie y se guarda como archivo. Devuelve el nombre. */
+export const downloadJurorTemplate = async (): Promise<string> => {
+  const res = await apiFetch(`${API_URL}/juror-edition/import/template`, { method: 'GET' });
+  if (!res.ok) throw await toError(res, 'No se pudo descargar la plantilla.');
+  const fileName =
+    fileNameFromDisposition(res.headers.get('content-disposition')) ?? TEMPLATE_FALLBACK_NAME;
+  saveBlobAsFile(await res.blob(), fileName);
+  return fileName;
 };
 
 export const updateJurorStatuses = async (body: {

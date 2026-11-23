@@ -22,7 +22,7 @@ El nivel de acceso (público / sesión / permiso por servicio y roles) de **cada
 | `/pending-games` · `/graded-games` | `GET /`, `search`, `count`, `search/quick` |
 | `/ranking` | `GET /`, `GET winners`, `GET ties`, `GET decisions`, `GET my-ties`, `POST ties/decision`, `POST finalize` |
 | `/juror` | `POST /`, `GET /`, `GET :id`, `PATCH :id`, `DELETE :id`, `GET evaluators`, `GET evaluations-assignment`, `POST resend-confirmation`, `POST assignments`, `PATCH assignments/reassign`, `DELETE assignments`, `DELETE assignments/all`, `DELETE :id/assignments`, `GET assignments/audit`, `GET evaluation-tracking`, `GET :id/teams`, `GET teams/:teamId/evaluation-stats`, `GET teams/:teamId/jurors-status` |
-| `/juror-edition` | `GET /`, `POST import-previous`, `PATCH status`, `POST enroll` |
+| `/juror-edition` | `GET /`, `POST import`, `GET import/template`, `PATCH status`, `POST enroll` |
 | `/juror-badges` | `POST generate`, `GET /`, `GET pdf`, `POST :jurorId/regenerate` |
 | `/juror-checkin` | `POST scan`, `GET search`, `POST manual` |
 | `/staff` | `POST /` (alta de cuentas Staff) |

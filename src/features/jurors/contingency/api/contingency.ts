@@ -38,6 +38,8 @@ export interface GroupJuror {
   nombre: string;
   categoria: JurorCategoryCode | null;
   estado: GroupJurorStatus;
+  /** HU-44: avisó que no podrá asistir (ausente confirmado). */
+  noVendra?: boolean;
   evaluo: boolean;
   cuenta: boolean;
 }

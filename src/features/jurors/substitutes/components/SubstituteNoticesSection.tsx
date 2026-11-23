@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { formatBogotaTime } from "@/features/jurors/presence/api/jurorPresence";
 import {
   EMAIL_STATUS_LABEL,
+  SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED,
+  SUBSTITUTE_NOTICE_NOT_FOUND,
+  SubstituteNoticeError,
+  resendSubstituteNoticeEmail,
   type NoticeEmailStatus,
+  type UnreadSubstituteNoticeItem,
 } from "@/features/jurors/substitutes/api/substituteNotices";
 import { useUnreadSubstituteNotices } from "@/features/jurors/substitutes/hooks/useUnreadSubstituteNotices";
 import { groupsLabel } from "@/features/jurors/substitutes/lib/substituteGuide";
@@ -13,13 +21,51 @@ const EMAIL_STYLE: Record<NoticeEmailStatus, string> = {
   SKIPPED: "border-muted-foreground/40 bg-muted text-muted-foreground",
 };
 
+/** Mensaje corto cuando el reenvío ya no aplica: basta con refrescar la lista (BG-74). */
+function staleResendMessage(error: unknown): string | null {
+  if (!(error instanceof SubstituteNoticeError)) return null;
+  if (error.status === 409 || error.code === SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED) {
+    return "Ese correo ya se estaba reenviando o ya salió. Se actualizó la lista.";
+  }
+  if (error.status === 404 || error.code === SUBSTITUTE_NOTICE_NOT_FOUND) {
+    return "Ese aviso ya no existe. Se actualizó la lista.";
+  }
+  return null;
+}
+
 /**
  * Panel de seguimiento (Administrador): suplentes a los que se les asignaron grupos y aún no han
- * leído el aviso (HU-22, A1). Si el correo falló, el aviso en la plataforma sigue activo.
+ * leído el aviso (HU-22, A1). Si el correo falló, el aviso en la plataforma sigue activo y se puede
+ * reenviar el correo (BG-74).
  */
 export function SubstituteNoticesSection() {
-  const { result, error, loading } = useUnreadSubstituteNotices();
+  const { result, error, loading, reload } = useUnreadSubstituteNotices();
   const rows = result?.data ?? [];
+  const [sending, setSending] = useState<ReadonlySet<number>>(new Set());
+  // Avisos reenviados que se muestran «Enviando correo» hasta que llegue la lista nueva.
+  const [queued, setQueued] = useState<ReadonlySet<number>>(new Set());
+
+  useEffect(() => setQueued(new Set()), [result]);
+
+  const resend = async (row: UnreadSubstituteNoticeItem) => {
+    setSending((prev) => new Set(prev).add(row.noticeId));
+    try {
+      await resendSubstituteNoticeEmail(row.noticeId);
+      setQueued((prev) => new Set(prev).add(row.noticeId));
+      toast.success(`Se reenvió el correo a ${row.name}`, { description: "En unos segundos se verá si salió." });
+    } catch (err) {
+      const stale = staleResendMessage(err);
+      if (stale) toast.info(stale);
+      else toast.error(err instanceof Error ? err.message : "No se pudo reenviar el correo.");
+    } finally {
+      setSending((prev) => {
+        const next = new Set(prev);
+        next.delete(row.noticeId);
+        return next;
+      });
+      void reload();
+    }
+  };
 
   return (
     <section aria-labelledby="substitute-notices-title" className="mb-4 rounded-md border p-4">
@@ -56,26 +102,43 @@ export function SubstituteNoticesSection() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.noticeId} className="border-t align-top">
-                    <td className="p-2 font-medium">{row.name}</td>
-                    <td className="p-2">{formatBogotaTime(row.createdAt)}</td>
-                    <td className="p-2">{groupsLabel(row.teamCount)}</td>
-                    <td className="p-2">
-                      <div className="flex flex-wrap gap-1">
-                        <span className="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                          Aviso sin leer
-                        </span>
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${EMAIL_STYLE[row.emailStatus]}`}
-                          title={row.emailStatus === "FAILED" ? "El aviso en la plataforma sigue activo." : undefined}
-                        >
-                          {EMAIL_STATUS_LABEL[row.emailStatus]}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((row) => {
+                  const emailStatus: NoticeEmailStatus = queued.has(row.noticeId) ? "PENDING" : row.emailStatus;
+                  const isSending = sending.has(row.noticeId);
+                  return (
+                    <tr key={row.noticeId} className="border-t align-top">
+                      <td className="p-2 font-medium">{row.name}</td>
+                      <td className="p-2">{formatBogotaTime(row.createdAt)}</td>
+                      <td className="p-2">{groupsLabel(row.teamCount)}</td>
+                      <td className="p-2">
+                        <div className="flex flex-wrap gap-1">
+                          <span className="rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                            Aviso sin leer
+                          </span>
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${EMAIL_STYLE[emailStatus]}`}
+                            title={emailStatus === "FAILED" ? "El aviso en la plataforma sigue activo." : undefined}
+                          >
+                            {EMAIL_STATUS_LABEL[emailStatus]}
+                          </span>
+                        </div>
+                        {emailStatus === "FAILED" && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 min-h-9"
+                            disabled={isSending}
+                            aria-label={`Reenviar correo a ${row.name}`}
+                            onClick={() => void resend(row)}
+                          >
+                            {isSending ? "Reenviando..." : "Reenviar correo"}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

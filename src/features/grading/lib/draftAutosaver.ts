@@ -18,6 +18,9 @@ import {
  * - 409 ya enviada: se detiene para siempre y borra la copia local.
  * - 403 (le quitaron el grupo): deja de mandar al servidor, pero cada cambio se sigue guardando
  *   en localStorage para recuperarlo si le devuelven el grupo (ARK-249, BG-41).
+ * - 409 sin llegada (BG-71): conserva la copia local, sigue mostrando el aviso (sin pasar por
+ *   «Guardando…») y reintenta con cada cambio y cada `retryMs`, para guardar apenas la mesa
+ *   registre la llegada.
  */
 
 export type AutosaveStatus =
@@ -28,6 +31,7 @@ export type AutosaveStatus =
   | "offline" // guardado solo en este dispositivo; reintentando
   | "conflict"
   | "error" // 400 / 401: se reintenta con el siguiente cambio
+  | "not-checked-in" // 409 sin llegada registrada: guardado en local; reintentando
   | "blocked"; // 403 / ya enviada: no se vuelve a guardar
 
 export interface AutosaveState {
@@ -98,7 +102,7 @@ export class DraftAutosaver {
     writeBackup(this.videogameId, form, this.version);
     if (this.state.status === "conflict" || this.state.status === "blocked") return;
     this.clearTimer();
-    if (!this.inFlight) this.setState({ status: "pending" });
+    if (!this.inFlight && !this.awaitingCheckIn) this.setState({ status: "pending" });
     this.timer = setTimeout(() => void this.flush(), this.delayMs);
   }
 
@@ -120,7 +124,8 @@ export class DraftAutosaver {
 
     this.dirty = false;
     this.inFlight = true;
-    this.setState({ status: "saving", message: null });
+    // Sin llegada, el aviso se queda en pantalla mientras se reintenta.
+    if (!this.awaitingCheckIn) this.setState({ status: "saving", message: null });
 
     try {
       const saved = await this.save(this.videogameId, toSaveBody(form, this.version));
@@ -210,9 +215,19 @@ export class DraftAutosaver {
         this.clearTimer();
         this.timer = setTimeout(() => void this.flush(), this.retryMs);
         return;
+      case "not-checked-in":
+        // La copia local ya quedó escrita en `schedule`; se guarda en el servidor cuando registren la llegada.
+        this.setState({ status: "not-checked-in", message: draftError.message });
+        this.clearTimer();
+        this.timer = setTimeout(() => void this.flush(), this.retryMs);
+        return;
       default:
         this.setState({ status: "error", message: draftError.message });
     }
+  }
+
+  private get awaitingCheckIn(): boolean {
+    return this.state.status === "not-checked-in";
   }
 
   private readonly handleOnline = () => {

@@ -11,6 +11,7 @@ import { createArkadCharacter, disposeScene, neonHelpers } from "./arkadCharacte
 import { createArkadashScenery } from "./arkadashScenery";
 import { startAudio, dashSounds } from "./audio";
 import type { GameContext } from "./gameContext";
+import { announceMinigameFinished } from "@/features/public/lib/minigameRecords";
 
 type Valores = Record<string, number>;
 interface Torre {
@@ -270,6 +271,7 @@ export function mountArkadash(c: GameContext) {
     $j('jFinTitulo').textContent = nuevoRecord ? '¡Nuevo récord!' : '¡Choque!';
     mostrar(pFin, true); $j('jOtra').focus({ preventScroll: true }); dashSounds.fin(nuevoRecord && puntos > 0);
     $j('jAnuncio').textContent = `Fin del vuelo: ${puntos} puntos. Récord: ${record}.`;
+    announceMinigameFinished({ game: 'ARKADASH', score: puntos }); // récord global (HU-52): el panel de la tarjeta pide el top
   }
 
   // ── Física a paso fijo (120 por segundo): igual en cualquier pantalla ──
@@ -438,13 +440,15 @@ export function mountArkadash(c: GameContext) {
   c.controles.arkadash = { activar: arrancar, desactivar: pausar };
 
   // ── Controles: clic o toque en el panel, Espacio / ↑ / W con la sección en pantalla, P o Esc para pausar ──
-  on($j('panelArkadash'), 'pointerdown', (e) => { if (e.button !== 0 || (e.target as Element).closest('button')) return; accion(); });
+  // el panel del récord global (alias para el top) no cuenta como toque: escribir o guardar no reinicia la partida
+  on($j('panelArkadash'), 'pointerdown', (e) => { if (e.button !== 0 || (e.target as Element).closest('button, .record-global')) return; accion(); });
   on($j('jJugar'), 'click', accion); on($j('jOtra'), 'click', accion);
   on(botonPausa, 'click', () => { if (estado !== 'jugando') return; pausar(); dashSounds.pausa(true); $j('jReanudar').focus({ preventScroll: true }); });
   on($j('jReanudar'), 'click', () => { accion(); cabina.focus({ preventScroll: true }); }); // reanuda (y aletea, como al tocar la pantalla)
   on(window, 'keydown', (e) => {
-    if (!activo() || !c.enVista() || estado === 'cargando' || c.visorAbierto()) return;
+    if (!activo() || !c.enVista() || estado === 'cargando' || c.visorAbierto() || c.escribiendo()) return;
     const a = document.activeElement, ajeno = a && a !== document.body && !cabina.contains(a);
+    if (a?.closest('.record-global') && /^(INPUT|BUTTON)$/.test(a.tagName)) return; // Espacio en «Guardar» guarda, no aletea
     if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && estado === 'jugando') { pausar(); dashSounds.pausa(true); return; }
     if (!(e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')) return;
     if (ajeno && /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(a.tagName)) return;

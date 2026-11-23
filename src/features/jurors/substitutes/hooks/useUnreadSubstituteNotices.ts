@@ -36,5 +36,5 @@ export function useUnreadSubstituteNotices(pollMs: number = SUBSTITUTE_NOTICES_P
     return () => window.clearInterval(interval);
   }, [load, pollMs]);
 
-  return { result, error, loading };
+  return { result, error, loading, reload: load };
 }

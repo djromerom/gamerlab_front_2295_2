@@ -13,9 +13,9 @@ Envoltorio sobre `fetch` que debe usarse en lugar de `fetch` directo:
 ## Funciones de API (una por tema)
 Compartidas, en `api/`: `editions`, `evaluationProgress`, `registrations`. El resto vive en `features/<dominio>/api/`:
 - `teams`: `editionStudents`, `teamVerification`, `teamGradable`.
-- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`. `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
+- `grading`: `evaluationTracking`. `results`: `finalGrade`, `ranking`, `publicPodium` (podio público de `/ranking`, HU-48). `academic`: `nrcs`. `games`: `gameFrame` (archivo jugable de un juego en vivo o histórico, HU-40).
 - `jurors`: `juryManagement` (management), `automaticAssignment` y `jurorsExport` (assignment), `jurorEdition`, `jurorAttendance`, `jurorCheckIn`, `jurorBadges`, `jurorSurvey`, `jurorPresence`, `absenceAlert`, `absentJurorResponses`.
-- `editions`: `eventSettings` (interruptores de la configuración del evento; muestra el 400 `RANKING_REQUIRES_FINAL_GRADE` de BG-67).
+- `editions`: `eventSettings` (interruptores de la configuración del evento; muestra el 400 `RANKING_REQUIRES_FINAL_GRADE` de BG-67; `fetchShowRanking` relee «Ranking público» después de ocultar la nota final). La tarjeta «Notas finales para los estudiantes» usa `results/api/finalGrade` (`GET` y `PATCH /final-grade/release`) desde `editions/hooks/useFinalGradeRelease` (HU-46).
 - `external-presenters`: `externalPresenters`. `notifications`: `pushNotifications`.
 - `editions`: `highlightedGames` (juegos históricos de una edición archivada y destacar o quitar un histórico, ARK-230). `public`: `highlightedGames` (`GET /highlighted-games`, también lo lee el selector de destacados del admin).
 

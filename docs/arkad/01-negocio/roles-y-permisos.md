@@ -24,7 +24,7 @@
 | Calificar | Sí | No | Sí | Sí | No |
 | Ver sus NRC, reportes por NRC/materia, exportar a Excel y guardar notas | Sí | No | Sí | No | No |
 | Administrar (asignar jurados, seguimiento, ediciones, landing, materias, NRC, criterios, ranking, desempate) | Sí | No | No | No | No |
-| Panel de seguimiento (solo lectura para el profesor) | Sí | No | Sí | Solo si es senior | No |
+| Panel de seguimiento (pantalla solo de la organización; el profesor ya no la ve desde ARK-297) | Sí | No | No | Solo si es senior | No |
 | Check-in por QR o nombre | Sí | No | No | No | Sí |
 | Tabla de asistencia de jurados (HU-29) | Sí | No | No | No | Sí (solo lectura) |
 | Agregar jurado del día y asignarle grupos automáticamente (HU-24) | Sí | No | No | No | No |

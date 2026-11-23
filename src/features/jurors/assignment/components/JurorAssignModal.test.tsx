@@ -66,4 +66,61 @@ describe("JurorAssignModal", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
   });
+
+  describe("ARK-277: jurado adicional", () => {
+    const fullTeam = {
+      ...(team as object),
+      jurados: [{ id: "j1" }, { id: "j2" }, { id: "j3" }],
+    } as never;
+    const aviso = /quedará como jurado adicional/;
+
+    it("avisa que el jurado elegido será adicional cuando el equipo ya tiene 3", () => {
+      render(
+        <JurorAssignModal
+          selectedTeam={fullTeam}
+          juradosDisponiblesParaModal={[]}
+          reassignContext={null}
+          isSubmitting={false}
+          onClose={vi.fn()}
+          onAssign={vi.fn()}
+          onReassign={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText(aviso)).toBeTruthy();
+      expect(screen.getByText("3/3 jurados asignados")).toBeTruthy();
+    });
+
+    it("no avisa si el equipo aún tiene espacios", () => {
+      render(
+        <JurorAssignModal
+          selectedTeam={team}
+          juradosDisponiblesParaModal={[]}
+          reassignContext={null}
+          isSubmitting={false}
+          onClose={vi.fn()}
+          onAssign={vi.fn()}
+          onReassign={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByText(aviso)).toBeNull();
+    });
+
+    it("no avisa al reasignar, porque no suma jurados", () => {
+      render(
+        <JurorAssignModal
+          selectedTeam={fullTeam}
+          juradosDisponiblesParaModal={[]}
+          reassignContext={{ teamId: 1, currentJurorId: "j1", currentJurorName: "Ana" }}
+          isSubmitting={false}
+          onClose={vi.fn()}
+          onAssign={vi.fn()}
+          onReassign={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByText(aviso)).toBeNull();
+    });
+  });
 });

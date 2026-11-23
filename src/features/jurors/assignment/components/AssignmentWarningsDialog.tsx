@@ -14,15 +14,25 @@ import {
   type AssignmentWarning,
 } from "@/features/jurors/assignment/lib/assignmentWarnings";
 
+/** Equipo que no se asignará aunque se continúe (HU-42, `blocked` del 409 en lote). */
+export interface BlockedItem {
+  key: string | number;
+  label: string;
+  message: string;
+}
+
 interface AssignmentWarningsDialogProps {
   // null = cerrado
   warnings: AssignmentWarning[] | null;
+  /** Equipos bloqueados: se listan aparte para que el admin sepa qué no se guardará. */
+  blocked?: BlockedItem[];
   onContinue: () => void;
   onCancel: () => void;
 }
 
 export function AssignmentWarningsDialog({
   warnings,
+  blocked = [],
   onContinue,
   onCancel,
 }: AssignmentWarningsDialogProps) {
@@ -65,6 +75,27 @@ export function AssignmentWarningsDialog({
               </li>
             ))}
           </ul>
+        )}
+
+        {blocked.length > 0 && (
+          <section aria-label="Equipos que no se asignarán" className="space-y-2">
+            <p className="text-sm font-medium">
+              {blocked.length === 1
+                ? "Este equipo no se asignará aunque continúes:"
+                : `Estos ${blocked.length} equipos no se asignarán aunque continúes:`}
+            </p>
+            <ul className="max-h-48 space-y-2 overflow-y-auto">
+              {blocked.map((item) => (
+                <li
+                  key={item.key}
+                  className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm"
+                >
+                  <span className="font-medium">{item.label}</span>
+                  <span className="block text-xs text-muted-foreground">{item.message}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         <AlertDialogFooter>

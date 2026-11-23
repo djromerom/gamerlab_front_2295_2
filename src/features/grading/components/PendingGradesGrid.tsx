@@ -123,9 +123,9 @@ export const PendingGradesGrid: React.FC<
   return (
     <div className="flex flex-col w-full md:bg-background text-foreground">
       {/* Barra de búsqueda y botón de buscar */}
-      <div className="flex items-center justify-end mb-4 px-5 ">
-        <div className="flex gap-3">
-          <div className="relative">
+      <div className="flex items-center justify-end mb-4 px-5">
+        <div className="flex w-full min-w-0 gap-3 md:w-auto">
+          <div className="relative min-w-0 flex-1 md:flex-none">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground">
               <SearchIcon />
             </div>
@@ -141,7 +141,7 @@ export const PendingGradesGrid: React.FC<
           </div>
           <Button
             variant="outline"
-            className="bg-card hover:bg-accent text-foreground h-9 flex items-center justify-center gap-1 px-4 cursor-pointer"
+            className="bg-card hover:bg-accent text-foreground h-9 flex shrink-0 items-center justify-center gap-1 px-4 cursor-pointer"
             onClick={handleSearch}
             disabled={isSearching}
           >

@@ -44,6 +44,7 @@ import {
   fromServerDraft,
   type DraftForm,
 } from "@/lib/evaluationDrafts";
+import { isJurorNotCheckedIn, NOT_CHECKED_IN_MESSAGE } from "@/lib/jurorCheckIn";
 import { UiCriterion } from "@/features/grading/types/criterion";
 import {
   apiErrorMessage,
@@ -323,11 +324,17 @@ export default function SchoolRatePage() {
 
       if (!res.ok) {
         let errorText = `${res.status} ${res.statusText}`;
+        let errorBody: unknown = null;
         try {
           // El 400 de puntajes nulos (back ARK-250) trae `message` como arreglo
-          errorText = apiErrorMessage(await res.json(), errorText);
+          errorBody = await res.json();
+          errorText = apiErrorMessage(errorBody, errorText);
         } catch {
           // no-op: no JSON body
+        }
+        // BG-71: sin llegada registrada no se guarda nada; lo escrito se conserva para reintentar
+        if (isJurorNotCheckedIn(res.status, errorBody)) {
+          throw new Error(NOT_CHECKED_IN_MESSAGE);
         }
         throw new Error(errorText);
       }
@@ -539,8 +546,8 @@ export default function SchoolRatePage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <div className="w-80px md:w-auto mt-6 rounded-lg border bg-muted-foreground/10 px-4 py-3 flex flex-row md:flex-row gap-3 md:gap-10 items-center md:items-center md:justify-end">
-                    <div className="flex flex-auto gap-2">
+                  <div className="w-full sm:w-auto mt-6 rounded-lg border bg-muted-foreground/10 px-4 py-3 flex flex-wrap gap-x-3 gap-y-1 md:gap-10 items-center justify-between sm:justify-end">
+                    <div className="flex gap-2">
                       <p className="tracking-tighter text-lg font-bold">
                         Nota Final
                       </p>
@@ -548,7 +555,7 @@ export default function SchoolRatePage() {
                     </div>
 
                     <div className="ml-0 md:ml-2">
-                      <span className="text- font-bold text-primary ">
+                      <span className="font-bold text-primary whitespace-nowrap">
                         {totalMaxScore > 0
                           ? `${totalScore.toFixed(2)} / ${totalMaxScore.toFixed(2)}`
                           : "—"}
@@ -572,7 +579,7 @@ export default function SchoolRatePage() {
                     {draftState && <DraftSaveIndicator state={draftState} />}
                   </div>
                   <Button
-                    className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2 "
+                    className="bg-[var(--selected)] hover:bg-[var(--selected-hover)] text-[var(--selected-foreground)] w-full sm:w-auto sm:min-w-[170px] flex justify-center items-center cursor-pointer outline md:outline-offset-2"
                     onClick={openConfirmDialog}
                     disabled={isSubmitting || uiCriteria.length === 0}
                   >

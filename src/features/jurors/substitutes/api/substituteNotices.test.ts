@@ -5,6 +5,7 @@ import {
   fetchUnreadSubstituteNotices,
   isRetryableNoticeError,
   markSubstituteNoticeRead,
+  resendSubstituteNoticeEmail,
 } from "@/features/jurors/substitutes/api/substituteNotices";
 
 const apiFetch = vi.fn();
@@ -71,5 +72,34 @@ describe("Cliente de avisos a suplentes (HU-22, ARK-84)", () => {
     expect(isRetryableNoticeError(new TypeError("Failed to fetch"))).toBe(true);
     expect(isRetryableNoticeError(new SubstituteNoticeError("x", 503))).toBe(true);
     expect(isRetryableNoticeError(new SubstituteNoticeError("x", 400))).toBe(false);
+  });
+});
+
+describe("Reenviar el correo de un aviso (BG-74, ARK-289)", () => {
+  afterEach(() => apiFetch.mockReset());
+
+  it("hace POST /substitute-notices/:id/resend sin body y devuelve el estado en cola", async () => {
+    apiFetch.mockResolvedValue(json(202, { noticeId: 12, emailStatus: "PENDING" }));
+
+    await expect(resendSubstituteNoticeEmail(12)).resolves.toEqual({ noticeId: 12, emailStatus: "PENDING" });
+    expect(apiFetch.mock.calls[0][0]).toBe(`${API}/substitute-notices/12/resend`);
+    expect(apiFetch.mock.calls[0][1]).toEqual({ method: "POST" });
+  });
+
+  it("conserva el code del 409 cuando el aviso ya no está en FAILED", async () => {
+    apiFetch.mockResolvedValue(
+      json(409, { statusCode: 409, code: "SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED", message: "Ya no falló.", emailStatus: "SENT" }),
+    );
+
+    const error = await resendSubstituteNoticeEmail(12).catch((e) => e);
+    expect(error).toBeInstanceOf(SubstituteNoticeError);
+    expect(error).toMatchObject({ status: 409, code: "SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED" });
+  });
+
+  it("con 403 dice que no tiene permiso para reenviar", async () => {
+    apiFetch.mockResolvedValue(json(403, { message: "Forbidden" }));
+
+    const error = await resendSubstituteNoticeEmail(12).catch((e) => e);
+    expect(error.message).toBe("No tienes permiso para reenviar el correo.");
   });
 });

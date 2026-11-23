@@ -21,7 +21,7 @@ const TABS: Array<{ value: PresenceTab; label: string }> = [
   { value: "ANY", label: "Con alguna alerta" },
   { value: "PRESENCE_UNCONFIRMED", label: "Presencia sin confirmar" },
   { value: "POSSIBLE_LEFT", label: "Posible salida" },
-  { value: "ALL", label: "Todos los que llegaron" },
+  { value: "ALL", label: "Todos con equipos por calificar" },
 ];
 
 const EMPTY_MESSAGE: Record<PresenceTab, string> = {
@@ -30,6 +30,13 @@ const EMPTY_MESSAGE: Record<PresenceTab, string> = {
   POSSIBLE_LEFT: "Ningún jurado aparece como posible salida.",
   ALL: "Todavía no ha llegado ningún jurado.",
 };
+
+/** BG-72: con gente que ya llegó pero nadie con equipos pendientes, no es que no haya llegado nadie. */
+const ALL_FINISHED_MESSAGE = "Todos los que llegaron ya calificaron sus equipos.";
+
+function pendingTeamsLabel(pending: number): string {
+  return pending === 1 ? "Le falta 1 equipo" : `Le faltan ${pending} equipos`;
+}
 
 const INDICATOR_STYLE: Record<PresenceIndicator, string> = {
   PRESENCE_UNCONFIRMED: "border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300",
@@ -158,13 +165,16 @@ function PresenceSettingsDialog({ open, onClose, onSaved }: { open: boolean; onC
 }
 
 /**
- * HU-23 en el panel de seguimiento (solo Administrador): jurados que llegaron con sus
- * indicadores "Presencia sin confirmar" y "Posible salida". Son solo avisos: no cambian grupos.
+ * HU-23 en el panel de seguimiento (solo Administrador): jurados que llegaron y todavía tienen
+ * equipos por calificar (BG-72), con sus indicadores "Presencia sin confirmar" y "Posible salida".
+ * Son solo avisos: no cambian grupos.
  */
 export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: boolean }) {
   const { tab, setTab, result, error, loading, reload } = useJurorPresenceList();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const rows = result?.data ?? [];
+  const allFinished =
+    tab === "ALL" && !!result && result.totals.checkedIn > 0 && result.totals.withPendingTeams === 0;
 
   return (
     <section aria-labelledby="juror-presence-title" className="mb-6 rounded-lg border p-4">
@@ -172,7 +182,8 @@ export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: b
         <div>
           <h2 id="juror-presence-title" className="font-semibold">Presencia de los jurados</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Solo son indicadores: no mueven ni quitan grupos. Si hace falta, suma un suplente.
+            Solo se listan los jurados que llegaron y todavía tienen equipos por calificar. Son solo
+            indicadores: no mueven ni quitan grupos. Si hace falta, suma un suplente.
           </p>
         </div>
         {canConfigure && (
@@ -186,6 +197,12 @@ export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: b
       {result && (
         <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span><strong>{result.totals.checkedIn}</strong> llegaron</span>
+          {result.totals.withPendingTeams !== undefined && (
+            <span><strong>{result.totals.withPendingTeams}</strong> con equipos por calificar</span>
+          )}
+          {result.totals.finished !== undefined && (
+            <span><strong>{result.totals.finished}</strong> ya terminaron</span>
+          )}
           <span><strong>{result.totals.presenceUnconfirmed}</strong> presencia sin confirmar</span>
           <span><strong>{result.totals.possibleLeft}</strong> posible salida</span>
           <span><strong>{result.totals.withAnyIndicator}</strong> con alguna alerta</span>
@@ -220,7 +237,7 @@ export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: b
       {loading && !result ? (
         <p className="p-4 text-center text-sm text-muted-foreground">Cargando presencia...</p>
       ) : !result ? null : rows.length === 0 ? (
-        <p className="p-4 text-center text-sm text-muted-foreground">{EMPTY_MESSAGE[tab]}</p>
+        <p className="p-4 text-center text-sm text-muted-foreground">{allFinished ? ALL_FINISHED_MESSAGE : EMPTY_MESSAGE[tab]}</p>
       ) : (
         <div className="max-h-96 overflow-auto rounded-md border">
           <table className="w-full min-w-[760px] text-sm">
@@ -242,6 +259,9 @@ export function JurorPresenceSection({ canConfigure = true }: { canConfigure?: b
                     <div className="text-xs text-muted-foreground">
                       {juror.category}{juror.isProfessor ? " · Profesor" : ""}
                     </div>
+                    {juror.pendingTeams !== undefined && (
+                      <div className="text-xs font-medium">{pendingTeamsLabel(juror.pendingTeams)}</div>
+                    )}
                   </td>
                   <td className="p-2">{formatBogotaDateTime(juror.checkedInAt, result.serverTime)}</td>
                   <td className="p-2">{juror.lastConfirmedAt ? formatBogotaDateTime(juror.lastConfirmedAt, result.serverTime) : "Sin responder"}</td>

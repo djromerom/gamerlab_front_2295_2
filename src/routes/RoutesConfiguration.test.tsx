@@ -124,6 +124,14 @@ describe("RoutesConfiguration (SP1: login, 404 y pantallas de relleno)", () => {
       expect(window.location.pathname).toBe("/inicio");
     },
   );
+
+  it("ARK-297: el profesor que abre /realtime-tracking-panel por URL ve «Acceso No Autorizado»", async () => {
+    stubBackend({ session: true, role: "Profesor" });
+    renderApp("/realtime-tracking-panel");
+
+    expect(await screen.findByRole("heading", { name: "Acceso No Autorizado" })).toBeTruthy();
+    expect(window.location.pathname).toBe("/unauthorized");
+  });
 });
 
 describe("routes", () => {
@@ -146,6 +154,17 @@ describe("routes", () => {
     expect(rolesOf("/mi-registro")).toEqual(["Presentador externo"]);
     // Entra a /inicio, que lo redirige a su panel
     expect(rolesOf("/inicio")).toContain("Presentador externo");
+  });
+
+  it("ARK-297: el seguimiento es solo del administrador y ya no existe «Mis empates»", () => {
+    const rolesOf = (path: string) => routes.find((r) => r.path === path)?.roles;
+    expect(rolesOf("/realtime-tracking-panel")).toEqual(["Administrador"]);
+    expect(routes.some((r) => r.path === "/ranking/mis-empates")).toBe(false);
+  });
+
+  it("HU-53: /criterios es del administrador, el jurado y el profesor (solo lectura)", () => {
+    const rolesOf = (path: string) => routes.find((r) => r.path === path)?.roles;
+    expect(rolesOf("/criterios")).toEqual(["Administrador", "Jurado", "Profesor"]);
   });
 
   it("restringe la guía de instalación al rol Jurado", () => {

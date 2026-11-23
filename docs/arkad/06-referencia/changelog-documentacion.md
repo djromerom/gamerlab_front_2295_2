@@ -2,6 +2,35 @@
 
 > Registro de qué existe y en qué estado. Actualizar en cada cambio.
 
+## 2026-11-20: «Editar notas» explica qué falta (HU-45, ARK-296)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en el Panel de Calificaciones el botón dice siempre «Editar notas» (antes «Selecciona un NRC» y deshabilitado). Si no se puede usar, queda con `aria-disabled` y atenuado, pero recibe toque, clic y teclado y muestra un aviso (toast, leído por el lector de pantalla): «Elige un NRC para editar sus notas», «Estás viendo históricos: vuelve a la feria actual» o «Este NRC no tiene notas editables». Mientras carga no avisa. La causa la decide `features/results/lib/editGradesBlock.ts`.
+
+## 2026-11-20: panel del profesor usable a 360 px (BG-76, ARK-295)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): las pantallas del Profesor se usan a 360, 390 y 768 px sin scroll horizontal. En el Panel de Calificaciones, «Cancelar», «Guardar todo» y «Exportar» van en una fila que se envuelve (el título queda arriba hasta 1024 px), igual que las pestañas y el pie de paginación. El buscador de `/colegios-calificar` y `/colegios-evaluados` (también el del jurado) encoge para dejar visible «Buscar». En `/colegios-calificar/:id` la caja «Nota Final» ocupa el ancho en celular (se quitó la clase inválida `w-80px`) y «Enviar Evaluación» va a todo el ancho. La tabla de notas sigue con su propio scroll horizontal dentro de la tarjeta.
+
+## 2026-11-20: liberar la nota final desde Configuración del evento (HU-46, ARK-302; back ARK-301)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): se borró `/notas-finales` (`FinalGradeReleasePage`) y su enlace «Notas Finales» del menú. La nota final se libera con la tarjeta «Notas finales para los estudiantes» de `/configuracion-evento` (`EventSetupCard`, como las demás): deshabilitada antes de la hora de cierre de la feria con «Se puede activar desde las 12:00 del 26/11/2026 (hora de Colombia).», confirmación con diálogo de la app si hay equipos con la nota en proceso, «Liberada el …» en hora de Bogotá y, si el back rechaza el cambio, vuelve a su estado y muestra su mensaje. Ocultarla vuelve a leer «Ranking público», que el back también apaga (BG-67).
+- [consumo-de-api](../03-frontend/consumo-de-api.md): `fetchShowRanking` en `editions/api/eventSettings.ts` y el hook `editions/hooks/useFinalGradeRelease`. El método es `PATCH /final-grade/release` en los dos lados (el front ya lo usaba; `PUT` responde 404).
+
+## 2026-11-20: podio público sin notas en /ranking (HU-48, ARK-307; back ARK-306)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md): el `/ranking` público muestra solo los 3 primeros de cada nivel, sin notas ni ponderación; el ranking completo sigue en `/tiebreaker`.
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md) y [consumo-de-api](../03-frontend/consumo-de-api.md): `/ranking` sin «Todos», sin lista debajo del podio, sin nota en el podio y sin «Nota final: 60 % profesores y 40 % jurados». Una sola consulta a `by-n/all`, pestañas solo de los niveles que llegan, puestos por `levelPosition`, error con «Reintentar». La página ya no llama a `apiFetch` directamente. Se borraron `PUBLIC_FINAL_GRADE_WEIGHTING_TEXT`, `splitByFinalScore` y `PublicRankingTab`, que solo usaba esta página.
+
+## 2026-11-20: el profesor ya no ve el panel de seguimiento (ARK-297)
+
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md) y [roles-y-permisos](../01-negocio/roles-y-permisos.md): `/realtime-tracking-panel` queda solo para el Administrador; el Profesor que abre la URL llega a «Acceso No Autorizado». Su menú pierde «Seguimiento → Avance por hora» («Empates del ranking» ya salió con HU-47, ARK-305). Pedido del profesor del 19-nov. Los endpoints de lectura que HU-12 abrió al profesor siguen igual en el back; solo se quitó la pantalla.
+- **Pendiente aparte:** la copia de `01-negocio/roles-y-permisos.md` del back todavía dice que el profesor ve el seguimiento en solo lectura.
+
+## 2026-11-20: empates resueltos por fecha de inscripción y /tiebreaker en solo lectura (HU-47, ARK-305; back ARK-304)
+
+- [reglas-de-negocio](../01-negocio/reglas-de-negocio.md), [glosario](glosario.md) y [que-es-arkad](../00-inicio-rapido/que-es-arkad.md): todo empate se resuelve por `fecha_registro` (con la misma fecha, el id menor); el profesor ya no decide. Reemplaza P-05.
+- [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): se borró `/ranking/mis-empates` (`ProfessorRankingTiesPage`) y su enlace «Empates del ranking» del menú del profesor. `/tiebreaker` carga todos los empates (`GET /ranking/ties` sin `status`) y los muestra en el orden de `order`, con la fecha de inscripción en hora de Bogotá y el motivo, sin controles para decidir; «Definir ranking final» ya no se bloquea; las decisiones guardadas salen como «Decisiones anteriores» (no cambian el orden). El filtro de nivel incluye N10. `/ranking` ya no tiene la etiqueta «Empate pendiente».
+- `features/results/api/ranking.ts`: sin `fetchMyTies` ni `decideTie`; `TieRule` es `"REGISTRATION"` y se dejan de leer `deciders`, `decision`, `provisional` y `pendingTies`. Lógica pura en `features/results/lib/tieResolution.ts`.
+
 ## 2026-11-18: equipos sin nota fuera del podio en /ranking (HU-34 p3, ARK-238)
 
 - [rutas-y-pantallas](../03-frontend/rutas-y-pantallas.md): en `/ranking` un equipo con `finalScore: null` ya no sale con 0.00 ni con puesto, ni en el podio: va al final de la tabla con «—» y «Nota en proceso». Los equipos con nota mantienen el orden y la posición que manda el back. La lógica de «Sin nota» y «Nota en proceso» pasó de `RankingGroupCard` a `features/results/lib/rankingScore.ts`. A 360 px la tabla usa menos relleno para que «Calificación» no se corte.

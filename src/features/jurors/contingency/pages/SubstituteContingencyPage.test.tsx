@@ -126,7 +126,7 @@ describe("Contingencia con suplentes (HU-14, ARK-214)", () => {
     Object.values(api).forEach((mock) => mock.mockReset());
   });
 
-  it("muestra los grupos en riesgo con el estado de cada jurado, los sugeridos y las advertencias", async () => {
+  it("muestra los grupos en riesgo con el estado de cada jurado y los sugeridos", async () => {
     renderPage();
     await flush();
 
@@ -140,12 +140,24 @@ describe("Contingencia con suplentes (HU-14, ARK-214)", () => {
     expect(within(group).getByText("Ya evaluó")).toBeTruthy();
     expect(within(group).getByText("Laura Gómez")).toBeTruthy();
     expect(within(group).getByText("1 grupo si se acepta")).toBeTruthy();
-    expect(within(group).getByText("Laura quedaría con grupos de dos niveles")).toBeTruthy();
 
     const school = card("N0-COL-02");
     expect(within(school).getByText(/N0 · Colegios/)).toBeTruthy();
     expect(within(school).getByText("1 faltante sin suplente que lo cubra.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Aceptar todo \(2\)/ }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("no muestra las advertencias de HU-08 en la tarjeta del grupo, pero sí el aviso «sin suplente» (ARK-288)", async () => {
+    api.fetchContingencySuggestions.mockResolvedValue(
+      resultOf([{ ...pixelHunters, sinCubrir: 1 }]),
+    );
+    renderPage();
+    await flush();
+
+    const group = card("N1-AYP-06");
+    expect(within(group).queryByText("Laura quedaría con grupos de dos niveles")).toBeNull();
+    expect(within(group).queryByRole("list", { name: "Advertencias de N1-AYP-06" })).toBeNull();
+    expect(within(group).getByText("1 faltante sin suplente que lo cubra.")).toBeTruthy();
   });
 
   it("antes de la hora de control avisa que se cuentan todos los asignados", async () => {
@@ -154,6 +166,18 @@ describe("Contingencia con suplentes (HU-14, ARK-214)", () => {
     await flush();
 
     expect(screen.getByText(/Aún no es la hora de control \(11:00\): se cuentan todos los asignados/)).toBeTruthy();
+  });
+
+  it("marca al jurado que avisó que no vendrá (HU-44)", async () => {
+    const withNotComing = {
+      ...pixelHunters,
+      jurados: pixelHunters.jurados.map((juror) => (juror.id === "j-ana" ? { ...juror, noVendra: true } : juror)),
+    };
+    api.fetchContingencySuggestions.mockResolvedValue(resultOf([withNotComing], { fase: "ALERT", base: "ASSIGNED" }));
+    renderPage();
+    await flush();
+
+    expect(within(card("N1-AYP-06")).getByText("No vendrá")).toBeTruthy();
   });
 
   it("sin grupos en riesgo muestra el estado vacío y desactiva «Aceptar todo»", async () => {

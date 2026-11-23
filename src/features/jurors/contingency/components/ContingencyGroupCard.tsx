@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, UserSearch, X } from "lucide-react";
+import { Check, UserSearch, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { GroupJurorStatus, GroupSuggestion } from "@/features/jurors/contingency/api/contingency";
@@ -64,6 +64,7 @@ export function ContingencyGroupCard({ group, minimum, disabled, onAccept, onRej
                   </span>
                   <span className="flex items-center gap-1.5">
                     {juror.evaluo && <Badge variant="outline">Ya evaluó</Badge>}
+                    {juror.noVendra && <Badge variant="outline">No vendrá</Badge>}
                     <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusClass[juror.estado]}`}>
                       {jurorStatusLabel[juror.estado]}
                     </span>
@@ -100,17 +101,8 @@ export function ContingencyGroupCard({ group, minimum, disabled, onAccept, onRej
         </section>
       </div>
 
-      {group.advertencias.length > 0 && (
-        <ul aria-label={`Advertencias de ${group.codigo}`} className="mt-3 space-y-1">
-          {group.advertencias.map((warning, index) => (
-            <li key={`${warning.code}-${index}`} className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-xs">
-              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-              {warning.message}
-            </li>
-          ))}
-        </ul>
-      )}
-
+      {/* ARK-288: las advertencias de HU-08 (group.advertencias) no se pintan aquí; salen
+          solo en el diálogo «Continuar / Cancelar» al asignar, para no llenar la pantalla. */}
       <footer className="mt-4 flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" size="sm" disabled={disabled || !canChoose} onClick={() => onChoose(group)}>
           <UserSearch /> Elegir otro

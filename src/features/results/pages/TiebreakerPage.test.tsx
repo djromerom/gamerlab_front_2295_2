@@ -42,7 +42,6 @@ const team = (teamId: number, teamCode: string, teamName: string, finalScore: nu
   registrationDate: "2026-10-01T12:00:00.000Z",
   podium: true,
   tieKey: null,
-  provisional: false,
 });
 
 const group = (level: number, teams: RankedTeam[]): RankingGroup => ({
@@ -62,7 +61,6 @@ const snapshot = (): RankingSnapshot => ({
   editionId: 3,
   podiumSize: 3,
   weighting: { configured: true, juniorPct: 40, seniorPct: 60 },
-  pendingTies: 0,
   finalized: null,
   levels: [N0, N1],
 });
@@ -74,13 +72,15 @@ const N0_TIE: TieGroup = {
   score: 3.6,
   positions: [2, 3],
   affectsPodium: true,
-  rule: "MANUAL",
-  status: "PENDING",
-  deciders: [],
-  teams: [],
-  order: [11, 12],
-  decision: null,
-  explanation: "Empate sin profesor común: lo resuelve el administrador.",
+  rule: "REGISTRATION",
+  status: "RESOLVED",
+  teams: [
+    { teamId: 11, teamCode: "N0-COL-007", teamName: "Red Invisible", videogameName: "Juego", registrationDate: "2026-10-05T15:00:00.000Z" },
+    { teamId: 12, teamCode: "N0-COL-009", teamName: "Faro", videogameName: "Juego", registrationDate: "2026-10-03T15:00:00.000Z" },
+  ],
+  order: [12, 11],
+  explanation:
+    "Resuelto por fecha de inscripción: primero el grupo inscrito antes. Orden: N0-COL-009 (2026-10-03T15:00:00.000Z), N0-COL-007 (2026-10-05T15:00:00.000Z).",
 };
 
 const N0_DECISION: RankingDecision = {
@@ -143,7 +143,7 @@ describe("Ranking oficial solo por nivel, sin grupo «Externos» (ARK-273)", () 
   });
 
   it("los empates y decisiones se llaman por su nivel", async () => {
-    fetchRanking.mockResolvedValue({ ...snapshot(), pendingTies: 1 });
+    fetchRanking.mockResolvedValue(snapshot());
     fetchRankingTies.mockResolvedValue([N0_TIE]);
     fetchRankingDecisions.mockResolvedValue([N0_DECISION]);
     renderPage();
@@ -182,5 +182,97 @@ describe("Ranking oficial solo por nivel, sin grupo «Externos» (ARK-273)", () 
 
     fireEvent.click(screen.getByRole("button", { name: "Definir ranking final" }));
     expect(await screen.findByText("Ranking final definido: 4 grupos en 2 niveles.")).toBeTruthy();
+  });
+});
+
+describe("/tiebreaker en solo lectura: empates resueltos por inscripción (HU-47, ARK-305)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    fetchRanking.mockResolvedValue(snapshot());
+    fetchRankingDecisions.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.resetAllMocks();
+  });
+
+  it("pide todos los empates (sin status) y los muestra en el orden resuelto, con el motivo", async () => {
+    fetchRankingTies.mockResolvedValue([N0_TIE]);
+    renderPage();
+    const tie = await screen.findByRole("article", { name: "Empate N0 3.60" });
+    expect(fetchRankingTies).toHaveBeenCalledWith();
+    expect(within(tie).getByText("Resuelto por fecha de inscripción")).toBeTruthy();
+    const names = within(tie).getAllByRole("listitem").map((item) => item.textContent ?? "");
+    expect(names[0]).toMatch(/^2\.Faro.*inscrito el 03\/10\/2026/);
+    expect(names[1]).toMatch(/^3\.Red Invisible.*inscrito el 05\/10\/2026/);
+    expect(within(tie).getByText("Resuelto por fecha de inscripción: primero el grupo inscrito antes.")).toBeTruthy();
+    expect(tie.textContent).not.toContain("T15:00:00");
+  });
+
+  it("no hay controles para decidir", async () => {
+    fetchRankingTies.mockResolvedValue([N0_TIE]);
+    renderPage();
+    await screen.findByRole("article", { name: "Empate N0 3.60" });
+    expect(screen.queryByRole("button", { name: /Resolver|Guardar decisión/ })).toBeNull();
+    expect(screen.queryByPlaceholderText(/Motivo/)).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByText(/pendiente/i)).toBeNull();
+  });
+
+  it("un equipo sin fecha de inscripción se marca", async () => {
+    fetchRankingTies.mockResolvedValue([
+      { ...N0_TIE, teams: [N0_TIE.teams[1], { ...N0_TIE.teams[0], registrationDate: null }], order: [12, 11] },
+    ]);
+    renderPage();
+    expect(await screen.findByText("Sin fecha de inscripción (va después)")).toBeTruthy();
+  });
+
+  it("al elegir un nivel solo muestra los empates de ese nivel", async () => {
+    fetchRankingTies.mockResolvedValue([N0_TIE, { ...N0_TIE, tieKey: "3:N1:4.50:1,40", level: 1, score: 4.5 }]);
+    renderPage();
+    await screen.findByRole("article", { name: "Empate N1 4.50" });
+    expect(screen.getByText("Empates (2)")).toBeTruthy();
+    fireEvent.change(screen.getByDisplayValue("Todos los niveles"), { target: { value: "1" } });
+    await waitFor(() => expect(screen.queryByRole("article", { name: "Empate N0 3.60" })).toBeNull());
+    expect(screen.getByRole("article", { name: "Empate N1 4.50" })).toBeTruthy();
+  });
+
+  it("las decisiones guardadas antes quedan como historial que no cambia el orden", async () => {
+    fetchRankingTies.mockResolvedValue([]);
+    fetchRankingDecisions.mockResolvedValue([N0_DECISION]);
+    renderPage();
+    expect(await screen.findByRole("heading", { name: "Decisiones anteriores" })).toBeTruthy();
+    expect(screen.getByText("Quedan como historial: ya no cambian el orden del ranking.")).toBeTruthy();
+    expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "N0 · Administrador")).toBeTruthy();
+    expect(screen.getByText("No hay empates.")).toBeTruthy();
+  });
+
+  it("una decisión por inscripción del historial no muestra las fechas en ISO", async () => {
+    fetchRankingTies.mockResolvedValue([]);
+    fetchRankingDecisions.mockResolvedValue([
+      { ...N0_DECISION, method: "REGISTRATION", reason: N0_TIE.explanation },
+    ]);
+    renderPage();
+    expect(await screen.findByText("Resuelto por fecha de inscripción: primero el grupo inscrito antes.")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("T15:00:00");
+  });
+
+  it("«Definir ranking final» no se bloquea por empates", async () => {
+    fetchRankingTies.mockResolvedValue([N0_TIE]);
+    finalizeRanking.mockResolvedValue({ editionId: 3, teams: 4, levels: [{ level: 0, label: "N0", teams: 4 }], registeredDecisions: 1 });
+    vi.stubGlobal("confirm", () => true);
+    renderPage();
+    await screen.findByRole("article", { name: "Empate N0 3.60" });
+    const button = screen.getByRole("button", { name: "Definir ranking final" });
+    expect(button.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(button);
+    expect(await screen.findByText("Ranking final definido: 4 grupos en 1 nivel.")).toBeTruthy();
   });
 });

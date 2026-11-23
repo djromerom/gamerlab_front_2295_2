@@ -163,6 +163,8 @@ describe("saveDraft", () => {
     const cases: [Response, string][] = [
       [json(409, { code: "DRAFT_VERSION_CONFLICT", message: "cambió", draft: remote }), "conflict"],
       [json(409, { code: "EVALUATION_ALREADY_SUBMITTED", message: "ya", evaluationId: 9 }), "submitted"],
+      [json(409, { code: "JUROR_NOT_CHECKED_IN", message: "Registra tu llegada" }), "not-checked-in"],
+      [json(409, { message: "otro 409 sin code" }), "unknown"],
       [json(403, { message: "Este grupo no está asignado al evaluador" }), "forbidden"],
       [json(400, { message: ["score must be a number"] }), "invalid"],
       [json(503, {}), "network"],

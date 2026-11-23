@@ -6,19 +6,28 @@ import {
   JurorEditionError,
   type EditionJurorItem,
   type EditionJurorsList,
+  type JurorImportReport,
 } from "@/features/jurors/edition/api/jurorEdition";
 
 const fetchEditionJurors = vi.fn();
 const updateJurorStatuses = vi.fn();
-const importPreviousJurors = vi.fn();
+const importJurorsFromExcel = vi.fn();
+const downloadJurorTemplate = vi.fn();
 const enrollJurorByEmail = vi.fn();
+const saveBlobAsFile = vi.fn();
 
 vi.mock("@/features/jurors/edition/api/jurorEdition", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/jurors/edition/api/jurorEdition")>()),
   fetchEditionJurors: (...args: unknown[]) => fetchEditionJurors(...args),
   updateJurorStatuses: (...args: unknown[]) => updateJurorStatuses(...args),
-  importPreviousJurors: (...args: unknown[]) => importPreviousJurors(...args),
+  importJurorsFromExcel: (...args: unknown[]) => importJurorsFromExcel(...args),
+  downloadJurorTemplate: (...args: unknown[]) => downloadJurorTemplate(...args),
   enrollJurorByEmail: (...args: unknown[]) => enrollJurorByEmail(...args),
+}));
+
+vi.mock("@/features/jurors/assignment/api/jurorsExport", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/jurors/assignment/api/jurorsExport")>()),
+  saveBlobAsFile: (...args: unknown[]) => saveBlobAsFile(...args),
 }));
 
 vi.mock("@/api/editions", () => ({
@@ -48,11 +57,15 @@ const juror = (
 
 const listOf = (
   data: EditionJurorItem[],
-  { writable = true, PENDING = 2 }: { writable?: boolean; PENDING?: number } = {},
+  {
+    writable = true,
+    PENDING = 2,
+    status = "ACTIVE",
+  }: { writable?: boolean; PENDING?: number; status?: EditionJurorsList["edition"]["status"] } = {},
 ): EditionJurorsList => ({
   data,
   metadata: { totalItems: data.length, itemsOnCurrentPage: data.length, currentPage: 1, itemsPerPage: 20, totalPages: 1 },
-  edition: { id: 5, title: "Feria Gamer 2026-30", status: "ACTIVE", writable },
+  edition: { id: 5, title: "Feria Gamer 2026-30", status, writable },
   counts: { PENDING, CONFIRMED: 0, DECLINED: 0, AUTOMATIC: 1 },
 });
 
@@ -118,7 +131,7 @@ describe("Página «Jurados de la edición» (ARK-126)", () => {
     renderPage();
 
     expect(await screen.findByText("Edición de solo lectura")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Traer de la edición anterior/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Importar desde Excel/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Inscribir por correo/ })).toBeNull();
     expect(screen.queryByLabelText("Seleccionar Ana Test")).toBeNull();
   });
@@ -307,6 +320,120 @@ describe("Página «Jurados de la edición» (ARK-126)", () => {
       fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
       expect(await screen.findByText("Profesor con NRC en la edición: es jurado automático")).toBeTruthy();
+    });
+  });
+
+  describe("importar desde Excel (ARK-281)", () => {
+    const REPORT: JurorImportReport = {
+      edition: { id: 5, title: "Feria Gamer 2026-30" },
+      summary: { total: 3, created: 1, confirmed: 1, alreadyConfirmed: 0, errors: 1, emailsQueued: 1 },
+      rows: [
+        { row: 2, email: "ana.perez@empresa.com", firstName: "Ana", lastName: "Pérez", type: "OFFICIAL",
+          result: "CREATED", accountCreated: true, emailStatus: "QUEUED" },
+        { row: 3, email: "luis.gomez@empresa.com", firstName: "Luis", lastName: "Gómez", type: "BACKUP",
+          result: "CONFIRMED", accountCreated: false, emailStatus: "NOT_NEEDED" },
+        { row: 4, email: "correo-malo", firstName: "Eva", lastName: "Ruiz", type: null,
+          result: "ERROR", accountCreated: false, emailStatus: "NOT_NEEDED",
+          error: "INVALID_EMAIL", message: "El correo electrónico no es válido" },
+      ],
+    };
+
+    const openImport = async () => {
+      fireEvent.click(await screen.findByRole("button", { name: /Importar desde Excel/ }));
+      return screen.findByRole("dialog");
+    };
+
+    const pickFile = (dialog: HTMLElement, name = "jurados.xlsx") =>
+      fireEvent.change(within(dialog).getByLabelText(/Archivo de Excel/), {
+        target: { files: [new File(["xlsx"], name)] },
+      });
+
+    it("reemplaza «Traer de la edición anterior» por «Importar desde Excel»", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      renderPage();
+
+      expect(await screen.findByRole("button", { name: /Importar desde Excel/ })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /Traer de la edición anterior/ })).toBeNull();
+      expect(screen.getByText(/se crean las cuentas que falten/)).toBeTruthy();
+    });
+
+    it("en una edición que no es la activa no deja importar, pero sí inscribir por correo", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS, { status: "INACTIVE" }));
+      renderPage();
+
+      expect(await screen.findByRole("button", { name: /Inscribir por correo/ })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /Importar desde Excel/ })).toBeNull();
+    });
+
+    it("descarga la plantilla desde el diálogo", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      downloadJurorTemplate.mockResolvedValue("plantilla-jurados.xlsx");
+      renderPage();
+
+      const dialog = await openImport();
+      expect(within(dialog).getByText(/Quedan Confirmados en Feria Gamer 2026-30/)).toBeTruthy();
+      fireEvent.click(within(dialog).getByRole("button", { name: /Descargar plantilla/ }));
+
+      await vi.waitFor(() => expect(downloadJurorTemplate).toHaveBeenCalledTimes(1));
+    });
+
+    it("no sube un archivo que no es .xlsx", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      renderPage();
+
+      const dialog = await openImport();
+      pickFile(dialog, "jurados.csv");
+
+      expect(within(dialog).getByRole("alert").textContent).toMatch(/debe ser un Excel \.xlsx/);
+      expect((within(dialog).getByRole("button", { name: "Importar" }) as HTMLButtonElement).disabled).toBe(true);
+      expect(importJurorsFromExcel).not.toHaveBeenCalled();
+    });
+
+    it("muestra el informe con los errores primero, avisa de los correos y recarga la lista", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      importJurorsFromExcel.mockResolvedValue(REPORT);
+      renderPage();
+
+      const dialog = await openImport();
+      pickFile(dialog);
+      fireEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
+
+      expect(await within(dialog).findByText("1 creado")).toBeTruthy();
+      expect(importJurorsFromExcel).toHaveBeenCalledWith(expect.any(File));
+      expect(within(dialog).getByText("1 con error")).toBeTruthy();
+      expect(within(dialog).getByText(/1 correo en cola/)).toBeTruthy();
+
+      const rows = within(dialog).getAllByRole("row");
+      expect(rows.map((r) => r.querySelector("td")?.textContent ?? "header")).toEqual(["header", "4", "2", "3"]);
+      expect(within(rows[1]).getByText("El correo electrónico no es válido")).toBeTruthy();
+      expect(within(rows[1]).getByText("Error")).toBeTruthy();
+      expect(within(rows[2]).getByText("Creado")).toBeTruthy();
+      expect(within(rows[2]).getByText("Correo para crear la contraseña en cola")).toBeTruthy();
+      expect(within(rows[3]).getByText("Suplente")).toBeTruthy();
+
+      // La lista se pide de nuevo para mostrar a los importados
+      await vi.waitFor(() => expect(fetchEditionJurors).toHaveBeenCalledTimes(2));
+
+      fireEvent.click(within(dialog).getByRole("button", { name: /Descargar informe/ }));
+      expect(saveBlobAsFile).toHaveBeenCalledWith(
+        expect.any(Blob),
+        expect.stringMatching(/^informe-importacion-jurados-\d{4}-\d{2}-\d{2}\.csv$/),
+      );
+    });
+
+    it("si el back rechaza el archivo muestra su motivo y no recarga la lista", async () => {
+      fetchEditionJurors.mockResolvedValue(listOf(JURORS));
+      importJurorsFromExcel.mockRejectedValue(
+        new JurorEditionError("El archivo no tiene las columnas de la plantilla", 400),
+      );
+      renderPage();
+
+      const dialog = await openImport();
+      pickFile(dialog);
+      fireEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
+
+      expect(await within(dialog).findByText("El archivo no tiene las columnas de la plantilla")).toBeTruthy();
+      expect(fetchEditionJurors).toHaveBeenCalledTimes(1);
     });
   });
 });

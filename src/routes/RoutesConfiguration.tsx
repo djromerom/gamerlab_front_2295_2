@@ -20,7 +20,6 @@ import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import TeamsManagementPage from "@/features/teams/pages/TeamsManagementPage";
 import GradeWeightsPage from "@/features/academic/pages/GradeWeightsPage";
 import TiebreakerPage from "@/features/results/pages/TiebreakerPage";
-import ProfessorRankingTiesPage from "@/features/results/pages/ProfessorRankingTiesPage";
 import EditionsManagementPage from "@/features/editions/pages/EditionsManagementPage";
 import JurorBadgesPage from "@/features/jurors/badges/pages/JurorBadgesPage";
 import EditionJurorsPage from "@/features/jurors/edition/pages/EditionJurorsPage";
@@ -28,7 +27,6 @@ import JurorCheckInPage from "@/features/jurors/attendance/pages/JurorCheckInPag
 import JurorAttendancePage from "@/features/jurors/attendance/pages/JurorAttendancePage";
 import StaffAccountsPage from "@/features/staff-accounts/pages/StaffAccountsPage";
 import PushNotificationsPage from "@/features/notifications/pages/PushNotificationsPage";
-import FinalGradeReleasePage from "@/features/results/pages/FinalGradeReleasePage";
 import JurorSurveyResultsPage from "@/features/jurors/survey/pages/JurorSurveyResultsPage";
 import ExternalPresentersPage from "@/features/external-presenters/pages/ExternalPresentersPage";
 import MyRegistrationPage from "@/features/external-presenters/pages/MyRegistrationPage";
@@ -104,7 +102,8 @@ export const routes: RouteConfig[] = [
   {
     path: "/realtime-tracking-panel",
     element: <RealtimeTrackingPage />,
-    roles: ["Administrador", "Profesor"],
+    // ARK-297: el seguimiento es solo de la organización; el profesor ya no lo ve.
+    roles: ["Administrador"],
   },
   {
     // HU-14 (ARK-214): grupos en riesgo y sugerencia de suplentes
@@ -228,11 +227,6 @@ export const routes: RouteConfig[] = [
     roles: ["Presentador externo"],
   },
   {
-    path: "/notas-finales",
-    element: <FinalGradeReleasePage />,
-    roles: ["Administrador"],
-  },
-  {
     path: "/encuesta-jurados",
     element: <JurorSurveyResultsPage />,
     roles: ["Administrador"],
@@ -279,16 +273,16 @@ export const routes: RouteConfig[] = [
   { path: "/calificados", element: <GradedPage />, roles: ["Jurado"] },
 
   { path: "/nrcs", element: <NrcsPage />, roles: ["Administrador"] },
-  { path: "/criterios", element: <CriteriaPage />, roles: ["Administrador"] },
+  // HU-53 (ARK-325): jurados y profesores consultan las rúbricas en solo lectura
+  {
+    path: "/criterios",
+    element: <CriteriaPage />,
+    roles: ["Administrador", "Jurado", "Profesor"],
+  },
   {
     path: "/tiebreaker",
     element: <TiebreakerPage />,
     roles: ["Administrador"],
-  },
-  {
-    path: "/ranking/mis-empates",
-    element: <ProfessorRankingTiesPage />,
-    roles: ["Profesor"],
   },
   {
     path: "/profesores",

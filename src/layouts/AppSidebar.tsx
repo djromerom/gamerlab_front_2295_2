@@ -26,6 +26,7 @@ import {
   Presentation,
   Smartphone,
   LifeBuoy,
+  ClipboardList,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavUser } from "@/layouts/NavUser";
@@ -76,7 +77,6 @@ const MENU: Record<Role, MenuItem[]> = {
         { name: "Presentadores externos", url: "/presentadores-externos", icon: Presentation },
         { name: "Panel de Seguimiento", url: "/realtime-tracking-panel", icon: ChartLine },
         { name: "Contingencia con suplentes", url: "/contingencia-suplentes", icon: LifeBuoy },
-        { name: "Notas Finales", url: "/notas-finales", icon: BookCheck },
         { name: "Encuesta de Jurados", url: "/encuesta-jurados", icon: MessageSquareHeart },
       ],
     },
@@ -95,6 +95,8 @@ const MENU: Record<Role, MenuItem[]> = {
           icon: LibraryBig,
         },
         { name: "Calificados", url: "/calificados", icon: Binary },
+        // HU-53: criterios de calificación en solo lectura
+        { name: "Rúbricas", url: "/criterios", icon: ClipboardList },
       ],
     },
     {
@@ -126,20 +128,10 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/colegios-evaluados",
           icon: BookCheck
         },
+        // HU-53: criterios de calificación en solo lectura
+        { name: "Rúbricas", url: "/criterios", icon: ClipboardList },
       ],
 
-    },
-    {
-      title: "Seguimiento",
-      items: [
-        { name: "Avance por hora", url: "/realtime-tracking-panel", icon: ChartLine },
-      ],
-    },
-    {
-      title: "Ranking",
-      items: [
-        { name: "Empates del ranking", url: "/ranking/mis-empates", icon: Trophy },
-      ],
     },
     {
       title: "Cuenta",

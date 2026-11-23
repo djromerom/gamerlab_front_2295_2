@@ -69,6 +69,8 @@ export interface UnreadSubstituteNotices {
 export const SUBSTITUTE_NOTICES_POLL_MS = 10_000;
 
 export const SUBSTITUTE_NOTICE_NOT_FOUND = "SUBSTITUTE_NOTICE_NOT_FOUND";
+/** BG-74: el aviso ya no está en FAILED (doble clic u otro administrador lo reenvió primero). */
+export const SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED = "SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED";
 
 export const EMAIL_STATUS_LABEL: Record<NoticeEmailStatus, string> = {
   PENDING: "Enviando correo",
@@ -90,7 +92,11 @@ export class SubstituteNoticeError extends Error {
   }
 }
 
-async function toError(res: Response, fallback: string): Promise<SubstituteNoticeError> {
+async function toError(
+  res: Response,
+  fallback: string,
+  forbidden = "No tienes permiso para ver los avisos de suplentes.",
+): Promise<SubstituteNoticeError> {
   let message: string | undefined;
   let code: string | undefined;
   try {
@@ -102,7 +108,7 @@ async function toError(res: Response, fallback: string): Promise<SubstituteNotic
     // no es JSON
   }
   if (res.status === 404 && code === "NO_ACTIVE_EDITION") message = "No hay una feria activa.";
-  if (res.status === 403) message = "No tienes permiso para ver los avisos de suplentes.";
+  if (res.status === 403) message = forbidden;
   return new SubstituteNoticeError(message ?? fallback, res.status, code);
 }
 
@@ -132,5 +138,23 @@ export async function markSubstituteNoticeRead(id: number): Promise<SubstituteNo
 export async function fetchUnreadSubstituteNotices(): Promise<UnreadSubstituteNotices> {
   const res = await apiFetch(`${API_URL}/substitute-notices/unread`);
   if (!res.ok) throw await toError(res, "No se pudieron cargar los avisos sin leer de los suplentes.");
+  return res.json();
+}
+
+export interface ResentSubstituteNotice {
+  noticeId: number;
+  /** PENDING: el correo quedó en cola; cambia a SENT o FAILED en /unread en unos segundos. */
+  emailStatus: NoticeEmailStatus;
+}
+
+/**
+ * BG-74 (ARK-289/290): vuelve a enviar el correo de un aviso cuyo envío falló (Administrador).
+ * 202 = en cola. 409 SUBSTITUTE_NOTICE_EMAIL_NOT_FAILED si ya no está en FAILED; 404 si no existe.
+ */
+export async function resendSubstituteNoticeEmail(id: number): Promise<ResentSubstituteNotice> {
+  const res = await apiFetch(`${API_URL}/substitute-notices/${id}/resend`, { method: "POST" });
+  if (!res.ok) {
+    throw await toError(res, "No se pudo reenviar el correo.", "No tienes permiso para reenviar el correo.");
+  }
   return res.json();
 }

@@ -2,6 +2,8 @@ import "@/features/public/components/minigames/MiniGamesSection.css";
 import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { mountMiniGames, type MiniGamesHandle } from "./mountMiniGames";
 import StudentGamesPanel from "./StudentGamesPanel";
+import GlobalRecordPanel from "./GlobalRecordPanel";
+import GlobalRecordsBoard from "./GlobalRecordsBoard";
 
 type CssVars = CSSProperties & Record<`--${string}`, string>;
 
@@ -137,6 +139,10 @@ function MiniGamesSection() {
             </span>
           </button>
         </div>
+        {/* top 5 global de cada minijuego (HU-52); se oculta con un juego abierto (lo maneja mountMiniGames) */}
+        <div className="records-zona" id="recordsGlobales">
+          <GlobalRecordsBoard />
+        </div>
       <div className="cabina" id="cabina" tabIndex={-1} role="application" aria-roledescription="juego" aria-label="Arkadash. Pulsa Espacio o toca para aletear." hidden>
         <div className="panel" id="panelArkadash" hidden>
         <canvas id="lienzoJuego" aria-hidden="true"></canvas>
@@ -173,7 +179,8 @@ function MiniGamesSection() {
           <div className="tarjeta-juego">
             <p className="ceja">FIN DEL VUELO</p>
             <p className="titulo-juego" id="jFinTitulo">¡Choque!</p>
-            <div className="resultado"><div><small>PUNTOS</small><b id="jFinPuntos">0</b></div><div><small>RÉCORD</small><b id="jFinRecord">0</b></div></div>
+            <div className="resultado"><div><small>PUNTOS</small><b id="jFinPuntos">0</b></div><div><small>TU RÉCORD</small><b id="jFinRecord">0</b></div></div>
+            <GlobalRecordPanel game="ARKADASH" />
             <button className="btn btn-blanco" type="button" id="jOtra">Jugar otra vez</button>
             <p className="tecla solo-mouse">o pulsa <kbd>Espacio</kbd></p>
           </div>
@@ -236,13 +243,20 @@ function MiniGamesSection() {
           </div>
           <div className="pantalla centro oculta" id="jamResultado">
             <div className="tarjeta-juego">
-              <p className="ceja" id="jamResCancion"></p>
-              <p className="titulo-juego" id="jamResTitulo">¡Canción completa!</p>
-              <p className="estrellas" id="jamEstrellas" aria-label=""></p>
-              <div className="resultado"><div><small>PUNTOS</small><b id="jamResPuntos">0</b></div><div><small>PRECISIÓN</small><b id="jamResPrecision">0%</b></div></div>
-              <p className="detalle" id="jamResDetalle"></p>
-              <button className="btn btn-blanco" type="button" id="jamOtra">Tocar otra vez</button>
-              <button className="btn btn-vidrio" type="button" id="jamOtraCancion">Elegir otra canción</button>
+              {/* tres grupos: con el récord global a la vista y espacio de ancho, el resultado y los botones van a la
+                  izquierda y el récord a la derecha (en celular, una columna en este mismo orden) */}
+              <div className="res-info">
+                <p className="ceja" id="jamResCancion"></p>
+                <p className="titulo-juego" id="jamResTitulo">¡Canción completa!</p>
+                <p className="estrellas" id="jamEstrellas" aria-label=""></p>
+                <div className="resultado"><div><small>PUNTOS</small><b id="jamResPuntos">0</b></div><div><small>PRECISIÓN</small><b id="jamResPrecision">0%</b></div></div>
+                <p className="detalle" id="jamResDetalle"></p>
+              </div>
+              <GlobalRecordPanel game="ARKAD_JAM" />
+              <div className="res-botones">
+                <button className="btn btn-blanco" type="button" id="jamOtra">Tocar otra vez</button>
+                <button className="btn btn-vidrio" type="button" id="jamOtraCancion">Elegir otra canción</button>
+              </div>
             </div>
           </div>
           <div className="cargando" id="jamCargando"><span className="giro"></span><span id="jamCargaTxt">Afinando instrumentos…</span></div>
