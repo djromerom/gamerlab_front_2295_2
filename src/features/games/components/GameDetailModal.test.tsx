@@ -60,6 +60,19 @@ describe("GameDetailModal · Jugar (HU-40)", () => {
     expect(screen.getByText("Este juego se juega en computador")).toBeTruthy();
   });
 
+  it("ARK-317: en el celular, Brainrot Breakout (294) sí ofrece Jugar", () => {
+    touchOnly = true;
+    renderModal({ team: { ...team, videogameId: 294 } });
+    expect(screen.getByRole("button", { name: "Jugar" })).toBeTruthy();
+    expect(screen.queryByText("Este juego se juega en computador")).toBeNull();
+  });
+
+  it("ARK-317: la excepción es solo del juego en vivo, no de un histórico con el mismo id", () => {
+    touchOnly = true;
+    renderModal({ team: { ...team, videogameId: 294 }, gameKind: "historical" });
+    expect(screen.queryByRole("button", { name: "Jugar" })).toBeNull();
+  });
+
   it("sin zip no hay Jugar ni aviso", () => {
     renderModal({ team: { ...team, gameFileUrl: undefined } });
     expect(screen.queryByRole("button", { name: "Jugar" })).toBeNull();

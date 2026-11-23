@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { fetchHighlightedGames, type StudentHighlightedGame } from "@/features/public/api/highlightedGames";
 import { editionLabel, editionsOf, playerUrl, webPlay } from "@/features/public/lib/highlightedGames";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
+import { isMobileFriendly } from "@/features/games/lib/mobileFriendly";
 
 type Estado = "cargando" | "listo" | "error";
 
@@ -122,12 +123,12 @@ export default function StudentGamesPanel({ active }: StudentGamesPanelProps) {
                   <h3>{g.name}</h3>
                   <p>{g.teamName}</p>
                 </div>
-                {jugar === "playable" && !tactil && (
+                {jugar === "playable" && (!tactil || isMobileFriendly(g.play.type, g.play.id)) && (
                   <button type="button" className="btn btn-blanco" onClick={() => setAbierto(g)} aria-label={`Jugar ${g.name}`}>
                     Jugar
                   </button>
                 )}
-                {jugar === "playable" && tactil && <p className="nota-jugar">Este juego se juega en computador</p>}
+                {jugar === "playable" && tactil && !isMobileFriendly(g.play.type, g.play.id) && <p className="nota-jugar">Este juego se juega en computador</p>}
                 {jugar === "noFile" && <p className="nota-jugar">Sin versión para jugar en la web</p>}
               </li>
             );
