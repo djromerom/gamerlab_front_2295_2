@@ -74,6 +74,14 @@ describe("GamePlayerPage", () => {
     expect(screen.queryByTitle(/Videojuego|, de /)).toBeNull();
   });
 
+  it("ARK-317: en el celular, Brainrot Breakout (294) sí carga", () => {
+    touchOnly = true;
+    loader.mockReturnValue({ status: "idle" });
+    renderAt("/play-game/294");
+    expect(loader).toHaveBeenCalledWith("live", 294, true);
+    expect(screen.queryByText("Este juego se juega en computador")).toBeNull();
+  });
+
   it("BG-66: «1e3» no es un id (antes se pedía el juego 1000)", () => {
     loader.mockReturnValue({ status: "error", reason: "notFound", message: "No encontramos este videojuego. Revisa el enlace." });
     renderAt("/play-game/1e3");
