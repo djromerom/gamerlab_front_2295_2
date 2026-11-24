@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import type * as React from "react";
 import {
   LibraryBig,
@@ -43,6 +44,36 @@ import Logo from "@/components/ui/logo";
 import ThemeToggleSwitch from "@/components/ui/theme-toggle-switch";
 import { Role } from "@/types/auth";
 import { WorkingEditionBadge } from "@/components/WorkingEditionBadge";
+import { fetchMemberTeam } from "@/lib/ownTeam";
+
+const EDIT_TEAM_URL = "/editar-equipo";
+
+/**
+ * true cuando el estudiante es integrante de un equipo pero no su líder: solo el líder edita,
+ * así que a él no se le muestra «Editar equipo». Mientras no se sabe, el menú queda como antes.
+ */
+function useIsMemberOnly(userId: string | undefined, isStudent: boolean): boolean {
+  const [memberOnly, setMemberOnly] = useState(false);
+  useEffect(() => {
+    setMemberOnly(false);
+    if (!isStudent || !userId) return;
+    let active = true;
+    fetchMemberTeam(userId)
+      .then((team) => active && setMemberOnly(team.isMine !== true))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [userId, isStudent]);
+  return memberOnly;
+}
+
+function withoutEditTeam(menu: MenuItem[]): MenuItem[] {
+  return menu.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.url !== EDIT_TEAM_URL),
+  }));
+}
 
 const MENU: Record<Role, MenuItem[]> = {
   Administrador: [
@@ -160,7 +191,7 @@ const MENU: Record<Role, MenuItem[]> = {
         },
         {
           name: "Editar equipo",
-          url: "/editar-equipo",
+          url: EDIT_TEAM_URL,
           icon: FileUser,
         },
       ],
@@ -198,8 +229,13 @@ const MENU: Record<Role, MenuItem[]> = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, userRole } = useAuth();
+  const memberOnly = useIsMemberOnly(user?.id ? String(user.id) : undefined, userRole === "Estudiante");
+  const menu = useMemo(() => {
+    const base = userRole ? MENU[userRole] : undefined;
+    return base && memberOnly ? withoutEditTeam(base) : base;
+  }, [userRole, memberOnly]);
 
-  if (!user || !userRole || !MENU[userRole]) return null;
+  if (!user || !userRole || !menu) return null;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -211,7 +247,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {userRole === "Administrador" && <WorkingEditionBadge />}
       </SidebarHeader>
       <SidebarContent>
-        <NavContent menu={MENU[userRole]} />
+        <NavContent menu={menu} />
       </SidebarContent>
       <ThemeToggleSwitch />
       <SidebarFooter>
