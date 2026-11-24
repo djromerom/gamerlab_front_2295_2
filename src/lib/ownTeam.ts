@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import { NotEnrolledError } from "@/lib/notEnrolled";
 import type { Team } from "@/types/team";
-import { resolveMyTeam } from "@/lib/opaqueKeys";
+import { resolveMyMemberTeam, resolveMyTeam } from "@/lib/opaqueKeys";
 
 let cachedUserId: string | null = null;
 let teamsPromise: Promise<unknown> | null = null;
@@ -14,7 +14,7 @@ export function resetOwnTeamCacheForTests(): void {
   cacheTimestamp = 0;
 }
 
-export async function fetchOwnTeam(userId: string): Promise<Team> {
+async function fetchTeams(userId: string): Promise<unknown> {
   if (cachedUserId !== userId) {
     cachedUserId = userId;
     teamsPromise = null;
@@ -37,16 +37,31 @@ export async function fetchOwnTeam(userId: string): Promise<Team> {
   })();
   if (cacheTimestamp === 0) cacheTimestamp = Date.now();
 
-  let teams: unknown;
   try {
-    teams = await teamsPromise;
+    return await teamsPromise;
   } catch (error) {
     teamsPromise = null;
     throw error;
   }
-  const ownTeam = resolveMyTeam(teams);
+}
+
+/** Equipo que lidera el usuario en la edición activa. Para editar: solo el líder. */
+export async function fetchOwnTeam(userId: string): Promise<Team> {
+  const ownTeam = resolveMyTeam(await fetchTeams(userId));
   if (!ownTeam) {
     throw new NotEnrolledError();
   }
   return ownTeam;
+}
+
+/**
+ * Equipo al que pertenece el usuario en la edición activa, sea líder o integrante. Solo para
+ * mostrar (inicio, calificaciones recibidas); las pantallas de edición usan `fetchOwnTeam`.
+ */
+export async function fetchMemberTeam(userId: string): Promise<Team> {
+  const team = resolveMyMemberTeam(await fetchTeams(userId));
+  if (!team) {
+    throw new NotEnrolledError();
+  }
+  return team;
 }

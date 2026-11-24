@@ -6,6 +6,7 @@ export interface Team {
     teamCode: string;
     userId?: string; // obsoleto: el back lo retirará; usar isMine
     isMine?: boolean; // solo con sesión: el usuario autenticado es el líder
+    isMember?: boolean; // solo con sesión: es el líder o un integrante activo (solo para mostrar)
     editionId?: number;
     status: TeamStatus;
     video?: string;
