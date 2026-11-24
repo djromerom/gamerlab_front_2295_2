@@ -6,6 +6,14 @@ export function findMyTeam(teams: Team[]): Team | null {
 }
 
 /**
+ * Equipo al que pertenece el usuario, sea líder o integrante (`isMember`). Solo para mostrar:
+ * editar sigue siendo del líder (`findMyTeam`). Si el back aún no envía `isMember`, usa `isMine`.
+ */
+export function findMyMemberTeam(teams: Team[]): Team | null {
+  return teams.find((t) => t.isMember === true || t.isMine === true) ?? null;
+}
+
+/**
  * Indica si un evento `likes:updated` lo provocó el usuario actual (otra pestaña suya),
  * comparando la clave opaca `triggerKey` con `likeKey` de `/auth/me`.
  */
@@ -16,8 +24,7 @@ export function isOwnLikeEvent(
   return !!likeKey && payload.triggerKey === likeKey;
 }
 
-/** Extrae mi equipo de la respuesta de GET /teams (array, `{data}` o `{items}`) usando `isMine`. */
-export function resolveMyTeam(teamsData: unknown): Team | null {
+function teamsList(teamsData: unknown): Team[] {
   const d = teamsData as { data?: unknown; items?: unknown } | null;
   const list = Array.isArray(teamsData)
     ? teamsData
@@ -26,5 +33,15 @@ export function resolveMyTeam(teamsData: unknown): Team | null {
       : Array.isArray(d?.items)
         ? d.items
         : [];
-  return findMyTeam(list as Team[]);
+  return list as Team[];
+}
+
+/** Extrae mi equipo de la respuesta de GET /teams (array, `{data}` o `{items}`) usando `isMine`. */
+export function resolveMyTeam(teamsData: unknown): Team | null {
+  return findMyTeam(teamsList(teamsData));
+}
+
+/** Como `resolveMyTeam`, pero también encuentra el equipo del integrante que no es líder. */
+export function resolveMyMemberTeam(teamsData: unknown): Team | null {
+  return findMyMemberTeam(teamsList(teamsData));
 }
