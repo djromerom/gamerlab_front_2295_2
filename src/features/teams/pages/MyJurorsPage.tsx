@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import { resolveMyTeam } from "@/lib/opaqueKeys";
+import { resolveMyMemberTeam } from "@/lib/opaqueKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LayoutApplication from "@/layouts/LayoutApplication";
@@ -148,7 +148,8 @@ export default function MyJurorsPage() {
 
         const teamsData = await teamsRes.json();
 
-        const myTeam = resolveMyTeam(teamsData);
+        // El líder o un integrante activo ven los jurados de su equipo (solo lectura)
+        const myTeam = resolveMyMemberTeam(teamsData);
 
         if (!myTeam) {
           setStudentGameName(null);

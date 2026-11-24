@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppSidebar } from "@/layouts/AppSidebar";
@@ -14,6 +14,11 @@ vi.mock("@/contexts/AuthContext", () => ({
 // La insignia de edición del administrador pide las ediciones
 vi.mock("@/api/editions", () => ({
   fetchEditions: () => Promise.resolve([]),
+}));
+
+const fetchMemberTeam = vi.fn();
+vi.mock("@/lib/ownTeam", () => ({
+  fetchMemberTeam: (...args: unknown[]) => fetchMemberTeam(...args),
 }));
 
 const renderAs = (role: Role) => {
@@ -147,5 +152,61 @@ describe("Menú lateral: rúbricas en solo lectura (HU-53)", () => {
 
     expect(screen.getByRole("link", { name: /Criterios de Calificación/ }).getAttribute("href")).toBe("/criterios");
     expect(screen.queryByText("Rúbricas")).toBeNull();
+  });
+});
+
+describe("Menú lateral: «Editar equipo» solo para el líder", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    fetchMemberTeam.mockReset();
+  });
+
+  const renderStudent = () => {
+    Object.assign(auth, {
+      userRole: "Estudiante",
+      user: { id: "u-1", firstName: "Ana", lastName: "Pérez", email: "ana@uninorte.edu.co", role: { name: "Estudiante" } },
+      logout: vi.fn(),
+    });
+    return render(
+      <MemoryRouter>
+        <SidebarProvider>
+          <AppSidebar />
+        </SidebarProvider>
+      </MemoryRouter>,
+    );
+  };
+
+  it("el integrante que no es líder no ve «Editar equipo»", async () => {
+    fetchMemberTeam.mockResolvedValue({ id: 3, teamName: "Cripta 8 Bits", isMine: false, isMember: true });
+    renderStudent();
+
+    await waitFor(() => expect(screen.queryByText("Editar equipo")).toBeNull());
+    expect(menuLinks()).toEqual(["/inicio", "/mi-equipo", "/mis-jurados"]);
+  });
+
+  it("el líder sigue viendo «Editar equipo»", async () => {
+    fetchMemberTeam.mockResolvedValue({ id: 3, teamName: "Cripta 8 Bits", isMine: true, isMember: true });
+    renderStudent();
+
+    await waitFor(() => expect(fetchMemberTeam).toHaveBeenCalledWith("u-1"));
+    expect(screen.getByText("Editar equipo")).toBeTruthy();
+  });
+
+  it("el estudiante sin equipo sigue viendo «Editar equipo» (ahí se le ofrece inscribirse)", async () => {
+    fetchMemberTeam.mockRejectedValue(new Error("sin equipo"));
+    renderStudent();
+
+    await waitFor(() => expect(fetchMemberTeam).toHaveBeenCalled());
+    expect(screen.getByText("Editar equipo")).toBeTruthy();
   });
 });
