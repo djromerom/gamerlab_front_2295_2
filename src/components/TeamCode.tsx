@@ -1,9 +1,13 @@
 import { apiFetch } from "@/lib/api";
-import { findMyTeam } from "@/lib/opaqueKeys";
+import { findMyMemberTeam } from "@/lib/opaqueKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotEnrolledNotice from "@/features/teams/components/NotEnrolledNotice";
 import { Team } from "@/types/team";
+
+/** Para el integrante que no es líder: está inscrito, pero solo el líder gestiona el equipo. */
+const MEMBER_ONLY_NOTICE =
+    "Estás inscrito como integrante de este equipo. Solo el líder puede hacer cambios.";
 
 interface TeamCodeProps {
     variant?: "default" | "title";
@@ -46,10 +50,12 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
     // 2. El equipo propio se calcula en el render a partir de `teams` (no en un efecto posterior):
     // así, cuando `loaded` pasa a true, `team` ya está resuelto y el aviso de "no inscrito" no
     // parpadea para quien sí tiene equipo (ARK-128).
+    // El integrante que no es líder también ve su equipo (`isMember`), solo para consultarlo.
     const team = useMemo<Team | null>(
-        () => (user?.id ? findMyTeam(teams) : null),
+        () => (user?.id ? findMyMemberTeam(teams) : null),
         [user?.id, teams],
     );
+    const isMemberOnly = !!team && team.isMine !== true;
 
     // ARK-255: el líder ve el código completo (N1-AYP-119), el mismo que ven el jurado y el admin.
     // Antes se mostraba solo el último fragmento («119»).
@@ -86,6 +92,9 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                     <p className="leading-tight font-bold p-2 rounded-2xl bg-primary text-primary-foreground">
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
+                    {isMemberOnly && (
+                        <p className="p-2 pr-4 text-sm text-muted-foreground">{MEMBER_ONLY_NOTICE}</p>
+                    )}
                 </div>
             </div>
         )
@@ -106,6 +115,9 @@ export default function TeamCode({ variant = "default" }: TeamCodeProps) {
                         {formatDisplayTeamCode(team?.teamCode)}
                     </p>
                 </div>
+                {isMemberOnly && (
+                    <p className="text-center text-sm text-muted-foreground max-w-[320px]">{MEMBER_ONLY_NOTICE}</p>
+                )}
             </div>
         )
     } else {

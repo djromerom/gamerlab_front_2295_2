@@ -5,7 +5,7 @@ import type { AuthContextType } from "@/types/auth";
 
 const auth: Partial<AuthContextType> = {};
 const apiFetch = vi.fn();
-const fetchOwnTeam = vi.fn();
+const fetchMemberTeam = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => auth,
@@ -15,14 +15,14 @@ vi.mock("@/lib/api", () => ({
   apiFetch: (...args: unknown[]) => apiFetch(...args),
 }));
 vi.mock("@/lib/ownTeam", () => ({
-  fetchOwnTeam: (...args: unknown[]) => fetchOwnTeam(...args),
+  fetchMemberTeam: (...args: unknown[]) => fetchMemberTeam(...args),
 }));
 
 describe("CircularProgress: calificaciones recibidas (BG-04)", () => {
   afterEach(() => {
     cleanup();
     apiFetch.mockReset();
-    fetchOwnTeam.mockReset();
+    fetchMemberTeam.mockReset();
   });
 
   it.each(["Administrador", "Jurado", "Profesor"])(
@@ -42,7 +42,7 @@ describe("CircularProgress: calificaciones recibidas (BG-04)", () => {
       user: { id: 1, role: { name: "Estudiante" } },
       userRole: "Estudiante",
     });
-    fetchOwnTeam.mockResolvedValue({ id: 100 });
+    fetchMemberTeam.mockResolvedValue({ id: 100 });
     apiFetch
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 100 }) })
       .mockResolvedValueOnce({
@@ -65,7 +65,7 @@ describe("CircularProgress: calificaciones recibidas (BG-04)", () => {
       user: { id: 1, role: { name: "Estudiante" } },
       userRole: "Estudiante",
     });
-    fetchOwnTeam.mockResolvedValue({ id: 100 });
+    fetchMemberTeam.mockResolvedValue({ id: 100 });
     apiFetch
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 100 }) })
       .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({}) });
@@ -82,10 +82,10 @@ describe("CircularProgress: calificaciones recibidas (BG-04)", () => {
       user: { id: 1, role: { name: "Estudiante" } },
       userRole: "Estudiante",
     });
-    fetchOwnTeam.mockRejectedValue(new Error("Hubo un error al obtener los datos"));
+    fetchMemberTeam.mockRejectedValue(new Error("Hubo un error al obtener los datos"));
 
     render(<CircularProgress labelFormatter={undefined} />);
 
-    await waitFor(() => expect(fetchOwnTeam).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchMemberTeam).toHaveBeenCalledTimes(1));
   });
 });
