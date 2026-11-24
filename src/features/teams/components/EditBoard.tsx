@@ -20,7 +20,7 @@ import { Team } from "@/features/teams/types/teamVideogames";
 import TeamVideogame from "./TeamVideogame";
 import NotEnrolledNotice from "./NotEnrolledNotice";
 import { NotEnrolledError, isNotEnrolledError } from "@/lib/notEnrolled";
-import { fetchOwnTeam } from "@/lib/ownTeam";
+import { fetchMemberTeam, fetchOwnTeam } from "@/lib/ownTeam";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function EditBoard() {
@@ -42,6 +42,8 @@ export default function EditBoard() {
   //Team videogame information
   const [loading, setLoading] = useState(false)
   const [notEnrolled, setNotEnrolled] = useState(false)
+  // Integrante que no es líder: está inscrito, pero editar es solo del líder
+  const [memberTeamName, setMemberTeamName] = useState<string | null>(null)
   const [teamLoadError, setTeamLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadingForm, setLoadingForm] = useState(false)
@@ -286,6 +288,8 @@ export default function EditBoard() {
       } catch (error) {
         // ARK-128: sin equipo en la edición activa no es una falla; se muestra el aviso
         if (isNotEnrolledError(error)) {
+          const memberTeam = await fetchMemberTeam(user?.id ?? "").catch(() => null);
+          setMemberTeamName(memberTeam?.teamName ?? null);
           setNotEnrolled(true);
           return;
         }
@@ -302,6 +306,19 @@ export default function EditBoard() {
 
   if (loading) {
     return <div className="w-full max-w-3xl mx-auto p-4"><LoadingScreen /></div>
+  }
+
+  if (notEnrolled && memberTeamName) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-4">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border p-8 text-center">
+          <h2 className="text-lg font-medium text-foreground">Solo el líder puede editar el equipo</h2>
+          <p className="text-center text-sm text-muted-foreground">
+            Estás inscrito como integrante de {memberTeamName}. Si hace falta un cambio, pídeselo al líder de tu equipo.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   if (notEnrolled) {
