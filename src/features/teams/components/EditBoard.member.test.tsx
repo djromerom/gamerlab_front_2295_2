@@ -16,6 +16,10 @@ vi.mock("@/lib/ownTeam", () => ({
   fetchMemberTeam: (...args: unknown[]) => fetchMemberTeam(...args),
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+// El formulario del videojuego consulta si las inscripciones están abiertas al montarse. Sin este
+// mock hace una petición real que puede terminar después de cerrar el entorno de pruebas
+// (en CI: «ReferenceError: window is not defined», rechazo sin manejar).
+vi.mock("@/api/registrations", () => ({ fetchRegistrationsOpen: vi.fn().mockResolvedValue(true) }));
 
 const renderBoard = () =>
   render(
