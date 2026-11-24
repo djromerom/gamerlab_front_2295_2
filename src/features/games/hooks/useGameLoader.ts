@@ -6,6 +6,8 @@ export type GameLoaderErrorReason = GameFileErrorReason | "unsupported" | "downl
 
 export type GameLoaderState =
   | { status: "idle" }
+  /** Celular o tableta y el juego no está marcado «Se puede jugar en celular» (TA-36): no se descarga. */
+  | { status: "touchOnly" }
   | { status: "loading"; phase: "file" | "download" | "unzip"; progress: number | null }
   | { status: "ready"; key: string; entry: string; name: string; teamName: string }
   | { status: "error"; reason: GameLoaderErrorReason; message: string };
@@ -135,16 +137,13 @@ function unzipInWorker(controller: ServiceWorker, key: string, entry: string, zi
 /**
  * HU-40 (ARK-225): prepara un juego para el iframe de /play-game. Pide su archivo al back, descarga el zip y lo
  * entrega al service worker (src/sw.ts), que lo descomprime y sirve sus archivos en /play-game/<clave>/…
- * Con enabled = false (celular) no descarga nada.
+ * Con touchOnly (celular o tableta) solo descarga los juegos que el admin marcó con allowMobile (TA-36); los demás
+ * quedan en «touchOnly» sin bajar el zip.
  */
-export function useGameLoader(kind: GameKind, id: number, enabled = true): GameLoaderState {
+export function useGameLoader(kind: GameKind, id: number, touchOnly = false): GameLoaderState {
   const [state, setState] = useState<GameLoaderState>({ status: "idle" });
 
   useEffect(() => {
-    if (!enabled) {
-      setState({ status: "idle" });
-      return;
-    }
     const abort = new AbortController();
     const { signal } = abort;
     const set = (next: GameLoaderState) => {
@@ -159,6 +158,10 @@ export function useGameLoader(kind: GameKind, id: number, enabled = true): GameL
       // BG-66 (ARK-266): primero se pregunta por el juego. Antes se esperaba al service worker y, si este no
       // quedaba listo, un juego que no existe se quedaba cargando para siempre.
       const file = await fetchGameFile(kind, id);
+      if (touchOnly && !file.allowMobile) {
+        set({ status: "touchOnly" });
+        return;
+      }
       if (!("serviceWorker" in navigator)) {
         throw new LoaderError(
           "unsupported",
@@ -192,7 +195,7 @@ export function useGameLoader(kind: GameKind, id: number, enabled = true): GameL
     });
 
     return () => abort.abort();
-  }, [kind, id, enabled]);
+  }, [kind, id, touchOnly]);
 
   return state;
 }

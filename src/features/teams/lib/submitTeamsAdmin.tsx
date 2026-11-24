@@ -217,6 +217,9 @@ export async function submitTeam(data: any, ctx: SubmitCtx) {
       if (changed(curVg.additionalImages, origVg.additionalImages)) vgPatch.additionalImages = curVg.additionalImages;
       if (changed(curVg.gameFileUrl, origVg.gameFileUrl ?? null)) vgPatch.gameFileUrl = curVg.gameFileUrl;
       if (changed(curVg.entry, origVg.entry ?? null)) vgPatch.entry = curVg.entry;
+      // TA-36 (ARK-326): «Se puede jugar en celular»
+      if (curVg.allowMobile !== undefined && curVg.allowMobile !== (origVg.allow_mobile === true))
+        vgPatch.allowMobile = curVg.allowMobile;
       if (Object.keys(vgPatch).length) patch.videogame = vgPatch;
 
       // Miembros (solo actualizar / remover; los nuevos ya fueron creados vía add-member)

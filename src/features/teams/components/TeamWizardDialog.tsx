@@ -229,7 +229,9 @@ function buildPayload(
     additionalImages: finalUrls, // string[]
     videoUrl: data.videojuego?.video_demo_url ?? data.videojuego?.video_demo_url ?? null,
     gameFileUrl: zipUpload?.url ?? data.videojuego?.zip_url ?? null,
-    entry: zipUpload?.entry ?? data.videojuego?.entry ?? null
+    entry: zipUpload?.entry ?? data.videojuego?.entry ?? null,
+    // TA-36 (ARK-326): solo al editar; al inscribir el back no lo acepta
+    ...(data.mode === "edit" ? { allowMobile: data.videojuego?.allow_mobile === true } : {}),
   };
 
   delete videogamePayload._remove_gallery;
@@ -277,6 +279,7 @@ export function toInitialValuesFromTeam(team: TeamRowData, isExternalGuess = fal
       additionalImages: team.videojuego.additionalImages || [],
       zip_url: (team as any).videojuego?.gameFileUrl ?? null,
       entry: (team as any).videojuego?.entry ?? null,
+      allow_mobile: team.videojuego.allowMobile === true,
     },
     integrantes,
   };

@@ -216,6 +216,7 @@ const TeamsManagementPage = () => {
         activo: vg?.isActive ?? vg?.activo ?? true,
         video_demo_url: vg?.videoUrl ?? vg?.video_demo_url ?? "",
         additionalImages: vg?.additionalImages ?? [],
+        allowMobile: vg?.allowMobile === true, // TA-36 (ARK-326)
       },
       nrc_info,
       materia_info,

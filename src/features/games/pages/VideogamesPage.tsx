@@ -200,7 +200,8 @@ export default function VideogamesPage() {
           notGradable: team.notGradable === true,
           likes: likeCount || 0,
           entry: videogame.entry || null,
-          gameFileUrl: videogame.gameFileUrl || null
+          gameFileUrl: videogame.gameFileUrl || null,
+          allowMobile: videogame.allowMobile === true, // TA-36 (ARK-326)
         };
       });
 

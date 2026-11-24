@@ -158,6 +158,7 @@ export default function HistoricalVideogamesPage() {
           isExternal: Boolean(t.isExternal),
           likes: t.videogame?.likes || 0,
           gameFileUrl: t.videogame?.gameFileUrl,
+          allowMobile: t.videogame?.allowMobile === true,
           entry: t.videogame?.entry,
           finalScore: t.videogame?.finalScore || null
         }));

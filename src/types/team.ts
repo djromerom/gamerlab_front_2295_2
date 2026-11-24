@@ -19,6 +19,7 @@ export interface Team {
     likes?: number;
     gameFileUrl?: string,
     entry?: string,
+    allowMobile?: boolean, // TA-36 (ARK-326): se puede jugar en celular
     finalScore?: number | null
 }
 

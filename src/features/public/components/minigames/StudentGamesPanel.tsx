@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { fetchHighlightedGames, type StudentHighlightedGame } from "@/features/public/api/highlightedGames";
 import { editionLabel, editionsOf, playerUrl, webPlay } from "@/features/public/lib/highlightedGames";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
-import { isMobileFriendly } from "@/features/games/lib/mobileFriendly";
 import { playPath } from "@/features/games/lib/gameFiles";
 
 type Estado = "cargando" | "listo" | "error";
@@ -130,12 +129,12 @@ export default function StudentGamesPanel({ active }: StudentGamesPanelProps) {
                   </button>
                 )}
                 {/* BG-77: en el celular la cabina queda muy pequeña; el juego se abre en su página, a pantalla completa */}
-                {jugar === "playable" && tactil && isMobileFriendly(g.play.type, g.play.id) && (
+                {jugar === "playable" && tactil && g.allowMobile === true && (
                   <a className="btn btn-blanco" href={playPath(g.play.type, g.play.id)} aria-label={`Jugar ${g.name}`}>
                     Jugar
                   </a>
                 )}
-                {jugar === "playable" && tactil && !isMobileFriendly(g.play.type, g.play.id) && <p className="nota-jugar">Este juego se juega en computador</p>}
+                {jugar === "playable" && tactil && g.allowMobile !== true && <p className="nota-jugar">Este juego se juega en computador</p>}
                 {jugar === "noFile" && <p className="nota-jugar">Sin versión para jugar en la web</p>}
               </li>
             );

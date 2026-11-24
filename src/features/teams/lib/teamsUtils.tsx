@@ -58,6 +58,7 @@ export interface VideojuegoData {
   fecha_registro: string;
   id_estado_videojuego: number;
   additionalImages?: any[];
+  allowMobile?: boolean; // TA-36 (ARK-326): se puede jugar en celular
 }
 
 export interface NrcInfo {

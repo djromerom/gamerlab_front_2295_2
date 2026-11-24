@@ -40,7 +40,7 @@ const zipResponse = () =>
 
 beforeEach(() => {
   fetchGameFile.mockReset();
-  fetchGameFile.mockResolvedValue({ name: "Ruta 66", teamName: "Byte Club", gameFileURL: "https://blob/juego.zip?sig=x", entry: "Build/index.html" });
+  fetchGameFile.mockResolvedValue({ name: "Ruta 66", teamName: "Byte Club", gameFileURL: "https://blob/juego.zip?sig=x", entry: "Build/index.html", allowMobile: false });
   vi.stubGlobal("fetch", vi.fn(async () => zipResponse()));
 });
 
@@ -90,12 +90,26 @@ describe("useGameLoader", () => {
     expect(posted.map((m) => m.type)).toEqual(["CLAIM", "LOAD_ZIP"]);
   });
 
-  it("en el celular (enabled = false) no descarga nada", async () => {
+  it("en el celular, un juego sin allowMobile queda en «touchOnly» y no descarga el zip (HU-40, TA-36)", async () => {
     fakeServiceWorker({ reply: () => null });
-    const { result } = renderHook(() => useGameLoader("live", 12, false));
-    await new Promise((r) => setTimeout(r, 20));
-    expect(result.current.status).toBe("idle");
-    expect(fetchGameFile).not.toHaveBeenCalled();
+    const { result } = renderHook(() => useGameLoader("live", 12, true));
+    await waitFor(() => expect(result.current.status).toBe("touchOnly"));
+    expect(fetchGameFile).toHaveBeenCalledWith("live", 12);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("en el celular, un juego con allowMobile se descarga y queda listo (TA-36)", async () => {
+    fetchGameFile.mockResolvedValue({
+      name: "Brainrot",
+      teamName: "Scroll",
+      gameFileURL: "https://blob/juego.zip?sig=x",
+      entry: "index.html",
+      allowMobile: true,
+    });
+    fakeServiceWorker({ reply: (m) => ({ type: "ZIP_READY", gameId: m.gameId }) });
+    const { result } = renderHook(() => useGameLoader("live", 294, true));
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("un id que no es número es «no encontrado»", async () => {

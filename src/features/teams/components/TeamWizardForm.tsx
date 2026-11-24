@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCropper } from "@/features/teams/components/registration/ImageCropper";
 import { CloudUpload, X, ChevronLeft, ChevronRight, Loader2, Trash2, Plus, Pencil } from "lucide-react";
@@ -578,6 +579,26 @@ export default function TeamWizardForm(props: any) {
                 </div>
               )}
             </div>
+
+            {/* TA-36 (ARK-326): solo al editar. Por defecto los juegos se juegan solo en computador (HU-40) */}
+            {methods.watch("mode") === "edit" && (
+              <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="allow-mobile">Se puede jugar en celular</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Actívalo solo si el juego trae controles táctiles propios. Si está apagado, en celulares y
+                    tabletas se muestra «Este juego se juega en computador».
+                  </p>
+                </div>
+                <Switch
+                  id="allow-mobile"
+                  checked={methods.watch("videojuego.allow_mobile") === true}
+                  onCheckedChange={(v: boolean) =>
+                    methods.setValue("videojuego.allow_mobile", v, { shouldDirty: true })
+                  }
+                />
+              </div>
+            )}
 
             <div className="flex flex-col gap-1">
               <Label>Fotos del Proyecto (opcional)</Label>
