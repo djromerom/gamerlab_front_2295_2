@@ -121,3 +121,29 @@ describe("GameDetailModal · detalle público (BG-66)", () => {
     expect(classes).not.toContain("md:h-[550px]");
   });
 });
+
+describe("GameDetailModal · textos largos", () => {
+  it("un nombre con una palabra larga se parte y no saca el like de la ventana", () => {
+    renderModal({ team: { ...team, gameName: "Supercalifragilístico Aventura" }, liveCount: 7 });
+    const title = screen.getByRole("heading", { level: 2, name: "Supercalifragilístico Aventura" });
+    // el tamaño del título va según el ancho de la columna de información (consulta de contenedor)
+    expect(title.closest('[class~="@container"]')).not.toBeNull();
+    expect(title.className.split(" ")).toEqual(expect.arrayContaining(["min-w-0", "break-words", "text-xl", "@min-[22rem]:text-2xl", "@lg:text-3xl"]));
+    expect(screen.getByText("7").closest("button")!.parentElement!.className.split(" ")).toContain("shrink-0");
+  });
+
+  it("los botones de GitHub y YouTube pasan a dos líneas en vez de salirse del botón", () => {
+    renderModal({ team: { ...team, repo: "https://github.com/equipo/juego", video: "https://youtu.be/abc" } });
+    for (const name of ["Ver repositorio en GitHub", "Ver trailer del juego en Youtube"]) {
+      const classes = screen.getByRole("button", { name }).className.split(" ");
+      expect(classes).toEqual(expect.arrayContaining(["whitespace-normal", "h-auto"]));
+      expect(classes).not.toContain("whitespace-nowrap");
+    }
+  });
+
+  it("en el celular acostado las fotos y la información van mitad y mitad", () => {
+    renderModal();
+    const media = screen.getByRole("dialog").children[1];
+    expect(media.className.split(" ")).toEqual(expect.arrayContaining(["landscape:w-3/5", "landscape-short:w-1/2"]));
+  });
+});

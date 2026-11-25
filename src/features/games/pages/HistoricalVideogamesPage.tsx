@@ -271,10 +271,11 @@ export default function HistoricalVideogamesPage() {
                   <Trophy className="w-8 h-8 text-yellow-500" />
                 </div>
 
-                <div className="flex w-full max-w-4xl mx-auto items-end justify-center space-x-8">
+                {/* En el celular los nombres largos sacaban el 2.º y el 3.º puesto de la pantalla */}
+                <div className="flex w-full max-w-4xl mx-auto items-end justify-center space-x-3 sm:space-x-8">
                   {/* SECOND PLACE */}
                   {podium[1] && (
-                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[1])}>
+                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full min-w-0 flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[1])}>
                       <div className="mb-4 flex flex-col items-center">
                         <div className="relative mb-2 h-20 w-20 overflow-hidden rounded-full border-4 border-[#c0c0c0] bg-gray-800 flex items-center justify-center">
                           {podium[1].logo ? (
@@ -283,7 +284,7 @@ export default function HistoricalVideogamesPage() {
                             <span className="text-2xl font-bold text-white">{podium[1].gameName.substring(0, 1)}</span>
                           )}
                         </div>
-                        <p className="text-center text-lg font-semibold">{podium[1].gameName}</p>
+                        <p className="text-center text-lg font-semibold wrap-anywhere">{podium[1].gameName}</p>
                         <p className="text-center text-xl font-bold text-[#c0c0c0]">{podium[1].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-32 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-silver">
@@ -297,7 +298,7 @@ export default function HistoricalVideogamesPage() {
 
                   {/* FIRST PLACE */}
                   {podium[0] && (
-                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[0])}>
+                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full min-w-0 flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[0])}>
                       <div className="mb-4 flex flex-col items-center">
                         <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-[#FFD700] bg-gray-800 flex items-center justify-center">
                           {podium[0].logo ? (
@@ -306,7 +307,7 @@ export default function HistoricalVideogamesPage() {
                             <span className="text-3xl font-bold text-white">{podium[0].gameName.substring(0, 1)}</span>
                           )}
                         </div>
-                        <p className="text-center text-xl font-semibold">{podium[0].gameName}</p>
+                        <p className="text-center text-xl font-semibold wrap-anywhere">{podium[0].gameName}</p>
                         <p className="text-center text-2xl font-bold text-[#FFD700]">{podium[0].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-40 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-gold">
@@ -320,7 +321,7 @@ export default function HistoricalVideogamesPage() {
 
                   {/* THIRD PLACE */}
                   {podium[2] && (
-                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[2])}>
+                    <motion.div whileHover={{ scale: 1.05 }} className="flex w-full min-w-0 flex-col items-center cursor-pointer" onClick={() => setSelectedPodiumTeam(podium[2])}>
                       <div className="mb-4 flex flex-col items-center">
                         <div className="relative mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-[#CD7F32] bg-gray-800 flex items-center justify-center">
                           {podium[2].logo ? (
@@ -329,7 +330,7 @@ export default function HistoricalVideogamesPage() {
                             <span className="text-xl font-bold text-white">{podium[2].gameName.substring(0, 1)}</span>
                           )}
                         </div>
-                        <p className="text-center text-base font-semibold">{podium[2].gameName}</p>
+                        <p className="text-center text-base font-semibold wrap-anywhere">{podium[2].gameName}</p>
                         <p className="text-center text-lg font-bold text-[#CD7F32]">{podium[2].finalScore?.toFixed(2)}</p>
                       </div>
                       <div className="h-24 w-full rounded-t-lg shadow-lg relative gradient-border gradient-border-bronze">

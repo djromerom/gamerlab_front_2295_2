@@ -196,14 +196,15 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             </button>
 
             {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
-            <div className="w-full landscape:w-3/5 lg:landscape:w-2/3 landscape:h-full min-h-0 bg-black flex items-center justify-center p-3 landscape-short:p-2 flex-shrink-0">
+            {/* En horizontal las fotos ocupan 3/5 y, en el celular acostado, la mitad: así la información no queda en una franja angosta */}
+            <div className="w-full landscape:w-3/5 landscape-short:w-1/2 landscape:h-full min-h-0 bg-black flex items-center justify-center p-3 landscape-short:p-2 flex-shrink-0">
               <MediaCarousel
                 images={team.additionalImages || []}
               />
             </div>
 
             {/* 🧾 Información del equipo */}
-            <div className="w-full flex-1 min-w-0 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+            <div className="@container w-full flex-1 min-w-0 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
               <div className="p-4 pt-4 md:p-6 md:pt-6 landscape-short:p-3 overflow-y-auto overscroll-contain flex-1
               [&::-webkit-scrollbar]:w-2 pr-2
               [&::-webkit-scrollbar-track]:rounded-full
@@ -231,11 +232,13 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     </div>
                   </div>
                   <div className="flex justify-between items-start gap-3.5">
-                    <h2 className="text-2xl md:text-3xl font-bold text-[#AC7CFF] mb-3 md:mb-4">
+                    {/* El tamaño del título va según el ancho de la columna, y una palabra que no cabe se parte:
+                        con nombres largos el título empujaba el like fuera de la ventana */}
+                    <h2 className="min-w-0 break-words text-xl @min-[22rem]:text-2xl @lg:text-3xl font-bold text-[#AC7CFF] mb-3 md:mb-4">
                       {team.gameName}
                     </h2>
                     {/* Like Button */}
-                    <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
+                    <div className="flex shrink-0 items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
                       <button
                         onClick={toggleLike}
                         disabled={isTogglingLike}
@@ -255,7 +258,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-400 mb-3">
+                  <p className="text-sm text-gray-400 mb-3 break-words">
                     Equipo:{" "}
                     <span className="text-white font-semibold">
                       {team.teamName}
@@ -268,7 +271,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
 
                   <div className="mt-2">
                     <h3 className="text-base md:text-lg font-semibold text-[#AC7CFF] mb-1.5 md:mb-2">Descripción</h3>
-                    <p className="text-gray-300 text-xs md:text-sm leading-relaxed mb-3">
+                    <p className="text-gray-300 text-xs md:text-sm leading-relaxed mb-3 break-words">
                       {team.description || "Sin descripción disponible."}
                     </p>
                   </div>
@@ -279,7 +282,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                         <Users className="w-5 h-5 text-[#AC7CFF]" />
                         <h4 className="text-lg font-semibold">Integrantes</h4>
                       </div>
-                      <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                      <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside break-words">
                         {team.members.map((member, index) => (
                           <li key={index}>{member}</li>
                         ))}
@@ -293,7 +296,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                       <Button
                         variant="outline"
                         onClick={() => window.open(team.repo, "_blank")}
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                        className="cursor-pointer w-full h-auto min-h-9 whitespace-normal text-center flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Ver repositorio en GitHub
@@ -303,7 +306,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     {team.video && (
                       <Button
                         onClick={() => window.open(team.video, "_blank")}
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
+                        className="cursor-pointer w-full h-auto min-h-9 whitespace-normal text-center flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Ver trailer del juego en Youtube
