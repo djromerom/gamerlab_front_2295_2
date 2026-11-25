@@ -105,4 +105,19 @@ describe("GameDetailModal · detalle público (BG-66)", () => {
     const overlay = screen.getByRole("dialog").parentElement!;
     expect(overlay.className).toContain("z-[60]");
   });
+
+  it("se monta en document.body, fuera del contenedor de la página que la dejaba debajo de la barra", () => {
+    const { container } = renderModal();
+    const overlay = screen.getByRole("dialog").parentElement!;
+    expect(container.contains(overlay)).toBe(false);
+    expect(overlay.parentElement).toBe(document.body);
+  });
+
+  it("en vertical va en columna y en horizontal en fila, sin pasar del alto de la pantalla", () => {
+    renderModal();
+    const classes = screen.getByRole("dialog").className.split(" ");
+    expect(classes).toEqual(expect.arrayContaining(["flex-col", "landscape:flex-row", "max-h-full", "landscape:h-[min(550px,100%)]"]));
+    // antes: md:h-[550px] fijo, que en el celular acostado (390 px de alto) dejaba la ventana fuera de la pantalla
+    expect(classes).not.toContain("md:h-[550px]");
+  });
 });

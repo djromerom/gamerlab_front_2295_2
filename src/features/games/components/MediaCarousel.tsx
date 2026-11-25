@@ -35,7 +35,7 @@ export function MediaCarousel({ video, images }: MediaCarouselProps) {
     // Si no hay elementos, mostrar placeholder
     if (mediaItems.length === 0) {
         return (
-            <div className="w-full aspect-video rounded-xl overflow-hidden max-h-[550px] bg-gray-800 flex items-center justify-center">
+            <div className="w-full aspect-video rounded-xl overflow-hidden max-h-[550px] landscape:max-h-full bg-gray-800 flex items-center justify-center">
                 {/* BG-66: lo ven los visitantes; no se les pide subir nada */}
                 <p className="text-gray-400 text-center px-4">Sin video ni imágenes adicionales</p>
             </div>
@@ -53,9 +53,10 @@ export function MediaCarousel({ video, images }: MediaCarouselProps) {
     const currentItem = mediaItems[currentIndex];
 
     return (
-        <div className="relative w-full">
+        // En horizontal ocupa el alto de su columna: la imagen se encoge para que las miniaturas sigan a la vista
+        <div className="relative w-full landscape:h-full flex flex-col justify-center min-h-0">
             {/* Contenido principal del carrusel */}
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden max-h-[550px]">
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden max-h-[550px] min-h-0 shrink bg-black">
                 {currentItem.type === 'video' ? (
                     <ReactPlayer
                         src={currentItem.src}
@@ -67,7 +68,7 @@ export function MediaCarousel({ video, images }: MediaCarouselProps) {
                     <img
                         src={currentItem.src}
                         alt="Imagen del juego"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                     />
                 )}
 
@@ -95,13 +96,13 @@ export function MediaCarousel({ video, images }: MediaCarouselProps) {
 
             {/* Barra de miniaturas (solo si hay más de un elemento) */}
             {mediaItems.length > 1 && (
-                <div className="mt-4 flex justify-center">
-                    <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 max-w-full px-4 py-2">
+                <div className="mt-2 md:mt-4 landscape-short:mt-1 flex justify-center shrink-0">
+                    <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 max-w-full px-2 md:px-4 py-2">
                         {mediaItems.map((item, index) => (
                             <button
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
-                                className={`relative flex-shrink-0 w-24 h-18 rounded-md overflow-hidden transition-all ${index === currentIndex
+                                className={`relative flex-shrink-0 w-16 h-10 sm:w-20 sm:h-[45px] md:w-24 md:h-18 landscape-short:w-16 landscape-short:h-9 rounded-md overflow-hidden transition-all ${index === currentIndex
                                     ? 'ring-2 ring-[#AC7CFF] ring-offset-2 ring-offset-gray-800'
                                     : 'opacity-70 hover:opacity-100'
                                     }`}

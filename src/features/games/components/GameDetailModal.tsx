@@ -6,6 +6,7 @@ import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
@@ -151,7 +152,9 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
     }
   };
 
-  return (
+  // La ventana va en document.body: dentro de la página quedaba atrapada en el «relative z-10» del contenedor, debajo de
+  // la barra de navegación y de los botones flotantes, que tapaban su parte de arriba y de abajo en el celular.
+  return createPortal(
     <>
       <Toaster
         position="bottom-center"
@@ -165,8 +168,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
         }} />
       <AnimatePresence>
         <motion.div
-          // BG-66: por encima de los botones flotantes (z-50), que a 360 px tapaban «Cerrar»
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex justify-center items-center px-4 pb-4 pt-[80px] md:pt-[96px]"
+          // BG-66: por encima de la barra y de los botones flotantes (z-50), que a 360 px tapaban «Cerrar»
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex justify-center items-center p-3 sm:p-4 overscroll-contain"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -175,7 +178,9 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             role="dialog"
             aria-modal="true"
             aria-label={team.gameName}
-            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl h-[calc(100dvh-110px)] md:h-[550px] max-h-[calc(100dvh-110px)] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+            // En vertical (celular o tableta) va en columna: fotos arriba e información abajo, con su propio scroll.
+            // En horizontal va en fila y nunca más alta que la pantalla (en el celular acostado quedaba recortada).
+            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl portrait:max-w-2xl max-h-full landscape:h-[min(550px,100%)] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col landscape:flex-row"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -185,21 +190,21 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             <button
               onClick={handleClose}
               aria-label="Cerrar"
-              className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-white transition z-50"
+              className="cursor-pointer absolute top-3 right-3 rounded-full bg-black/60 p-1.5 text-gray-300 hover:text-white transition z-50"
             >
               <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
             {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
-            <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
+            <div className="w-full landscape:w-3/5 lg:landscape:w-2/3 landscape:h-full min-h-0 bg-black flex items-center justify-center p-3 landscape-short:p-2 flex-shrink-0">
               <MediaCarousel
                 images={team.additionalImages || []}
               />
             </div>
 
             {/* 🧾 Información del equipo */}
-            <div className="w-full md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
-              <div className="p-4 pt-4 md:p-6 md:pt-6 overflow-y-auto flex-1
+            <div className="w-full flex-1 min-w-0 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+              <div className="p-4 pt-4 md:p-6 md:pt-6 landscape-short:p-3 overflow-y-auto overscroll-contain flex-1
               [&::-webkit-scrollbar]:w-2 pr-2
               [&::-webkit-scrollbar-track]:rounded-full
               [&::-webkit-scrollbar-track]:bg-gray-800
@@ -208,8 +213,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
 
                 <div className="space-y-4">
-                  <div className="flex justify-center mb-2 md:mb-4">
-                    <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
+                  <div className="flex justify-center mb-2 md:mb-4 landscape-short:mb-0">
+                    <div className="w-28 h-28 landscape-short:w-20 landscape-short:h-20 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
                       {team.logo ? (
                         <img
                           src={team.logo}
@@ -283,7 +288,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                   )}
 
                   {/* 🔗 Botones */}
-                  <div className="flex flex-col items-center gap-3 mt-8 pb-4 pr-4">
+                  <div className="flex flex-col items-center gap-3 mt-8 landscape-short:mt-4 pb-4 pr-4">
                     {team.repo && (
                       <Button
                         variant="outline"
@@ -323,7 +328,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     {/* Botón Cerrar - Solo visible en móvil */}
                     <button
                       onClick={handleClose}
-                      className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
+                      className="md:hidden landscape-short:block w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
                     >
                       Cerrar
                     </button>
@@ -334,6 +339,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
           </motion.div>
         </motion.div>
       </AnimatePresence>
-    </>
+    </>,
+    document.body,
   );
 }
