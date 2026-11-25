@@ -6,6 +6,7 @@ import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/contexts/SocketContext";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
@@ -151,7 +152,9 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
     }
   };
 
-  return (
+  // La ventana va en document.body: dentro de la página quedaba atrapada en el «relative z-10» del contenedor, debajo de
+  // la barra de navegación y de los botones flotantes, que tapaban su parte de arriba y de abajo en el celular.
+  return createPortal(
     <>
       <Toaster
         position="bottom-center"
@@ -165,8 +168,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
         }} />
       <AnimatePresence>
         <motion.div
-          // BG-66: por encima de los botones flotantes (z-50), que a 360 px tapaban «Cerrar»
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex justify-center items-center px-4 pb-4 pt-[80px] md:pt-[96px]"
+          // BG-66: por encima de la barra y de los botones flotantes (z-50), que a 360 px tapaban «Cerrar»
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex justify-center items-center p-3 sm:p-4 overscroll-contain"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -175,7 +178,9 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             role="dialog"
             aria-modal="true"
             aria-label={team.gameName}
-            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl h-[calc(100dvh-110px)] md:h-[550px] max-h-[calc(100dvh-110px)] md:max-h-[600px] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col md:flex-row"
+            // En vertical (celular o tableta) va en columna: fotos arriba e información abajo, con su propio scroll.
+            // En horizontal va en fila y nunca más alta que la pantalla (en el celular acostado quedaba recortada).
+            className="relative bg-[#181a20] text-white rounded-2xl overflow-hidden w-full max-w-5xl portrait:max-w-2xl max-h-full landscape:h-[min(550px,100%)] shadow-[0_0_30px_rgba(172,124,255,0.25)] border border-[#AC7CFF]/30 flex flex-col landscape:flex-row"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -185,21 +190,22 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
             <button
               onClick={handleClose}
               aria-label="Cerrar"
-              className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-white transition z-50"
+              className="cursor-pointer absolute top-3 right-3 rounded-full bg-black/60 p-1.5 text-gray-300 hover:text-white transition z-50"
             >
               <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
             {/* 🎬 Carrusel de Video e Imágenes Adicionales (NO incluye el logo) */}
-            <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-3 flex-shrink-0">
+            {/* En horizontal las fotos ocupan 3/5 y, en el celular acostado, la mitad: así la información no queda en una franja angosta */}
+            <div className="w-full landscape:w-3/5 landscape-short:w-1/2 landscape:h-full min-h-0 bg-black flex items-center justify-center p-3 landscape-short:p-2 flex-shrink-0">
               <MediaCarousel
                 images={team.additionalImages || []}
               />
             </div>
 
             {/* 🧾 Información del equipo */}
-            <div className="w-full md:w-1/3 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
-              <div className="p-4 pt-4 md:p-6 md:pt-6 overflow-y-auto flex-1
+            <div className="@container w-full flex-1 min-w-0 flex flex-col min-h-0 bg-gradient-to-b from-[#1b1f2a] to-[#141720]">
+              <div className="p-4 pt-4 md:p-6 md:pt-6 landscape-short:p-3 overflow-y-auto overscroll-contain flex-1
               [&::-webkit-scrollbar]:w-2 pr-2
               [&::-webkit-scrollbar-track]:rounded-full
               [&::-webkit-scrollbar-track]:bg-gray-800
@@ -208,8 +214,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
               [&::-webkit-scrollbar-thumb:hover]:bg-[#AC7CFF]">
 
                 <div className="space-y-4">
-                  <div className="flex justify-center mb-2 md:mb-4">
-                    <div className="w-28 h-28 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
+                  <div className="flex justify-center mb-2 md:mb-4 landscape-short:mb-0">
+                    <div className="w-28 h-28 landscape-short:w-20 landscape-short:h-20 rounded-full border-3 border-[#AC7CFF]/40 overflow-hidden bg-white/10 p-1 flex items-center justify-center">
                       {team.logo ? (
                         <img
                           src={team.logo}
@@ -226,11 +232,13 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     </div>
                   </div>
                   <div className="flex justify-between items-start gap-3.5">
-                    <h2 className="text-2xl md:text-3xl font-bold text-[#AC7CFF] mb-3 md:mb-4">
+                    {/* El tamaño del título va según el ancho de la columna, y una palabra que no cabe se parte:
+                        con nombres largos el título empujaba el like fuera de la ventana */}
+                    <h2 className="min-w-0 break-words text-xl @min-[22rem]:text-2xl @lg:text-3xl font-bold text-[#AC7CFF] mb-3 md:mb-4">
                       {team.gameName}
                     </h2>
                     {/* Like Button */}
-                    <div className="flex items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
+                    <div className="flex shrink-0 items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
                       <button
                         onClick={toggleLike}
                         disabled={isTogglingLike}
@@ -250,7 +258,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-400 mb-3">
+                  <p className="text-sm text-gray-400 mb-3 break-words">
                     Equipo:{" "}
                     <span className="text-white font-semibold">
                       {team.teamName}
@@ -263,7 +271,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
 
                   <div className="mt-2">
                     <h3 className="text-base md:text-lg font-semibold text-[#AC7CFF] mb-1.5 md:mb-2">Descripción</h3>
-                    <p className="text-gray-300 text-xs md:text-sm leading-relaxed mb-3">
+                    <p className="text-gray-300 text-xs md:text-sm leading-relaxed mb-3 break-words">
                       {team.description || "Sin descripción disponible."}
                     </p>
                   </div>
@@ -274,7 +282,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                         <Users className="w-5 h-5 text-[#AC7CFF]" />
                         <h4 className="text-lg font-semibold">Integrantes</h4>
                       </div>
-                      <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                      <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside break-words">
                         {team.members.map((member, index) => (
                           <li key={index}>{member}</li>
                         ))}
@@ -283,12 +291,12 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                   )}
 
                   {/* 🔗 Botones */}
-                  <div className="flex flex-col items-center gap-3 mt-8 pb-4 pr-4">
+                  <div className="flex flex-col items-center gap-3 mt-8 landscape-short:mt-4 pb-4 pr-4">
                     {team.repo && (
                       <Button
                         variant="outline"
                         onClick={() => window.open(team.repo, "_blank")}
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
+                        className="cursor-pointer w-full h-auto min-h-9 whitespace-normal text-center flex items-center justify-center gap-2 border-[#AC7CFF]/40 text-gray-200 hover:bg-[#AC7CFF]/20"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Ver repositorio en GitHub
@@ -298,7 +306,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     {team.video && (
                       <Button
                         onClick={() => window.open(team.video, "_blank")}
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
+                        className="cursor-pointer w-full h-auto min-h-9 whitespace-normal text-center flex items-center justify-center gap-2 bg-[#AC7CFF] text-[#060312] font-semibold hover:bg-[#9B6BFF]"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Ver trailer del juego en Youtube
@@ -323,7 +331,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     {/* Botón Cerrar - Solo visible en móvil */}
                     <button
                       onClick={handleClose}
-                      className="md:hidden w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
+                      className="md:hidden landscape-short:block w-full py-2 px-3 rounded-lg font-medium text-sm bg-[#541ab8] text-white transition-all duration-300 ease-in-out hover:bg-[#6B2FCC]"
                     >
                       Cerrar
                     </button>
@@ -334,6 +342,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
           </motion.div>
         </motion.div>
       </AnimatePresence>
-    </>
+    </>,
+    document.body,
   );
 }
