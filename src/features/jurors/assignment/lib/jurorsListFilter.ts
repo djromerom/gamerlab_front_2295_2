@@ -1,4 +1,5 @@
 import type { Jurado } from "@/features/jurors/types/jurors";
+import { matchesSearch } from "@/features/jurors/assignment/lib/search";
 
 /**
  * BG-66 (ARK-266): filtro propio de la «Lista de jurados». Antes compartía estado con el filtro de equipos, así que
@@ -28,17 +29,10 @@ export function filterJurorsList(jurados: Jurado[], search: string, filter: Juro
 export const countLabel = (count: number, singular: string, plural: string) =>
   `${count} ${count === 1 ? singular : plural}`;
 
-const sinTildes = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-
 /**
  * Búsqueda de la ventana «Asignar Jurado»: por nombre o correo, sin distinguir mayúsculas ni tildes («jose» encuentra
  * a «José»). Cada palabra debe aparecer, en cualquier orden («perez ana» encuentra a «Ana Pérez»).
  */
 export function searchJurors(jurados: Jurado[], search: string): Jurado[] {
-  const words = sinTildes(search).split(/\s+/).filter(Boolean);
-  if (words.length === 0) return jurados;
-  return jurados.filter((jurado) => {
-    const text = sinTildes(`${jurado.name} ${jurado.email}`);
-    return words.every((word) => text.includes(word));
-  });
+  return jurados.filter((jurado) => matchesSearch([jurado.name, jurado.email], search));
 }
