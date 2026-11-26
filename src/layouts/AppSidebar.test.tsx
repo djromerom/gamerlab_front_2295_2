@@ -191,7 +191,7 @@ describe("Menú lateral: «Editar equipo» solo para el líder", () => {
     renderStudent();
 
     await waitFor(() => expect(screen.queryByText("Editar equipo")).toBeNull());
-    expect(menuLinks()).toEqual(["/inicio", "/mi-equipo", "/mis-jurados"]);
+    expect(menuLinks()).toEqual(["/inicio", "/mi-equipo"]);
   });
 
   it("el líder sigue viendo «Editar equipo»", async () => {
@@ -200,6 +200,15 @@ describe("Menú lateral: «Editar equipo» solo para el líder", () => {
 
     await waitFor(() => expect(fetchMemberTeam).toHaveBeenCalledWith("u-1"));
     expect(screen.getByText("Editar equipo")).toBeTruthy();
+  });
+
+  it("ningún estudiante ve «Mis Jurados» (se quitó el 26-nov)", async () => {
+    fetchMemberTeam.mockResolvedValue({ id: 3, teamName: "Cripta 8 Bits", isMine: true, isMember: true });
+    renderStudent();
+
+    await waitFor(() => expect(screen.getByText("Editar equipo")).toBeTruthy());
+    expect(screen.queryByText("Mis Jurados")).toBeNull();
+    expect(menuLinks()).not.toContain("/mis-jurados");
   });
 
   it("el estudiante sin equipo sigue viendo «Editar equipo» (ahí se le ofrece inscribirse)", async () => {

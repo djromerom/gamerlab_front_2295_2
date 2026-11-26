@@ -184,11 +184,7 @@ const MENU: Record<Role, MenuItem[]> = {
           url: "/mi-equipo",
           icon: LibraryBig,
         },
-        {
-          name: "Mis Jurados",
-          url: "/mis-jurados",
-          icon: Gavel,
-        },
+        // «Mis Jurados» se quitó para el estudiante (26-nov, después de la feria)
         {
           name: "Editar equipo",
           url: EDIT_TEAM_URL,
