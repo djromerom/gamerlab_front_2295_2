@@ -54,21 +54,9 @@ import {
 } from "@/features/grading/lib/criteriaScores";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-interface Game {
-  id: number;
-  nombre: string;
-  imagen?: string;
-  equipo?: string;
-  materia?: string;
-  teamId?: number; // HU-19: para verificar el grupo antes de calificar
-  teamCode?: string; // [MODIFICACIÓN]: Código de equipo
-  nrc?: string;
-  participantes?: string[];
-  descripcion?: string;
-}
+import { useRouteGame } from "@/features/grading/hooks/useRouteGame";
 
 export default function RatePage() {
   const pendingSubmission = useRef<{
@@ -77,8 +65,8 @@ export default function RatePage() {
     body: string;
   } | null>(null);
   const navigate = useNavigate();
-  const location = useLocation();
-  const game = location.state?.game as Game | undefined;
+  // El juego viene de la tarjeta (state) o, al volver del tour 360 o recargar, se busca por el :id
+  const { game, notFound } = useRouteGame();
 
   const {
     criteria: apiCriteria,
@@ -160,11 +148,11 @@ export default function RatePage() {
   };
 
   useEffect(() => {
-    if (!game) {
-      toast.error("No se encontró información del juego. Redirigiendo...");
+    if (notFound) {
+      toast.error("Este juego no está entre tus pendientes por calificar. Redirigiendo...");
       navigate("/pendientes-calificar");
     }
-  }, [game, navigate]);
+  }, [notFound, navigate]);
 
   if (isLoadingCriteria) {
     return (

@@ -125,3 +125,42 @@ describe("PendingGradesGrid: buscador a 360 px (ARK-295)", () => {
     expect(screen.getByRole("button", { name: "Buscar" }).classList).toContain("shrink-0");
   });
 });
+
+describe("PendingGradesGrid: botón al tour 360", () => {
+  it("lleva al tour con la URL de vuelta al juego y el código del equipo", () => {
+    renderGrid({
+      games: [juego({ id: 655, teamCode: "N2-MFB-202" })],
+      page: "/pendientes-calificar",
+      showTourButton: true,
+    });
+    const link = screen.getByRole("link", { name: /Tour: cómo llegar al stand de Los Astros/ });
+    const url = new URL(link.getAttribute("href")!);
+    expect(url.searchParams.get("url-dinamica")).toBe(
+      `${window.location.origin}/pendientes-calificar/655`,
+    );
+    expect(url.searchParams.get("equipo")).toBe("N2-MFB-202");
+  });
+
+  it("no sale en juegos calificados ni en pantallas que no lo piden", () => {
+    renderGrid({ games: [calificado], page: "/pendientes-calificar", showTourButton: true });
+    expect(screen.queryByRole("link", { name: /Tour/ })).toBeNull();
+    cleanup();
+    renderGrid({ games: [juego()], page: "/colegios-calificar" });
+    expect(screen.queryByRole("link", { name: /Tour/ })).toBeNull();
+  });
+});
+
+describe("PendingGradesGrid: tarjeta con borrador en celular", () => {
+  it("el aviso de borrador y los textos parten en líneas en vez de empujar la imagen", () => {
+    renderGrid({
+      games: [juego({ hasDraft: true, draftUpdatedAt: "2026-11-19T10:00:00.000Z" })],
+    });
+    const badge = screen.getByText(/Borrador/);
+    expect(badge.className).toContain("whitespace-normal");
+    expect(badge.className).not.toMatch(/(^|\s)whitespace-nowrap(\s|$)/);
+    const textColumn = screen.getByRole("heading", { name: "Stella" }).parentElement!;
+    expect(textColumn.classList).toContain("min-w-0");
+    expect(textColumn.parentElement!.classList).toContain("min-w-0");
+    expect(textColumn.parentElement!.classList).toContain("flex-1");
+  });
+});

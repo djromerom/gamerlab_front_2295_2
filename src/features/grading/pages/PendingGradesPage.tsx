@@ -316,6 +316,7 @@ const PendingGradesPage: React.FC = () => {
             page="/pendientes-calificar"
             selectedGameIds={selectedGameIds}
             onToggleSelection={toggleGameSelection}
+            showTourButton
           />
 
           {/* [MODIFICACIÓN]: Botón para calificar múltiples juegos seleccionados */}

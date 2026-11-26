@@ -20,6 +20,7 @@ import {
   Info,
   Sparkles,
   UserCheck,
+  Search,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import LayoutApplication from "@/layouts/LayoutApplication";
@@ -43,6 +44,7 @@ import {
 } from "@/features/jurors/types/jurors";
 import { JurorsListModal } from "@/features/jurors/assignment/components/JurorsListModal";
 import { countLabel, filterJurorsList, type JurorListFilter } from "@/features/jurors/assignment/lib/jurorsListFilter";
+import { searchTeams } from "@/features/jurors/assignment/lib/search";
 import { JurorAssignModal } from "@/features/jurors/assignment/components/JurorAssignModal";
 import { TeamAssignButtons } from "@/features/jurors/assignment/components/TeamAssignButtons";
 import { AvailableJurorsPanel } from "@/features/jurors/assignment/components/AvailableJurorsPanel";
@@ -441,6 +443,7 @@ export function JurorAssignmentPage() {
   const [jurorSearch, setJurorSearch] = useState("");
   const [openJurorMenuId, setOpenJurorMenuId] = useState<string | null>(null);
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>("todos");
+  const [teamSearch, setTeamSearch] = useState("");
   const [jurorListFilter, setJurorListFilter] = useState<JurorListFilter>("todos");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [reassignContext, setReassignContext] = useState<{
@@ -669,7 +672,7 @@ export function JurorAssignmentPage() {
   );
 
 
-  const filteredTeams = useMemo(() => {
+  const teamsByFilter = useMemo(() => {
     if (dashboardFilter === "todos") return teams;
 
     if (dashboardFilter === "asignados") {
@@ -688,6 +691,11 @@ export function JurorAssignmentPage() {
 
     return teams;
   }, [teams, dashboardFilter]);
+
+  const filteredTeams = useMemo(
+    () => searchTeams(teamsByFilter, teamSearch),
+    [teamsByFilter, teamSearch],
+  );
 
   const juradosFiltrados = useMemo(
     () => filterJurorsList(jurados, jurorSearch, jurorListFilter),
@@ -1589,14 +1597,30 @@ export function JurorAssignmentPage() {
         </div>
 
         <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-1.5 md:gap-3 lg:gap-6">
-          <div className="lg:col-span-3 order-2 lg:order-1">
-            <div className="flex items-center justify-between gap-4 mb-4 md:mb-6">
+          <div className="@container lg:col-span-3 order-2 lg:order-1">
+            {/* En una columna angosta la búsqueda baja a su propia fila, debajo del título y el filtro */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-4 md:mb-6">
               <h2 className="text-lg md:text-2xl flex items-center gap-2 flex-shrink-0">
                 <Users className="w-5 md:w-7 h-5 md:h-7" />
                 <span>Equipos ({filteredTeams.length}/{teams.length})</span>
               </h2>
 
-              <div className="flex items-center gap-2 flex-shrink-0 relative">
+              <div className="relative order-last w-full @3xl:order-none @3xl:w-auto @3xl:flex-1 @3xl:max-w-md @3xl:ml-auto">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                  placeholder="Videojuego, equipo o líder"
+                  aria-label="Buscar equipo por videojuego, equipo o líder"
+                  className="w-full h-10 rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0 relative ml-auto @3xl:ml-0">
                 <span className="text-xs text-muted-foreground font-medium hidden sm:inline">Filtrar:</span>
 
                 <div className="relative">
@@ -1668,8 +1692,10 @@ export function JurorAssignmentPage() {
             </div>
 
             {filteredTeams.length === 0 ? (
-              <div className="bg-card border border-border rounded-2xl p-8 text-center text-xs text-muted-foreground font-medium">
-                No hay equipos para este filtro.
+              <div className="bg-card border border-border rounded-2xl p-8 text-center text-xs text-muted-foreground font-medium break-words">
+                {teamsByFilter.length > 0
+                  ? `Ningún equipo coincide con «${teamSearch.trim()}».`
+                  : "No hay equipos para este filtro."}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
