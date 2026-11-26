@@ -5,7 +5,8 @@ import GameModal from "@/features/grading/components/GameModal";
 import type { GradedCriterion } from "@/features/grading/lib/gradedGames";
 import { GradingInput } from "@/features/grading/components/GradingInput";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { buildTourUrl } from "@/features/grading/lib/tourLink";
+import { Loader2, MapPin } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -78,6 +79,8 @@ interface PendingGamesGridProps {
   page?: string;
   selectedGameIds?: Set<number>;
   onToggleSelection?: (gameId: number) => void;
+  /** Botón «Tour» al tour 360 que lleva al jurado hasta el stand (solo juegos sin calificar). */
+  showTourButton?: boolean;
 }
 
 export const PendingGradesGrid: React.FC<
@@ -93,6 +96,7 @@ export const PendingGradesGrid: React.FC<
   page = "",
   selectedGameIds,
   onToggleSelection,
+  showTourButton = false,
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const navigate = useNavigate();
@@ -161,8 +165,8 @@ export const PendingGradesGrid: React.FC<
             key={`${game.nombre}-${index}`}
             className="bg-card border shadow-sm rounded-2xl p-5 flex flex-col"
           >
-            <div className="flex justify-between mb-4">
-              <div className="flex items-start gap-3">
+            <div className="flex justify-between gap-3 mb-4">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
                 {/* ARK-264: la casilla de lote solo sale donde la página maneja la selección
                     (Pendientes) y en juegos sin calificar; en Calificados no aplica. */}
                 {onToggleSelection && !game.isEvaluated && (
@@ -175,10 +179,15 @@ export const PendingGradesGrid: React.FC<
                     aria-label={`Seleccionar ${game.nombre} para calificación en lote`}
                   />
                 )}
-                <div className="flex flex-col gap-1">
+                {/* min-w-0 + break-words: en celular los textos largos (y el aviso de borrador)
+                    parten en varias líneas en vez de empujar la imagen fuera de la tarjeta */}
+                <div className="flex flex-col gap-1 min-w-0 break-words">
                   <h3 className="text-lg font-semibold">{game.nombre}</h3>
                   {game.hasDraft && !game.isEvaluated && (
-                    <DraftBadge updatedAt={game.draftUpdatedAt} />
+                    <DraftBadge
+                      updatedAt={game.draftUpdatedAt}
+                      className="max-w-full whitespace-normal text-left"
+                    />
                   )}
                   <p className="text-sm">
                     <span className="text-muted-foreground">Equipo:</span>{" "}
@@ -215,7 +224,7 @@ export const PendingGradesGrid: React.FC<
                   )}
                 </div>
               </div>
-              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex-shrink-0 ml-2 md:ml-0 md:mr-6 md:mt-4">
+              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex-shrink-0 md:mr-6 md:mt-4">
                 {game.imagen ? (
                   <img
                     src={game.imagen || "/placeholder.svg"}
@@ -225,15 +234,34 @@ export const PendingGradesGrid: React.FC<
                 ) : null}
               </div>
             </div>
-            <div className="flex justify-between mt-auto ">
+            <div className="flex items-center justify-between gap-2 mt-auto pt-2">
               <button
                 onClick={() => handleOpenModal(game)}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors cursor-pointer"
+                className="flex shrink-0 items-center justify-center w-8 h-8 rounded-full bg-[#ccc8d3] dark:bg-[#2a2a40] hover:bg-[#ccc8d3] dark:hover:bg-[#3a3a50] transition-colors cursor-pointer"
                 aria-label="Información"
               >
                 <InfoIcon />
               </button>
-              <div className="flex justify-end mt-auto pt-2 md:px-8">
+              <div className="flex items-center justify-end gap-2 md:px-8">
+                {/* Ayuda opcional: borde punteado y texto atenuado para que no compita con
+                    «Calificar / Continuar», que es la acción principal de la tarjeta. */}
+                {showTourButton && !game.isEvaluated && (
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="ghost"
+                    className="px-3 text-sm rounded-md cursor-pointer border border-dashed border-muted-foreground/40 text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                  >
+                    <a
+                      href={buildTourUrl(game, page)}
+                      aria-label={`Tour: cómo llegar al stand de ${game.equipo}`}
+                      title="Ver en el tour cómo llegar al stand del equipo"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Tour
+                    </a>
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   className={`px-7 py-2 text-sm rounded-md ${

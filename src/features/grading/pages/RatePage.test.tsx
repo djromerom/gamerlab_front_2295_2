@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import RatePage from "@/features/grading/pages/RatePage";
 import { INITIAL_AUTOSAVE_STATE } from "@/features/grading/lib/draftAutosaver";
@@ -191,5 +191,63 @@ describe("RatePage · sin llegada registrada en la mesa (BG-71, ARK-286)", () =>
       expect(mocks.toastError).toHaveBeenCalledWith("Ya existe una evaluación para este videojuego con contenido distinto."),
     );
     expect(mocks.toastError).not.toHaveBeenCalledWith(MESSAGE);
+  });
+});
+
+describe("RatePage · llegada por enlace (vuelta del tour 360 o F5, ARK-350)", () => {
+  function renderByLink(path: string) {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/pendientes-calificar/:id" element={<RatePage />} />
+          <Route path="/pendientes-calificar" element={<p>Lista de pendientes</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  const pendingResponse = () =>
+    new Response(
+      JSON.stringify({
+        data: [
+          {
+            videogameId: 77,
+            videogameName: "Juego Gamma",
+            logoUrl: "",
+            teamName: "QA-Samuel Equipo 1",
+            teamId: 5,
+            teamCode: "N1-AYP-101",
+            members: [{ fullName: "Ana Pérez" }],
+            nrc: "2022",
+            subject: "AyP1",
+            description: null,
+            isEvaluated: false,
+          },
+        ],
+      }),
+      { status: 200 },
+    );
+
+  it("con los criterios ya cargados y /pending-games sin responder, muestra «cargando» y no se cae", async () => {
+    let respond: (res: Response) => void = () => {};
+    mocks.apiFetch.mockImplementation(() => new Promise<Response>((resolve) => (respond = resolve)));
+    renderByLink("/pendientes-calificar/77");
+
+    expect(screen.getByText("Cargando información del juego...")).toBeTruthy();
+    expect(mocks.apiFetch.mock.calls[0][0]).toContain("/pending-games?page=1&limit=100");
+
+    respond(pendingResponse());
+    expect(await screen.findByText("Criterios de Evaluación")).toBeTruthy();
+    expect(screen.getByText(/Juego Gamma/, { selector: "h1, h2, p, span, div" })).toBeTruthy();
+  });
+
+  it("si el juego no está entre los pendientes del jurado vuelve a la lista con aviso", async () => {
+    mocks.apiFetch.mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    renderByLink("/pendientes-calificar/77");
+
+    expect(await screen.findByText("Lista de pendientes")).toBeTruthy();
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      "Este juego no está entre tus pendientes por calificar. Redirigiendo...",
+    );
   });
 });

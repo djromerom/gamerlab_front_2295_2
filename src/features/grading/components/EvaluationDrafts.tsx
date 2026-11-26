@@ -132,10 +132,20 @@ export function DraftConflictDialog({
 }
 
 /** HU-18: etiqueta "Borrador" en la tarjeta de un juego pendiente. */
-export function DraftBadge({ updatedAt }: { updatedAt?: string | null }) {
+export function DraftBadge({
+  updatedAt,
+  className,
+}: {
+  updatedAt?: string | null;
+  className?: string;
+}) {
   const ago = formatSavedAgo(updatedAt);
   return (
-    <Badge variant="warning" title={ago ? `Borrador guardado ${ago}` : "Tienes un borrador guardado"}>
+    <Badge
+      variant="warning"
+      className={className}
+      title={ago ? `Borrador guardado ${ago}` : "Tienes un borrador guardado"}
+    >
       <FileText />
       Borrador{ago && ` · guardado ${ago}`}
     </Badge>
