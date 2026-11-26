@@ -27,3 +27,18 @@ export function filterJurorsList(jurados: Jurado[], search: string, filter: Juro
 /** «1 Suplente», «3 Suplentes» */
 export const countLabel = (count: number, singular: string, plural: string) =>
   `${count} ${count === 1 ? singular : plural}`;
+
+const sinTildes = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * Búsqueda de la ventana «Asignar Jurado»: por nombre o correo, sin distinguir mayúsculas ni tildes («jose» encuentra
+ * a «José»). Cada palabra debe aparecer, en cualquier orden («perez ana» encuentra a «Ana Pérez»).
+ */
+export function searchJurors(jurados: Jurado[], search: string): Jurado[] {
+  const words = sinTildes(search).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return jurados;
+  return jurados.filter((jurado) => {
+    const text = sinTildes(`${jurado.name} ${jurado.email}`);
+    return words.every((word) => text.includes(word));
+  });
+}

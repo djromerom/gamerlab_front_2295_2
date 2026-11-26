@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Search,
   UserPlus,
   X,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import {
   getJurorCategoryLabel,
   isColegioTeam,
 } from "@/features/jurors/types/jurors";
+import { searchJurors } from "@/features/jurors/assignment/lib/jurorsListFilter";
 
 interface JuradoAssignModalProps {
   selectedTeam: Team;
@@ -49,14 +51,26 @@ export function JurorAssignModal({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const juradosVisibles = useMemo(
+    () => searchJurors(juradosDisponiblesParaModal, search),
+    [juradosDisponiblesParaModal, search],
+  );
+
+  // Con mouse se puede escribir de una vez; en el celular no, para que el teclado no tape la lista al abrir
+  useEffect(() => {
+    if (window.matchMedia?.("(pointer: fine)").matches) searchRef.current?.focus();
+  }, []);
+
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
-        <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
+      <div className="w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-4 md:px-6">
           <div>
             <h2 className="text-lg md:text-xl font-medium">
               {reassignContext ? "Reasignar Jurado" : "Asignar Jurado"}
@@ -80,8 +94,8 @@ export function JurorAssignModal({
           </button>
         </div>
 
-        <div className="p-4 md:p-6">
-          <div className="mb-4 rounded-xl border border-border bg-card p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 md:px-6 md:pb-6">
+          <div className="mt-4 md:mt-6 mb-4 rounded-xl border border-border bg-card p-4">
             <div className="text-sm font-medium">{selectedTeam.name}</div>
             <div className="text-sm text-muted-foreground">
               {selectedTeam.jurados.length}/{selectedTeam.requiredJurados} jurados asignados
@@ -109,8 +123,29 @@ export function JurorAssignModal({
             </div>
           )}
 
-          <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
-            {juradosDisponiblesParaModal.map((jurado) => (
+          {juradosDisponiblesParaModal.length > 0 && (
+            // Al bajar por la lista, la búsqueda queda arriba a la vista
+            <div className="sticky top-0 z-10 -mx-1 mb-3 bg-background px-1 py-1">
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre o correo"
+                  aria-label="Buscar jurado por nombre o correo"
+                  className="w-full h-11 rounded-xl border border-border bg-card pl-9 pr-4 text-sm md:text-base outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {juradosVisibles.map((jurado) => (
               <div
                 key={jurado.id}
                 className="rounded-xl border border-border bg-card p-4 flex items-start gap-3"
@@ -154,6 +189,12 @@ export function JurorAssignModal({
             {juradosDisponiblesParaModal.length === 0 && (
               <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
                 No hay jurados disponibles para asignar. Recuerda que deben tener categoría JUNIOR/SENIOR.
+              </div>
+            )}
+
+            {juradosDisponiblesParaModal.length > 0 && juradosVisibles.length === 0 && (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground break-words">
+                Ningún jurado disponible coincide con «{search.trim()}».
               </div>
             )}
           </div>
