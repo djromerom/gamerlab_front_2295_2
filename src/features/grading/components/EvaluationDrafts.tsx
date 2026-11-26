@@ -131,11 +131,17 @@ export function DraftConflictDialog({
   );
 }
 
-/** HU-18: etiqueta "Borrador" en la tarjeta de un juego pendiente. */
+/**
+ * HU-18: etiqueta "Borrador" en la tarjeta de un juego pendiente.
+ * whitespace-normal: en celular el texto baja de línea en vez de ensanchar la tarjeta y sacar el logo.
+ */
 export function DraftBadge({ updatedAt }: { updatedAt?: string | null }) {
   const ago = formatSavedAgo(updatedAt);
   return (
-    <Badge variant="warning" title={ago ? `Borrador guardado ${ago}` : "Tienes un borrador guardado"}>
+    <Badge
+      variant="warning"
+      className="max-w-full whitespace-normal text-left [&>svg]:shrink-0"
+      title={ago ? `Borrador guardado ${ago}` : "Tienes un borrador guardado"}>
       <FileText />
       Borrador{ago && ` · guardado ${ago}`}
     </Badge>

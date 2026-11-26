@@ -161,8 +161,9 @@ export const PendingGradesGrid: React.FC<
             key={`${game.nombre}-${index}`}
             className="bg-card border shadow-sm rounded-2xl p-5 flex flex-col"
           >
-            <div className="flex justify-between mb-4">
-              <div className="flex items-start gap-3">
+            <div className="flex justify-between gap-2 mb-4">
+              {/* min-w-0: sin esto la columna no se encoge en celular y empuja el logo fuera de la tarjeta */}
+              <div className="flex min-w-0 flex-1 items-start gap-3">
                 {/* ARK-264: la casilla de lote solo sale donde la página maneja la selección
                     (Pendientes) y en juegos sin calificar; en Calificados no aplica. */}
                 {onToggleSelection && !game.isEvaluated && (
@@ -175,7 +176,7 @@ export const PendingGradesGrid: React.FC<
                     aria-label={`Seleccionar ${game.nombre} para calificación en lote`}
                   />
                 )}
-                <div className="flex flex-col gap-1">
+                <div className="flex min-w-0 flex-col gap-1 break-words">
                   <h3 className="text-lg font-semibold">{game.nombre}</h3>
                   {game.hasDraft && !game.isEvaluated && (
                     <DraftBadge updatedAt={game.draftUpdatedAt} />
@@ -215,7 +216,7 @@ export const PendingGradesGrid: React.FC<
                   )}
                 </div>
               </div>
-              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex-shrink-0 ml-2 md:ml-0 md:mr-6 md:mt-4">
+              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex-shrink-0 md:mr-6 md:mt-4">
                 {game.imagen ? (
                   <img
                     src={game.imagen || "/placeholder.svg"}
