@@ -72,6 +72,18 @@ describe("HistoricalVideogamesPage (BG-66)", () => {
     expect(screen.queryByText(/N1-ABC-1001 - Ruta 66/)).toBeNull();
   });
 
+  it("en el podio un nombre largo se parte en su columna en vez de sacar los puestos de la pantalla", async () => {
+    mocks.fetchHistoricalTeamsWithScores.mockResolvedValue([
+      historicalTeam(1, "N1-ABC-1001", "Byte Club", "Supercalifragilístico Aventura", 4.9),
+      historicalTeam(2, "N1-ABC-1002", "Pixel", "Ruta 66", 4.7),
+      historicalTeam(3, "N1-ABC-1003", "Orbita", "Orbita", 4.5),
+    ]);
+    renderAt("/ediciones-pasadas/2/juegos");
+    const name = await screen.findByText("Supercalifragilístico Aventura");
+    expect(name.className.split(" ")).toContain("wrap-anywhere");
+    expect(name.closest(".cursor-pointer")!.className.split(" ")).toContain("min-w-0");
+  });
+
   it("si se busca y no hay resultados, ahí sí habla de la búsqueda", async () => {
     mocks.fetchHistoricalTeamsWithScores.mockResolvedValue([historicalTeam(1, "N1-ABC-1001", "Byte Club", "Ruta 66")]);
     renderAt("/ediciones-pasadas/2/juegos");
