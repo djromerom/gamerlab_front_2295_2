@@ -17,6 +17,14 @@ import { isMobileFriendly } from "@/features/games/lib/mobileFriendly";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
 import { teamStatusLabel } from "@/features/games/lib/teamStatus";
 
+/**
+ * Con sesión el front avisa al back que espera una sesión válida: si el token de acceso venció, el
+ * back responde 401 (y apiFetch renueva la sesión y repite) en vez de guardar el like como anónimo.
+ */
+function likeHeaders(hasSession: boolean): Record<string, string> {
+  return hasSession ? { "X-Arkad-Session": "1" } : {};
+}
+
 interface GameDetailModalProps {
   team: Team;
   onClose: () => void;
@@ -79,23 +87,26 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
     }
   }, [liveCount]);
 
+  // Los likes de ediciones pasadas no se tocan: team.videogameId es el id del histórico, no de un juego en vivo
+  const canLike = gameKind === "live";
+
   // Check if the game is already liked on component mount.
-  // Only meaningful when the user has a session — guests can't like.
+  // Sin sesión también: el back responde por la cookie anónima del navegador.
   useEffect(() => {
-    if (!user) {
+    if (!canLike) {
       setIsLiked(false);
       return;
     }
 
-    //Get the like status of the current user
+    //Get the like status of the current user or visitor
     customFetch(
       `${import.meta.env.VITE_ENDPOINT_BACKEND}/videogames/${team.videogameId}/my-like`,
-      { method: "GET", credentials: "include" },
+      { method: "GET", credentials: "include", headers: likeHeaders(!!user) },
     )
       .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
       .then((data: { liked: boolean }) => setIsLiked(data.liked))
       .catch(() => setIsLiked(false));
-  }, [team.videogameId, user]);
+  }, [team.videogameId, user, canLike]);
 
   const handleClose = () => {
     //onRefresh(); // refresh not needed thanks to websocket likes implementation
@@ -103,13 +114,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
   };
 
   const toggleLike = async () => {
-    // Only authenticated users can like
-    if (!user) {
-      toast.info("¡Inicia sesión para dar like!", { id: "like-auth" });
-      return;
-    }
-
-    if (isTogglingLike) return;
+    // Sin cuenta también se puede dar like (cookie anónima del navegador)
+    if (!canLike || isTogglingLike) return;
     setIsTogglingLike(true);
     try {
       const response = await customFetch(
@@ -117,7 +123,7 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
         {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...likeHeaders(!!user) },
         }
       );
       if (response.status === 201 || response.status === 200) {
@@ -128,6 +134,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
         }
       } else if (response.status === 401) {
         toast.info("Tu sesión expiró. Inicia sesión de nuevo.", { id: "like-auth" });
+      } else if (response.status === 429) {
+        toast.info("Diste muchos likes seguidos. Espera un momento e intenta de nuevo.", { id: "like-limit" });
       } else if (response.status === 409) {
         setIsLiked(true);
       } else if (response.status === 400) {
@@ -241,11 +249,13 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
                     <div className="flex shrink-0 items-center mb-4 mx-0 md:mr-1 md:pr-0 pr-4">
                       <button
                         onClick={toggleLike}
-                        disabled={isTogglingLike}
+                        disabled={isTogglingLike || !canLike}
+                        aria-label={isLiked ? "Quitar like" : "Dar like"}
+                        aria-pressed={isLiked}
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-300 ${isLiked
                           ? 'bg-red-500/20 text-red-400 border border-red-400/30 hover:bg-red-500/30'
                           : 'bg-gray-500/20 text-gray-400 border border-gray-400/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30'
-                          } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${isTogglingLike ? 'opacity-50 cursor-not-allowed' : canLike ? 'cursor-pointer' : 'cursor-default'}`}
                       >
                         <Heart
                           size={20}
