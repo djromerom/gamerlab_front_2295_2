@@ -6,9 +6,9 @@ import type { GameLoaderState } from "@/features/games/hooks/useGameLoader";
 vi.mock("@/components/NavBar", () => ({ default: () => <nav>Navegación</nav> }));
 vi.mock("@/components/background/ArkadBackground", () => ({ ArkadBackground: () => null }));
 
-const loader = vi.fn<(kind: string, id: number, enabled: boolean) => GameLoaderState>();
+const loader = vi.fn<(kind: string, id: number, touchOnly: boolean) => GameLoaderState>();
 vi.mock("@/features/games/hooks/useGameLoader", () => ({
-  useGameLoader: (kind: string, id: number, enabled: boolean) => loader(kind, id, enabled),
+  useGameLoader: (kind: string, id: number, touchOnly: boolean) => loader(kind, id, touchOnly),
 }));
 let touchOnly = false;
 vi.mock("@/hooks/useTouchOnly", () => ({ useTouchOnly: () => touchOnly }));
@@ -36,7 +36,7 @@ describe("GamePlayerPage", () => {
   it("un histórico pide su juego como histórico y lo abre en el iframe con allow (F7)", () => {
     loader.mockReturnValue({ status: "ready", key: "historical-87", entry: "Build/index.html", name: "Ruta 66", teamName: "Byte Club" });
     renderAt("/play-game/historical/87");
-    expect(loader).toHaveBeenCalledWith("historical", 87, true);
+    expect(loader).toHaveBeenCalledWith("historical", 87, false);
     const iframe = screen.getByTitle("Ruta 66, de Byte Club");
     expect(iframe.getAttribute("src")).toBe("/play-game/historical-87/Build/index.html");
     expect(iframe.getAttribute("allow")).toBe("fullscreen; autoplay; gamepad");
@@ -46,7 +46,7 @@ describe("GamePlayerPage", () => {
   it("un juego en vivo sigue en /play-game/:id", () => {
     loader.mockReturnValue({ status: "loading", phase: "download", progress: 42 });
     renderAt("/play-game/431");
-    expect(loader).toHaveBeenCalledWith("live", 431, true);
+    expect(loader).toHaveBeenCalledWith("live", 431, false);
     expect(screen.getByText("Descargando el juego… 42 %")).toBeTruthy();
   });
 
@@ -65,21 +65,22 @@ describe("GamePlayerPage", () => {
     expect(screen.queryByRole("button", { name: "Reintentar" })).toBeNull();
   });
 
-  it("en el celular avisa que se juega en computador y no carga el zip", () => {
+  it("en el celular, un juego sin allowMobile avisa que se juega en computador (el cargador no baja el zip)", () => {
     touchOnly = true;
-    loader.mockReturnValue({ status: "idle" });
+    loader.mockReturnValue({ status: "touchOnly" });
     renderAt("/play-game/431?embed=1");
-    expect(loader).toHaveBeenCalledWith("live", 431, false);
+    expect(loader).toHaveBeenCalledWith("live", 431, true);
     expect(screen.getByText("Este juego se juega en computador")).toBeTruthy();
     expect(screen.queryByTitle(/Videojuego|, de /)).toBeNull();
   });
 
-  it("ARK-317: en el celular, Brainrot Breakout (294) sí carga", () => {
+  it("TA-36: en el celular, un juego con allowMobile carga (el cargador lo decide con el dato del back)", () => {
     touchOnly = true;
-    loader.mockReturnValue({ status: "idle" });
+    loader.mockReturnValue({ status: "ready", key: "294", entry: "index.html", name: "Brainrot Breakout", teamName: "Scroll Studios" });
     renderAt("/play-game/294");
     expect(loader).toHaveBeenCalledWith("live", 294, true);
     expect(screen.queryByText("Este juego se juega en computador")).toBeNull();
+    expect(screen.getByTitle("Brainrot Breakout, de Scroll Studios")).toBeTruthy();
   });
 
   it("BG-77: con el juego listo hay un botón para salir (solo se ve en el celular, por CSS); en la cabina no", () => {
@@ -94,7 +95,7 @@ describe("GamePlayerPage", () => {
   it("BG-66: «1e3» no es un id (antes se pedía el juego 1000)", () => {
     loader.mockReturnValue({ status: "error", reason: "notFound", message: "No encontramos este videojuego. Revisa el enlace." });
     renderAt("/play-game/1e3");
-    expect(loader).toHaveBeenCalledWith("live", Number.NaN, true);
+    expect(loader).toHaveBeenCalledWith("live", Number.NaN, false);
     expect(screen.getByRole("alert").textContent).toContain("No encontramos este videojuego");
   });
 });

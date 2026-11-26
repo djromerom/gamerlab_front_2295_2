@@ -27,8 +27,16 @@ describe("fetchGameFile", () => {
       teamName: "Los Pixel",
       gameFileURL: "https://blob/juego.zip?sig=x",
       entry: "index.html",
+      allowMobile: false,
     });
     expect(apiFetch.mock.calls[0][0]).toBe("http://api.test/videogames/12");
+  });
+
+  it("TA-36: lee allowMobile del back (solo true cuenta)", async () => {
+    apiFetch.mockResolvedValue(json({ ...archivo, allowMobile: true }));
+    await expect(fetchGameFile("live", 294)).resolves.toMatchObject({ allowMobile: true });
+    apiFetch.mockResolvedValue(json({ ...archivo, allowMobile: "si" }));
+    await expect(fetchGameFile("live", 12)).resolves.toMatchObject({ allowMobile: false });
   });
 
   it("un histórico se pide al endpoint de HU-40", async () => {

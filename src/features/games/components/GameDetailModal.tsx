@@ -13,7 +13,6 @@ import { toast, Toaster } from "sonner";
 import { Team } from "@/types/team";
 import { MediaCarousel } from "./MediaCarousel";
 import { playPath, type GameKind } from "@/features/games/lib/gameFiles";
-import { isMobileFriendly } from "@/features/games/lib/mobileFriendly";
 import { useTouchOnly } from "@/hooks/useTouchOnly";
 import { teamStatusLabel } from "@/features/games/lib/teamStatus";
 
@@ -31,8 +30,8 @@ export function GameDetailModal({ team, onClose, onRefresh, liveCount, gameKind 
   const { user } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
-  // Los juegos de los equipos se juegan solo en computador (HU-40), salvo las excepciones de ARK-317
-  const touchOnly = useTouchOnly() && !isMobileFriendly(gameKind, team.videogameId);
+  // Los juegos de los equipos se juegan solo en computador (HU-40), salvo los que el admin marca (TA-36)
+  const touchOnly = useTouchOnly() && team.allowMobile !== true;
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(liveCount ?? team.likes ?? 0);
   const [isTogglingLike, setIsTogglingLike] = useState(false);

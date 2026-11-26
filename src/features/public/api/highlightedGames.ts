@@ -22,6 +22,8 @@ export interface StudentHighlightedGame {
   logoUrl: string | null;
   /** true si el juego tiene zip (se puede jugar en la web) */
   hasGameFile: boolean;
+  /** TA-36 (ARK-326): el admin lo marcó como jugable en celular. Un back anterior no lo envía (= false). */
+  allowMobile?: boolean;
   play: { type: "live" | "historical"; id: number };
 }
 

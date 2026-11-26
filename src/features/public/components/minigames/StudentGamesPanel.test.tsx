@@ -104,7 +104,7 @@ describe("StudentGamesPanel", () => {
 
   it("BG-77: en el celular, un juego jugable en celular se abre en su página, no en la cabina", async () => {
     simularPantalla(true);
-    fetchHighlightedGames.mockResolvedValue([{ ...JUEGOS[0], name: "Brainrot Breakout", play: { type: "live", id: 294 } }]);
+    fetchHighlightedGames.mockResolvedValue([{ ...JUEGOS[0], name: "Brainrot Breakout", allowMobile: true, play: { type: "live", id: 294 } }]);
     render(<StudentGamesPanel active />);
     const jugar = await screen.findByRole("link", { name: "Jugar Brainrot Breakout" });
     expect(jugar.getAttribute("href")).toBe("/play-game/294");

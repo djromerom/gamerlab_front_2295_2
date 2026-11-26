@@ -34,6 +34,7 @@ export const WizardSchema = z.object({
     additionalImages: z.array(z.string().url("URL inválida")).optional(),
     zip_url: z.string().optional().nullable(),
     entry: z.string().optional().nullable(),
+    allow_mobile: z.boolean().optional(), // TA-36 (ARK-326): solo al editar
   }),
   integrantes: z.array(MemberSchemaAllRequired).min(1, "Agrega al menos un miembro"),
 }).superRefine((data, ctx) => {

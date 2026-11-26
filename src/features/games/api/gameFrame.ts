@@ -10,6 +10,8 @@ export interface GameFile {
   teamName: string;
   gameFileURL: string;
   entry: string;
+  /** TA-36 (ARK-326): el admin marcó el juego como jugable en celular (trae controles táctiles). */
+  allowMobile: boolean;
 }
 
 /** Por qué no se puede abrir un juego: no existe, no tiene zip o falló la consulta. */
@@ -60,5 +62,6 @@ export async function fetchGameFile(kind: GameKind, id: number): Promise<GameFil
     teamName: data.teamName ?? "",
     gameFileURL,
     entry: data.entry ?? "",
+    allowMobile: data.allowMobile === true,
   };
 }
