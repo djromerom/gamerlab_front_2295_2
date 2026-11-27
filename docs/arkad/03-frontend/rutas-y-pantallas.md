@@ -30,7 +30,7 @@ Un solo router (`BrowserRouter`) con una lista `routes` de `{ path, element, rol
 | **Profesor + Jurado** | `/calificar-lote` |
 | **Profesor + Estudiante** | `/mi-equipo` |
 | **Jurado** | `/pendientes-calificar`, `/pendientes-calificar/:id`, `/calificados`; `/jurado` redirige a `/inicio` |
-| **Estudiante** | `/editar-equipo`, `/mis-jurados` |
+| **Estudiante** | `/editar-equipo` (`/mis-jurados` se quitó el 26-nov: el estudiante ya no ve a sus jurados) |
 | **Consultor** | `/consultor` → `/inicio` |
 
 Hay una ruta `NotFoundPage` para URLs desconocidas.

@@ -42,7 +42,6 @@ import LandingPage from "@/features/public/pages/LandingPage";
 import RankingPage from "@/features/results/pages/RankingPage";
 import InformationPage from "@/features/public/pages/InformationPage";
 import StudentHomePage from "@/features/teams/pages/StudentHomePage";
-import MyJurorsPage from "@/features/teams/pages/MyJurorsPage";
 import TeacherHomePage from "@/features/results/pages/TeacherHomePage";
 import PastFairsPage from "@/features/public/pages/PastFairsPage";
 import CreditsPage from "@/features/public/pages/CreditsPage";
@@ -308,11 +307,8 @@ export const routes: RouteConfig[] = [
     element: <EditTeamPage />,
     roles: ["Estudiante"],
   },
-  {
-    path: "/mis-jurados",
-    element: <MyJurorsPage />,
-    roles: ["Estudiante"],
-  },
+  // «/mis-jurados» se quitó (26-nov): el estudiante ya no ve a sus jurados. La página
+  // (features/teams/pages/MyJurorsPage) se conserva por si se vuelve a habilitar.
   {
     path: "/ponderado-calificaciones",
     element: <GradeWeightsPage />,
