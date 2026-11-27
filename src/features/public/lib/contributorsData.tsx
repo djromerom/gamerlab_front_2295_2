@@ -310,7 +310,7 @@ export const developers = [
 		role: "Backend Leader",
 		department: ["backend"],
 		version: [2],
-		github: "https://github.com/MrManini",
+		github: "https://github.com/kjtorregrosa",
 		email: "kjtorregrosa@uninorte.edu.co",
 	},
 	{
